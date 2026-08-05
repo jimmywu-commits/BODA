@@ -99,6 +99,21 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
+  /* 把「逗號分隔的多張圖」欄位值拆成陣列。
+     dataURL（data:image/png;base64,xxxx）本身固定含有一個逗號，
+     不能直接用逗號切，切開後遇到 data: 開頭的片段，
+     要把緊接著的下一段（base64 內容）接回來，才是完整的一張圖。 */
+  function splitImageList(v) {
+    var raw = String(v == null ? '' : v).split(',');
+    var out = [];
+    for (var i = 0; i < raw.length; i++) {
+      var t = raw[i].trim();
+      if (!t) continue;
+      if (/^data:/i.test(t) && i + 1 < raw.length) { out.push(t + ',' + raw[i + 1].trim()); i++; }
+      else out.push(t);
+    }
+    return out;
+  }
   function px(n) { return n + 'px'; }
 
   /* 算出這個圖層在資料物件裡對應的 key
@@ -184,7 +199,7 @@
         else if (layer.id === 'productArea' || layer.id === 'productArea1' || layer.id === 'productArea2' || layer.id === 'bg') scalePct = CONFIG.image.productImageInsetScalePercent;
         else scalePct = layer.imageScale != null ? layer.imageScale : 100;
 
-        var urls = String(url).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+        var urls = splitImageList(url);
         var imgsHtml = urls.map(function (u) {
           return '<img src="' + esc(u) + '" class="bn-imggroup-img" style="height:100%;width:auto;object-fit:contain;display:block;flex-shrink:0;">';
         }).join('');
@@ -195,11 +210,14 @@
     } else if (layer.type === 'rect') {
       var rectColor = (fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor;
       if (rectColor) style.push('background-color:' + rectColor);
+      if (layer.backgroundImage) style.push('background-image:' + layer.backgroundImage); /* 漸層等裝飾底 */
+      if (layer.border) style.push('border:' + layer.border);
       if (layer.opacity != null) style.push('opacity:' + layer.opacity);
     } else if (layer.type === 'circle') {
       style.push('border-radius:50%');
       var color = (fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor;
       if (color) style.push('background-color:' + color);
+      if (layer.border) style.push('border:' + layer.border);
     } else if (layer.type === 'text') {
       if (layer.fontSize != null) style.push('font-size:' + layer.fontSize + 'px');
       if (layer.fontFamily) style.push('font-family:' + JSON.stringify(layer.fontFamily));
