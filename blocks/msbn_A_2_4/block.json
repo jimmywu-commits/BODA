@@ -1,0 +1,97 @@
+{
+  "id": "msbn_A_2_4",
+  "name": "MSBN A-2-4",
+  "width": 1200,
+  "height": 75,
+  "refImage": "MSBN-A-2-4.jpg",
+  "layers": [
+    {
+      "zIndex": 398,
+      "type": "image",
+      "left": 143.0,
+      "top": 9.0,
+      "width": 273.0,
+      "height": 53.0,
+      "border": "2px solid rgb(255, 0, 0)",
+      "field": "logoImg",
+      "fieldLabel": "LOGO圖片網址",
+      "imageScale": 90
+    },
+    {
+      "zIndex": 397,
+      "type": "rect",
+      "left": 454.0,
+      "top": 24.0,
+      "width": 22.0,
+      "height": 26.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "clipPath": "polygon(0 0,100% 50%,0 100%)"
+    },
+    {
+      "zIndex": 396,
+      "type": "circle",
+      "left": 437.0,
+      "top": 12.0,
+      "width": 51.0,
+      "height": 51.0,
+      "backgroundColor": "rgb(208, 1, 27)",
+      "field": "ctaColor",
+      "fieldLabel": "CTA底色"
+    },
+    {
+      "zIndex": 395,
+      "type": "image",
+      "left": 720.0,
+      "top": 9.0,
+      "width": 273.0,
+      "height": 53.0,
+      "border": "2px solid rgb(255, 0, 0)",
+      "field": "logoImg2",
+      "fieldLabel": "LOGO圖片網址2",
+      "imageScale": 90
+    },
+    {
+      "zIndex": 394,
+      "type": "rect",
+      "left": 1031.0,
+      "top": 24.0,
+      "width": 22.0,
+      "height": 26.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "clipPath": "polygon(0 0,100% 50%,0 100%)"
+    },
+    {
+      "zIndex": 393,
+      "type": "circle",
+      "left": 1014.0,
+      "top": 12.0,
+      "width": 51.0,
+      "height": 51.0,
+      "backgroundColor": "rgb(208, 1, 27)",
+      "field": "ctaColor2",
+      "fieldLabel": "CTA底色2"
+    },
+    {
+      "zIndex": 392,
+      "type": "rect",
+      "left": 670.0,
+      "top": 1.0,
+      "width": 435.0,
+      "height": 74.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "field": "bgColor",
+      "fieldLabel": "卡片背景色"
+    },
+    {
+      "zIndex": 391,
+      "type": "rect",
+      "left": 95.0,
+      "top": 1.0,
+      "width": 435.0,
+      "height": 74.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "field": "bgColor2",
+      "fieldLabel": "卡片背景色2"
+    }
+  ]
+}

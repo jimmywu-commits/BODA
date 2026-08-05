@@ -1,0 +1,141 @@
+{
+  "id": "msbn_A_3_2",
+  "name": "MSBN A-3-2",
+  "width": 1200,
+  "height": 75,
+  "refImage": "MSBN-A-3-2.jpg",
+  "layers": [
+    {
+      "zIndex": 514,
+      "type": "image",
+      "left": 65.0,
+      "top": 11.0,
+      "width": 224.0,
+      "height": 53.0,
+      "border": "2px solid rgb(255, 0, 0)",
+      "field": "logoImg",
+      "fieldLabel": "LOGO圖片網址",
+      "imageScale": 90
+    },
+    {
+      "zIndex": 513,
+      "type": "image",
+      "left": 452.0,
+      "top": 11.0,
+      "width": 223.0,
+      "height": 53.0,
+      "border": "2px solid rgb(255, 0, 0)",
+      "field": "logoImg2",
+      "fieldLabel": "LOGO圖片網址2",
+      "imageScale": 90
+    },
+    {
+      "zIndex": 512,
+      "type": "image",
+      "left": 839.0,
+      "top": 11.0,
+      "width": 223.0,
+      "height": 53.0,
+      "border": "2px solid rgb(255, 0, 0)",
+      "field": "logoImg3",
+      "fieldLabel": "LOGO圖片網址3",
+      "imageScale": 90
+    },
+    {
+      "zIndex": 511,
+      "type": "rect",
+      "left": 330.0,
+      "top": 24.0,
+      "width": 22.0,
+      "height": 26.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "clipPath": "polygon(0 0,100% 50%,0 100%)"
+    },
+    {
+      "zIndex": 510,
+      "type": "circle",
+      "left": 313.0,
+      "top": 12.0,
+      "width": 51.0,
+      "height": 51.0,
+      "backgroundColor": "rgb(208, 1, 27)",
+      "field": "ctaColor",
+      "fieldLabel": "CTA底色"
+    },
+    {
+      "zIndex": 509,
+      "type": "rect",
+      "left": 717.0,
+      "top": 24.0,
+      "width": 22.0,
+      "height": 26.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "clipPath": "polygon(0 0,100% 50%,0 100%)"
+    },
+    {
+      "zIndex": 508,
+      "type": "circle",
+      "left": 700.0,
+      "top": 12.0,
+      "width": 51.0,
+      "height": 51.0,
+      "backgroundColor": "rgb(208, 1, 27)",
+      "field": "ctaColor2",
+      "fieldLabel": "CTA底色2"
+    },
+    {
+      "zIndex": 507,
+      "type": "rect",
+      "left": 1104.0,
+      "top": 24.0,
+      "width": 22.0,
+      "height": 26.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "clipPath": "polygon(0 0,100% 50%,0 100%)"
+    },
+    {
+      "zIndex": 506,
+      "type": "circle",
+      "left": 1087.0,
+      "top": 12.0,
+      "width": 51.0,
+      "height": 51.0,
+      "backgroundColor": "rgb(208, 1, 27)",
+      "field": "ctaColor3",
+      "fieldLabel": "CTA底色3"
+    },
+    {
+      "zIndex": 505,
+      "type": "rect",
+      "left": 30.0,
+      "top": 1.0,
+      "width": 366.0,
+      "height": 74.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "field": "bgColor",
+      "fieldLabel": "卡片背景色"
+    },
+    {
+      "zIndex": 504,
+      "type": "rect",
+      "left": 417.0,
+      "top": 1.0,
+      "width": 365.0,
+      "height": 74.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "field": "bgColor2",
+      "fieldLabel": "卡片背景色2"
+    },
+    {
+      "zIndex": 503,
+      "type": "rect",
+      "left": 804.0,
+      "top": 1.0,
+      "width": 365.0,
+      "height": 74.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "field": "bgColor3",
+      "fieldLabel": "卡片背景色3"
+    }
+  ]
+}

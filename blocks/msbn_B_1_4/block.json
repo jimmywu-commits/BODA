@@ -1,0 +1,47 @@
+{
+  "id": "msbn_B_1_4",
+  "name": "MSBN B-1-4",
+  "width": 1200,
+  "height": 400,
+  "refImage": "MSBN-B-1-4.jpg",
+  "layers": [
+    {
+      "zIndex": 560,
+      "type": "text",
+      "left": 35.5,
+      "top": 317.204,
+      "fontSize": 24.0,
+      "fontFamily": "ShopeeNotoSans (content)",
+      "color": "rgb(0, 0, 0)",
+      "lineHeight": "1.667",
+      "textAlign": "left",
+      "field": "endorserNote",
+      "fieldLabel": "代言人小字",
+      "default": "代言人小字",
+      "whiteSpace": "pre-line"
+    },
+    {
+      "zIndex": 553,
+      "type": "rect",
+      "left": 20.0,
+      "top": 15.0,
+      "width": 580.0,
+      "height": 370.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "field": "bgColor",
+      "fieldLabel": "卡片背景色"
+    },
+    {
+      "zIndex": 552,
+      "type": "rect",
+      "left": 20.0,
+      "top": 15.0,
+      "width": 1160.0,
+      "height": 370.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRadius": "15px",
+      "field": "bgColor2",
+      "fieldLabel": "卡片背景色2"
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "id": "msbn_D_1_1_2",
+  "name": "MSBN D-1-1-2",
+  "width": 1200,
+  "height": 400,
+  "refImage": "MSBN-D-1-1-2.jpg",
+  "layers": [
+    {
+      "zIndex": 1493,
+      "type": "circle",
+      "left": 893.0,
+      "top": 269.0,
+      "width": 25.0,
+      "height": 25.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "border": "1px solid rgb(134, 134, 134)"
+    },
+    {
+      "zIndex": 1492,
+      "type": "circle",
+      "left": 926.0,
+      "top": 270.0,
+      "width": 25.0,
+      "height": 25.0,
+      "backgroundColor": "rgb(139, 190, 192)"
+    },
+    {
+      "zIndex": 1491,
+      "type": "circle",
+      "left": 957.0,
+      "top": 270.0,
+      "width": 25.0,
+      "height": 25.0,
+      "backgroundColor": "rgb(52, 51, 55)"
+    },
+    {
+      "zIndex": 1490,
+      "type": "circle",
+      "left": 410.0,
+      "top": 269.0,
+      "width": 25.0,
+      "height": 25.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "border": "1px solid rgb(134, 134, 134)"
+    },
+    {
+      "zIndex": 1489,
+      "type": "circle",
+      "left": 443.0,
+      "top": 270.0,
+      "width": 25.0,
+      "height": 25.0,
+      "backgroundColor": "rgb(139, 190, 192)"
+    },
+    {
+      "zIndex": 1488,
+      "type": "circle",
+      "left": 474.0,
+      "top": 270.0,
+      "width": 25.0,
+      "height": 25.0,
+      "backgroundColor": "rgb(52, 51, 55)"
+    },
+    {
+      "zIndex": 1485,
+      "type": "rect",
+      "left": 993.0,
+      "top": 340.0,
+      "width": 19.0,
+      "height": 22.0,
+      "backgroundColor": "rgb(254, 254, 254)",
+      "clipPath": "polygon(0 0,100% 50%,0 100%)"
+    },
+    {
+      "zIndex": 1484,
+      "type": "text",
+      "left": 864.703,
+      "top": 371.196,
+      "id": "ctaText",
+      "fontSize": 42.0,
+      "fontFamily": "ShopeeNotoSans (content)",
+      "color": "rgb(254, 254, 254)",
+      "lineHeight": "1",
+      "textAlign": "left",
+      "field": "cta",
+      "fieldLabel": "CTA文字",
+      "default": "逛逛去",
+      "maxLength": 6,
+      "whiteSpace": "pre-line"
+    },
+    {
+      "zIndex": 1483,
+      "type": "rect",
+      "left": 836.0,
+      "top": 316.0,
+      "width": 200.0,
+      "height": 71.0,
+      "backgroundColor": "rgb(208, 1, 27)",
+      "field": "ctaColor",
+      "fieldLabel": "CTA底色"
+    },
+    {
+      "zIndex": 1482,
+      "type": "rect",
+      "left": 514.0,
+      "top": 340.0,
+      "width": 19.0,
+      "height": 22.0,
+      "backgroundColor": "rgb(254, 254, 254)",
+      "clipPath": "polygon(0 0,100% 50%,0 100%)"
+    },
+    {
+      "zIndex": 1481,
+      "type": "text",
+      "left": 385.703,
+      "top": 371.196,
+      "id": "ctaText",
+      "fontSize": 42.0,
+      "fontFamily": "ShopeeNotoSans (content)",
+      "color": "rgb(254, 254, 254)",
+      "lineHeight": "1",
+      "textAlign": "left",
+      "field": "cta2",
+      "fieldLabel": "CTA文字2",
+      "default": "逛逛去",
+      "maxLength": 6,
+      "whiteSpace": "pre-line"
+    },
+    {
+      "zIndex": 1480,
+      "type": "rect",
+      "left": 357.0,
+      "top": 316.0,
+      "width": 200.0,
+      "height": 71.0,
+      "backgroundColor": "rgb(208, 1, 27)",
+      "field": "ctaColor2",
+      "fieldLabel": "CTA底色2"
+    },
+    {
+      "zIndex": 1479,
+      "type": "image",
+      "left": 20.0,
+      "top": 15.0,
+      "width": 190.0,
+      "height": 385.0,
+      "backgroundColor": "rgb(236, 155, 31)",
+      "field": "itemImg",
+      "fieldLabel": "商品圖片網址"
+    },
+    {
+      "zIndex": 1478,
+      "type": "rect",
+      "left": 20.0,
+      "top": 15.0,
+      "width": 1160.0,
+      "height": 385.0,
+      "backgroundColor": "rgb(246, 208, 149)",
+      "borderRadius": "15px",
+      "field": "bgColor",
+      "fieldLabel": "卡片背景色"
+    }
+  ]
+}
