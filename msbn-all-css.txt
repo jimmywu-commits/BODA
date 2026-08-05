@@ -1,0 +1,7273 @@
+.MSBN_A_1_1_jpg {
+  position: absolute;
+  left: 1002px;
+  top: 298px;
+  width: 1200px;
+  height: 430px;
+  z-index: 66;
+}
+.all {
+  position: absolute;
+  left: -1002px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 65;
+}
+.假品 {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 63;
+}
+.簽名小字_5_簽名小字_5 {
+  font-size: 24px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  line-height: 1.667;
+  text-align: left;
+  -moz-transform: matrix( 0.99610119165008,0,0,1.00028098900073,0,0);
+  -webkit-transform: matrix( 0.99610119165008,0,0,1.00028098900073,0,0);
+  -ms-transform: matrix( 0.99610119165008,0,0,1.00028098900073,0,0);
+  position: absolute;
+  left: 2028.123px;
+  top: 500.179px;
+  z-index: 62;
+}
+.曝品範圍 {
+  background-image: -moz-linear-gradient( 0deg, rgb(162,182,224) 11%, rgb(239,114,105) 87%);
+  background-image: -webkit-linear-gradient( 0deg, rgb(162,182,224) 11%, rgb(239,114,105) 87%);
+  background-image: -ms-linear-gradient( 0deg, rgb(162,182,224) 11%, rgb(239,114,105) 87%);
+  position: absolute;
+  left: 1616px;
+  top: 320px;
+  width: 275px;
+  height: 300px;
+  z-index: 56;
+}
+.代言人範圍 {
+  background-color: rgb(169, 255, 218);
+  position: absolute;
+  left: 1890px;
+  top: 319px;
+  width: 139px;
+  height: 301px;
+  z-index: 55;
+}
+.簽名範圍 {
+  background-color: rgb(255, 156, 0);
+  position: absolute;
+  left: 2029px;
+  top: 469px;
+  width: 137px;
+  height: 151px;
+  z-index: 54;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1614px;
+  top: 318px;
+  width: 548px;
+  height: 298px;
+  z-index: 53;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 1156.375px;
+  top: 375.827px;
+  z-index: 51;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 1075px;
+  top: 321px;
+  width: 476px;
+  height: 68px;
+  z-index: 50;
+}
+.品名 {
+  font-size: 43px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.116;
+  text-align: center;
+  position: absolute;
+  left: 1140.438px;
+  top: 452.088px;
+  z-index: 49;
+}
+.警語 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.75;
+  text-align: center;
+  position: absolute;
+  left: 1136.563px;
+  top: 549.675px;
+  z-index: 48;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 2058.593px;
+  top: 387.846px;
+  z-index: 47;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 2044px;
+  top: 321px;
+  width: 120px;
+  height: 121px;
+  z-index: 46;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 1949px;
+  top: 662px;
+  width: 19px;
+  height: 22px;
+  z-index: 45;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 1820.703px;
+  top: 694.196px;
+  z-index: 44;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1792px;
+  top: 638px;
+  width: 200px;
+  height: 71px;
+  z-index: 43;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1603px;
+  top: 298px;
+  width: 663px;
+  height: 409px;
+  z-index: 42;
+}
+.MSBN_A_1_2_jpg {
+  position: absolute;
+  left: 1002px;
+  top: 730px;
+  width: 1200px;
+  height: 430px;
+  z-index: 138;
+}
+.假品 {
+  position: absolute;
+  left: -1002px;
+  top: -730px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 136;
+}
+.簽名小字_5_簽名小字_5 {
+  font-size: 24px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  line-height: 1.667;
+  text-align: left;
+  position: absolute;
+  left: 1041.016px;
+  top: 932.126px;
+  z-index: 135;
+}
+.曝品範圍 {
+  background-image: -moz-linear-gradient( 0deg, rgb(162,182,224) 11%, rgb(239,114,105) 87%);
+  background-image: -webkit-linear-gradient( 0deg, rgb(162,182,224) 11%, rgb(239,114,105) 87%);
+  background-image: -ms-linear-gradient( 0deg, rgb(162,182,224) 11%, rgb(239,114,105) 87%);
+  position: absolute;
+  left: 1312px;
+  top: 752px;
+  width: 275px;
+  height: 300px;
+  z-index: 129;
+}
+.代言人範圍 {
+  background-color: rgb(169, 255, 218);
+  position: absolute;
+  left: 1174px;
+  top: 751px;
+  width: 139px;
+  height: 301px;
+  z-index: 128;
+}
+.簽名範圍 {
+  background-color: rgb(255, 156, 0);
+  position: absolute;
+  left: 1037px;
+  top: 901px;
+  width: 137px;
+  height: 151px;
+  z-index: 127;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1037px;
+  top: 750px;
+  width: 548px;
+  height: 298px;
+  z-index: 126;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 732.375px;
+  top: 77.827px;
+  z-index: 124;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 651px;
+  top: 23px;
+  width: 476px;
+  height: 68px;
+  z-index: 123;
+}
+.品名 {
+  font-size: 43px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.116;
+  text-align: center;
+  position: absolute;
+  left: 716.438px;
+  top: 154.088px;
+  z-index: 122;
+}
+.警語 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.75;
+  text-align: center;
+  position: absolute;
+  left: 712.563px;
+  top: 251.675px;
+  z-index: 121;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 50.593px;
+  top: 89.846px;
+  z-index: 120;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 36px;
+  top: 23px;
+  width: 120px;
+  height: 121px;
+  z-index: 119;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 368px;
+  top: 364px;
+  width: 19px;
+  height: 22px;
+  z-index: 118;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 239.703px;
+  top: 396.196px;
+  z-index: 117;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 211px;
+  top: 340px;
+  width: 200px;
+  height: 71px;
+  z-index: 116;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: -60px;
+  top: 0px;
+  width: 657px;
+  height: 409px;
+  z-index: 115;
+}
+.作圖區 {
+  position: absolute;
+  left: -1002px;
+  top: -730px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 84;
+}
+.圓標 {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 82;
+}
+.圓標_120x120 {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 81;
+}
+.圓標_5字內 {
+  font-size: 23.688px;
+  font-family: "Noto Sans CJK TC";
+  color: rgb(0, 37, 144);
+  font-weight: bold;
+  line-height: 1.571;
+  text-align: center;
+  -moz-transform: matrix( 1.48291913377154,0,0,1.47757090219422,0,0);
+  -webkit-transform: matrix( 1.48291913377154,0,0,1.47757090219422,0,0);
+  -ms-transform: matrix( 1.48291913377154,0,0,1.47757090219422,0,0);
+  position: absolute;
+  left: 1067.408px;
+  top: 816.893px;
+  z-index: 80;
+}
+.橢圓_1435 {
+  border-radius: 50%;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1038px;
+  top: 753px;
+  width: 120px;
+  height: 121px;
+  z-index: 79;
+}
+.BG {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 72;
+}
+.矩形_1156 {
+  background-color: rgb(227, 245, 255);
+  opacity: 0.82;
+  position: absolute;
+  left: 958px;
+  top: 1007px;
+  width: 639px;
+  height: 140px;
+  z-index: 70;
+}
+.MSBN_A_2_1_jpg {
+  position: absolute;
+  left: 1002px;
+  top: 2486px;
+  width: 1200px;
+  height: 430px;
+  z-index: 225;
+}
+.右 {
+  position: absolute;
+  left: -1002px;
+  top: -2486px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 223;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1581px;
+  top: 2483px;
+  width: 611px;
+  height: 335px;
+  z-index: 222;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 1688.687px;
+  top: 2779.675px;
+  z-index: 221;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 1762.922px;
+  top: 2812.203px;
+  z-index: 220;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 1633.593px;
+  top: 2567.846px;
+  z-index: 219;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 1619px;
+  top: 2501px;
+  width: 120px;
+  height: 121px;
+  z-index: 218;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 2134px;
+  top: 2692px;
+  width: 22px;
+  height: 26px;
+  z-index: 217;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 2117px;
+  top: 2680px;
+  width: 51px;
+  height: 51px;
+  z-index: 216;
+}
+.左 {
+  position: absolute;
+  left: -1002px;
+  top: -2486px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 214;
+}
+.簽名小字_5_簽名小字_5 {
+  font-size: 24px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  line-height: 1.667;
+  text-align: left;
+  position: absolute;
+  left: 1049.016px;
+  top: 2661.126px;
+  z-index: 213;
+}
+.曝品範圍 {
+  background-image: -moz-linear-gradient( 0deg, rgb(162,182,224) 11%, rgb(239,114,105) 87%);
+  background-image: -webkit-linear-gradient( 0deg, rgb(162,182,224) 11%, rgb(239,114,105) 87%);
+  background-image: -ms-linear-gradient( 0deg, rgb(162,182,224) 11%, rgb(239,114,105) 87%);
+  position: absolute;
+  left: 1320px;
+  top: 2507px;
+  width: 276px;
+  height: 221px;
+  z-index: 212;
+}
+.代言人範圍 {
+  background-color: rgb(169, 255, 218);
+  position: absolute;
+  left: 1182px;
+  top: 2507px;
+  width: 139px;
+  height: 221px;
+  z-index: 211;
+}
+.簽名範圍 {
+  background-color: rgb(255, 156, 0);
+  position: absolute;
+  left: 1045px;
+  top: 2628px;
+  width: 137px;
+  height: 100px;
+  z-index: 210;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1045px;
+  top: 2506px;
+  width: 549px;
+  height: 219px;
+  z-index: 209;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 1124.688px;
+  top: 2779.675px;
+  z-index: 208;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 1180.922px;
+  top: 2812.203px;
+  z-index: 207;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 1051.593px;
+  top: 2567.846px;
+  z-index: 206;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 1037px;
+  top: 2501px;
+  width: 120px;
+  height: 121px;
+  z-index: 205;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1552px;
+  top: 2692px;
+  width: 22px;
+  height: 26px;
+  z-index: 204;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1535px;
+  top: 2680px;
+  width: 51px;
+  height: 51px;
+  z-index: 203;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1002px;
+  top: 2486px;
+  width: 641px;
+  height: 335px;
+  z-index: 202;
+}
+.MSBN_A_2_2_jpg {
+  position: absolute;
+  left: 1002px;
+  top: 2981px;
+  width: 1200px;
+  height: 430px;
+  z-index: 317;
+}
+.左 {
+  position: absolute;
+  left: -1002px;
+  top: -2981px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 315;
+}
+.贈品範圍 {
+  background-color: rgb(255, 127, 127);
+  position: absolute;
+  left: 1342px;
+  top: 3261px;
+  width: 260px;
+  height: 130px;
+  z-index: 314;
+}
+.曝品範圍 {
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 1342px;
+  top: 3001px;
+  width: 260px;
+  height: 260px;
+  z-index: 313;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1341px;
+  top: 3000px;
+  width: 258px;
+  height: 388px;
+  z-index: 312;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 1047.375px;
+  top: 3059.827px;
+  z-index: 311;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 1033px;
+  top: 3006px;
+  width: 295px;
+  height: 65px;
+  z-index: 310;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: left;
+  position: absolute;
+  left: 1030.687px;
+  top: 3130.675px;
+  z-index: 309;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 1485.593px;
+  top: 3070.846px;
+  z-index: 308;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 1471px;
+  top: 3004px;
+  width: 120px;
+  height: 121px;
+  z-index: 307;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1293px;
+  top: 3341px;
+  width: 22px;
+  height: 26px;
+  z-index: 306;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1276px;
+  top: 3329px;
+  width: 51px;
+  height: 51px;
+  z-index: 305;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1245px;
+  top: 2981px;
+  width: 377px;
+  height: 430px;
+  z-index: 304;
+}
+.右 {
+  position: absolute;
+  left: -1002px;
+  top: -2981px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 302;
+}
+.假品 {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 301;
+}
+.贈品範圍 {
+  background-color: rgb(255, 127, 127);
+  position: absolute;
+  left: 2082px;
+  top: 3196px;
+  width: 100px;
+  height: 195px;
+  z-index: 300;
+}
+.曝品範圍 {
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 1922px;
+  top: 3001px;
+  width: 160px;
+  height: 390px;
+  z-index: 299;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1921px;
+  top: 3000px;
+  width: 258px;
+  height: 388px;
+  z-index: 298;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 1627.375px;
+  top: 3059.827px;
+  z-index: 296;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 1613px;
+  top: 3006px;
+  width: 295px;
+  height: 65px;
+  z-index: 295;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: left;
+  position: absolute;
+  left: 1610.687px;
+  top: 3130.675px;
+  z-index: 294;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 2065.593px;
+  top: 3070.846px;
+  z-index: 293;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 2051px;
+  top: 3004px;
+  width: 120px;
+  height: 121px;
+  z-index: 292;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1873px;
+  top: 3341px;
+  width: 22px;
+  height: 26px;
+  z-index: 291;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1856px;
+  top: 3329px;
+  width: 51px;
+  height: 51px;
+  z-index: 290;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1825px;
+  top: 2981px;
+  width: 377px;
+  height: 430px;
+  z-index: 289;
+}
+.MSBN_A_2_3_jpg {
+  position: absolute;
+  left: 1002px;
+  top: 3411px;
+  width: 1200px;
+  height: 430px;
+  z-index: 403;
+}
+.左 {
+  position: absolute;
+  left: -1002px;
+  top: -3411px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 401;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 1047.375px;
+  top: 3489.827px;
+  z-index: 400;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 1033px;
+  top: 3436px;
+  width: 295px;
+  height: 65px;
+  z-index: 399;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: left;
+  position: absolute;
+  left: 1030.687px;
+  top: 3560.675px;
+  z-index: 398;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 1485.593px;
+  top: 3500.846px;
+  z-index: 397;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 1471px;
+  top: 3434px;
+  width: 120px;
+  height: 121px;
+  z-index: 396;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1293px;
+  top: 3771px;
+  width: 22px;
+  height: 26px;
+  z-index: 395;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1276px;
+  top: 3759px;
+  width: 51px;
+  height: 51px;
+  z-index: 394;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1245px;
+  top: 3411px;
+  width: 377px;
+  height: 430px;
+  z-index: 393;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 1022px;
+  top: 3426px;
+  width: 580px;
+  height: 400px;
+  z-index: 392;
+}
+.右 {
+  position: absolute;
+  left: -1002px;
+  top: -3411px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 390;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 1627.375px;
+  top: 3489.827px;
+  z-index: 389;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 1613px;
+  top: 3436px;
+  width: 295px;
+  height: 65px;
+  z-index: 388;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: left;
+  position: absolute;
+  left: 1610.687px;
+  top: 3560.675px;
+  z-index: 387;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 2065.593px;
+  top: 3500.846px;
+  z-index: 386;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 2051px;
+  top: 3434px;
+  width: 120px;
+  height: 121px;
+  z-index: 385;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1873px;
+  top: 3771px;
+  width: 22px;
+  height: 26px;
+  z-index: 384;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1856px;
+  top: 3759px;
+  width: 51px;
+  height: 51px;
+  z-index: 383;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1825px;
+  top: 3411px;
+  width: 377px;
+  height: 430px;
+  z-index: 382;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 189, 169);
+  position: absolute;
+  left: 1602px;
+  top: 3426px;
+  width: 580px;
+  height: 400px;
+  z-index: 381;
+}
+.MSBN_A_2_4_jpg {
+  position: absolute;
+  left: 1002px;
+  top: 3898px;
+  width: 1200px;
+  height: 75px;
+  z-index: 417;
+}
+.左 {
+  position: absolute;
+  left: -1002px;
+  top: -3898px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 416;
+}
+.LOGO範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1145px;
+  top: 3907px;
+  width: 273px;
+  height: 53px;
+  z-index: 415;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1456px;
+  top: 3922px;
+  width: 22px;
+  height: 26px;
+  z-index: 414;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1439px;
+  top: 3910px;
+  width: 51px;
+  height: 51px;
+  z-index: 413;
+}
+.背景 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1097px;
+  top: 3899px;
+  width: 435px;
+  height: 74px;
+  z-index: 412;
+}
+.右 {
+  position: absolute;
+  left: -1002px;
+  top: -3898px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 410;
+}
+.LOGO範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1722px;
+  top: 3907px;
+  width: 273px;
+  height: 53px;
+  z-index: 409;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 2033px;
+  top: 3922px;
+  width: 22px;
+  height: 26px;
+  z-index: 408;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 2016px;
+  top: 3910px;
+  width: 51px;
+  height: 51px;
+  z-index: 407;
+}
+.背景 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1672px;
+  top: 3899px;
+  width: 435px;
+  height: 74px;
+  z-index: 406;
+}
+.MSBN_A_3_1_jpg {
+  position: absolute;
+  left: 1002px;
+  top: 4652px;
+  width: 1200px;
+  height: 430px;
+  z-index: 525;
+}
+.左 {
+  position: absolute;
+  left: -1002px;
+  top: -4652px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 523;
+}
+.假品 {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 522;
+}
+.贈品範圍 {
+  background-color: rgb(255, 127, 127);
+  position: absolute;
+  left: 1026px;
+  top: 4792px;
+  width: 151px;
+  height: 111px;
+  z-index: 517;
+}
+.曝品範圍 {
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 1176px;
+  top: 4672px;
+  width: 231px;
+  height: 231px;
+  z-index: 516;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1024px;
+  top: 4672px;
+  width: 379px;
+  height: 229px;
+  z-index: 515;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1358px;
+  top: 4864px;
+  width: 22px;
+  height: 26px;
+  z-index: 513;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1341px;
+  top: 4852px;
+  width: 51px;
+  height: 51px;
+  z-index: 512;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 1041.593px;
+  top: 4737.846px;
+  z-index: 511;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 1027px;
+  top: 4671px;
+  width: 120px;
+  height: 121px;
+  z-index: 510;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 1076.688px;
+  top: 4962.675px;
+  z-index: 509;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1008px;
+  top: 4652px;
+  width: 414px;
+  height: 335px;
+  z-index: 508;
+}
+.中 {
+  position: absolute;
+  left: -1002px;
+  top: -4652px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 506;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1746px;
+  top: 4864px;
+  width: 22px;
+  height: 26px;
+  z-index: 505;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1729px;
+  top: 4852px;
+  width: 51px;
+  height: 51px;
+  z-index: 504;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 1429.593px;
+  top: 4737.846px;
+  z-index: 503;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 1415px;
+  top: 4671px;
+  width: 120px;
+  height: 121px;
+  z-index: 502;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 1462.688px;
+  top: 4962.675px;
+  z-index: 501;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1395px;
+  top: 4652px;
+  width: 414px;
+  height: 335px;
+  z-index: 500;
+}
+.右 {
+  position: absolute;
+  left: -1002px;
+  top: -4652px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 498;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 2133px;
+  top: 4864px;
+  width: 22px;
+  height: 26px;
+  z-index: 497;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 2116px;
+  top: 4852px;
+  width: 51px;
+  height: 51px;
+  z-index: 496;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 1816.593px;
+  top: 4737.846px;
+  z-index: 495;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 1802px;
+  top: 4671px;
+  width: 120px;
+  height: 121px;
+  z-index: 494;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 1852.688px;
+  top: 4962.675px;
+  z-index: 493;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 1783px;
+  top: 4652px;
+  width: 414px;
+  height: 335px;
+  z-index: 492;
+}
+.MSBN_A_3_2_jpg {
+  position: absolute;
+  left: 1002px;
+  top: 5139px;
+  width: 1200px;
+  height: 75px;
+  z-index: 545;
+}
+.左 {
+  position: absolute;
+  left: -1002px;
+  top: -5139px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 544;
+}
+.LOGO範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1067px;
+  top: 5150px;
+  width: 224px;
+  height: 53px;
+  z-index: 543;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1332px;
+  top: 5163px;
+  width: 22px;
+  height: 26px;
+  z-index: 542;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1315px;
+  top: 5151px;
+  width: 51px;
+  height: 51px;
+  z-index: 541;
+}
+.背景 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1032px;
+  top: 5140px;
+  width: 366px;
+  height: 74px;
+  z-index: 540;
+}
+.中 {
+  position: absolute;
+  left: -1002px;
+  top: -5139px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 538;
+}
+.LOGO範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1454px;
+  top: 5150px;
+  width: 223px;
+  height: 53px;
+  z-index: 537;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1719px;
+  top: 5163px;
+  width: 22px;
+  height: 26px;
+  z-index: 536;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 1702px;
+  top: 5151px;
+  width: 51px;
+  height: 51px;
+  z-index: 535;
+}
+.背景 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1419px;
+  top: 5140px;
+  width: 365px;
+  height: 74px;
+  z-index: 534;
+}
+.右 {
+  position: absolute;
+  left: -1002px;
+  top: -5139px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 532;
+}
+.LOGO範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 1841px;
+  top: 5150px;
+  width: 223px;
+  height: 53px;
+  z-index: 531;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 2106px;
+  top: 5163px;
+  width: 22px;
+  height: 26px;
+  z-index: 530;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 2089px;
+  top: 5151px;
+  width: 51px;
+  height: 51px;
+  z-index: 529;
+}
+.背景 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1806px;
+  top: 5140px;
+  width: 365px;
+  height: 74px;
+  z-index: 528;
+}
+.MSBN_B_1_1_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 298px;
+  width: 1200px;
+  height: 400px;
+  z-index: 558;
+}
+.代言人小字 {
+  font-size: 24px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  line-height: 1.667;
+  text-align: left;
+  position: absolute;
+  left: 35.5px;
+  top: 317.204px;
+  z-index: 557;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 732.375px;
+  top: 93.827px;
+  z-index: 555;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 651px;
+  top: 39px;
+  width: 476px;
+  height: 68px;
+  z-index: 554;
+}
+.品名 {
+  font-size: 43px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.116;
+  text-align: center;
+  position: absolute;
+  left: 716.438px;
+  top: 170.088px;
+  z-index: 553;
+}
+.警語 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.75;
+  text-align: center;
+  position: absolute;
+  left: 712.563px;
+  top: 267.675px;
+  z-index: 552;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 952px;
+  top: 315px;
+  width: 19px;
+  height: 22px;
+  z-index: 551;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 823.703px;
+  top: 349.196px;
+  z-index: 550;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 795px;
+  top: 293px;
+  width: 200px;
+  height: 71px;
+  z-index: 549;
+}
+.背景 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 580px;
+  height: 370px;
+  z-index: 548;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 189, 169);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 1160px;
+  height: 370px;
+  z-index: 547;
+}
+.MSBN_B_1_2_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 699px;
+  width: 1200px;
+  height: 400px;
+  z-index: 568;
+}
+.代言人小字 {
+  font-size: 24px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  line-height: 1.667;
+  text-align: left;
+  position: absolute;
+  left: 35.5px;
+  top: 317.204px;
+  z-index: 567;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 732.375px;
+  top: 138.827px;
+  z-index: 565;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 651px;
+  top: 84px;
+  width: 476px;
+  height: 68px;
+  z-index: 564;
+}
+.品名 {
+  font-size: 43px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.116;
+  text-align: center;
+  position: absolute;
+  left: 716.438px;
+  top: 215.088px;
+  z-index: 563;
+}
+.警語 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.75;
+  text-align: center;
+  position: absolute;
+  left: 712.563px;
+  top: 312.675px;
+  z-index: 562;
+}
+.背景 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 580px;
+  height: 370px;
+  z-index: 561;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 189, 169);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 1160px;
+  height: 370px;
+  z-index: 560;
+}
+.MSBN_B_1_3_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 1100px;
+  width: 1200px;
+  height: 400px;
+  z-index: 580;
+}
+.代言人小字 {
+  font-size: 24px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  line-height: 1.667;
+  text-align: left;
+  position: absolute;
+  left: 35.5px;
+  top: 317.204px;
+  z-index: 579;
+}
+.LOGO_文字 {
+  font-size: 70px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 778.984px;
+  top: 71.978px;
+  z-index: 577;
+}
+.促標 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  font-weight: bold;
+  line-height: 0.86;
+  text-align: center;
+  position: absolute;
+  left: 645.594px;
+  top: 226px;
+  z-index: 576;
+}
+.促標_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 740px;
+  top: 70px;
+  width: 300px;
+  height: 90px;
+  z-index: 575;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 947px;
+  top: 275px;
+  width: 19px;
+  height: 22px;
+  z-index: 574;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 818.703px;
+  top: 309.196px;
+  z-index: 573;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 790px;
+  top: 253px;
+  width: 200px;
+  height: 71px;
+  z-index: 572;
+}
+.背景 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 580px;
+  height: 370px;
+  z-index: 571;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 189, 169);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 1160px;
+  height: 370px;
+  z-index: 570;
+}
+.MSBN_B_1_4_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 1500px;
+  width: 1200px;
+  height: 400px;
+  z-index: 591;
+}
+.代言人小字 {
+  font-size: 24px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  line-height: 1.667;
+  text-align: left;
+  position: absolute;
+  left: 35.5px;
+  top: 317.204px;
+  z-index: 590;
+}
+.背景 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 580px;
+  height: 370px;
+  z-index: 583;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 1160px;
+  height: 370px;
+  z-index: 582;
+}
+.MSBN_B_2_1_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 2486px;
+  width: 1200px;
+  height: 400px;
+  z-index: 656;
+}
+.左 {
+  position: absolute;
+  left: -4656px;
+  top: -2486px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 655;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 4965px;
+  top: 2586px;
+  width: 258px;
+  height: 259px;
+  z-index: 654;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 4784.375px;
+  top: 2554.827px;
+  z-index: 653;
+}
+.促標_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 4676px;
+  top: 2501px;
+  width: 575px;
+  height: 65px;
+  z-index: 652;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4704.688px;
+  top: 2645.675px;
+  z-index: 651;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 4737.922px;
+  top: 2736.203px;
+  z-index: 650;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 4884px;
+  top: 2793px;
+  width: 19px;
+  height: 22px;
+  z-index: 649;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 4755.703px;
+  top: 2825.196px;
+  z-index: 648;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 4727px;
+  top: 2769px;
+  width: 200px;
+  height: 71px;
+  z-index: 647;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4676px;
+  top: 2501px;
+  width: 575px;
+  height: 370px;
+  z-index: 646;
+}
+.右 {
+  position: absolute;
+  left: -4656px;
+  top: -2486px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 644;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 5550px;
+  top: 2586px;
+  width: 258px;
+  height: 259px;
+  z-index: 643;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 5369.375px;
+  top: 2554.827px;
+  z-index: 642;
+}
+.促標_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 5261px;
+  top: 2501px;
+  width: 575px;
+  height: 65px;
+  z-index: 641;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5289.688px;
+  top: 2645.675px;
+  z-index: 640;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5322.922px;
+  top: 2736.203px;
+  z-index: 639;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 5469px;
+  top: 2793px;
+  width: 19px;
+  height: 22px;
+  z-index: 638;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 5340.703px;
+  top: 2825.196px;
+  z-index: 637;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5312px;
+  top: 2769px;
+  width: 200px;
+  height: 71px;
+  z-index: 636;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5261px;
+  top: 2501px;
+  width: 575px;
+  height: 370px;
+  z-index: 635;
+}
+.MSBN_B_2_2_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 2887px;
+  width: 1200px;
+  height: 400px;
+  z-index: 719;
+}
+.左 {
+  position: absolute;
+  left: -4656px;
+  top: -2887px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 718;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 4753px;
+  top: 2988px;
+  width: 418px;
+  height: 159px;
+  z-index: 717;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5188px;
+  top: 3062px;
+  width: 22px;
+  height: 26px;
+  z-index: 716;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5171px;
+  top: 3050px;
+  width: 51px;
+  height: 51px;
+  z-index: 715;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4767.688px;
+  top: 3212.675px;
+  z-index: 714;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 4823.922px;
+  top: 3245.203px;
+  z-index: 713;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 4784.375px;
+  top: 2955.827px;
+  z-index: 712;
+}
+.促標_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 4676px;
+  top: 2902px;
+  width: 575px;
+  height: 65px;
+  z-index: 711;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4676px;
+  top: 2902px;
+  width: 575px;
+  height: 370px;
+  z-index: 710;
+}
+.右 {
+  position: absolute;
+  left: -4656px;
+  top: -2887px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 708;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 5338px;
+  top: 2988px;
+  width: 418px;
+  height: 159px;
+  z-index: 707;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5774px;
+  top: 3062px;
+  width: 22px;
+  height: 26px;
+  z-index: 706;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5757px;
+  top: 3050px;
+  width: 51px;
+  height: 51px;
+  z-index: 705;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5351.688px;
+  top: 3212.675px;
+  z-index: 704;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5407.922px;
+  top: 3245.203px;
+  z-index: 703;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 5369.375px;
+  top: 2955.827px;
+  z-index: 702;
+}
+.促標_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 5261px;
+  top: 2902px;
+  width: 575px;
+  height: 65px;
+  z-index: 701;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5261px;
+  top: 2902px;
+  width: 575px;
+  height: 370px;
+  z-index: 700;
+}
+.MSBN_B_2_3_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 3288px;
+  width: 1200px;
+  height: 400px;
+  z-index: 782;
+}
+.左 {
+  position: absolute;
+  left: -4656px;
+  top: -3288px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 781;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 4753px;
+  top: 3389px;
+  width: 418px;
+  height: 159px;
+  z-index: 780;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4767.688px;
+  top: 3613.675px;
+  z-index: 779;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 4823.922px;
+  top: 3646.203px;
+  z-index: 778;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 4784.375px;
+  top: 3356.827px;
+  z-index: 777;
+}
+.促標_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 4676px;
+  top: 3303px;
+  width: 575px;
+  height: 65px;
+  z-index: 776;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4676px;
+  top: 3303px;
+  width: 575px;
+  height: 370px;
+  z-index: 775;
+}
+.右 {
+  position: absolute;
+  left: -4656px;
+  top: -3288px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 773;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 5338px;
+  top: 3389px;
+  width: 418px;
+  height: 159px;
+  z-index: 772;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5351.688px;
+  top: 3613.675px;
+  z-index: 771;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5407.922px;
+  top: 3646.203px;
+  z-index: 770;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 5369.375px;
+  top: 3356.827px;
+  z-index: 769;
+}
+.促標_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 5261px;
+  top: 3303px;
+  width: 575px;
+  height: 65px;
+  z-index: 768;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5261px;
+  top: 3303px;
+  width: 575px;
+  height: 370px;
+  z-index: 767;
+}
+.MSBN_B_3_1_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 4652px;
+  width: 1200px;
+  height: 400px;
+  z-index: 883;
+}
+.左 {
+  position: absolute;
+  left: -4656px;
+  top: -4652px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 882;
+}
+.促標 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.956;
+  text-align: center;
+  position: absolute;
+  left: 4710.375px;
+  top: 4822.827px;
+  z-index: 881;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 4692px;
+  top: 4769px;
+  width: 350px;
+  height: 65px;
+  z-index: 880;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4710.687px;
+  top: 4893.675px;
+  z-index: 879;
+}
+.中 {
+  position: absolute;
+  left: -4656px;
+  top: -4652px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 877;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 5064px;
+  top: 4672px;
+  width: 379px;
+  height: 259px;
+  z-index: 876;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5400px;
+  top: 4864px;
+  width: 22px;
+  height: 26px;
+  z-index: 875;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5383px;
+  top: 4852px;
+  width: 51px;
+  height: 51px;
+  z-index: 874;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5115.813px;
+  top: 5022.203px;
+  z-index: 873;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 5083.593px;
+  top: 4737.846px;
+  z-index: 872;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 5069px;
+  top: 4671px;
+  width: 120px;
+  height: 121px;
+  z-index: 871;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5116.688px;
+  top: 4986.675px;
+  z-index: 870;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 5049px;
+  top: 4653px;
+  width: 414px;
+  height: 393px;
+  z-index: 869;
+}
+.右 {
+  position: absolute;
+  left: -4656px;
+  top: -4652px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 867;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 5454px;
+  top: 4672px;
+  width: 379px;
+  height: 259px;
+  z-index: 866;
+}
+.CTA_三角形 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5787px;
+  top: 4864px;
+  width: 22px;
+  height: 26px;
+  z-index: 865;
+}
+.CTA_底圖 {
+  border-radius: 50%;
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5770px;
+  top: 4852px;
+  width: 51px;
+  height: 51px;
+  z-index: 864;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5506.813px;
+  top: 5022.203px;
+  z-index: 863;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 5470.593px;
+  top: 4737.846px;
+  z-index: 862;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 5456px;
+  top: 4671px;
+  width: 120px;
+  height: 121px;
+  z-index: 861;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5506.688px;
+  top: 4986.675px;
+  z-index: 860;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 5437px;
+  top: 4653px;
+  width: 414px;
+  height: 393px;
+  z-index: 859;
+}
+.MSBN_B_3_2_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 5052px;
+  width: 1200px;
+  height: 400px;
+  z-index: 981;
+}
+.左 {
+  position: absolute;
+  left: -4656px;
+  top: -5052px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 980;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 4678px;
+  top: 5072px;
+  width: 379px;
+  height: 258px;
+  z-index: 979;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 4729.813px;
+  top: 5422.203px;
+  z-index: 978;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 4695.593px;
+  top: 5137.846px;
+  z-index: 977;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 4681px;
+  top: 5071px;
+  width: 120px;
+  height: 121px;
+  z-index: 976;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4730.688px;
+  top: 5386.675px;
+  z-index: 975;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 4662px;
+  top: 5053px;
+  width: 414px;
+  height: 393px;
+  z-index: 974;
+}
+.中 {
+  position: absolute;
+  left: -4656px;
+  top: -5052px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 972;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 5064px;
+  top: 5072px;
+  width: 379px;
+  height: 258px;
+  z-index: 971;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5115.813px;
+  top: 5422.203px;
+  z-index: 970;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 5083.593px;
+  top: 5137.846px;
+  z-index: 969;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 5069px;
+  top: 5071px;
+  width: 120px;
+  height: 121px;
+  z-index: 968;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5116.688px;
+  top: 5386.675px;
+  z-index: 967;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 5049px;
+  top: 5053px;
+  width: 414px;
+  height: 393px;
+  z-index: 966;
+}
+.右 {
+  position: absolute;
+  left: -4656px;
+  top: -5052px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 964;
+}
+.做圖範圍 {
+  border-width: 2px;
+  border-color: rgb(255, 0, 0);
+  border-style: solid;
+  position: absolute;
+  left: 5454px;
+  top: 5072px;
+  width: 379px;
+  height: 258px;
+  z-index: 963;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5506.813px;
+  top: 5422.203px;
+  z-index: 962;
+}
+.圓標 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.514;
+  text-align: center;
+  position: absolute;
+  left: 5470.593px;
+  top: 5137.846px;
+  z-index: 961;
+}
+.圓標_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 5456px;
+  top: 5071px;
+  width: 120px;
+  height: 121px;
+  z-index: 960;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5506.688px;
+  top: 5386.675px;
+  z-index: 959;
+}
+.光暈 {
+  background-image: url("光暈.png");
+  opacity: 0.8;
+  position: absolute;
+  left: 5437px;
+  top: 5053px;
+  width: 414px;
+  height: 393px;
+  z-index: 958;
+}
+.MSBN_B_3_3_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 5568px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1088;
+}
+.左 {
+  position: absolute;
+  left: -4656px;
+  top: -5568px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1081;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 4928px;
+  top: 5887px;
+  width: 19px;
+  height: 22px;
+  z-index: 1080;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 4799.703px;
+  top: 5919.196px;
+  z-index: 1079;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 4771px;
+  top: 5863px;
+  width: 200px;
+  height: 71px;
+  z-index: 1078;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4730.688px;
+  top: 5852.675px;
+  z-index: 1077;
+}
+.LOGO_圖片 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4786.703px;
+  top: 5658.703px;
+  z-index: 1076;
+}
+.LOGO_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4676px;
+  top: 5583px;
+  width: 374px;
+  height: 205px;
+  z-index: 1075;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 4676px;
+  top: 5583px;
+  width: 374px;
+  height: 370px;
+  z-index: 1074;
+}
+.中 {
+  position: absolute;
+  left: -4656px;
+  top: -5568px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1072;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 5314px;
+  top: 5887px;
+  width: 19px;
+  height: 22px;
+  z-index: 1071;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 5185.703px;
+  top: 5919.196px;
+  z-index: 1070;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5157px;
+  top: 5863px;
+  width: 200px;
+  height: 71px;
+  z-index: 1069;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5116.688px;
+  top: 5852.675px;
+  z-index: 1068;
+}
+.LOGO_圖片 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5172.703px;
+  top: 5658.703px;
+  z-index: 1067;
+}
+.LOGO_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5069px;
+  top: 5583px;
+  width: 374px;
+  height: 205px;
+  z-index: 1066;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 5069px;
+  top: 5583px;
+  width: 374px;
+  height: 370px;
+  z-index: 1065;
+}
+.右 {
+  position: absolute;
+  left: -4656px;
+  top: -5568px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1063;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 5705px;
+  top: 5887px;
+  width: 19px;
+  height: 22px;
+  z-index: 1062;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 5576.703px;
+  top: 5919.196px;
+  z-index: 1061;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5548px;
+  top: 5863px;
+  width: 200px;
+  height: 71px;
+  z-index: 1060;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5506.688px;
+  top: 5852.675px;
+  z-index: 1059;
+}
+.LOGO_圖片 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5562.703px;
+  top: 5658.703px;
+  z-index: 1058;
+}
+.LOGO_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5461px;
+  top: 5583px;
+  width: 374px;
+  height: 205px;
+  z-index: 1057;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 5461px;
+  top: 5583px;
+  width: 374px;
+  height: 370px;
+  z-index: 1056;
+}
+.MSBN_B_3_4_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 5968px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1189;
+}
+.左 {
+  position: absolute;
+  left: -4656px;
+  top: -5968px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1182;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 4729.813px;
+  top: 6333.203px;
+  z-index: 1181;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4730.688px;
+  top: 6297.675px;
+  z-index: 1180;
+}
+.情境圖_圖片 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4793.407px;
+  top: 6049.297px;
+  z-index: 1179;
+}
+.情境圖_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4676px;
+  top: 5983px;
+  width: 374px;
+  height: 250px;
+  z-index: 1178;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 4676px;
+  top: 5983px;
+  width: 374px;
+  height: 370px;
+  z-index: 1177;
+}
+.中 {
+  position: absolute;
+  left: -4656px;
+  top: -5968px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1175;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5115.813px;
+  top: 6333.203px;
+  z-index: 1174;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5116.688px;
+  top: 6297.675px;
+  z-index: 1173;
+}
+.情境圖_圖片 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5179.407px;
+  top: 6049.297px;
+  z-index: 1172;
+}
+.情境圖_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5069px;
+  top: 5983px;
+  width: 374px;
+  height: 250px;
+  z-index: 1171;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 5069px;
+  top: 5983px;
+  width: 374px;
+  height: 370px;
+  z-index: 1170;
+}
+.右 {
+  position: absolute;
+  left: -4656px;
+  top: -5968px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1168;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5506.813px;
+  top: 6333.203px;
+  z-index: 1167;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5506.688px;
+  top: 6297.675px;
+  z-index: 1166;
+}
+.情境圖_圖片 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5569.407px;
+  top: 6049.297px;
+  z-index: 1165;
+}
+.情境圖_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5461px;
+  top: 5983px;
+  width: 374px;
+  height: 250px;
+  z-index: 1164;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 5461px;
+  top: 5983px;
+  width: 374px;
+  height: 370px;
+  z-index: 1163;
+}
+.MSBN_B_3_4_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 5968px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1189;
+}
+.左 {
+  position: absolute;
+  left: -4656px;
+  top: -5968px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1182;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 4729.813px;
+  top: 6333.203px;
+  z-index: 1181;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4730.688px;
+  top: 6297.675px;
+  z-index: 1180;
+}
+.情境圖_圖片 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4793.407px;
+  top: 6049.297px;
+  z-index: 1179;
+}
+.情境圖_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4676px;
+  top: 5983px;
+  width: 374px;
+  height: 250px;
+  z-index: 1178;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 4676px;
+  top: 5983px;
+  width: 374px;
+  height: 370px;
+  z-index: 1177;
+}
+.中 {
+  position: absolute;
+  left: -4656px;
+  top: -5968px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1175;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5115.813px;
+  top: 6333.203px;
+  z-index: 1174;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5116.688px;
+  top: 6297.675px;
+  z-index: 1173;
+}
+.情境圖_圖片 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5179.407px;
+  top: 6049.297px;
+  z-index: 1172;
+}
+.情境圖_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5069px;
+  top: 5983px;
+  width: 374px;
+  height: 250px;
+  z-index: 1171;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 5069px;
+  top: 5983px;
+  width: 374px;
+  height: 370px;
+  z-index: 1170;
+}
+.右 {
+  position: absolute;
+  left: -4656px;
+  top: -5968px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1168;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5506.813px;
+  top: 6333.203px;
+  z-index: 1167;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5506.688px;
+  top: 6297.675px;
+  z-index: 1166;
+}
+.情境圖_圖片 {
+  font-size: 50px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5569.407px;
+  top: 6049.297px;
+  z-index: 1165;
+}
+.情境圖_底圖 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5461px;
+  top: 5983px;
+  width: 374px;
+  height: 250px;
+  z-index: 1164;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(169, 197, 255);
+  position: absolute;
+  left: 5461px;
+  top: 5983px;
+  width: 374px;
+  height: 370px;
+  z-index: 1163;
+}
+.MSBN_B_4_1_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 6786px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1305;
+}
+.左4 {
+  position: absolute;
+  left: -4656px;
+  top: -6786px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1298;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 5756px;
+  top: 7105px;
+  width: 19px;
+  height: 22px;
+  z-index: 1297;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 5627.703px;
+  top: 7137.196px;
+  z-index: 1296;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5599px;
+  top: 7081px;
+  width: 200px;
+  height: 71px;
+  z-index: 1295;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5594.438px;
+  top: 6856.956px;
+  z-index: 1294;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5596.688px;
+  top: 7070.675px;
+  z-index: 1293;
+}
+.LOGO_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 5560px;
+  top: 6801px;
+  width: 275px;
+  height: 65px;
+  z-index: 1292;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5560px;
+  top: 6801px;
+  width: 275px;
+  height: 370px;
+  z-index: 1291;
+}
+.左3 {
+  position: absolute;
+  left: -4656px;
+  top: -6786px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1289;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 5461px;
+  top: 7105px;
+  width: 19px;
+  height: 22px;
+  z-index: 1288;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 5332.703px;
+  top: 7137.196px;
+  z-index: 1287;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5304px;
+  top: 7081px;
+  width: 200px;
+  height: 71px;
+  z-index: 1286;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5299.438px;
+  top: 6856.956px;
+  z-index: 1285;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5301.688px;
+  top: 7070.675px;
+  z-index: 1284;
+}
+.LOGO_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 5265px;
+  top: 6801px;
+  width: 275px;
+  height: 65px;
+  z-index: 1283;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5265px;
+  top: 6801px;
+  width: 275px;
+  height: 370px;
+  z-index: 1282;
+}
+.左2 {
+  position: absolute;
+  left: -4656px;
+  top: -6786px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1280;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 5167px;
+  top: 7105px;
+  width: 19px;
+  height: 22px;
+  z-index: 1279;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 5038.703px;
+  top: 7137.196px;
+  z-index: 1278;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 5010px;
+  top: 7081px;
+  width: 200px;
+  height: 71px;
+  z-index: 1277;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5005.438px;
+  top: 6856.956px;
+  z-index: 1276;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5007.688px;
+  top: 7070.675px;
+  z-index: 1275;
+}
+.LOGO_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 4971px;
+  top: 6801px;
+  width: 275px;
+  height: 65px;
+  z-index: 1274;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4971px;
+  top: 6801px;
+  width: 275px;
+  height: 370px;
+  z-index: 1273;
+}
+.左1 {
+  position: absolute;
+  left: -4656px;
+  top: -6786px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1271;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 4873px;
+  top: 7105px;
+  width: 19px;
+  height: 22px;
+  z-index: 1270;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 4744.703px;
+  top: 7137.196px;
+  z-index: 1269;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 4716px;
+  top: 7081px;
+  width: 200px;
+  height: 71px;
+  z-index: 1268;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4711.438px;
+  top: 6856.956px;
+  z-index: 1267;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4713.688px;
+  top: 7070.675px;
+  z-index: 1266;
+}
+.LOGO_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 4676px;
+  top: 6801px;
+  width: 275px;
+  height: 65px;
+  z-index: 1265;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4676px;
+  top: 6801px;
+  width: 275px;
+  height: 370px;
+  z-index: 1264;
+}
+.MSBN_B_4_2_jpg {
+  position: absolute;
+  left: 4656px;
+  top: 7186px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1413;
+}
+.左4 {
+  position: absolute;
+  left: -4656px;
+  top: -7186px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1406;
+}
+.促標 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5594.438px;
+  top: 7256.956px;
+  z-index: 1405;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5596.688px;
+  top: 7520.675px;
+  z-index: 1404;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5591.812px;
+  top: 7556.203px;
+  z-index: 1403;
+}
+.LOGO_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 5560px;
+  top: 7201px;
+  width: 275px;
+  height: 65px;
+  z-index: 1402;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5560px;
+  top: 7201px;
+  width: 275px;
+  height: 370px;
+  z-index: 1401;
+}
+.左3 {
+  position: absolute;
+  left: -4656px;
+  top: -7186px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1399;
+}
+.促標 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5299.438px;
+  top: 7256.956px;
+  z-index: 1398;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5301.688px;
+  top: 7520.675px;
+  z-index: 1397;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5296.812px;
+  top: 7556.203px;
+  z-index: 1396;
+}
+.LOGO_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 5265px;
+  top: 7201px;
+  width: 275px;
+  height: 65px;
+  z-index: 1395;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 5265px;
+  top: 7201px;
+  width: 275px;
+  height: 370px;
+  z-index: 1394;
+}
+.左2 {
+  position: absolute;
+  left: -4656px;
+  top: -7186px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1392;
+}
+.促標 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5005.438px;
+  top: 7256.956px;
+  z-index: 1391;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 5007.688px;
+  top: 7520.675px;
+  z-index: 1390;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 5002.812px;
+  top: 7556.203px;
+  z-index: 1389;
+}
+.LOGO_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 4971px;
+  top: 7201px;
+  width: 275px;
+  height: 65px;
+  z-index: 1388;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4971px;
+  top: 7201px;
+  width: 275px;
+  height: 370px;
+  z-index: 1387;
+}
+.左1 {
+  position: absolute;
+  left: -4656px;
+  top: -7186px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1385;
+}
+.促標 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4711.438px;
+  top: 7256.956px;
+  z-index: 1384;
+}
+.品名 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 4713.688px;
+  top: 7520.675px;
+  z-index: 1383;
+}
+.警語 {
+  font-size: 35px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.857;
+  text-align: center;
+  position: absolute;
+  left: 4707.812px;
+  top: 7556.203px;
+  z-index: 1382;
+}
+.LOGO_底圖 {
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 4676px;
+  top: 7201px;
+  width: 275px;
+  height: 65px;
+  z-index: 1381;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 4676px;
+  top: 7201px;
+  width: 275px;
+  height: 370px;
+  z-index: 1380;
+}
+.MSBN_C_1_1_jpg {
+  position: absolute;
+  left: 7497px;
+  top: 298px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1442;
+}
+.右 {
+  position: absolute;
+  left: -7497px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1435;
+}
+.文案 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.067;
+  text-align: center;
+  position: absolute;
+  left: 8337.89px;
+  top: 509.002px;
+  z-index: 1434;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -webkit-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -ms-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  position: absolute;
+  left: 8231.179px;
+  top: 518.749px;
+  z-index: 1433;
+}
+.LOGO_文字 {
+  font-size: 30px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 8192.421px;
+  top: 488.412px;
+  z-index: 1432;
+}
+.LOGO_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 8179px;
+  top: 447px;
+  width: 121px;
+  height: 121px;
+  z-index: 1431;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 8163px;
+  top: 430px;
+  width: 462px;
+  height: 156px;
+  z-index: 1430;
+}
+.左 {
+  position: absolute;
+  left: -7497px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1428;
+}
+.文案 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.067;
+  text-align: center;
+  position: absolute;
+  left: 7747.89px;
+  top: 509.002px;
+  z-index: 1426;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -webkit-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -ms-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  position: absolute;
+  left: 7641.179px;
+  top: 518.749px;
+  z-index: 1425;
+}
+.色塊 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 7572px;
+  top: 430px;
+  width: 155px;
+  height: 157px;
+  z-index: 1424;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 7573px;
+  top: 430px;
+  width: 462px;
+  height: 156px;
+  z-index: 1423;
+}
+.共用 {
+  position: absolute;
+  left: -7497px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1421;
+}
+.促標 {
+  font-size: 55px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.782;
+  text-align: center;
+  position: absolute;
+  left: 7905.234px;
+  top: 376.564px;
+  z-index: 1420;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 7847px;
+  top: 313px;
+  width: 500px;
+  height: 83px;
+  z-index: 1419;
+}
+._____ {
+  font-size: 162px;
+  font-family: "Noto Sans CJK TC";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -webkit-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -ms-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  position: absolute;
+  left: 8048.5px;
+  top: 411.368px;
+  z-index: 1418;
+}
+.警語 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.75;
+  text-align: center;
+  position: absolute;
+  left: 7708.563px;
+  top: 655.675px;
+  z-index: 1417;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 189, 169);
+  position: absolute;
+  left: 7517px;
+  top: 343px;
+  width: 1160px;
+  height: 340px;
+  z-index: 1416;
+}
+.MSBN_C_1_2_jpg {
+  position: absolute;
+  left: 7497px;
+  top: 698px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1471;
+}
+.右 {
+  position: absolute;
+  left: -7497px;
+  top: -698px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1470;
+}
+.文案 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.067;
+  text-align: center;
+  position: absolute;
+  left: 8337.89px;
+  top: 909.002px;
+  z-index: 1469;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -webkit-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -ms-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  position: absolute;
+  left: 8231.179px;
+  top: 918.749px;
+  z-index: 1468;
+}
+.LOGO_文字 {
+  font-size: 30px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 8192.421px;
+  top: 888.412px;
+  z-index: 1467;
+}
+.LOGO_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 8179px;
+  top: 847px;
+  width: 121px;
+  height: 121px;
+  z-index: 1466;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 8163px;
+  top: 830px;
+  width: 462px;
+  height: 156px;
+  z-index: 1465;
+}
+.左 {
+  position: absolute;
+  left: -7497px;
+  top: -698px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1463;
+}
+.文案 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.067;
+  text-align: center;
+  position: absolute;
+  left: 7747.89px;
+  top: 909.002px;
+  z-index: 1461;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -webkit-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -ms-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  position: absolute;
+  left: 7641.179px;
+  top: 918.749px;
+  z-index: 1460;
+}
+.色塊 {
+  background-color: rgb(238, 77, 45);
+  position: absolute;
+  left: 7572px;
+  top: 830px;
+  width: 155px;
+  height: 157px;
+  z-index: 1459;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 7573px;
+  top: 830px;
+  width: 462px;
+  height: 156px;
+  z-index: 1458;
+}
+.共用 {
+  position: absolute;
+  left: -7497px;
+  top: -698px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1456;
+}
+.促標 {
+  font-size: 55px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.782;
+  text-align: center;
+  position: absolute;
+  left: 7905.234px;
+  top: 776.564px;
+  z-index: 1449;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 7847px;
+  top: 713px;
+  width: 500px;
+  height: 83px;
+  z-index: 1448;
+}
+._____ {
+  font-size: 162px;
+  font-family: "Noto Sans CJK TC";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -webkit-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -ms-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  position: absolute;
+  left: 8048.5px;
+  top: 811.368px;
+  z-index: 1447;
+}
+.警語 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.75;
+  text-align: center;
+  position: absolute;
+  left: 7708.563px;
+  top: 1055.675px;
+  z-index: 1446;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 189, 169);
+  position: absolute;
+  left: 7517px;
+  top: 743px;
+  width: 1160px;
+  height: 340px;
+  z-index: 1445;
+}
+.MSBN_C_1_3_jpg {
+  position: absolute;
+  left: 7497px;
+  top: 1099px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1500;
+}
+.右 {
+  position: absolute;
+  left: -7497px;
+  top: -1099px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1499;
+}
+.文案 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.067;
+  text-align: center;
+  position: absolute;
+  left: 8337.89px;
+  top: 1310.002px;
+  z-index: 1498;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -webkit-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -ms-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  position: absolute;
+  left: 8231.179px;
+  top: 1319.749px;
+  z-index: 1497;
+}
+.色塊 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 8162px;
+  top: 1231px;
+  width: 155px;
+  height: 157px;
+  z-index: 1495;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 8163px;
+  top: 1231px;
+  width: 462px;
+  height: 156px;
+  z-index: 1494;
+}
+.左 {
+  position: absolute;
+  left: -7497px;
+  top: -1099px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1492;
+}
+.文案 {
+  font-size: 45px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.067;
+  text-align: center;
+  position: absolute;
+  left: 7747.89px;
+  top: 1310.002px;
+  z-index: 1490;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -webkit-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  -ms-transform: matrix( 0,0.75600226694748,-0.75600226694748,-2.01304714867846e-17,0,0);
+  position: absolute;
+  left: 7641.179px;
+  top: 1319.749px;
+  z-index: 1489;
+}
+.色塊 {
+  background-color: rgb(238, 77, 45);
+  position: absolute;
+  left: 7572px;
+  top: 1231px;
+  width: 155px;
+  height: 157px;
+  z-index: 1488;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 7573px;
+  top: 1231px;
+  width: 462px;
+  height: 156px;
+  z-index: 1487;
+}
+.共用 {
+  position: absolute;
+  left: -7497px;
+  top: -1099px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1485;
+}
+.促標 {
+  font-size: 55px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 0.782;
+  text-align: center;
+  position: absolute;
+  left: 7905.234px;
+  top: 1177.564px;
+  z-index: 1478;
+}
+.促標_底圖 {
+  border-radius: 10px;
+  background-color: rgb(79, 159, 162);
+  position: absolute;
+  left: 7847px;
+  top: 1114px;
+  width: 500px;
+  height: 83px;
+  z-index: 1477;
+}
+._____ {
+  font-size: 162px;
+  font-family: "Noto Sans CJK TC";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -webkit-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -ms-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  position: absolute;
+  left: 8048.5px;
+  top: 1212.368px;
+  z-index: 1476;
+}
+.警語 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(116, 116, 116);
+  line-height: 0.75;
+  text-align: center;
+  position: absolute;
+  left: 7708.563px;
+  top: 1456.675px;
+  z-index: 1475;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 189, 169);
+  position: absolute;
+  left: 7517px;
+  top: 1144px;
+  width: 1160px;
+  height: 340px;
+  z-index: 1474;
+}
+.MSBN_C_1_4_jpg {
+  position: absolute;
+  left: 7497px;
+  top: 1499px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1543;
+}
+.左 {
+  position: absolute;
+  left: -7497px;
+  top: -1499px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1542;
+}
+.促標 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  font-weight: bold;
+  line-height: 1.075;
+  text-align: center;
+  position: absolute;
+  left: 7575.437px;
+  top: 1574.456px;
+  z-index: 1541;
+}
+.文案 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.075;
+  text-align: center;
+  position: absolute;
+  left: 7668.125px;
+  top: 1701.175px;
+  z-index: 1539;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  -webkit-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  -ms-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  position: absolute;
+  left: 7558.679px;
+  top: 1711.249px;
+  z-index: 1538;
+}
+.色塊 {
+  background-color: rgb(238, 77, 45);
+  position: absolute;
+  left: 7539px;
+  top: 1641px;
+  width: 106px;
+  height: 120px;
+  z-index: 1537;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 7540px;
+  top: 1641px;
+  width: 315px;
+  height: 119px;
+  z-index: 1536;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 7754px;
+  top: 1814px;
+  width: 19px;
+  height: 22px;
+  z-index: 1535;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 7625.531px;
+  top: 1848.493px;
+  z-index: 1534;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 7597px;
+  top: 1792px;
+  width: 200px;
+  height: 71px;
+  z-index: 1533;
+}
+.右 {
+  position: absolute;
+  left: -7497px;
+  top: -1499px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1531;
+}
+.情境圖_圖片 {
+  font-size: 70px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 8364.625px;
+  top: 1655.197px;
+  z-index: 1530;
+}
+.促標 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  font-weight: bold;
+  line-height: 1.075;
+  text-align: center;
+  position: absolute;
+  left: 8375.437px;
+  top: 1574.456px;
+  z-index: 1529;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 8554px;
+  top: 1814px;
+  width: 19px;
+  height: 22px;
+  z-index: 1528;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 8425.531px;
+  top: 1848.196px;
+  z-index: 1527;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 8397px;
+  top: 1792px;
+  width: 200px;
+  height: 71px;
+  z-index: 1526;
+}
+.中 {
+  position: absolute;
+  left: -7497px;
+  top: -1499px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1524;
+}
+.促標 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  font-weight: bold;
+  line-height: 1.075;
+  text-align: center;
+  position: absolute;
+  left: 7975.437px;
+  top: 1574.456px;
+  z-index: 1523;
+}
+.文案 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.075;
+  text-align: center;
+  position: absolute;
+  left: 8069.125px;
+  top: 1701.175px;
+  z-index: 1521;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  -webkit-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  -ms-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  position: absolute;
+  left: 7959.679px;
+  top: 1711.249px;
+  z-index: 1520;
+}
+.色塊 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 7940px;
+  top: 1641px;
+  width: 106px;
+  height: 120px;
+  z-index: 1519;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 7941px;
+  top: 1641px;
+  width: 315px;
+  height: 119px;
+  z-index: 1518;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 8157px;
+  top: 1814px;
+  width: 19px;
+  height: 22px;
+  z-index: 1517;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 8028.531px;
+  top: 1848.493px;
+  z-index: 1516;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 8000px;
+  top: 1792px;
+  width: 200px;
+  height: 71px;
+  z-index: 1515;
+}
+.共用 {
+  position: absolute;
+  left: -7497px;
+  top: -1499px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1513;
+}
+._____ {
+  font-size: 85.472px;
+  font-family: "Noto Sans CJK TC";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -webkit-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -ms-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  position: absolute;
+  left: 8271.5px;
+  top: 1648.217px;
+  z-index: 1505;
+}
+._____ {
+  font-size: 85.472px;
+  font-family: "Noto Sans CJK TC";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -webkit-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -ms-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  position: absolute;
+  left: 7873.5px;
+  top: 1648.217px;
+  z-index: 1504;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 189, 169);
+  position: absolute;
+  left: 7517px;
+  top: 1514px;
+  width: 1160px;
+  height: 370px;
+  z-index: 1503;
+}
+.MSBN_C_1_5_jpg {
+  position: absolute;
+  left: 7497px;
+  top: 1900px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1578;
+}
+.左 {
+  position: absolute;
+  left: -7497px;
+  top: -1900px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1577;
+}
+.商品圖_情境圖_圖片 {
+  font-size: 70px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgba(0, 0, 0, 0.502);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 7595.766px;
+  top: 2015.556px;
+  z-index: 1576;
+}
+.背景 {
+  border-radius: 180px;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 7517px;
+  top: 1915px;
+  width: 390px;
+  height: 370px;
+  z-index: 1575;
+}
+.中 {
+  position: absolute;
+  left: -7497px;
+  top: -1900px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1573;
+}
+.促標 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  font-weight: bold;
+  line-height: 1.075;
+  text-align: center;
+  position: absolute;
+  left: 7975.437px;
+  top: 1975.456px;
+  z-index: 1572;
+}
+.文案 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.075;
+  text-align: center;
+  position: absolute;
+  left: 8069.125px;
+  top: 2102.175px;
+  z-index: 1570;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  -webkit-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  -ms-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  position: absolute;
+  left: 7959.679px;
+  top: 2112.249px;
+  z-index: 1569;
+}
+.色塊 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 7940px;
+  top: 2042px;
+  width: 106px;
+  height: 120px;
+  z-index: 1568;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 7941px;
+  top: 2042px;
+  width: 315px;
+  height: 119px;
+  z-index: 1567;
+}
+.右 {
+  position: absolute;
+  left: -7497px;
+  top: -1900px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1565;
+}
+.LOGO_文字 {
+  font-size: 20px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 8360.281px;
+  top: 2089.275px;
+  z-index: 1564;
+}
+.LOGO_底圖 {
+  border-radius: 50%;
+  background-color: rgb(114, 122, 204);
+  position: absolute;
+  left: 8348px;
+  top: 2058px;
+  width: 89px;
+  height: 89px;
+  z-index: 1563;
+}
+.促標 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(0, 0, 0);
+  font-weight: bold;
+  line-height: 1.075;
+  text-align: center;
+  position: absolute;
+  left: 8375.437px;
+  top: 1975.456px;
+  z-index: 1562;
+}
+.文案 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.075;
+  text-align: center;
+  position: absolute;
+  left: 8467.125px;
+  top: 2102.175px;
+  z-index: 1561;
+}
+._____________ {
+  font-size: 29px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(162, 162, 162);
+  line-height: 1.384;
+  text-align: left;
+  -moz-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  -webkit-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  -ms-transform: matrix( 0,0.57783612760317,-0.57996932418445,-1.53863476332112e-17,0,0);
+  position: absolute;
+  left: 8357.679px;
+  top: 2112.249px;
+  z-index: 1560;
+}
+.優惠券 {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.29);
+  position: absolute;
+  left: 8339px;
+  top: 2042px;
+  width: 315px;
+  height: 119px;
+  z-index: 1559;
+}
+.共用 {
+  position: absolute;
+  left: -7497px;
+  top: -1900px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1557;
+}
+._____ {
+  font-size: 85.472px;
+  font-family: "Noto Sans CJK TC";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -webkit-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  -ms-transform: matrix( 0.93597644991423,-1.22743689658434e-15,-1.53332826359602e-16,0.93597644991424,0,0);
+  position: absolute;
+  left: 8271.5px;
+  top: 2049.217px;
+  z-index: 1550;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 8353px;
+  top: 2215px;
+  width: 19px;
+  height: 22px;
+  z-index: 1549;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 8224.531px;
+  top: 2249.493px;
+  z-index: 1548;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 8196px;
+  top: 2193px;
+  width: 200px;
+  height: 71px;
+  z-index: 1547;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(255, 189, 169);
+  position: absolute;
+  left: 7517px;
+  top: 1915px;
+  width: 1160px;
+  height: 370px;
+  z-index: 1546;
+}
+.MSBN_D_1_1_1_jpg {
+  position: absolute;
+  left: 10338px;
+  top: 298px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1598;
+}
+.右 {
+  position: absolute;
+  left: -10338px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1597;
+}
+.品名 {
+  font-size: 43px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  font-weight: bold;
+  line-height: 1.116;
+  text-align: center;
+  position: absolute;
+  left: 11079.906px;
+  top: 604.385px;
+  z-index: 1595;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 11331px;
+  top: 638px;
+  width: 19px;
+  height: 22px;
+  z-index: 1594;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 11202.703px;
+  top: 669.196px;
+  z-index: 1593;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 11174px;
+  top: 614px;
+  width: 200px;
+  height: 71px;
+  z-index: 1592;
+}
+.左 {
+  position: absolute;
+  left: -10338px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1590;
+}
+.品名 {
+  font-size: 43px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  font-weight: bold;
+  line-height: 1.116;
+  text-align: center;
+  position: absolute;
+  left: 10598.906px;
+  top: 604.385px;
+  z-index: 1588;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 10852px;
+  top: 638px;
+  width: 19px;
+  height: 22px;
+  z-index: 1587;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 10723.703px;
+  top: 669.196px;
+  z-index: 1586;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 10695px;
+  top: 614px;
+  width: 200px;
+  height: 71px;
+  z-index: 1585;
+}
+.共用 {
+  position: absolute;
+  left: -10338px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1583;
+}
+.項目 {
+  background-color: rgb(236, 155, 31);
+  position: absolute;
+  left: 10358px;
+  top: 313px;
+  width: 190px;
+  height: 385px;
+  z-index: 1582;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(246, 208, 149);
+  position: absolute;
+  left: 10358px;
+  top: 313px;
+  width: 1160px;
+  height: 385px;
+  z-index: 1581;
+}
+.MSBN_D_1_1_2_jpg {
+  position: absolute;
+  left: 11538px;
+  top: 298px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1622;
+}
+.右 {
+  position: absolute;
+  left: -11538px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1621;
+}
+.顏色 {
+  border-width: 1px;
+  border-color: rgb(134, 134, 134);
+  border-style: solid;
+  border-radius: 50%;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 12431px;
+  top: 567px;
+  width: 25px;
+  height: 25px;
+  z-index: 1620;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(139, 190, 192);
+  position: absolute;
+  left: 12464px;
+  top: 568px;
+  width: 25px;
+  height: 25px;
+  z-index: 1619;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(52, 51, 55);
+  position: absolute;
+  left: 12495px;
+  top: 568px;
+  width: 25px;
+  height: 25px;
+  z-index: 1618;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 12531px;
+  top: 638px;
+  width: 19px;
+  height: 22px;
+  z-index: 1616;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 12402.703px;
+  top: 669.196px;
+  z-index: 1615;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 12374px;
+  top: 614px;
+  width: 200px;
+  height: 71px;
+  z-index: 1614;
+}
+.左 {
+  position: absolute;
+  left: -11538px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1612;
+}
+.顏色 {
+  border-width: 1px;
+  border-color: rgb(134, 134, 134);
+  border-style: solid;
+  border-radius: 50%;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 11948px;
+  top: 567px;
+  width: 25px;
+  height: 25px;
+  z-index: 1611;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(139, 190, 192);
+  position: absolute;
+  left: 11981px;
+  top: 568px;
+  width: 25px;
+  height: 25px;
+  z-index: 1610;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(52, 51, 55);
+  position: absolute;
+  left: 12012px;
+  top: 568px;
+  width: 25px;
+  height: 25px;
+  z-index: 1609;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 12052px;
+  top: 638px;
+  width: 19px;
+  height: 22px;
+  z-index: 1607;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 11923.703px;
+  top: 669.196px;
+  z-index: 1606;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 11895px;
+  top: 614px;
+  width: 200px;
+  height: 71px;
+  z-index: 1605;
+}
+.共用 {
+  position: absolute;
+  left: -11538px;
+  top: -298px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1603;
+}
+.項目 {
+  background-color: rgb(236, 155, 31);
+  position: absolute;
+  left: 11558px;
+  top: 313px;
+  width: 190px;
+  height: 385px;
+  z-index: 1602;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(246, 208, 149);
+  position: absolute;
+  left: 11558px;
+  top: 313px;
+  width: 1160px;
+  height: 385px;
+  z-index: 1601;
+}
+.MSBN_D_1_2_jpg {
+  position: absolute;
+  left: 10338px;
+  top: 698px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1658;
+}
+.左 {
+  position: absolute;
+  left: -10338px;
+  top: -698px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1657;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 761.675px;
+  z-index: 1656;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 841.675px;
+  z-index: 1655;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 921.675px;
+  z-index: 1654;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 1001.675px;
+  z-index: 1653;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 1081.675px;
+  z-index: 1652;
+}
+.項目 {
+  background-color: rgb(236, 155, 31);
+  position: absolute;
+  left: 10358px;
+  top: 698px;
+  width: 190px;
+  height: 400px;
+  z-index: 1651;
+}
+.右 {
+  position: absolute;
+  left: -10338px;
+  top: -698px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1649;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 761.675px;
+  z-index: 1648;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 841.675px;
+  z-index: 1647;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 921.675px;
+  z-index: 1646;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 1001.675px;
+  z-index: 1645;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 1081.675px;
+  z-index: 1644;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 10358px;
+  top: 1018px;
+  width: 1160px;
+  height: 80px;
+  z-index: 1643;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 10358px;
+  top: 858px;
+  width: 1160px;
+  height: 80px;
+  z-index: 1642;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 10358px;
+  top: 698px;
+  width: 1160px;
+  height: 80px;
+  z-index: 1641;
+}
+.中 {
+  position: absolute;
+  left: -10338px;
+  top: -698px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1639;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 761.675px;
+  z-index: 1638;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 841.675px;
+  z-index: 1637;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 921.675px;
+  z-index: 1636;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 1001.675px;
+  z-index: 1635;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 1081.675px;
+  z-index: 1634;
+}
+.共用 {
+  position: absolute;
+  left: -10338px;
+  top: -698px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1632;
+}
+.分隔線 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 11032px;
+  top: 698px;
+  width: 3px;
+  height: 400px;
+  z-index: 1628;
+}
+.背景 {
+  background-color: rgb(246, 208, 149);
+  position: absolute;
+  left: 10358px;
+  top: 698px;
+  width: 1160px;
+  height: 400px;
+  z-index: 1625;
+}
+.MSBN_D_1_3_jpg {
+  position: absolute;
+  left: 10338px;
+  top: 1098px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1691;
+}
+.左 {
+  position: absolute;
+  left: -10338px;
+  top: -1098px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1690;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 1160.675px;
+  z-index: 1689;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 1237.675px;
+  z-index: 1688;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 1314.675px;
+  z-index: 1687;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 1391.675px;
+  z-index: 1686;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10369.719px;
+  top: 1468.675px;
+  z-index: 1685;
+}
+.項目 {
+  background-color: rgb(236, 155, 31);
+  position: absolute;
+  left: 10358px;
+  top: 1098px;
+  width: 190px;
+  height: 385px;
+  z-index: 1684;
+}
+.右 {
+  position: absolute;
+  left: -10338px;
+  top: -1098px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1682;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 1158.675px;
+  z-index: 1681;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 1236.675px;
+  z-index: 1680;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 1313.675px;
+  z-index: 1679;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 1391.675px;
+  z-index: 1678;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 11094.641px;
+  top: 1468.675px;
+  z-index: 1677;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 10358px;
+  top: 1175px;
+  width: 1160px;
+  height: 77px;
+  z-index: 1676;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 10358px;
+  top: 1329px;
+  width: 1160px;
+  height: 77px;
+  z-index: 1675;
+}
+.中 {
+  position: absolute;
+  left: -10338px;
+  top: -1098px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1673;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 1157.675px;
+  z-index: 1672;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 1235.675px;
+  z-index: 1671;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 1313.675px;
+  z-index: 1670;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 1390.675px;
+  z-index: 1669;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 10610.641px;
+  top: 1468.675px;
+  z-index: 1668;
+}
+.共用 {
+  position: absolute;
+  left: -10338px;
+  top: -1098px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1666;
+}
+.分隔線 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 11032px;
+  top: 1098px;
+  width: 3px;
+  height: 385px;
+  z-index: 1665;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(246, 208, 149);
+  position: absolute;
+  left: 10358px;
+  top: 1098px;
+  width: 1160px;
+  height: 385px;
+  z-index: 1661;
+}
+.MSBN_D_2_1_1_jpg {
+  position: absolute;
+  left: 10338px;
+  top: 1898px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1710;
+}
+.品名 {
+  font-size: 43px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  font-weight: bold;
+  line-height: 1.116;
+  text-align: center;
+  position: absolute;
+  left: 886.906px;
+  top: 306.385px;
+  z-index: 1706;
+}
+.品名 {
+  font-size: 43px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  font-weight: bold;
+  line-height: 1.116;
+  text-align: center;
+  position: absolute;
+  left: 562.906px;
+  top: 306.385px;
+  z-index: 1705;
+}
+.品名 {
+  font-size: 43px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  font-weight: bold;
+  line-height: 1.116;
+  text-align: center;
+  position: absolute;
+  left: 237.906px;
+  top: 306.385px;
+  z-index: 1704;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 1076px;
+  top: 340px;
+  width: 19px;
+  height: 22px;
+  z-index: 1703;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 947.703px;
+  top: 371.196px;
+  z-index: 1702;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 919px;
+  top: 316px;
+  width: 200px;
+  height: 71px;
+  z-index: 1701;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 754px;
+  top: 340px;
+  width: 19px;
+  height: 22px;
+  z-index: 1700;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 625.703px;
+  top: 371.196px;
+  z-index: 1699;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 597px;
+  top: 316px;
+  width: 200px;
+  height: 71px;
+  z-index: 1698;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 429px;
+  top: 340px;
+  width: 19px;
+  height: 22px;
+  z-index: 1697;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 300.703px;
+  top: 371.196px;
+  z-index: 1696;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 272px;
+  top: 316px;
+  width: 200px;
+  height: 71px;
+  z-index: 1695;
+}
+.項目 {
+  background-color: rgb(236, 155, 31);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 190px;
+  height: 385px;
+  z-index: 1694;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(246, 208, 149);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 1160px;
+  height: 385px;
+  z-index: 1693;
+}
+.MSBN_D_2_1_2_jpg {
+  position: absolute;
+  left: 11538px;
+  top: 1898px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1743;
+}
+.左 {
+  position: absolute;
+  left: -11538px;
+  top: -1898px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1742;
+}
+.顏色 {
+  border-width: 1px;
+  border-color: rgb(134, 134, 134);
+  border-style: solid;
+  border-radius: 50%;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 11865px;
+  top: 2167px;
+  width: 25px;
+  height: 25px;
+  z-index: 1741;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(139, 190, 192);
+  position: absolute;
+  left: 11898px;
+  top: 2168px;
+  width: 25px;
+  height: 25px;
+  z-index: 1740;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(52, 51, 55);
+  position: absolute;
+  left: 11929px;
+  top: 2168px;
+  width: 25px;
+  height: 25px;
+  z-index: 1739;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 11967px;
+  top: 2238px;
+  width: 19px;
+  height: 22px;
+  z-index: 1737;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 11838.703px;
+  top: 2269.196px;
+  z-index: 1736;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 11810px;
+  top: 2214px;
+  width: 200px;
+  height: 71px;
+  z-index: 1735;
+}
+.中 {
+  position: absolute;
+  left: -11538px;
+  top: -1898px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1733;
+}
+.顏色 {
+  border-width: 1px;
+  border-color: rgb(134, 134, 134);
+  border-style: solid;
+  border-radius: 50%;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 12188px;
+  top: 2167px;
+  width: 25px;
+  height: 25px;
+  z-index: 1732;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(139, 190, 192);
+  position: absolute;
+  left: 12221px;
+  top: 2168px;
+  width: 25px;
+  height: 25px;
+  z-index: 1731;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(52, 51, 55);
+  position: absolute;
+  left: 12252px;
+  top: 2168px;
+  width: 25px;
+  height: 25px;
+  z-index: 1730;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 12292px;
+  top: 2238px;
+  width: 19px;
+  height: 22px;
+  z-index: 1728;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 12163.703px;
+  top: 2269.196px;
+  z-index: 1727;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 12135px;
+  top: 2214px;
+  width: 200px;
+  height: 71px;
+  z-index: 1726;
+}
+.右 {
+  position: absolute;
+  left: -11538px;
+  top: -1898px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1724;
+}
+.顏色 {
+  border-width: 1px;
+  border-color: rgb(134, 134, 134);
+  border-style: solid;
+  border-radius: 50%;
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 12512px;
+  top: 2167px;
+  width: 25px;
+  height: 25px;
+  z-index: 1723;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(139, 190, 192);
+  position: absolute;
+  left: 12545px;
+  top: 2168px;
+  width: 25px;
+  height: 25px;
+  z-index: 1722;
+}
+.顏色 {
+  border-radius: 50%;
+  background-color: rgb(52, 51, 55);
+  position: absolute;
+  left: 12576px;
+  top: 2168px;
+  width: 25px;
+  height: 25px;
+  z-index: 1721;
+}
+.CTA_三角形 {
+  background-color: rgb(254, 254, 254);
+  position: absolute;
+  left: 12614px;
+  top: 2238px;
+  width: 19px;
+  height: 22px;
+  z-index: 1719;
+}
+.CTA {
+  font-size: 42px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(254, 254, 254);
+  line-height: 1;
+  text-align: left;
+  position: absolute;
+  left: 12485.703px;
+  top: 2269.196px;
+  z-index: 1718;
+}
+.CTA_底圖 {
+  background-color: rgb(208, 1, 27);
+  position: absolute;
+  left: 12457px;
+  top: 2214px;
+  width: 200px;
+  height: 71px;
+  z-index: 1717;
+}
+.共用 {
+  position: absolute;
+  left: -11538px;
+  top: -1898px;
+  width: 13939px;
+  height: 7587px;
+  z-index: 1715;
+}
+.項目 {
+  background-color: rgb(236, 155, 31);
+  position: absolute;
+  left: 11558px;
+  top: 1913px;
+  width: 190px;
+  height: 385px;
+  z-index: 1714;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(246, 208, 149);
+  position: absolute;
+  left: 11558px;
+  top: 1913px;
+  width: 1160px;
+  height: 385px;
+  z-index: 1713;
+}
+.MSBN_D_2_2_jpg {
+  position: absolute;
+  left: 10338px;
+  top: 2298px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1777;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 63.675px;
+  z-index: 1776;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 143.675px;
+  z-index: 1775;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 223.675px;
+  z-index: 1774;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 303.675px;
+  z-index: 1773;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 383.675px;
+  z-index: 1772;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 63.675px;
+  z-index: 1771;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 143.675px;
+  z-index: 1770;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 223.675px;
+  z-index: 1769;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 303.675px;
+  z-index: 1768;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 383.675px;
+  z-index: 1767;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 63.675px;
+  z-index: 1766;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 143.675px;
+  z-index: 1765;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 223.675px;
+  z-index: 1764;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 303.675px;
+  z-index: 1763;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 383.675px;
+  z-index: 1762;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 63.675px;
+  z-index: 1761;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 143.675px;
+  z-index: 1760;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 223.675px;
+  z-index: 1759;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 303.675px;
+  z-index: 1758;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 383.675px;
+  z-index: 1757;
+}
+.分隔線 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 855px;
+  top: 0px;
+  width: 3px;
+  height: 400px;
+  z-index: 1753;
+}
+.分隔線 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 532px;
+  top: 0px;
+  width: 3px;
+  height: 400px;
+  z-index: 1752;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 20px;
+  top: 320px;
+  width: 1160px;
+  height: 80px;
+  z-index: 1751;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 20px;
+  top: 160px;
+  width: 1160px;
+  height: 80px;
+  z-index: 1749;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 20px;
+  top: 0px;
+  width: 1160px;
+  height: 80px;
+  z-index: 1747;
+}
+.項目 {
+  background-color: rgb(236, 155, 31);
+  position: absolute;
+  left: 20px;
+  top: 0px;
+  width: 190px;
+  height: 400px;
+  z-index: 1746;
+}
+.背景 {
+  background-color: rgb(246, 208, 149);
+  position: absolute;
+  left: 20px;
+  top: 0px;
+  width: 1160px;
+  height: 400px;
+  z-index: 1745;
+}
+.MSBN_D_2_3_jpg {
+  position: absolute;
+  left: 10338px;
+  top: 2698px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1808;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 60.675px;
+  z-index: 1807;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 138.675px;
+  z-index: 1806;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 215.675px;
+  z-index: 1805;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 293.675px;
+  z-index: 1804;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 894.641px;
+  top: 370.675px;
+  z-index: 1803;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 59.675px;
+  z-index: 1802;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 137.675px;
+  z-index: 1801;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 215.675px;
+  z-index: 1800;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 292.675px;
+  z-index: 1799;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 572.641px;
+  top: 370.675px;
+  z-index: 1798;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 59.675px;
+  z-index: 1797;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 137.675px;
+  z-index: 1796;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 215.675px;
+  z-index: 1795;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 292.675px;
+  z-index: 1794;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 248.641px;
+  top: 370.675px;
+  z-index: 1793;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 62.675px;
+  z-index: 1792;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 139.675px;
+  z-index: 1791;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 216.675px;
+  z-index: 1790;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 293.675px;
+  z-index: 1789;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 31.719px;
+  top: 370.675px;
+  z-index: 1788;
+}
+.分隔線 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 855px;
+  top: 0px;
+  width: 3px;
+  height: 385px;
+  z-index: 1787;
+}
+.分隔線 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 532px;
+  top: 0px;
+  width: 3px;
+  height: 385px;
+  z-index: 1786;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 20px;
+  top: 77px;
+  width: 1160px;
+  height: 77px;
+  z-index: 1784;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 20px;
+  top: 231px;
+  width: 1160px;
+  height: 77px;
+  z-index: 1782;
+}
+.項目 {
+  background-color: rgb(236, 155, 31);
+  position: absolute;
+  left: 20px;
+  top: 0px;
+  width: 190px;
+  height: 385px;
+  z-index: 1780;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(246, 208, 149);
+  position: absolute;
+  left: 20px;
+  top: 0px;
+  width: 1160px;
+  height: 385px;
+  z-index: 1779;
+}
+.MSBN_D_3_1_jpg {
+  position: absolute;
+  left: 10338px;
+  top: 3498px;
+  width: 1200px;
+  height: 400px;
+  z-index: 1832;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 757.641px;
+  top: 75.675px;
+  z-index: 1831;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 757.641px;
+  top: 149.675px;
+  z-index: 1830;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 757.641px;
+  top: 223.675px;
+  z-index: 1829;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 757.641px;
+  top: 297.675px;
+  z-index: 1828;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 757.641px;
+  top: 371.675px;
+  z-index: 1827;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 82.641px;
+  top: 75.675px;
+  z-index: 1826;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 82.641px;
+  top: 149.675px;
+  z-index: 1825;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 82.641px;
+  top: 223.675px;
+  z-index: 1824;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 82.641px;
+  top: 297.675px;
+  z-index: 1823;
+}
+.內文 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 82.641px;
+  top: 371.675px;
+  z-index: 1822;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 516.719px;
+  top: 75.675px;
+  z-index: 1821;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 516.719px;
+  top: 149.675px;
+  z-index: 1820;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 516.719px;
+  top: 223.675px;
+  z-index: 1819;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 516.719px;
+  top: 297.675px;
+  z-index: 1818;
+}
+.項目 {
+  font-size: 40px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(18, 24, 39);
+  line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 516.719px;
+  top: 371.675px;
+  z-index: 1817;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 1160px;
+  height: 74px;
+  z-index: 1816;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 20px;
+  top: 163px;
+  width: 1160px;
+  height: 74px;
+  z-index: 1814;
+}
+.色塊 {
+  background-color: rgb(246, 208, 149);
+  opacity: 0.502;
+  position: absolute;
+  left: 20px;
+  top: 311px;
+  width: 1160px;
+  height: 74px;
+  z-index: 1812;
+}
+.項目 {
+  background-color: rgb(236, 155, 31);
+  position: absolute;
+  left: 505px;
+  top: 15px;
+  width: 190px;
+  height: 370px;
+  z-index: 1811;
+}
+.背景 {
+  border-radius: 15px;
+  background-color: rgb(246, 208, 149);
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 1160px;
+  height: 370px;
+  z-index: 1810;
+}
