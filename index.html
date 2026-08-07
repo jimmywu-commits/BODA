@@ -160,6 +160,8 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
   border-radius:var(--radius);text-align:center;color:var(--ink3);font-size:12px;line-height:1.8;}
 .ptab-placeholder .pp-icon{font-size:30px;display:block;margin-bottom:8px;}
 #palette-scroll{flex:1;overflow-y:auto;padding:10px 14px 24px;}
+#palette-footer{flex-shrink:0;padding:10px 14px;border-top:1px solid var(--border);background:var(--panel);}
+#palette-footer .btn{width:100%;font-size:11.5px;padding:9px 10px;}
 
 .fam-section{margin-bottom:0;}
 .fam-head{display:flex;align-items:center;gap:8px;padding:12px 4px;cursor:pointer;user-select:none;}
@@ -368,6 +370,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
             <button class="ptab" data-ptab="sticky">吸底</button>
           </div>
           <div id="palette-scroll"></div>
+          <div id="palette-footer">
+            <button class="btn ghost" id="btn-clear-cache" title="清掉這個工具存在瀏覽器裡的暫存（上次畫面、畫布內容、縮放等），重新整理回到全新狀態">🧹 清除本機暫存並重新整理</button>
+          </div>
         </div>
 
         <div id="canvas-area">
@@ -3124,6 +3129,251 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 }
 </script>
 
+<!-- MSBN 版位的欄位資料：跟副區（wo-fields）同一套邏輯，直接內嵌 JSON，
+     JS 端用 JSON.parse(document.getElementById('wo-msbn-fields').textContent) 讀取，
+     不再把資料寫死成 JS 物件語法，之後要新增/修正版位只要改這段 JSON 就好，不用碰邏輯程式碼。 -->
+<script id="wo-msbn-fields" type="application/json">
+{
+  "MSBN-A-1-1.jpg": {
+    "n": 1,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, "圓標", {"type": "警語", "hint": "小字最多可9個字內"}, "CTA", "簽名小字", "簽名小字", "商品", "代言人圖", "簽名圖"]
+    ]
+  },
+  "MSBN-A-1-2.jpg": {
+    "n": 1,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, "圓標", {"type": "警語", "hint": "小字最多可9個字內"}, "CTA", "簽名小字", "簽名小字", "商品", "代言人圖", "簽名圖"]
+    ]
+  },
+  "MSBN-A-2-1.jpg": {
+    "n": 2,
+    "groups": [
+      ["圓標", "簽名小字", "簽名小字", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}, "商品", "代言人圖", "簽名圖"],
+      [{"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}, "CTA", "圓標"]
+    ]
+  },
+  "MSBN-A-2-2.jpg": {
+    "n": 2,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多6個字內"}, "商品", "贈品圖", {"type": "品名", "hint": "品名一排最多8個字"}, {"type": "品名", "hint": "品名一排最多8個字"}, "圓標"],
+      [{"type": "促標", "hint": "促標最多6個字內"}, "商品", "贈品圖", {"type": "品名", "hint": "品名一排最多8個字"}, {"type": "品名", "hint": "品名一排最多8個字"}, "圓標"]
+    ]
+  },
+  "MSBN-A-2-3.jpg": {
+    "n": 2,
+    "groups": [
+      [{"type": "促標", "hint": "促標6個字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, "圓標"],
+      [{"type": "促標", "hint": "促標6個字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, "圓標"]
+    ]
+  },
+  "MSBN-A-2-4.jpg": {
+    "n": 2,
+    "groups": [
+      ["LOGO圖", "CTA"],
+      ["LOGO圖", "CTA"]
+    ]
+  },
+  "MSBN-A-3-1.jpg": {
+    "n": 3,
+    "groups": [
+      ["商品", "贈品圖", "圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}],
+      ["圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}],
+      ["圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}]
+    ]
+  },
+  "MSBN-A-3-2.jpg": {
+    "n": 3,
+    "groups": [
+      ["LOGO圖", "CTA"],
+      ["LOGO圖", "CTA"],
+      ["LOGO圖", "CTA"]
+    ]
+  },
+  "MSBN-B-1-1.jpg": {
+    "n": 1,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "警語", "hint": "小字最多可9個字內"}, "CTA", {"type": "代言人小字", "hint": "代言人小字8字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}, "代言人圖"]
+    ]
+  },
+  "MSBN-B-1-2.jpg": {
+    "n": 1,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "警語", "hint": "小字最多可9個字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}, "代言人圖"]
+    ]
+  },
+  "MSBN-B-1-3.jpg": {
+    "n": 1,
+    "groups": [
+      ["LOGO圖", {"type": "文案", "hint": "文案最多10個字以內"}, "CTA", {"type": "代言人小字", "hint": "代言人小字8字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}, "代言人圖"]
+    ]
+  },
+  "MSBN-B-1-4.jpg": {
+    "n": 1,
+    "groups": [
+      [{"type": "代言人小字", "hint": "代言人小字8字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}]
+    ]
+  },
+  "MSBN-B-2-1.jpg": {
+    "n": 2,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", {"type": "品名", "hint": "品名一排6字"}, {"type": "品名", "hint": "品名一排6字"}, {"type": "特色", "hint": "特色5個字"}, "CTA"],
+      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", {"type": "品名", "hint": "品名一排6字"}, {"type": "品名", "hint": "品名一排6字"}, {"type": "特色", "hint": "特色5個字"}, "CTA"]
+    ]
+  },
+  "MSBN-B-2-2.jpg": {
+    "n": 2,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", "CTA", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}],
+      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", "CTA", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}]
+    ]
+  },
+  "MSBN-B-2-3.jpg": {
+    "n": 2,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}],
+      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}]
+    ]
+  },
+  "MSBN-B-3-1.jpg": {
+    "n": 3,
+    "groups": [
+      [{"type": "促標", "hint": "促標7個字以內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}],
+      ["圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}],
+      ["圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}]
+    ]
+  },
+  "MSBN-B-3-2.jpg": {
+    "n": 3,
+    "groups": [
+      [{"type": "警語", "hint": "警語最多放8個字"}, "圓標", "品名"],
+      [{"type": "警語", "hint": "警語最多放8個字"}, "圓標", "品名"],
+      [{"type": "警語", "hint": "警語最多放8個字"}, "圓標", "品名"]
+    ]
+  },
+  "MSBN-B-3-3.jpg": {
+    "n": 3,
+    "groups": [
+      ["LOGO圖", {"type": "品名", "hint": "品名一排7字內"}, "CTA"],
+      ["LOGO圖", {"type": "品名", "hint": "品名一排7字內"}, "CTA"],
+      ["LOGO圖", {"type": "品名", "hint": "品名一排7字內"}, "CTA"]
+    ]
+  },
+  "MSBN-B-3-4.jpg": {
+    "n": 3,
+    "groups": [
+      ["情境圖", "商品圖", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}],
+      ["情境圖", "商品圖", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}],
+      ["情境圖", "商品圖", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}]
+    ]
+  },
+  "MSBN-B-4-1.jpg": {
+    "n": 4,
+    "groups": [
+      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, "CTA"],
+      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, "CTA"],
+      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, "CTA"],
+      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, "CTA"]
+    ]
+  },
+  "MSBN-B-4-2.jpg": {
+    "n": 4,
+    "groups": [
+      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, {"type": "警語", "hint": "小字警語6字"}],
+      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, {"type": "警語", "hint": "小字警語6字"}],
+      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, {"type": "警語", "hint": "小字警語6字"}],
+      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, {"type": "警語", "hint": "小字警語6字"}]
+    ]
+  },
+  "MSBN-C-1-1.jpg": {
+    "n": 1,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, "LOGO圖", {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "警語", "hint": "小字最多可10個字以內"}, {"type": "警語", "hint": "小字最多可10個字以內"}]
+    ]
+  },
+  "MSBN-C-1-2.jpg": {
+    "n": 1,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, "LOGO圖", {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "警語", "hint": "小字最多可10個字以內"}, {"type": "警語", "hint": "小字最多可10個字以內"}]
+    ]
+  },
+  "MSBN-C-1-3.jpg": {
+    "n": 1,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "警語", "hint": "小字最多可10個字以內"}, {"type": "警語", "hint": "小字最多可10個字以內"}]
+    ]
+  },
+  "MSBN-C-1-4.jpg": {
+    "n": 1,
+    "groups": [
+      [{"type": "促標", "hint": "促標最多6字"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "CTA", "hint": "領券去"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "CTA", "hint": "領券去"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "促標", "hint": "促標最多6字"}, "信用卡圖", {"type": "CTA", "hint": "刷卡去"}]
+    ]
+  },
+  "MSBN-C-1-5.jpg": {
+    "n": 1,
+    "groups": [
+      ["商品圖", "情境圖", {"type": "促標", "hint": "促標最多6字"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "文案", "hint": "文案一排4字"}, "LOGO圖", {"type": "文案", "hint": "文案一排4字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "CTA", "hint": "領券去"}]
+    ]
+  },
+  "MSBN-D-1-1-1.jpg": {
+    "n": 1,
+    "groups": [
+      ["商品", {"type": "品名", "hint": "品名一排最多09字內"}, "CTA"]
+    ]
+  },
+  "MSBN-D-1-1-2.jpg": {
+    "n": 1,
+    "groups": [
+      ["商品", "CTA"]
+    ]
+  },
+  "MSBN-D-1-2.jpg": {
+    "n": 1,
+    "groups": [
+      ["商品", {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}]
+    ]
+  },
+  "MSBN-D-1-3.jpg": {
+    "n": 1,
+    "groups": [
+      ["商品", {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}]
+    ]
+  },
+  "MSBN-D-2-1-1.jpg": {
+    "n": 1,
+    "groups": [
+      ["商品", {"type": "品名", "hint": "品名一排06字"}, "CTA"]
+    ]
+  },
+  "MSBN-D-2-1-2.jpg": {
+    "n": 1,
+    "groups": [
+      ["商品", "CTA"]
+    ]
+  },
+  "MSBN-D-2-2.jpg": {
+    "n": 1,
+    "groups": [
+      ["商品", {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}]
+    ]
+  },
+  "MSBN-D-2-3.jpg": {
+    "n": 1,
+    "groups": [
+      ["商品", {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}]
+    ]
+  },
+  "MSBN-D-3-1.jpg": {
+    "n": 3,
+    "groups": [
+      [{"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}],
+      [{"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}],
+      [{"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}]
+    ]
+  }
+}
+</script>
+
 <!-- SheetJS：純前端產生 .xlsx，不需要伺服器 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js"></script>
@@ -3213,6 +3463,8 @@ function exportConfig() {
    排法比照你們「副區系統專用」／「BODA_副區」的格式。
 ════════════════════════════════════════ */
 var FIELD_VALUE_TEXT = { 'LOGO圖': '(檔名/券名)', '商品': '(檔名/券名)' };
+/* 欄位名稱顯示文字，比照 MSBN_FIELD_LABELS 的寫法（例如商品要提醒多圖用逗號分開） */
+var FIELD_LABEL_TEXT = { '商品': '商品 (多圖用逗號分開)' };
 
 function fieldValueText(f) {
   var t = f.type;
@@ -3240,8 +3492,10 @@ function expandFields(item) {
   fields.forEach(function (f) {
     var cnt = f.count || 1;
     for (var i = 0; i < cnt; i++) {
-      var key = f.type + (cnt > 1 ? ('-' + (i + 1)) : '');
-      out[key] = { label: key, value: fieldValueText(f) };
+      var suffix = cnt > 1 ? ('-' + (i + 1)) : '';
+      var key = f.type + suffix;
+      var label = (FIELD_LABEL_TEXT[f.type] || f.type) + suffix;
+      out[key] = { label: label, value: fieldValueText(f) };
       order.push(key);
     }
   });
@@ -3260,7 +3514,13 @@ function buildWorkOrderGrid() {
   });
 
   var columns = cols.map(function (c, i) {
-    return { header: familyLabel(c.item.family) + '（' + c.item.family + '-' + c.item.variant + '-' + c.item.combo + '）', item: c.item };
+    return {
+      header: familyLabel(c.item.family) + '（' + c.item.family + '-' + c.item.variant + '-' + c.item.combo + '）',
+      item: c.item,
+      /* 這顆自己實際有的欄位，依序列出、不管其他顆有沒有同一個欄位，
+         下載試算表時每一顆各自往上補齊，不會因為別顆有更多欄位而留空 */
+      entries: expanded[i].order.map(function (k) { return expanded[i].map[k]; })
+    };
   });
 
   var rows = rowKeys.map(function (key) {
@@ -3303,11 +3563,12 @@ function loadImageForCanvas(src) {
   });
 }
 
-function exportSampleImage() {
-  if (state.group === null && !state.msbn.length) {
-    alert('畫布是空的，先放幾張圖再下載');
-    return Promise.resolve(false);
-  }
+/* 把畫布目前的排法（副區那一排＋MSBN 由上往下接）合成一張 canvas，
+   給「下載範例圖」跟「工單試算表右邊的參考圖附件」共用。
+   畫布是空的，或是瀏覽器把本機圖片畫進 canvas 擋下來（file:// 直接開啟常見），
+   都回傳 null，呼叫端自己決定要不要跳提示。 */
+function buildSampleCanvas() {
+  if (state.group === null && !state.msbn.length) return Promise.resolve(null);
   var W = 1200;
   var rowH = 0, slotW = 0, slotN = 0;
   if (state.group !== null) {
@@ -3330,7 +3591,7 @@ function exportSampleImage() {
       return Math.round(img.naturalHeight * (W / img.naturalWidth));
     });
     var H = rowH + msbnHeights.reduce(function (a, b) { return a + b; }, 0);
-    if (!H) { alert('畫布是空的，先放幾張圖再下載'); return false; }
+    if (!H) return null;
 
     var canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
@@ -3351,6 +3612,17 @@ function exportSampleImage() {
       y += msbnHeights[mi];
     });
 
+    return canvas;
+  });
+}
+
+function exportSampleImage() {
+  if (state.group === null && !state.msbn.length) {
+    alert('畫布是空的，先放幾張圖再下載');
+    return Promise.resolve(false);
+  }
+  return buildSampleCanvas().then(function (canvas) {
+    if (!canvas) { alert('畫布是空的，先放幾張圖再下載'); return false; }
     return new Promise(function (resolve) {
       try {
         canvas.toBlob(function (blob) {
@@ -3376,6 +3648,15 @@ function exportSampleImage() {
   });
 }
 
+/* 從提示文字裡找「限幾個字/最多幾字/幾字內」這種字數上限的數字。
+   規則很單純：文字裡同時有數字又有「字」這個字，就把第一個數字當上限；
+   純檔名/CTA按鈕文字這種提示（例如「(檔名)」「領券去」）沒有數字，直接跳過不做字數檢查。 */
+function extractCharLimit(hintText) {
+  if (!hintText || hintText.indexOf('字') === -1) return null;
+  var m = /([0-9]+)/.exec(hintText);
+  return m ? parseInt(m[1], 10) : null;
+}
+
 function exportWorkOrderXlsx() {
   if (state.group === null && !state.msbn.length) { alert('畫布是空的，先放幾張圖再下載'); return; }
   if (typeof ExcelJS === 'undefined') { alert('試算表功能還在載入中，稍等一下再試一次'); return; }
@@ -3383,19 +3664,58 @@ function exportWorkOrderXlsx() {
   var THIN = { style: 'thin', color: { argb: 'FFB0B0B0' } };
   var BORDER_ALL = { top: THIN, bottom: THIN, left: THIN, right: THIN };
   var wb = new ExcelJS.Workbook();
+  var cfPriority = 1;
+  /* 幫某個內容欄加上「字數上限」防呆：中文算1個單位，英文/數字/符號算0.5個單位
+     （用 Excel 內建 LENB()／2 剛好等於這個算法：中文在 LENB 底下是2、半形字元是1）。
+     兩層防呆都加：資料驗證＝直接擋下超過的輸入；格式化的條件＝萬一用貼上的繞過驗證，
+     還是會自動變紅字紅底提醒。 */
+  function applyCharLimitGuard(ws, cell, hintText) {
+    var limit = extractCharLimit(hintText);
+    if (limit == null) return;
+    var addr = cell.address;
+    cell.dataValidation = {
+      type: 'custom',
+      formulae: ['LENB(' + addr + ')/2<=' + limit],
+      showErrorMessage: true,
+      errorStyle: 'stop',
+      errorTitle: '超過字數上限',
+      error: '這一格最多 ' + limit + ' 個字（中文算1個單位，英文/數字/符號算0.5個單位），請縮短後再輸入。',
+      showInputMessage: true,
+      promptTitle: '字數上限 ' + limit + ' 個字',
+      prompt: '中文算1個單位，英文/數字/符號算0.5個單位。'
+    };
+    ws.addConditionalFormatting({
+      ref: addr,
+      rules: [{
+        type: 'expression',
+        priority: cfPriority++,
+        formulae: ['LENB(' + addr + ')/2>' + limit],
+        style: {
+          font: { color: { argb: 'FFCC0000' }, bold: true },
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE3E3' } }
+        }
+      }]
+    });
+  }
+  /* 副區跟 MSBN 現在共用同一張工作表：副區在上面，MSBN 直接接在下面，
+     不再各自開一個分頁。最左邊那欄留給「這是哪一個」的識別文字用
+     （副區的表頭固定寫「副區」；MSBN 每一顆則是自己的檔名，例如 MSBN-A-2-1），
+     再往右才是實際的欄位格子。 */
+  var ws = wb.addWorksheet('工單');
+  ws.getColumn(1).width = 18;
+  var nextRow = 1;
+  var usedRightCol = 1; /* 記錄整張表實際用到最右邊是第幾欄，等一下參考圖要接在它右邊 */
 
-  /* 共用：把一個 grid 寫成「欄位當列、每顆/每格兩欄」的工作表 */
-  function writeGridSheet(sheetName, cornerLabel, grid, headerArgb) {
-    var ws = wb.addWorksheet(sheetName);
-    ws.getColumn(1).width = 6; /* A欄留白，對齊原本模板的排法 */
+  if (state.group !== null) {
+    var grid = buildWorkOrderGrid();
     grid.columns.forEach(function (c, i) {
       var base = 2 + i * 2; /* 每一格佔兩欄：標題欄 + 內容欄 */
       ws.getColumn(base).width = 16;
       ws.getColumn(base + 1).width = 24;
     });
 
-    var headRowIdx = 1;
-    ws.getCell(headRowIdx, 1).value = cornerLabel;
+    var headRowIdx = nextRow;
+    ws.getCell(headRowIdx, 1).value = '副區';
     ws.getCell(headRowIdx, 1).font = { bold: true, size: 11 };
     grid.columns.forEach(function (c, i) {
       var base = 2 + i * 2;
@@ -3403,100 +3723,139 @@ function exportWorkOrderXlsx() {
       var cell = ws.getCell(headRowIdx, base);
       cell.value = c.header;
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: headerArgb } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F6F68' } };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
       [base, base + 1].forEach(function (col) { ws.getCell(headRowIdx, col).border = BORDER_ALL; });
     });
     ws.getRow(headRowIdx).height = 22;
 
-    grid.rows.forEach(function (r, rIdx) {
-      var rowIdx = headRowIdx + 1 + rIdx;
-      r.cells.forEach(function (cell, i) {
-        var base = 2 + i * 2;
+    /* 每一顆各自往上補齊自己實際有的欄位，不管別顆有幾個欄位，
+       不會因為別顆有更多欄位、自己這顆下面卻留一堆空白列 */
+    var maxEntryRows = 0;
+    grid.columns.forEach(function (c, i) {
+      var base = 2 + i * 2;
+      (c.entries || []).forEach(function (cell, eIdx) {
+        var rowIdx = headRowIdx + 1 + eIdx;
         var labelCell = ws.getCell(rowIdx, base);
         var valueCell = ws.getCell(rowIdx, base + 1);
-        labelCell.value = cell ? cell.label : '';
-        valueCell.value = cell ? cell.value : '';
+        labelCell.value = cell.label;
+        valueCell.value = cell.value;
         labelCell.font = { bold: true, size: 10.5 };
         valueCell.font = { size: 10.5, color: { argb: 'FF555555' } };
         labelCell.border = BORDER_ALL;
         valueCell.border = BORDER_ALL;
-        if (!cell) {
-          labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F3F3' } };
-          valueCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F3F3' } };
-        }
+        valueCell.protection = { locked: false }; /* 只有內容欄可以填寫，欄位名稱鎖住 */
+        applyCharLimitGuard(ws, valueCell, cell.value);
       });
+      if (c.entries && c.entries.length > maxEntryRows) maxEntryRows = c.entries.length;
     });
+    if (grid.columns.length) usedRightCol = Math.max(usedRightCol, grid.columns.length * 2 + 1);
+    nextRow = headRowIdx + 1 + maxEntryRows + 1; /* 空一列再接 MSBN */
   }
 
-  if (state.group !== null) {
-    writeGridSheet('副區工單', '副區', buildWorkOrderGrid(), 'FF2F6F68');
-  }
-
-  /* MSBN工單：照 BOD 模板「MSBN案例」頁簽的格式──
-     每一顆一個區段往下疊；區段第一列是檔名、第二列是位置標籤
-     （一排1=左右、一排2=左/右、一排3=左/中/右、一排4=左1~左4），
-     每個位置佔兩欄（欄位名＋限字提示），位置之間隔一個空欄。
-     重複的欄位直接重列（跟案例一樣，不加編號）。 */
+  /* MSBN：緊接在副區下面、同一張表──
+     每一顆一個區段往下疊，最左邊第一欄放檔名（直向置中，跟這一顆所有列合併），
+     再往右從第2欄開始才是位置標籤列（一排1=左右、一排2=左/右、一排3=左/中/右、
+     一排4=左1~左4）跟欄位列，每個位置佔兩欄（欄位名＋限字提示），位置跟位置之間
+     不留空欄，直接緊接。重複的欄位直接重列（跟 BOD 模板「MSBN案例」頁簽一樣，不加編號）。 */
   if (state.msbn.length) {
-    var mws = wb.addWorksheet('MSBN工單');
     var maxN = Math.max.apply(null, state.msbn.map(function (m) {
       return (MSBN_FIELDS[m.file] || { n: 1 }).n;
     }));
     for (var gi0 = 0; gi0 < maxN; gi0++) {
-      mws.getColumn(1 + gi0 * 3).width = 24; /* 欄位名 */
-      mws.getColumn(2 + gi0 * 3).width = 24; /* 提示 */
-      if (gi0 < maxN - 1) mws.getColumn(3 + gi0 * 3).width = 3; /* 位置之間的空欄 */
+      var lwCol = 2 + gi0 * 2, vwCol = 3 + gi0 * 2;
+      /* 用 Math.max 而不是直接蓋掉：這幾欄跟副區的欄位名/內容欄可能共用同一欄，
+         直接蓋掉寬度的話，副區那欄可能會被 MSBN 這邊的設定改窄 */
+      ws.getColumn(lwCol).width = Math.max(ws.getColumn(lwCol).width || 0, 24); /* 欄位名 */
+      ws.getColumn(vwCol).width = Math.max(ws.getColumn(vwCol).width || 0, 24); /* 提示 */
     }
+    if (maxN) usedRightCol = Math.max(usedRightCol, maxN * 2 + 1);
 
-    var r = 1;
-    state.msbn.forEach(function (m, mi) {
+    var r = nextRow;
+    state.msbn.forEach(function (m) {
       var spec = MSBN_FIELDS[m.file];
       var base = m.file.replace(/\.(jpg|jpeg|png)$/i, '');
+      var nameCell = ws.getCell(r, 1);
+      nameCell.value = base;
+      nameCell.font = { bold: true, size: 12, color: { argb: 'FF1F4E4A' } };
+      nameCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+      nameCell.border = BORDER_ALL;
       if (!spec) {
-        mws.getCell(r, 1).value = base + '（沒有欄位資料）';
-        mws.getCell(r, 1).font = { bold: true, size: 12 };
+        ws.getCell(r, 2).value = '（沒有欄位資料）';
         r += 2;
         return;
       }
-      /* 區段標題：檔名 */
-      var title = mws.getCell(r, 1);
-      title.value = base;
-      title.font = { bold: true, size: 12, color: { argb: 'FF1F4E4A' } };
-      r++;
-      /* 位置標籤列 */
+      /* 位置標籤列（從第2欄開始，第1欄留給左邊的檔名） */
       var labels = MSBN_POS_LABELS[spec.n] || ['左右'];
       for (var gi = 0; gi < spec.n; gi++) {
-        var pc = mws.getCell(r, 1 + gi * 3);
+        var pc = ws.getCell(r, 2 + gi * 2);
         pc.value = labels[gi];
         pc.font = { bold: true, size: 11 };
         pc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F0EE' } };
         pc.border = BORDER_ALL;
-        mws.getCell(r, 2 + gi * 3).fill = pc.fill;
-        mws.getCell(r, 2 + gi * 3).border = BORDER_ALL;
+        ws.getCell(r, 3 + gi * 2).fill = pc.fill;
+        ws.getCell(r, 3 + gi * 2).border = BORDER_ALL;
       }
-      r++;
       /* 欄位列：各位置各寫自己的清單，重複欄位直接重列 */
       var maxLen = Math.max.apply(null, spec.groups.map(function (g) { return g.length; }).concat([0]));
       for (var i = 0; i < maxLen; i++) {
         for (var gj = 0; gj < spec.n; gj++) {
           var t = spec.groups[gj][i];
           if (!t) continue;
-          var lc = mws.getCell(r + i, 1 + gj * 3);
-          var vc = mws.getCell(r + i, 2 + gj * 3);
-          lc.value = MSBN_FIELD_LABELS[t] || t;
-          vc.value = MSBN_FIELD_HINTS[t] || '';
+          /* t 可能是純字串（例如 "品名"，走共用的 MSBN_FIELD_HINTS 提示），
+             也可能是物件 {type,hint}（這個版位這個欄位有自己專屬的字數/行數限制，
+             不是所有 XX 版位的「品名」都一樣，例如 MSBN-A-2-2 的品名其實一排限8字，
+             跟預設共用提示的「品名放06個字」不同，這時候用它自己帶的 hint 蓋過共用提示）。 */
+          var ftype = (typeof t === 'string') ? t : t.type;
+          var fhint = (typeof t === 'string') ? (MSBN_FIELD_HINTS[t] || '') : (t.hint != null ? t.hint : (MSBN_FIELD_HINTS[t.type] || ''));
+          var lc = ws.getCell(r + 1 + i, 2 + gj * 2);
+          var vc = ws.getCell(r + 1 + i, 3 + gj * 2);
+          lc.value = MSBN_FIELD_LABELS[ftype] || ftype;
+          vc.value = fhint;
           lc.font = { bold: true, size: 10.5 };
           vc.font = { size: 10.5, color: { argb: 'FF555555' } };
           lc.border = BORDER_ALL;
           vc.border = BORDER_ALL;
+          vc.protection = { locked: false }; /* 只有內容欄可以填寫，欄位名稱鎖住 */
+          applyCharLimitGuard(ws, vc, fhint);
         }
       }
-      r += maxLen + 1; /* 區段之間空一列 */
+      var blockRows = 1 + maxLen; /* 位置標籤列 + 欄位列 */
+      if (blockRows > 1) ws.mergeCells(r, 1, r + blockRows - 1, 1);
+      r += blockRows + 1; /* 區段之間空一列 */
     });
   }
 
-  wb.xlsx.writeBuffer().then(function (buf) {
+  /* 順便把畫布目前的排法合成一張參考圖，貼在整張表最右邊（隔一欄），
+     方便同事對照欄位跟實際版面長怎樣。合成失敗（例如 file:// 直接開啟被瀏覽器擋下）
+     就跳過，不影響工單本身照常下載。 */
+  buildSampleCanvas().then(function (canvas) {
+    if (canvas) {
+      try {
+        var SAMPLE_MAX_W = 380; /* 參考圖用縮圖顯示就好，不用整張塞滿 */
+        var scale = Math.min(1, SAMPLE_MAX_W / canvas.width);
+        var imgW = Math.round(canvas.width * scale);
+        var imgH = Math.round(canvas.height * scale);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        var imageId = wb.addImage({ base64: dataUrl, extension: 'jpeg' });
+        var labelCol = usedRightCol + 2;
+        var titleCell = ws.getCell(1, labelCol);
+        titleCell.value = '參考圖（排版示意，非最終正式稿）';
+        titleCell.font = { bold: true, size: 10.5, color: { argb: 'FF888888' } };
+        ws.addImage(imageId, { tl: { col: usedRightCol + 1, row: 1 }, ext: { width: imgW, height: imgH } });
+      } catch (err) {
+        /* file:// 直接開啟時，瀏覽器會把本機圖片畫進 canvas 視為安全風險而擋下，
+           這裡直接放棄參考圖就好，工單其他內容不受影響、照樣下載 */
+      }
+    }
+    /* 鎖住欄位名稱欄（上面每個 labelCell/lc 都沒特別解鎖，預設就是鎖住的），
+       只開放內容欄（valueCell/vc，已經設成 locked:false）可以填寫。
+       沒有設密碼，Excel 隨時都可以按「取消保護工作表」解除，
+       用意只是防止不小心手滑改到欄位名稱，不是真的權限管控。 */
+    return ws.protect('', {});
+  }).then(function () {
+    return wb.xlsx.writeBuffer();
+  }).then(function (buf) {
     var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -3523,7 +3882,24 @@ function exportWorkOrderXlsx() {
    - 都沒有 → variant 1
    E系列另外判斷：有促標 → E-1，沒有促標 → E-2；F系列固定 F-1。
 ════════════════════════════════════════ */
-var LABEL_TO_FIELD_BASE = { '促標':'promo', 'LOGO圖':'logoImg', '商品':'productImg', '品名':'name', '警語':'warn', '圓標':'badge', 'CTA':'cta' };
+var LABEL_TO_FIELD_BASE = {
+  '促標': 'promo', 'LOGO圖': 'logoImg', '商品': 'productImg', '品名': 'name', '警語': 'warn', '圓標': 'badge', 'CTA': 'cta',
+  /* MSBN 專用的欄位類型，對到目前 block.json 裡最接近的既有欄位；
+     block.json 目前沒有「特色」這個欄位，依需求直接當「警語」處理，共用同一個欄位 */
+  '特色': 'warn',
+  '代言人圖': 'endorserImg',
+  '簽名圖': 'signImg',
+  '簽名小字': 'signNote',
+  '代言人小字': 'signNote',
+  '商品圖': 'productImg'
+};
+
+/* 匯出的試算表欄位名稱有時候會多帶說明文字，例如「商品 (多圖用逗號分開)」
+   「CTA (放03字)」，那是給人看的提示；匯入比對要用回原本的欄位類型，
+   所以讀進來時先把結尾的括號說明去掉，還原成「商品」「CTA」再去查表。 */
+function stripLabelAnnotation(label) {
+  return String(label).replace(/[（(][^）)]*[）)]\s*$/, '').trim();
+}
 
 function detectVariant(fam, entries) {
   if (fam === 'F') return 1;
@@ -3560,15 +3936,35 @@ function smartMapEntriesToFields(entries, blockDef) {
     if (items.length === 1 && items[0].idx == null) {
       if (fieldKeys.indexOf(baseKey) !== -1) data[baseKey] = items[0].value;
       else if (fieldKeys.indexOf(baseKey + '1') !== -1) data[baseKey + '1'] = items[0].value;
-    } else if (fieldKeys.indexOf(baseKey) !== -1 && fieldKeys.indexOf(baseKey + '1') === -1) {
-      /* 目標是單一欄位（可能是多行文字），把多筆內容合併 */
-      data[baseKey] = items.map(function (it) { return it.value; }).filter(Boolean).join('\n');
-    } else {
-      /* 目標本身分好幾欄，依編號各自對應 */
-      items.forEach(function (it, i) {
-        var key = baseKey + (it.idx != null ? it.idx : (i + 1));
-        if (fieldKeys.indexOf(key) !== -1) data[key] = it.value;
+      return;
+    }
+
+    /* 不同版位的多欄位命名習慣不一樣：舊格式（例如副區 E 系列）是
+       「品名-1」「品名-2」都帶編號；MSBN 是第1個位置用不加編號的原始欄位
+       （name/warn/badge…），第2個位置開始才加編號（name2/warn2…）。
+       這裡兩種都試，實際用 blockDef 裡真的存在哪個欄位來決定怎麼拆，
+       而不是只看「baseKey+'1' 存不存在」（那樣會誤判 MSBN 的命名習慣，
+       把不同位置的內容錯誤合併成一欄）。 */
+    var byKey = {};
+    var anyResolved = false;
+    items.forEach(function (it, i) {
+      var candidates = it.idx != null
+        ? [baseKey + it.idx]
+        : [baseKey, baseKey + '1']; /* 沒帶編號的當第1個位置，兩種命名習慣都試 */
+      var key = candidates.filter(function (k) { return fieldKeys.indexOf(k) !== -1; })[0];
+      if (key) anyResolved = true;
+      key = key || (baseKey + (it.idx != null ? it.idx : (i + 1))); /* 都對不到就照舊編號兜一個，反正下面會再檢查存不存在 */
+      (byKey[key] = byKey[key] || []).push(it.value);
+    });
+
+    if (anyResolved) {
+      /* 同一個欄位收到不只一筆內容（例如同一個位置裡兩行小字），合併成多行文字 */
+      Object.keys(byKey).forEach(function (key) {
+        if (fieldKeys.indexOf(key) !== -1) data[key] = byKey[key].filter(Boolean).join('\n');
       });
+    } else if (fieldKeys.indexOf(baseKey) !== -1) {
+      /* 完全對不到任何有編號的欄位，退回舊邏輯：目標是單一欄位，把多筆內容合併成多行文字 */
+      data[baseKey] = items.map(function (it) { return it.value; }).filter(Boolean).join('\n');
     }
   });
   return data;
@@ -3623,30 +4019,100 @@ function parseImportXlsx(arrayBuffer) {
          因為現在同一個變體底下、不同組合的排版本身就會不一樣） */
       var m3 = /（([A-F])-(\d+)-(\d+)）\s*$/.exec(String(headerVal));
       var m1 = /（([A-F])）\s*$/.exec(String(headerVal));
+      if (!m3 && !m1) break; /* 這一欄第1列不是「XX（A-1-2）」這種副區表頭格式，
+                                 代表副區表格到這裡就結束了（也可能整份根本沒有副區，
+                                 第1列從頭就是 MSBN 的位置標籤），不要誤當成副區欄位，
+                                 交給下面的 MSBN 掃描處理 */
       columns.push({
         col: col, header: String(headerVal),
-        family: m3 ? m3[1] : (m1 ? m1[1] : null),
+        family: m3 ? m3[1] : m1[1],
         variant: m3 ? m3[2] : null,
         combo: m3 ? m3[3] : null,
         entries: []
       });
       col += 2;
     }
+    /* 副區跟 MSBN 現在共用同一張表，MSBN 緊接在副區下面。
+       副區表格跟 MSBN 之間一定會有一列空白列（見 exportWorkOrderXlsx），
+       掃到那一列就要停止，不然會把下面 MSBN 的欄位格子也當成副區的內容讀進來。
+       如果整份根本沒有副區（columns 是空的），代表 MSBN 從第1列就開始，不用先跳過第1列。 */
     var maxRow = ws.rowCount;
-    for (var r = 2; r <= maxRow; r++) {
-      columns.forEach(function (c) {
-        var label = ws.getCell(r, c.col).value;
-        var value = ws.getCell(r, c.col + 1).value;
-        if (label != null && String(label).trim() !== '') {
-          c.entries.push({ label: String(label).trim(), value: value != null ? String(value).trim() : '' });
-        }
-      });
+    var r = columns.length ? 2 : 1;
+    if (columns.length) {
+      for (; r <= maxRow; r++) {
+        var rowHasAny = false;
+        columns.forEach(function (c) {
+          var label = ws.getCell(r, c.col).value;
+          var value = ws.getCell(r, c.col + 1).value;
+          if (label != null && String(label).trim() !== '') {
+            c.entries.push({ label: stripLabelAnnotation(label), value: value != null ? String(value).trim() : '' });
+            rowHasAny = true;
+          }
+        });
+        if (!rowHasAny) { r++; break; } /* 這一列是副區跟 MSBN 之間的空白列，跳過它，從下一列開始找 MSBN */
+      }
     }
-    return columns.filter(function (c) { return c.family; }).map(function (c) {
+
+    /* 接著往下掃 MSBN 區塊：每一顆第1欄是檔名（例如 MSBN-A-2-1，跟這顆所有列
+       合併儲存格），同一列往右每2欄是一個位置的標籤（左/右/左1~左4…），
+       再往下每一列是該位置的「欄位名稱、內容」，直到遇到下一顆的位置標籤列，
+       或整列都空白（區段之間的空一列）才算這一顆結束。
+       檔名那一欄是合併儲存格，ExcelJS 讀回來時「每一列」都會讀到同樣的檔名文字
+       （不是只有最上面那列才有值），所以不能拿它來判斷「這是不是新的一顆開始」，
+       要改用第2欄的位置標籤（左右/左/左1這幾種固定文字，欄位名稱不會剛好撞名）來判斷。
+       同一顆裡面，第1個位置的欄位名稱不加編號（跟 block.json 對齊，例如 warn），
+       第2個位置開始才加「-2」「-3」「-4」，比對到 warn2、warn3、warn4；
+       同一個位置裡重複出現的同名欄位（例如簽名小字兩行）保留原樣不加編號，
+       讓 smartMapEntriesToFields 既有的「同名多筆→合併成多行文字」邏輯照樣生效。 */
+    var MSBN_POS1_LABELS = ['左右', '左', '左1']; /* MSBN_POS_LABELS 裡各種 n 值，第1個位置固定是這三種之一 */
+    function isMsbnBlockStart(row) {
+      var v = ws.getCell(row, 2).value;
+      return v != null && MSBN_POS1_LABELS.indexOf(String(v).trim()) !== -1;
+    }
+    var msbnColumns = [];
+    while (r <= maxRow) {
+      if (!isMsbnBlockStart(r)) { r++; continue; }
+      var nameVal = ws.getCell(r, 1).value;
+      var msbnFile = nameVal != null ? String(nameVal).trim() : '';
+      var posCols = [];
+      var pcol = 2;
+      while (true) {
+        var posVal = ws.getCell(r, pcol).value;
+        if (posVal == null || String(posVal).trim() === '') break;
+        posCols.push(pcol);
+        pcol += 2;
+      }
+      var msbnEntries = [];
+      var fr = r + 1;
+      if (msbnFile && posCols.length) {
+        while (fr <= maxRow) {
+          if (isMsbnBlockStart(fr)) break; /* 下一顆開始了 */
+          var fRowHasAny = false;
+          posCols.forEach(function (pc, gi) {
+            var label = ws.getCell(fr, pc).value;
+            var value = ws.getCell(fr, pc + 1).value;
+            if (label != null && String(label).trim() !== '') {
+              var suffix = gi === 0 ? '' : ('-' + (gi + 1));
+              msbnEntries.push({ label: stripLabelAnnotation(label) + suffix, value: value != null ? String(value).trim() : '' });
+              fRowHasAny = true;
+            }
+          });
+          fr++;
+          if (!fRowHasAny) break; /* 這顆跟下一顆之間的空白列 */
+        }
+        msbnColumns.push({ kind: 'msbn', msbnFile: msbnFile, entries: msbnEntries, header: msbnFile });
+      } else {
+        fr = r + 1; /* 檔名或位置標籤讀不到，資料格式怪怪的，跳過這一列繼續往下找，不硬湊一顆空的 */
+      }
+      r = fr;
+    }
+
+    var subareaResult = columns.filter(function (c) { return c.family; }).map(function (c) {
       var variant = c.variant || detectVariant(c.family, c.entries);
       var combo = c.combo || detectCombo(c.family, c.entries);
       return { family: c.family, variant: variant, combo: combo, entries: c.entries, header: c.header };
     });
+    return subareaResult.concat(msbnColumns);
   });
 }
 
@@ -3913,11 +4379,29 @@ function renderImportColumns(columns, skipPreviewRerender) {
   document.getElementById('import-empty2').style.display = 'none';
   scroll.innerHTML = '';
 
-  /* 先算整排的總寬度/最大高度，跟版位畫布(工單生成器)一樣，用同一個縮放比例
-     把所有格子拼成「一整條」，不要每格各自一張卡片——這樣才是實際成品的樣子 */
+  /* 排版方式跟版位畫布(工單生成器)一樣：副區那幾格橫向排成一排在最上面，
+     MSBN 接在下面由上往下疊，不是全部格子都橫向排成一長條。
+     先算出每一格自己的 left/top，再統一算縮放比例，拼成「一整塊」。 */
   var defs = columns.map(function (c) { return BNCore.getBlock(c.blockId); });
-  var totalWidth = defs.reduce(function (sum, d) { return sum + (d ? d.width : 0); }, 0);
-  var maxHeight = defs.reduce(function (m, d) { return Math.max(m, d ? d.height : 0); }, 0);
+  var positions = columns.map(function (c, i) {
+    return { isMsbn: c.blockId.indexOf('msbn_') === 0, def: defs[i] };
+  });
+  var subareaWidthSum = 0, subareaRowHeight = 0;
+  positions.forEach(function (p) {
+    if (!p.def || p.isMsbn) return;
+    p.left = subareaWidthSum; p.top = 0;
+    subareaWidthSum += p.def.width;
+    subareaRowHeight = Math.max(subareaRowHeight, p.def.height);
+  });
+  var msbnCumTop = subareaRowHeight, msbnMaxWidth = 0;
+  positions.forEach(function (p) {
+    if (!p.def || !p.isMsbn) return;
+    p.left = 0; p.top = msbnCumTop;
+    msbnCumTop += p.def.height;
+    msbnMaxWidth = Math.max(msbnMaxWidth, p.def.width);
+  });
+  var totalWidth = Math.max(subareaWidthSum, msbnMaxWidth);
+  var maxHeight = msbnCumTop;
   var canvasArea = document.getElementById('import-canvas-area');
   var availableWidth = canvasArea ? Math.max(100, canvasArea.clientWidth - 48) : 900;
   var scale = totalWidth ? Math.min(1, availableWidth / totalWidth) : 1;
@@ -3931,7 +4415,6 @@ function renderImportColumns(columns, skipPreviewRerender) {
   var strip = document.getElementById('imp-strip');
   if (!skipPreviewRerender && strip) strip.innerHTML = '';
 
-  var cumLeft = 0;
   columns.forEach(function (col, idx) {
     var def = BNCore.getBlock(col.blockId);
     if (!def) {
@@ -4012,13 +4495,13 @@ function renderImportColumns(columns, skipPreviewRerender) {
       }
     });
 
-    var myLeft = cumLeft;
-    cumLeft += def.width;
+    var myLeft = positions[idx].left || 0;
+    var myTop = positions[idx].top || 0;
 
     if (!skipPreviewRerender && strip) {
       var slot = document.createElement('div');
       slot.className = 'imp-slot';
-      slot.style.cssText = 'position:absolute;left:' + myLeft + 'px;top:0;width:' + def.width + 'px;height:' + def.height + 'px;overflow:hidden;';
+      slot.style.cssText = 'position:absolute;left:' + myLeft + 'px;top:' + myTop + 'px;width:' + def.width + 'px;height:' + def.height + 'px;overflow:hidden;';
       slot.innerHTML = '<div class="imp-mount" id="imp-mount-' + idx + '" style="width:' + def.width + 'px;height:' + def.height + 'px"></div>';
       strip.appendChild(slot);
     }
@@ -4052,7 +4535,11 @@ function afterImportParsed(rawColumns) {
   importLog.innerHTML = '<span class="ok">✓ 讀到 ' + rawColumns.length + ' 格</span>';
   ensureBlocksLoaded(function () {
     var columns = rawColumns.map(function (c) {
-      var blockId = 'subarea_' + c.family + '_' + c.variant + '_' + c.combo;
+      /* MSBN 那幾格是用檔名（例如 MSBN-A-2-1）認版位，不是 family/variant/combo；
+         直接把「MSBN-」換成「msbn_」、破折號換底線，剛好對到 blocks/msbn_A_2_1 這個資料夾 */
+      var blockId = c.kind === 'msbn'
+        ? 'msbn_' + c.msbnFile.replace(/\.(jpg|jpeg|png)$/i, '').replace(/^MSBN-/i, '').replace(/-/g, '_')
+        : 'subarea_' + c.family + '_' + c.variant + '_' + c.combo;
       var def = BNCore.getBlock(blockId);
       var data = def ? Object.assign({}, BNCore.defaultData(blockId), smartMapEntriesToFields(c.entries, def)) : {};
       return { blockId: blockId, data: data, header: c.header };
@@ -4260,43 +4747,10 @@ var MSBN_ITEMS = {
 /* 每一款 MSBN 的工單欄位，依「一排幾個」分組（檔名第一個數字＝一排幾個；
    欄位歸屬哪一組，是照該圖層在版位上的水平位置自動判斷）。
    顏色類欄位比照副區不進工單。 */
-var MSBN_FIELDS = {
-  "MSBN-A-1-1.jpg": {n:1,groups:[["促標","商品","代言人圖","簽名圖","品名","警語","圓標","CTA","簽名小字"]]},
-  "MSBN-A-1-2.jpg": {n:1,groups:[["促標","商品","代言人圖","簽名圖","品名","警語","圓標","圓標","CTA","簽名小字"]]},
-  "MSBN-A-2-1.jpg": {n:2,groups:[["商品","代言人圖","簽名圖","簽名小字"],["品名","品名","警語","警語","圓標","圓標"]]},
-  "MSBN-A-2-2.jpg": {n:2,groups:[["促標","商品","贈品圖","品名","圓標"],["促標","商品","贈品圖","品名","圓標"]]},
-  "MSBN-A-2-3.jpg": {n:2,groups:[["促標","品名","圓標"],["促標","品名","圓標"]]},
-  "MSBN-A-2-4.jpg": {n:2,groups:[["LOGO圖"],["LOGO圖"]]},
-  "MSBN-A-3-1.jpg": {n:3,groups:[["商品","贈品圖"],["品名","品名","品名","圓標","圓標","圓標"],[]]},
-  "MSBN-A-3-2.jpg": {n:3,groups:[["LOGO圖"],["LOGO圖"],["LOGO圖"]]},
-  "MSBN-B-1-1.jpg": {n:1,groups:[["促標","品名","警語","CTA","代言人小字"]]},
-  "MSBN-B-1-2.jpg": {n:1,groups:[["促標","品名","警語","代言人小字"]]},
-  "MSBN-B-1-3.jpg": {n:1,groups:[["促標","CTA","代言人小字"]]},
-  "MSBN-B-1-4.jpg": {n:1,groups:[["代言人小字"]]},
-  "MSBN-B-2-1.jpg": {n:2,groups:[["促標","品名","警語","CTA"],["促標","品名","警語","CTA"]]},
-  "MSBN-B-2-2.jpg": {n:2,groups:[["促標","品名","警語"],["促標","品名","警語"]]},
-  "MSBN-B-2-3.jpg": {n:2,groups:[["促標","品名","警語"],["促標","品名","警語"]]},
-  "MSBN-B-3-1.jpg": {n:3,groups:[["促標"],["品名","品名","品名","警語","警語","圓標","圓標"],[]]},
-  "MSBN-B-3-2.jpg": {n:3,groups:[[],["品名","品名","品名","警語","警語","警語","圓標","圓標","圓標"],[]]},
-  "MSBN-B-3-3.jpg": {n:3,groups:[["LOGO圖","品名","CTA"],["LOGO圖","品名","CTA"],["LOGO圖","品名","CTA"]]},
-  "MSBN-B-3-4.jpg": {n:3,groups:[["情境圖","品名","警語"],["情境圖","品名","警語"],["情境圖","品名","警語"]]},
-  "MSBN-B-4-1.jpg": {n:4,groups:[["LOGO圖","品名","品名","CTA"],["LOGO圖","品名","品名","CTA"],["LOGO圖","品名","品名","CTA"],["LOGO圖","品名","品名","CTA"]]},
-  "MSBN-B-4-2.jpg": {n:4,groups:[["促標","LOGO圖","品名","警語"],["促標","LOGO圖","品名","警語"],["促標","LOGO圖","品名","警語"],["促標","LOGO圖","品名","警語"]]},
-  "MSBN-C-1-1.jpg": {n:1,groups:[["促標","LOGO圖","警語","文案","文案"]]},
-  "MSBN-C-1-2.jpg": {n:1,groups:[["促標","LOGO圖","警語","文案","文案"]]},
-  "MSBN-C-1-3.jpg": {n:1,groups:[["促標","警語","文案","文案"]]},
-  "MSBN-C-1-4.jpg": {n:1,groups:[["促標","促標","促標","文案","文案","CTA","CTA","CTA"]]},
-  "MSBN-C-1-5.jpg": {n:1,groups:[["促標","促標","LOGO圖","文案","文案","CTA"]]},
-  "MSBN-D-1-1-1.jpg": {n:1,groups:[["商品","品名","品名","CTA","CTA"]]},
-  "MSBN-D-1-1-2.jpg": {n:1,groups:[["商品","CTA","CTA"]]},
-  "MSBN-D-1-2.jpg": {n:1,groups:[["商品","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","項目文字","項目文字","項目文字","項目文字","項目文字"]]},
-  "MSBN-D-1-3.jpg": {n:1,groups:[["商品","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","項目文字","項目文字","項目文字","項目文字","項目文字"]]},
-  "MSBN-D-2-1-1.jpg": {n:2,groups:[["商品","CTA"],["品名","品名","品名","CTA","CTA"]]},
-  "MSBN-D-2-1-2.jpg": {n:2,groups:[["商品","CTA"],["CTA","CTA"]]},
-  "MSBN-D-2-2.jpg": {n:2,groups:[["商品","項目文字","項目文字","項目文字","項目文字","項目文字"],["內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文"]]},
-  "MSBN-D-2-3.jpg": {n:2,groups:[["商品","項目文字","項目文字","項目文字","項目文字","項目文字"],["內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文"]]},
-  "MSBN-D-3-1.jpg": {n:3,groups:[[],["商品","內文","內文","內文","內文","內文","內文","內文","內文","內文","內文","項目文字","項目文字","項目文字","項目文字","項目文字"],[]]}
-};
+/* MSBN 版位的欄位資料改成跟副區（IMAGE_FIELDS）同一套邏輯：
+   從內嵌的 <script id="wo-msbn-fields"> JSON 讀取，不再把資料寫死成 JS 物件語法。
+   之後新增/修正版位，只要改那段 JSON，不用碰這裡的邏輯程式碼。 */
+var MSBN_FIELDS = JSON.parse(document.getElementById('wo-msbn-fields').textContent);
 
 /* 各欄位在工單上的「顯示名稱」與「限字/填法」提示
    （照 BOD 模板「MSBN系統專用」「MSBN案例」頁簽的寫法） */
@@ -4307,18 +4761,21 @@ var MSBN_FIELD_LABELS = {
 var MSBN_FIELD_HINTS = {
   '促標': '促標最多放08個字',
   'LOGO圖': '(檔名/券名)',
-  '商品': '單圖',
+  '商品': '(圖檔名)',
+  '商品圖': '(圖檔名)',
   '情境圖': '(檔名)',
   '贈品圖': '(檔名)',
-  '代言人圖': '單圖',
+  '代言人圖': '(圖檔名)',
   '簽名圖': '(檔名)',
+  '信用卡圖': '(檔名)',
   '品名': '品名放06個字',
+  '特色': '特色最多放8個字',
   '警語': '警語最多只能放10個字',
   '內文': '內文文字',
   '文案': '文案文字',
   '項目文字': '項目文字',
   '圓標': '圓標05字內',
-  'CTA': '逛逛去▶',
+  'CTA': '逛逛去',
   '簽名小字': '每行限5字',
   '代言人小字': '代言人小字'
 };
@@ -4361,16 +4818,162 @@ var PALETTE_TAB_INFO = {
   sticky: { label: '吸底', icon: '📌' }
 };
 
+function setPaletteTab(tab) {
+  currentPaletteTab = tab;
+  document.querySelectorAll('#palette-tabs .ptab').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-ptab') === tab);
+  });
+  renderPalette();
+}
+
 document.querySelectorAll('#palette-tabs .ptab').forEach(function (btn) {
   btn.addEventListener('click', function () {
     var tab = btn.getAttribute('data-ptab');
-    if (tab === currentPaletteTab) return;
-    currentPaletteTab = tab;
-    document.querySelectorAll('#palette-tabs .ptab').forEach(function (b) {
-      b.classList.toggle('active', b === btn);
-    });
-    renderPalette();
+    console.log('[UX-SYNC] 點了頁簽：' + tab + '（目前 currentPaletteTab=' + currentPaletteTab + '）');
+    if (tab === currentPaletteTab) { console.log('[UX-SYNC] 跟目前頁簽一樣，不處理'); return; }
+    setPaletteTab(tab);
+    scrollCanvasToTab(tab); /* 頁簽切換 → 畫布跟著捲過去（本來就在那一區就不動） */
   });
+});
+
+/* ══════════════════════════════════════════════════
+   左右雙向同步：素材庫頁簽 ↔ 畫布捲動位置
+   - 畫布捲到「MSBN 區」下方 → 左側頁簽自動跳到 MSBN；捲回「副區」→ 頁簽跳回副區
+   - 點左側頁簽 → 畫布捲到對應區塊；但如果畫布本來就已經在那一區裡（不管在哪一張），
+     不吸回該區塊最頂端（第一格），維持使用者目前的捲動位置
+   - 「吸底」頁簽的畫布區塊還沒做，先不參與捲動同步（getPaletteSectionEl 回傳 null 即略過）
+══════════════════════════════════════════════════ */
+/* 真正會出現捲軸的其實是 #stage（那張白色照片卡片本身），不是 #canvas-area：
+   #stage 只設了 overflow-x:auto、沒設 overflow-y，瀏覽器會把沒設的那軸也一併變成 auto，
+   所以 flexbox 會把 #stage 壓縮到剩餘空間、由 #stage 自己長出捲軸，#canvas-area 反而永遠不會溢出。
+   一開始抓錯容器（抓成 #canvas-area）就是先前量到「怎麼測都不會捲動」的真正原因。 */
+var canvasArea = document.getElementById('stage');
+var SCROLL_SYNC_LINE = 72;      /* 判斷「捲到哪一區」的參考線，離畫布可視區頂端幾px */
+var suppressScrollSync = false;  /* 程式主動捲動時，暫停 scroll→tab 同步，避免兩邊互相打架 */
+var scrollSyncRAF = null;
+
+function getPaletteSectionEl(tab) {
+  if (tab === 'msbn') return document.getElementById('msbn-area');
+  if (tab === 'subarea') {
+    var inner = document.getElementById('stage-inner');
+    return inner ? inner.firstElementChild : null; /* #row 或 #empty-drop，固定是第一個子節點 */
+  }
+  return null; /* 吸底：之後補上對應區塊再接進來即可 */
+}
+
+/* 參考線是否落在某個區塊範圍內（用來判斷畫布目前顯示哪一區） */
+function isSectionAtScrollLine(tab, line) {
+  var el = getPaletteSectionEl(tab);
+  if (!el) return false;
+  var areaTop = canvasArea.getBoundingClientRect().top;
+  var elTop = el.getBoundingClientRect().top - areaTop;
+  var elBottom = elTop + el.getBoundingClientRect().height;
+  return elTop <= line && elBottom > line;
+}
+
+/* 畫布內容還沒超過可視高度（例如一開始、或 MSBN 還沒放第一顆）＝沒有捲軸，
+   兩區其實同時都看得到，這時不該用「捲到哪裡」去搶／推翻使用者手動點的頁簽 */
+function canvasIsScrollable() {
+  return canvasArea.scrollHeight - canvasArea.clientHeight > 1;
+}
+
+var WO_DEBUG = true; /* 除錯用：Console 裡看得到 [UX-SYNC] 開頭的訊息，確認之後改成 false 或整段刪掉 */
+
+/* MSBN 還一張都沒放進畫布之前（state.msbn 是空的），不要做捲動同步：
+   這時候 MSBN 區塊在畫布上就只是一個空的拖放區，還沒有「使用中」，
+   捲動/點頁簽都只單純切換左側內容就好，不要自動幫忙捲畫布或搶頁簽。
+   放進第一張之後（state.msbn.length > 0），才開始參與整套同步機制。 */
+function msbnSyncReady() {
+  return !!(state.msbn && state.msbn.length > 0);
+}
+
+function syncTabFromScroll() {
+  if (suppressScrollSync) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：suppressScrollSync=true（程式自己正在捲）'); return; }
+  if (!msbnSyncReady()) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：MSBN 還沒放第一張，不做捲動同步'); return; }
+  if (!document.getElementById('msbn-area')) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：找不到 #msbn-area'); return; }
+  if (!canvasIsScrollable()) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：canvasIsScrollable()=false，scrollHeight=' + canvasArea.scrollHeight + ' clientHeight=' + canvasArea.clientHeight); return; }
+  var nextTab = isSectionAtScrollLine('msbn', SCROLL_SYNC_LINE) ? 'msbn' : 'subarea';
+  if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 判斷 nextTab=' + nextTab + '，目前 currentPaletteTab=' + currentPaletteTab + '，scrollTop=' + canvasArea.scrollTop);
+  if (nextTab === currentPaletteTab) return;
+  setPaletteTab(nextTab); /* 只切左側頁簽內容，完全不動畫布 */
+}
+
+canvasArea.addEventListener('scroll', function () {
+  if (WO_DEBUG) console.log('[UX-SYNC] 偵測到 #canvas-area 的 scroll 事件，scrollTop=' + canvasArea.scrollTop);
+  if (scrollSyncRAF) cancelAnimationFrame(scrollSyncRAF);
+  scrollSyncRAF = requestAnimationFrame(syncTabFromScroll);
+}, { passive: true });
+
+function scrollCanvasToTab(tab) {
+  var el = getPaletteSectionEl(tab);
+  if (WO_DEBUG) console.log('[UX-SYNC] scrollCanvasToTab(' + tab + ') 呼叫，對應區塊元素=' + (el ? ('#' + (el.id || '(第一個子節點)')) : 'null'));
+  if (!el) return; /* 這個頁簽在畫布上還沒有對應區塊（例如吸底） */
+  if (!msbnSyncReady()) { if (WO_DEBUG) console.log('[UX-SYNC] scrollCanvasToTab 跳過：MSBN 還沒放第一張，不做捲動同步'); return; }
+  if (!canvasIsScrollable()) { if (WO_DEBUG) console.log('[UX-SYNC] scrollCanvasToTab 跳過：canvasIsScrollable()=false'); return; } /* 畫布內容還沒超過可視高度＝兩區本來就都看得到，不用捲，也不用怕頁簽被推回去 */
+  if (isSectionAtScrollLine(tab, SCROLL_SYNC_LINE)) { if (WO_DEBUG) console.log('[UX-SYNC] scrollCanvasToTab 跳過：判斷本來就已經在「' + tab + '」區塊視野內'); return; } /* 本來就在這一區＝不吸回頂端，維持原本位置 */
+  if (WO_DEBUG) console.log('[UX-SYNC] scrollCanvasToTab 執行捲動！目標 tab=' + tab);
+  suppressScrollSync = true;
+  var areaTop = canvasArea.getBoundingClientRect().top;
+  var targetTop = canvasArea.scrollTop + (el.getBoundingClientRect().top - areaTop) - 20;
+  canvasArea.scrollTo({ top: Math.max(targetTop, 0), behavior: 'smooth' });
+  clearTimeout(scrollCanvasToTab._t);
+  scrollCanvasToTab._t = setTimeout(function () {
+    suppressScrollSync = false;
+    syncTabFromScroll(); /* 捲動完成後照實際位置校正一次，避免邊界誤差；沒捲軸的話這裡本來就會直接跳過 */
+  }, 500);
+}
+
+/* 拖拉一張新的 MSBN 圖進畫布後，自動往下捲一點：
+   讓剛放進去的完整那一列留在可視範圍內，同時露出下一格可拖放的虛線區塊。
+   這是刻意的回饋動作（讓使用者感覺到「有放進去、還可以繼續放」），
+   所以就算目前其實還沒被擋到（overflow<=0）也至少意思意思往下挪一點 MIN_NUDGE，
+   純粹「必要時才捲」會在畫面夠大／東西還不多時完全沒反應，體感上就像沒做這個功能。
+   當然如果畫布整個連一點可捲動空間都沒有（scrollBy 會被瀏覽器直接吃掉），那本來就動不了。 */
+function revealNewMsbnRow() {
+  requestAnimationFrame(function () {
+    var rows = document.querySelectorAll('#msbn-stack .msbn-row');
+    var lastRow = rows[rows.length - 1];
+    var dropZone = document.getElementById('msbn-drop');
+    if (!lastRow || !dropZone) return;
+    var areaRect = canvasArea.getBoundingClientRect();
+    var dropRect = dropZone.getBoundingClientRect();
+    var PEEK = 90;      /* 讓下一個虛線格子露出一截，使用者才知道還能繼續拖 */
+    var MIN_NUDGE = 90; /* 就算已經看得到，也至少往下滑這麼多，確保有感覺、有動作 */
+    var wantBottom = Math.min(dropRect.top + PEEK, dropRect.bottom);
+    var overflow = wantBottom - areaRect.bottom; /* >0 代表新那格其實被擋住了，非捲不可 */
+    var scrollAmount = Math.max(overflow, MIN_NUDGE);
+    if (WO_DEBUG) console.log('[UX-SYNC] revealNewMsbnRow 觸發，overflow=' + overflow + '，實際捲動量=' + scrollAmount + '，canvasIsScrollable()=' + canvasIsScrollable());
+    suppressScrollSync = true;
+    canvasArea.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+    clearTimeout(revealNewMsbnRow._t);
+    revealNewMsbnRow._t = setTimeout(function () {
+      suppressScrollSync = false;
+      syncTabFromScroll();
+    }, 450);
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   一鍵清除本機暫存（測試/除錯用）：
+   把這個工具自己存在瀏覽器裡的東西（上次停在哪個畫面、畫布內容、
+   縮放比例、系列改名、匯入工單的暫存、解鎖狀態）清掉，重新整理回到全新狀態。
+   只清這個工具自己的 key（wo_ 開頭），不會動到同一個瀏覽器裡其他網站或工具的資料。
+══════════════════════════════════════════════════ */
+var WO_CACHE_KEYS = [
+  'wo_canvas_state_v1',  /* 畫布內容（副區＋MSBN） */
+  'wo_family_names_v1',  /* 系列改名 */
+  'wo_unlocked_v1',       /* 編輯解鎖狀態 */
+  'wo_import_state_v1',  /* 匯入工單頁的暫存 */
+  'wo_canvas_zoom',       /* 畫布顯示縮放比例 */
+  'wo_last_view'          /* 上次停在哪個畫面（首頁／工單生成器／匯入工單） */
+];
+document.getElementById('btn-clear-cache').addEventListener('click', function () {
+  if (!confirm('確定要清除本機暫存嗎？\n\n會清掉：上次畫面、目前畫布內容、系列改名、匯入工單暫存、縮放比例、解鎖狀態。\n清完會立刻重新整理回到全新狀態。')) return;
+  WO_CACHE_KEYS.forEach(function (k) {
+    try { localStorage.removeItem(k); } catch (e) {}
+    try { sessionStorage.removeItem(k); } catch (e) {}
+  });
+  location.reload();
 });
 
 function renderPalette() {
@@ -4609,6 +5212,7 @@ function addMsbn(item) {
   state.msbn.push({ file: item.file, cat: item.cat, label: item.label });
   saveState();
   renderCanvas();
+  revealNewMsbnRow();
 }
 
 function appendMsbnArea(stage) {
@@ -4714,7 +5318,7 @@ function appendMsbnArea(stage) {
     var mv = e.dataTransfer.getData('application/x-msbn-move');
     if (mv !== '') { /* 畫布的列拖到底部拖放區＝移到最後 */
       var moved = state.msbn.splice(+mv, 1)[0];
-      if (moved) { state.msbn.push(moved); saveState(); renderCanvas(); }
+      if (moved) { state.msbn.push(moved); saveState(); renderCanvas(); revealNewMsbnRow(); }
       return;
     }
     var d = e.dataTransfer.getData('application/x-msbn');
