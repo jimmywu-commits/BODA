@@ -9,17 +9,15 @@
         - 圖片之間固定 5px 間距
         - 不管幾張，整組圖片都要在範圍內垂直+水平置中
         - 如果全部圖片排起來的總寬超過範圍寬度，整組等比例一起縮小
+   2.5 按住滑鼠左鍵拖曳，可以單獨移動某一張圖的位置（每張圖各自記住自己的位移，
+      跟縮放權重一樣「跨重新渲染」記住，也會存進暫存檔）。
+      超出圖片範圍的部分會被裁掉（範圍本身就是 overflow:hidden）。
    2. 滑鼠滾輪縮放，而且是「針對單一張圖」個別縮放：
-        - 滑鼠移到某一張圖上滾動滾輪，只調整那一張的大小(權重)
-        - 如果整組還有空間(還沒塞滿)，放大那一張不會影響其他張
-        - 一旦整組已經塞滿(總寬碰到範圍邊界)，放大某一張就會擠壓
-          其他張，讓它們等比例縮小；反過來縮小某一張，其他張會
-          等比例補回空間變大
-      實作方式：每張圖有自己的「權重」(預設1)，權重決定它「理想大小」
-      (範圍高 × 權重)，把每張圖的理想寬度加總，如果超過範圍寬度，
-      就整組一起乘上同一個「塞得下的縮放比例」──這樣單獨調整某一張的
-      權重，會連動影響到最終大家實際顯示的大小，天然達到「此消彼長」
-      的效果，不用特別寫「搶誰的空間」這種邏輯。
+        - 滑鼠移到某一張圖上滾動滾輪，只調整那一張的大小(權重)，不影響其他張
+        - 放大可以超出原本的圖片範圍，不會被範圍壓回來、也不會被裁掉
+      實作方式：每張圖有自己的「權重」(預設1)。先用權重1算出「剛好排進範圍裡」
+      的原始大小(整組太寬就一起等比縮小)，再各自乘上自己的權重──
+      權重不參與「壓回範圍內」的計算，所以放大時才能超出範圍。
 
    使用方式：這個檔案完全獨立運作，只要在 index.html 裡用
    <script src="image-layout.js"></script> 載入（放在 schema-renderer.js
@@ -42,6 +40,8 @@
      當識別碼，只要那個祖先容器的id沒變(例如 imp-mount-0)，
      重新渲染後還是能對回同一張圖之前調整過的權重。 */
   var weightStore = {};
+  /* 每張圖被拖曳過的位移，跟權重一樣用同一組識別碼記住：{ groupKey: { index: {x,y} } } */
+  var offsetStore = {};
 
   function getGroupKey(group) {
     var el = group;
@@ -65,11 +65,30 @@
     weightStore[groupKey][index] = value;
   }
 
-  /* 量測並套用排版：每張圖各自的「理想寬度」= 範圍高 × 自己的權重 × 原始比例，
-     全部加起來如果超過範圍寬度，整組一起乘上同一個縮放比例壓回剛好放得下。
-     這樣單獨放大某一張(權重變大)，如果已經超過範圍寬度，全部(含自己)乘上的
-     縮放比例會變小，最終結果就是那一張變大、其他張(權重沒變、但乘到的縮放
-     比例變小了)就跟著變小──天然達到「此消彼長」的效果。 */
+  function getOffset(groupKey, index) {
+    var arr = offsetStore[groupKey];
+    var o = arr && arr[index];
+    return { x: (o && o.x) || 0, y: (o && o.y) || 0 };
+  }
+
+  function setOffset(groupKey, index, x, y) {
+    if (!offsetStore[groupKey]) offsetStore[groupKey] = {};
+    offsetStore[groupKey][index] = { x: x, y: y };
+  }
+
+  /* 把記住的位移套到這張圖上（用 transform，不影響其他張圖的排版位置） */
+  function applyOffset(img, groupKey, index) {
+    var o = getOffset(groupKey, index);
+    img.style.transform = (o.x || o.y) ? ('translate(' + o.x + 'px,' + o.y + 'px)') : '';
+  }
+
+  /* 量測並套用排版：
+     1. 先算「原始大小」(權重都當 1)：每張圖高度＝範圍高、依原始比例算寬度，
+        整組加起來太寬就一起乘上同一個縮放比例壓回剛好放得下
+        ──這一步只決定「還沒動過手」時的預設樣子，跟以前一樣。
+     2. 再把每張圖自己的縮放權重乘上去。權重不參與上面那個「壓回範圍內」的計算，
+        所以滾輪放大時可以超出原本的範圍、不會被壓回來，也不會被裁掉
+        （範圍只是預設的擺放位置，overflow 已經改成不裁切）。 */
   function applyLayout(group) {
     var imgs = getImgs(group);
     if (!imgs.length) return;
@@ -82,23 +101,25 @@
     var n = imgs.length;
     var totalGap = GAP * (n - 1);
 
-    var idealWidths = imgs.map(function (img, i) {
+    var baseWidths = imgs.map(function (img) {
       var ratio = (img.naturalWidth && img.naturalHeight) ? (img.naturalWidth / img.naturalHeight) : 1;
-      var weight = getWeight(groupKey, i);
-      return containerH * ratio * weight;
+      return containerH * ratio;
     });
-    var idealTotalW = idealWidths.reduce(function (a, b) { return a + b; }, 0);
+    var baseTotalW = baseWidths.reduce(function (a, b) { return a + b; }, 0);
 
     var fitScale = 1;
-    if (idealTotalW + totalGap > containerW && idealTotalW > 0) {
-      fitScale = Math.max((containerW - totalGap) / idealTotalW, 0.02);
+    if (baseTotalW + totalGap > containerW && baseTotalW > 0) {
+      fitScale = Math.max((containerW - totalGap) / baseTotalW, 0.02);
     }
 
     group.style.gap = GAP + 'px';
     imgs.forEach(function (img, i) {
-      var finalWidth = idealWidths[i] * fitScale;
+      var finalWidth = baseWidths[i] * fitScale * getWeight(groupKey, i);
       img.style.width = finalWidth + 'px';
       img.style.height = 'auto';
+      img.style.maxWidth = 'none';   /* 不讓任何外部樣式把放大後的圖片又壓回範圍內 */
+      img.style.maxHeight = 'none';
+      applyOffset(img, groupKey, i); /* 重新排版後，之前拖過的位移要留著 */
     });
   }
 
@@ -115,10 +136,11 @@
     });
   }
 
-  /* 滑鼠滾輪縮放：滾輪要綁在「每一張圖片自己身上」，不是綁在整個群組，
-     這樣滑鼠停在哪一張上面滾動，才會只調整那一張的權重 */
-  function enableWheelZoomPerImage(group) {
+  /* 滑鼠滾輪縮放＋按住左鍵拖曳移動：都要綁在「每一張圖片自己身上」，不是綁在整個群組，
+     這樣滑鼠停在哪一張上面操作，就只會動到那一張 */
+  function enableImageInteractions(group) {
     getImgs(group).forEach(function (img, i) {
+      /* 滾輪縮放 */
       img.addEventListener('wheel', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -129,16 +151,59 @@
         setWeight(groupKey, i, w);
         applyLayout(group);
       }, { passive: false });
-      img.style.cursor = 'zoom-in';
-      img.title = '滑鼠滾輪可以單獨放大縮小這一張圖（如果整組已經塞滿，其他張會跟著縮小/放大）';
+
+      /* 按住左鍵拖曳移動這一張圖 */
+      img.draggable = false; /* 關掉瀏覽器原生的「拖曳圖片」，不然會出現半透明殘影 */
+      img.addEventListener('mousedown', function (e) {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var groupKey = getGroupKey(group);
+        var start = getOffset(groupKey, i);
+        var startX = e.clientX, startY = e.clientY;
+        /* 匯入預覽整塊會被 CSS transform 縮放，滑鼠移動的距離要換算回原始尺寸，
+           不然縮到 50% 時圖片會跑得比滑鼠快一倍 */
+        var rect = img.getBoundingClientRect();
+        var scale = (img.offsetWidth && rect.width) ? (rect.width / img.offsetWidth) : 1;
+        if (!scale || !isFinite(scale)) scale = 1;
+        var prevCursor = img.style.cursor;
+        img.style.cursor = 'grabbing';
+
+        function onMove(ev) {
+          setOffset(groupKey, i,
+            start.x + (ev.clientX - startX) / scale,
+            start.y + (ev.clientY - startY) / scale);
+          applyOffset(img, groupKey, i);
+        }
+        function onUp() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          img.style.cursor = prevCursor || 'grab';
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      /* 連按兩下：這張圖回到原本的大小與位置 */
+      img.addEventListener('dblclick', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var groupKey = getGroupKey(group);
+        setWeight(groupKey, i, 1);
+        setOffset(groupKey, i, 0, 0);
+        applyLayout(group);
+      });
+
+      img.style.cursor = 'grab';
+      img.title = '滾輪縮放這張圖、按住左鍵可拖曳移動位置、連按兩下復原（可以超出原本的範圍，不會被裁掉）';
     });
   }
 
   function processGroup(group) {
     layoutWhenReady(group); /* 每次都要重新排版一次(套用之前記住的權重) */
-    if (group._bnImgLayoutBound) return; /* 滾輪事件是綁在<img>本身上，重新渲染出的新<img>節點還是要重新綁一次 */
+    if (group._bnImgLayoutBound) return; /* 滾輪/拖曳事件是綁在<img>本身上，重新渲染出的新<img>節點還是要重新綁一次 */
     group._bnImgLayoutBound = true;
-    enableWheelZoomPerImage(group);
+    enableImageInteractions(group);
   }
 
   function scanAndProcess(root) {
@@ -182,6 +247,15 @@
     /* 還原之前存下來的縮放權重（匯入暫存檔時用），套完立刻重新排版 */
     setWeights: function (w) {
       weightStore = (w && typeof w === 'object') ? w : {};
+      scanAndProcess(document.body);
+    },
+    /* 匯出／還原每張圖被拖曳過的位移（跟權重一樣存進暫存檔） */
+    getOffsets: function () {
+      try { return JSON.parse(JSON.stringify(offsetStore)); }
+      catch (e) { return {}; }
+    },
+    setOffsets: function (o) {
+      offsetStore = (o && typeof o === 'object') ? o : {};
       scanAndProcess(document.body);
     }
   };
