@@ -1,0 +1,181 @@
+{
+  "_說明": "把這個檔案複製成 config.json 再改。路徑都相對於這個設定檔所在的資料夾。",
+  "css": "input/MSBN_css.txt",
+  "out": "blocks",
+  "refImageDirs": [
+    "input/ref"
+  ],
+  "_groupPattern說明": "認出「一個版位」的 PS 群組名稱。第一個括號group就是版位 id。",
+  "groupPattern": "^(MSBN-[A-D](?:-\\d+)+)\\.jpg$",
+  "blockIdPrefix": "msbn_",
+  "stripIdPrefix": "MSBN-",
+  "refImagePattern": "{id}.jpg",
+  "canvas": {
+    "mode": "margin",
+    "marginX": 20,
+    "marginTop": 15,
+    "marginBottom": 15,
+    "width": 1200,
+    "height": 400
+  },
+  "_fonts說明": "算文字定位一定要用「實際渲染會用到的同一份字型檔」，換字型要重跑。",
+  "fontFamily": "ShopeeNotoSans (content)",
+  "fonts": {
+    "400": "fonts/ShopeeNotoSans(content)-Regular.ttf",
+    "500": "fonts/ShopeeNotoSans(content)-Medium.ttf",
+    "700": "fonts/ShopeeNotoSans(content)-Bold.ttf"
+  },
+  "_inkBias說明": "PS 的 top 比實際筆畫上緣少幾 px。實測 1.0，換 PS 版本可用 verify_ref 重新校。",
+  "inkBias": 1.0,
+  "_expandTextToContainer說明": "把文字框以中心為軸、在包住它的色塊範圍內對稱放寬，換一段字才不會爆框。",
+  "expandTextToContainer": true,
+  "numbering": "rightToLeft",
+  "_ignore說明": "設計稿上的輔助圖層：作圖區、安全範圍、系統模擬字…都不要輸出。",
+  "ignoreGroups": [
+    "檢查",
+    "範圍(製作完請檢查)",
+    "系統文字區域",
+    "系統模擬字",
+    "系統位子",
+    "位置"
+  ],
+  "ignoreLayers": [
+    "作圖區",
+    "商品位置",
+    "文案位置",
+    "文字位置",
+    "安全範圍",
+    "光暈",
+    "矩形",
+    "系統字區域",
+    "$000,000",
+    "活動價",
+    "原價",
+    "贈品範圍",
+    "代言人範圍",
+    "簽名範圍"
+  ],
+  "_hintTexts說明": "含這些字的文字圖層是設計稿標註（不是要輸出的內容），會標成 hidden。",
+  "hintTexts": [
+    "商品圖",
+    "情境圖",
+    "人物圖",
+    "信用卡圖",
+    "LOGO"
+  ],
+  "_textFields說明": "PS 圖層名 → 欄位。同名有多個時會照 numbering 給 promo、promo2、promo3…",
+  "textFields": [
+    {
+      "layer": "促標",
+      "field": "promo",
+      "label": "促標文字",
+      "id": "promo"
+    },
+    {
+      "layer": "品名",
+      "field": "name",
+      "label": "品名",
+      "id": "name"
+    },
+    {
+      "layer": "警語",
+      "field": "warn",
+      "label": "警語",
+      "id": "warn"
+    },
+    {
+      "layer": "CTA",
+      "field": "cta",
+      "label": "CTA文字",
+      "id": "ctaText"
+    },
+    {
+      "layer": "圓標",
+      "field": "badge",
+      "label": "圓標文字",
+      "id": "badgeText"
+    },
+    {
+      "layer": "內文",
+      "field": "content",
+      "label": "內文"
+    },
+    {
+      "layer": "項目",
+      "field": "itemText",
+      "label": "項目文字"
+    },
+    {
+      "layer": "文案",
+      "field": "copy",
+      "label": "文案"
+    },
+    {
+      "layer": "簽名小字",
+      "field": "signNote",
+      "label": "簽名小字",
+      "id": "signNote"
+    },
+    {
+      "layer": "代言人小字",
+      "field": "endorserNote",
+      "label": "代言人小字",
+      "id": "endorserNote"
+    }
+  ],
+  "_colorFields說明": "色塊要不要開放換顏色。留空就只是靜態色塊。",
+  "colorFields": [
+    {
+      "layer": "背景",
+      "field": "bgColor",
+      "label": "卡片背景色",
+      "id": "bg"
+    },
+    {
+      "layer": "促標_底圖",
+      "field": "promoColor",
+      "label": "促標底色",
+      "id": "promoBar"
+    },
+    {
+      "layer": "CTA_底圖",
+      "field": "ctaColor",
+      "label": "CTA底色",
+      "id": "ctaColor"
+    }
+  ],
+  "_imageFields說明": "這些圖層要做成「可以拖圖片進去」的框。clip=true 代表放大時裁切在框內。",
+  "imageFields": [
+    {
+      "layer": "曝品範圍",
+      "field": "productImg",
+      "label": "商品圖／情境圖",
+      "clip": false,
+      "backgroundColor": "#ffffff",
+      "_backgroundColor說明": "設計稿填的是參考用的藍色，實際輸出用白色。填 null 代表完全不要底色。"
+    },
+    {
+      "layer": "LOGO_底圖",
+      "field": "logoImg",
+      "label": "LOGO圖片",
+      "clip": true
+    },
+    {
+      "layer": "LOGO_圖片",
+      "field": "logoImg",
+      "label": "LOGO圖片",
+      "clip": true
+    }
+  ],
+  "_canvas說明": [
+    "版位畫布怎麼決定：",
+    "1) refImageDirs 裡有對應的參考圖 → 直接用參考圖的尺寸（最準，也最省事）",
+    "2) 沒有參考圖 → 看 mode：",
+    "   margin  畫布 = 看得見的內容 + 四周留白（marginX / marginTop / marginBottom）",
+    "   fixed   畫布大小寫死（width / height），內容水平置中、上方留 padTop",
+    "   group   畫布就是內容大小，四周不留白",
+    "marginTop 同時是「有參考圖時」的垂直起始猜測值，之後由 calibrate 自動修正。"
+  ],
+  "calibration": "calibration.json",
+  "previewOut": "preview"
+}
