@@ -178,13 +178,14 @@
     return layer.type === 'rect' && normColor(layer.clipPath) === CTA_TRIANGLE_CLIP;
   }
 
-  /* 以前這裡有一段「用藍綠色認出促標色帶」的特例：當時以為 MSBN B-4-1、B-4-2
-     沒有促標底的 rect，那條色帶是「LOGO 圖片範圍自己的底色」。
-     那是看錯了 —— 對照參考圖，那條色帶就是一般的促標底色，上面放的是促標文字，
-     跟 LOGO 無關。它被存成 image + field=logoImg，才會在色帶上冒出 LOGO 佔位卡、
-     工單也多出一欄「LOGO圖」。已經在 block.json 改成正常的
-     rect(id=promoBg*, field=promoColor*)，所以這個以顏色判斷的特例不需要了。
-     （留著反而危險：真的有一張 LOGO 圖底色剛好是這個藍綠色時會被誤判成促標底。） */
+  /* 促標底色在 PS 稿裡統一都是這個藍綠色。
+     大部分版位的促標底是一個 rect(id=promoBg/promoBar)，但少數版位（例如 MSBN B-4-1、B-4-2）
+     沒有那個 rect，那條色帶其實是「LOGO 圖片範圍自己的底色」。用顏色認得出來，
+     「統一改促標底色」才不會漏掉那些版位。 */
+  var PROMO_BG_SOURCE_COLORS = [normColor('rgb(79,159,162)')];
+  function isPromoBandImage(layer) {
+    return layer.type === 'image' && PROMO_BG_SOURCE_COLORS.indexOf(normColor(layer.backgroundColor)) !== -1;
+  }
 
   function themeRoleOf(layer) {
     var id = String(layer.id || '').replace(/[0-9]+$/, '');
@@ -200,7 +201,7 @@
       return 'bodyText';
     }
     if (layer.type === 'image') {
-      return null;   /* 圖片沒有顏色角色（促標色帶已經改成 rect，走下面那條） */
+      return isPromoBandImage(layer) ? 'promoBg' : null;
     }
     if (layer.type === 'rect' || layer.type === 'circle') {
       if (id === 'promoBg' || id === 'promoBar' || fld === 'promocolor') return 'promoBg';
@@ -235,117 +236,25 @@
     return fieldPrefix + layer.field;
   }
 
-  /* ── 文字行距：解析成「實際會套用到 CSS 的那個值」 ────────────────
-     行距的數字有兩種寫法：小數（1.15）＝倍數，大數（40）＝px。
-     4 以下當倍數，4 以上當 px──行距不可能只有 4px，倍數也幾乎不會超過 4。
-     另外 CONFIG.textLineHeight 會覆寫特定文字（簽名小字等），
-     圓標則固定用 CONFIG.badge.lineHeight。
-     垂直位置修正跟實際輸出的 line-height 必須用同一份計算，
-     不然兩邊會不一致，所以統一走這兩支函式。 */
-  function effectiveLineHeight(layer) {
-    if (layer.verticalCenter) return CONFIG.badge.lineHeight;
-    var lhKey = String(layer.field || layer.id || '').replace(/[0-9]+$/, '');
-    var lhOverride = CONFIG.textLineHeight ? CONFIG.textLineHeight[lhKey] : null;
-    return lhOverride != null ? lhOverride : layer.lineHeight;
-  }
-  function lineHeightCss(lh) {
-    if (lh == null) return null;
-    return (typeof lh === 'number' ? (lh <= 4 ? String(lh) : lh + 'px') : lh);
-  }
-  /* ShopeeNotoSans 一個字實際佔的高度（含上下伸部的預留空間）：
-     hhea ascent 1160 + descent 320 = 1480 / upem 1000 = 1.48 em。
-     三個字重（Regular/Medium/Bold）都一樣。
-     只要 line-height 小於這個數字，字就會超出行框；用來算要留多少
-     上下 padding 才不會被 overflow:hidden 裁掉。 */
-  var FONT_CONTENT_EM = 1.48;
-
-  /* 這個圓角是不是「只圓上面兩角」（例如 "15px 15px 0 0"）。
-     這種形狀代表它是貼齊卡片頂端的色帶，圓角要跟著卡片一起由設定檔控制；
-     四個角都圓的（例如 "10px"）是浮在卡片裡的獨立色塊，要照原本的值。 */
-  function isTopOnlyRadius(v) {
-    if (typeof v !== 'string') return false;
-    var p = v.trim().split(/\s+/);
-    if (p.length !== 4) return false;
-    var isZero = function (s) { return parseFloat(s) === 0; };
-    return !isZero(p[0]) && parseFloat(p[0]) === parseFloat(p[1]) && isZero(p[2]) && isZero(p[3]);
-  }
-
-  /* 把圓角的「形狀」保留、只換掉「大小」。
-       scaleRadiusPattern("15px 0px 0px 15px", 20) → "20px 0px 0px 20px"
-       scaleRadiusPattern("15px", 20)              → "20px"
-       scaleRadiusPattern(null, 20)                → "20px"（沒寫就四個角都圓）
-     PS 稿上哪幾個角要圓，是設計決定、不能改；圓幾 px 才是 render-config 統一控制的。
-     以前這裡直接寫成一個數字，把「只圓左邊兩角」的曝品範圍畫成四角全圓，右邊就會凸出卡片。 */
-  function scaleRadiusPattern(v, size) {
-    if (v == null || v === '') return size + 'px';
-    var parts = String(v).trim().split(/\s+/);
-    if (parts.length === 1) return size + 'px';
-    return parts.map(function (p) {
-      return parseFloat(p) === 0 ? '0px' : size + 'px';
-    }).join(' ');
-  }
-
-  /* 行距換算成「倍數」，用來算半行距（half-leading）。算不出來就回 1（等於沒有半行距）。 */
-  function lineHeightMultiplier(layer) {
-    var lh = effectiveLineHeight(layer);
-    if (lh == null || !layer.fontSize) return 1;
-    var n = parseFloat(lh);
-    if (isNaN(n) || n <= 0) return 1;
-    return n <= 4 ? n : (n / layer.fontSize);
-  }
-
   function renderLayer(layer, left, top, data, fieldPrefix, opts) {
-    /* hidden:true ＝這一層完全不畫（也不會出現在欄位面板）。
-       用來關掉 PS 稿上的示意圖層，例如 LOGO 框裡那個「LOGO」佔位字：
-       那個框現在是可以直接拖圖片進來的圖片欄位，字疊在上面反而礙眼。
-       保留資料不刪，之後想恢復把這個旗標拿掉就好。 */
-    if (layer.hidden) return '';
-
     /* hideIfField：例如 LOGO 佔位文字，一旦 logoImg 欄位有值，這層文字就不畫出來 */
     if (layer.hideIfField) {
       var hideKey = fieldPrefix ? fieldPrefix + layer.hideIfField : layer.hideIfField;
       if (data[hideKey]) return '';
     }
 
-    /* PS 文字圖層座標修正（垂直）：
+    /* PS 文字圖層座標修正：
        PS 匯出「只給 left/top、沒有 transform 縮放」的文字圖層時，量測基準點跟瀏覽器
-       實際渲染文字的位置差了幾乎正好一個字體大小（用參考圖實測比對出來的規律）。
-
-       但光減一個字體大小還不夠：瀏覽器畫單行文字時，字會被放在「行框」的正中間，
-       行框高度＝line-height，所以字實際上又被推移了「半行距」
-         halfLeading = (行距倍數 − 1) × 字體大小 ÷ 2
-       行距大於 1 就往下推，小於 1 就往上拉。PS 的 top 是文字框頂端、跟行距無關，
-       所以這一份位移必須扣掉，否則行距不是 1 的文字就會跑版。
-
-       這件事很重要，因為 block.json 裡同一種元素的行距並不統一，例如：
-         促標 line-height 在各版位之間換算出來的半行距從 −5.99 到 +4.00（差 10px）
-         品名 0～+4、警語 −5～0、LOGO佔位字 +2～+7、圓標 +6.76～+9
-       以前是用 render-config 的一個固定數字硬補，只能補對其中一部分版位，
-       其他版位就會歪掉。改成逐圖層計算之後，這個誤差就整批消失了。
-
-       這裡只對「沒有縮放，或縮放接近1（可視為沒縮放）」的文字套用；
-       像 msbn3p 那種有明顯縮放 transform 的文字，是另一套已經驗證過的座標系統，不能套用。 */
+       實際渲染文字的位置差了幾乎正好一個字體大小（用參考圖實測比對出來的規律，
+       促標/品名/警語三個元素都準確符合 top差距≈fontSize）。
+       這裡只對「沒有縮放，或縮放接近1（可視為沒縮放）」的文字套用這個修正；
+       像 msbn3p 那種有明顯縮放 transform 的文字，是另一套已經驗證過的座標系統，不能套用這個修正。 */
     if (layer.type === 'text' && layer.fontSize && !layer.verticalCenter) {
-      if (layer.topExact != null) {
-        /* topExact ＝已經算好的「文字內容區上緣」，直接用，不再做任何推算。
-           （實際套用在下面「扣掉上下 padding」之後，因為那一段對 topExact 不適用，
-             topExact 本身就已經是最終位置了。）
-           這個值是由 tools/apply_css_ink_top.py 從新版 PS CSS 產生的：
-           新版 CSS 的文字 top 就是「筆畫上緣」（用 200 個圖層對過參考圖，
-           誤差中位數 1px、標準差 0.78px），再用字型檔算出該字串最高的筆畫
-           離內容區上緣幾個 em，兩者相減就得到精確的內容區上緣。
-           所以有 topExact 的圖層不需要下面那串「減一個字級、減半行距、
-           再加一個手調補償值」的估算 —— 那串估算會隨字級放大誤差
-           （實測 40px 差 0～2.4px、45px 差 2.5px、55px 差 7.1px）。 */
-        top = layer.topExact;
-      } else {
-        var noScale = !layer.transform ||
-          (Math.abs(layer.transform[0] - 1) < 0.05 && Math.abs(layer.transform[3] - 1) < 0.05);
-        if (noScale) {
-          var extra = CONFIG.textVerticalCorrection[layer.id] || 0;
-          var halfLeading = (lineHeightMultiplier(layer) - 1) * layer.fontSize / 2;
-          top = top - layer.fontSize - halfLeading + extra;
-        }
+      var noScale = !layer.transform ||
+        (Math.abs(layer.transform[0] - 1) < 0.05 && Math.abs(layer.transform[3] - 1) < 0.05);
+      if (noScale) {
+        var extra = CONFIG.textVerticalCorrection[layer.id] || 0;
+        top = top - layer.fontSize + extra;
       }
     }
 
@@ -358,68 +267,20 @@
       left = layer._boxLeft + (layer._boxWidth - badgeWidthOverride) / 2;
     }
 
-    /* ── 文字不要被上下裁掉 ────────────────────────────────────────
-       所有文字圖層都有 overflow:hidden（避免字太多時橫向壓到隔壁圖層），
-       但這個裁切是四個方向都裁的，而「行框」常常比字本身還矮：
-         行框高度 = 行距 × 字級
-         字的內容高度 = 1.48 × 字級（ShopeeNotoSans 的 ascent 1160 + descent 320）
-       只要行距小於 1.48，字的上下就會超出行框、被裁掉一截。實際上幾乎每一種
-       文字都中：警語 40px 字配 0.75 行距（行框只有 30px，上下各被切掉 14.6px）、
-       簽名/代言人小字 24px 字被設定檔壓到 1.15 行距（上下各切掉 4px，就是
-       「小字下面有一點被裁切」的原因）。
-
-       解法：用上下 padding 把「裁切邊界」往外推到字的外面，同時把 top 往上
-       補回同樣的量。字的位置完全不變（padding 只影響裁切範圍，不影響行框中心），
-       左右也還是照原本的框裁，所以橫向不會壓到隔壁。 */
-    var textPadV = 0;
-    if (layer.type === 'text' && layer.fontSize) {
-      var lineBox = lineHeightMultiplier(layer) * layer.fontSize;
-      textPadV = Math.max(0, (FONT_CONTENT_EM * layer.fontSize - lineBox) / 2);
-      /* 上面那串估算算出來的是「行框上緣」，要再往上退半個 padding 才是內容區上緣；
-         topExact 給的本來就已經是內容區上緣，不用再退。
-         （padding 本身兩種情況都要留著，那是為了不讓字被上下裁掉。） */
-      if (layer.topExact == null) top -= textPadV;
-    }
-
     var style = ['position:absolute', 'left:' + px(left), 'top:' + px(top)];
-    if (textPadV > 0) {
-      style.push('padding-top:' + px(textPadV));
-      style.push('padding-bottom:' + px(textPadV));
-      /* width/height 都是照原本的框給的，加了 padding 不能讓框被撐大，
-         所以維持 content-box 的量測方式改成連 padding 一起算在內。 */
-      style.push('box-sizing:content-box');
-    }
     if (layer.zIndex != null) style.push('z-index:' + layer.zIndex);
     if (badgeWidthOverride != null) style.push('width:' + px(badgeWidthOverride));
     else if (layer.width != null) style.push('width:' + px(layer.width));
     if (layer.height != null) style.push('height:' + px(layer.height));
     if (layer.boxShadow) style.push('box-shadow:' + layer.boxShadow);
     if (layer.clipPath) style.push('clip-path:' + layer.clipPath);
-    /* ── 圓角 ────────────────────────────────────────────────
-       原則：「圓哪幾個角」照 block.json 走（那是 PS 稿的設計，不能改），
-             只有「圓幾 px」交給 render-config 統一控制。
-
-       所以這裡不是用 id 判斷，而是看資料裡的圓角形狀：
-         只圓上面兩角（例如 "15px 15px 0 0"）＝貼齊卡片頂端的色帶
-             → 用 promoBarTopCornerRadius，跟卡片圓角保持一致、接縫看不出來
-         四個角都圓（例如 MSBN 促標底的 "10px"）＝浮在卡片裡的獨立色塊
-             → 照它自己的值，四個角都要圓
-       一開始這裡是寫 id === 'promoBg' / 'promoBar'，結果把 MSBN 那種
-       四角都圓的促標底也一律改成「只圓上面兩角」，圓邊就不見了。 */
-    var baseId = String(layer.id || '').replace(/[0-9]+$/, '');
     if (isCtaBgLayer(layer)) {
       /* CTA 底色塊：不管原本是方角、圓角還是整顆圓形，一律統一成同一個圓角
          （框比圓角小時瀏覽器會自己等比例收斂，原本是圓形的看起來還是圓形） */
       style.push('border-radius:' + CONFIG.cardStyle.ctaBgCornerRadius + 'px');
-    } else if (layer.psRadius && layer.borderRadius) {
-      /* psRadius:true ＝「這個圓角就照 PS 稿的數字畫，不要被 render-config 統一覆寫」。
-         用在跟卡片圓角刻意不同的地方，例如 MSBN A-2-4 的背景是 R20（卡片統一值是 R15）。 */
-      style.push('border-radius:' + (typeof layer.borderRadius === 'number' ? layer.borderRadius + 'px' : layer.borderRadius));
-    } else if (baseId === 'bg') {
-      /* 卡片背景：圓角大小交給 render-config 統一控制，但「圓哪幾個角」要照 block.json 的形狀走
-         （例如 "15px 15px 0 0" 這種只圓上面兩角的背景，不能被畫成四角全圓）。 */
-      style.push('border-radius:' + scaleRadiusPattern(layer.borderRadius, CONFIG.cardStyle.cardCornerRadius));
-    } else if (isTopOnlyRadius(layer.borderRadius)) {
+    } else if (layer.id === 'bg') {
+      style.push('border-radius:' + CONFIG.cardStyle.cardCornerRadius + 'px');
+    } else if (layer.id === 'promoBg') {
       var r = CONFIG.cardStyle.promoBarTopCornerRadius;
       style.push('border-radius:' + r + 'px ' + r + 'px 0 0');
     } else if (layer.borderRadius && layer.type !== 'circle') {
@@ -433,27 +294,14 @@
       var rawUrl = fieldKey ? data[fieldKey] : null;
       /* 只留真的載得到的圖片來源；純檔名（還沒上傳對應素材）不算，走下面的佔位卡 */
       var urls = splitImageList(rawUrl).filter(isRenderableImageUrl);
-      /* defaultSrc：這個框有一張「內建的圖」，例如 C 系列券上的蝦皮 LOGO。
-         沒有人上傳東西時就顯示它（不是顯示空白佔位卡），
-         上傳／拖曳圖片進來則會蓋過去，所以既保留原本的設計，又能換成別的品牌 LOGO。 */
-      if (!urls.length && layer.defaultSrc) urls = [layer.defaultSrc];
-      var url = urls.length ? urls.join(',') : null;
+      var url = urls.length ? rawUrl : null;
       /* LOGO 圖是內縮70%，周圍留白要看得到白色底色，所以底色要一直鋪著（keepBgWithImage:true）；
          商品圖是滿版contain顯示，一旦有圖片，原本的灰色佔位底色就該完全消失，不能透出來。
-
-         bgField：這個圖片框「同時也是一塊可以換色的底色」。
-         曝品範圍就是這種：它本來在 block.json 裡是一個有顏色欄位的 rect，
-         現在改成圖片框讓人可以把圖拖進去，但那個顏色欄位要留著
-         （不然使用者在匯入頁改卡片顏色時，這一塊會變成改不到的死白）。 */
-      var bgFieldKey = layer.bgField ? resolveFieldKey({ field: layer.bgField }, fieldPrefix) : null;
-      var imgBgColor = themeColorOf(layer, opts)
-        || (bgFieldKey && data[bgFieldKey])
-        || layer.backgroundColor;
-      /* 有 bgField 的圖片框，本身就是設計稿上一塊看得到的色塊（曝品範圍就是這種），
-         圖片是疊在它上面，所以放了圖之後底色還是要留著；
-         一般商品圖框的底色只是佔位用的灰底，一放圖就該完全消失。 */
-      var keepBg = layer.keepBgWithImage || !!layer.bgField;
-      if (imgBgColor && (!url || keepBg)) style.push('background-color:' + imgBgColor);
+         另外「其實是促標色帶」的那種圖片範圍（例如 MSBN B-4-1 的 LOGO 色帶），
+         底色是版面的一部分，放了 LOGO 之後也要留著，不然色帶會整條消失。 */
+      var promoBand = isPromoBandImage(layer);
+      var imgBgColor = themeColorOf(layer, opts) || layer.backgroundColor;
+      if (imgBgColor && (!url || layer.keepBgWithImage || promoBand)) style.push('background-color:' + imgBgColor);
       if (!url && layer.opacity != null) style.push('opacity:' + layer.opacity); /* 半透明佔位色只在「還沒放圖片」時套用 */
       if (!url) {
         /* 尚未上傳圖片：不畫 <img>（不會出現破圖跟滾輪提示文字），改放柔和的佔位卡 */
@@ -463,14 +311,9 @@
         style.push('overflow:hidden');
         content = imagePlaceholderHtml(layer, rawUrl);
       }
-      /* 有圖片時預設「不裁切」：滾輪放大、拖曳移動都可以超出這個範圍，
+      /* 有圖片時「不裁切」：滾輪放大、拖曳移動都可以超出這個範圍，
          不會被自己的框切掉（框只是預設的擺放位置，不是牢籠）。
-         真的超出整個版位邊界時才會被版位／卡片圓角裁掉。
-
-         例外是標了 clipImage:true 的框（LOGO 框、曝品範圍、做圖範圍這類
-         「範圍即色塊」的區域）：那些框本身就是設計稿上畫出來的一塊底色，
-         圖片溢出去會直接蓋到卡片其他內容，所以一律裁切在框內，
-         而且連框的圓角一起吃（上面已經算好 border-radius）。 */
+         真的超出整個版位邊界時才會被版位／卡片圓角裁掉。 */
       if (url) {
         /* 改用真正的 <img> + object-fit:contain：
            - 商品圖類：imageScale 預設100，等於整張圖完整顯示、依寬或高哪個先頂到邊自動縮小、置中，不裁切
@@ -482,7 +325,7 @@
         style.push('display:flex');
         style.push('align-items:center');
         style.push('justify-content:center');
-        style.push('overflow:' + (layer.clipImage ? 'hidden' : 'visible'));
+        style.push('overflow:visible');
         var scalePct;
         if (layer.id === 'logoBg') scalePct = CONFIG.image.logoInsetScalePercent;
         else if (layer.id === 'productArea' || layer.id === 'productArea1' || layer.id === 'productArea2' || layer.id === 'bg') scalePct = CONFIG.image.productImageInsetScalePercent;
@@ -504,10 +347,7 @@
       if (layer.backgroundImage) style.push('background-image:' + layer.backgroundImage); /* 漸層等裝飾底 */
       if (layer.border) style.push('border:' + layer.border);
       if (layer.opacity != null) style.push('opacity:' + layer.opacity);
-      /* 色塊沒有任何互動，不該擋住滑鼠——底下如果是圖片框，還要能把圖片拖進去 */
-      style.push('pointer-events:none');
     } else if (layer.type === 'circle') {
-      style.push('pointer-events:none');
       if (!isCtaBgLayer(layer)) style.push('border-radius:50%'); /* CTA 底色塊上面已經套過統一圓角了 */
       var color = (fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor;
       color = themeColorOf(layer, opts) || color; /* 全站統一顏色（圓標底／CTA底…）優先 */
@@ -521,10 +361,16 @@
       if (layer.fontWeight) style.push('font-weight:' + layer.fontWeight);
       var ls = CONFIG.letterSpacing[layer.id];
       if (ls) style.push('letter-spacing:' + ls + 'px');
-      /* 代言人／簽名小字這類多行小字，行距用設定檔壓緊（兩行之間靠近一點）。
-         用跟上面垂直修正同一支函式解析，兩邊保證一致。 */
-      var lhOut = lineHeightCss(effectiveLineHeight(layer));
-      if (lhOut != null) style.push('line-height:' + lhOut);
+      /* 代言人／簽名小字這類多行小字，行距用設定檔壓緊（兩行之間靠近一點） */
+      var lhKey = String(layer.field || layer.id || '').replace(/[0-9]+$/, '');
+      var lhOverride = CONFIG.textLineHeight ? CONFIG.textLineHeight[lhKey] : null;
+      var lh = layer.verticalCenter ? CONFIG.badge.lineHeight : (lhOverride != null ? lhOverride : layer.lineHeight);
+      /* 行距的數字有兩種寫法：小數（1.15）＝倍數，大數（40）＝px。
+         4 以下當倍數（不加單位），4 以上當 px──行距不可能只有 4px，
+         倍數也幾乎不會超過 4，用這個界線判斷最不容易誤會。 */
+      if (lh != null) {
+        style.push('line-height:' + (typeof lh === 'number' ? (lh <= 4 ? String(lh) : lh + 'px') : lh));
+      }
       if (layer.textAlign) style.push('text-align:' + layer.textAlign);
       if (layer.textDecoration) style.push('text-decoration:' + layer.textDecoration);
       style.push('white-space:' + (layer.whiteSpace || 'nowrap'));
@@ -540,11 +386,6 @@
         style.push('align-items:center');
         style.push('justify-content:center');
       }
-      /* 沒有綁欄位的文字＝純裝飾/示意字，不能編輯，也就不該擋住滑鼠。
-         這件事很重要：這種字常常整片蓋在圖片框上面（例如 LOGO 框裡的「LOGO」佔位字），
-         沒關掉的話，圖片拖到那個位置會落在文字圖層上，圖片框的 drop 事件根本收不到，
-         看起來就是「這個框拖不進去」。 */
-      if (!fieldKey) style.push('pointer-events:none');
       var text = fieldKey ? (data[fieldKey] != null ? data[fieldKey] : layer.default) : layer.default;
       content = esc(text || '');
     }
@@ -556,16 +397,6 @@
       style.push('outline:none');
       style.push('cursor:text');
       attrs = ' contenteditable="true" spellcheck="false" data-field="' + esc(fieldKey) + '"';
-    }
-
-    /* 圖片範圍一律標上自己的欄位 key，不管裡面現在有沒有圖。
-       裡面那層 .bn-imggroup 只有「已經有圖」時才存在，所以外面沒有標記的話，
-       空的圖片框從 DOM 上認不出自己是哪個欄位 —— 匯入頁要做「拖曳圖片進畫布」
-       就需要空框也認得出來（拖進去的通常正是還沒有圖的框）。
-       同時附上中文欄位名，拖放時的提示文字可以直接用。 */
-    if (layer.type === 'image' && fieldKey) {
-      attrs += ' data-img-field="' + esc(fieldKey) + '"' +
-        ' data-img-label="' + esc(layer.fieldLabel || '圖片') + '"';
     }
 
     return "<div" + attrs + " style='" + style.join(';') + ";'>" + content + '</div>';
@@ -700,23 +531,16 @@
   function buildFields(schema) {
     var seen = {};
     var fields = [];
-    function addField(key, label, type, def, maxLength, designText) {
+    function addField(key, label, type, def, maxLength) {
       if (seen[key]) return;
       seen[key] = true;
       var f = { key: key, label: label, type: type, default: def != null ? def : '' };
       if (maxLength != null) f.maxLength = maxLength;
-      /* designText＝PS 設計稿上原本寫的示意字（「品名一排最多8字」「逛逛去」…）。
-         維修頁拿它當預覽文字，一眼就看得出這一欄是什麼、限幾個字。
-         跟 default 分開放，所以匯入工單頁「沒填欄位時顯示什麼」完全不受影響。 */
-      if (designText != null) f.designText = designText;
       fields.push(f);
     }
 
     (schema.layers || []).forEach(function (layer) {
-      if (layer.hidden) return; /* 不畫出來的圖層，欄位面板也不要列 */
-      if (layer.field) addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength, layer.designText);
-      /* 圖片框如果同時兼任一塊底色（曝品範圍），那個顏色欄位也要列出來可以改 */
-      if (layer.bgField) addField(layer.bgField, layer.bgFieldLabel || '底色', 'color', layer.backgroundColor);
+      if (layer.field) addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength);
     });
 
     (schema.repeats || []).forEach(function (repeat) {
@@ -724,10 +548,10 @@
         (repeat.layers || []).forEach(function (layer) {
           if (!layer.field) return;
           if (layer.globalField) {
-            addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength, layer.designText);
+            addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength);
           } else {
             addField(inst.key + layer.field, (inst.label || inst.key) + '・' + (layer.fieldLabel || layer.field),
-              fieldType(layer), layer.default, layer.maxLength, layer.designText);
+              fieldType(layer), layer.default, layer.maxLength);
           }
         });
       });

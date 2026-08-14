@@ -449,11 +449,7 @@
       var imgBgColor = themeColorOf(layer, opts)
         || (bgFieldKey && data[bgFieldKey])
         || layer.backgroundColor;
-      /* 有 bgField 的圖片框，本身就是設計稿上一塊看得到的色塊（曝品範圍就是這種），
-         圖片是疊在它上面，所以放了圖之後底色還是要留著；
-         一般商品圖框的底色只是佔位用的灰底，一放圖就該完全消失。 */
-      var keepBg = layer.keepBgWithImage || !!layer.bgField;
-      if (imgBgColor && (!url || keepBg)) style.push('background-color:' + imgBgColor);
+      if (imgBgColor && (!url || layer.keepBgWithImage)) style.push('background-color:' + imgBgColor);
       if (!url && layer.opacity != null) style.push('opacity:' + layer.opacity); /* 半透明佔位色只在「還沒放圖片」時套用 */
       if (!url) {
         /* 尚未上傳圖片：不畫 <img>（不會出現破圖跟滾輪提示文字），改放柔和的佔位卡 */
@@ -700,21 +696,17 @@
   function buildFields(schema) {
     var seen = {};
     var fields = [];
-    function addField(key, label, type, def, maxLength, designText) {
+    function addField(key, label, type, def, maxLength) {
       if (seen[key]) return;
       seen[key] = true;
       var f = { key: key, label: label, type: type, default: def != null ? def : '' };
       if (maxLength != null) f.maxLength = maxLength;
-      /* designText＝PS 設計稿上原本寫的示意字（「品名一排最多8字」「逛逛去」…）。
-         維修頁拿它當預覽文字，一眼就看得出這一欄是什麼、限幾個字。
-         跟 default 分開放，所以匯入工單頁「沒填欄位時顯示什麼」完全不受影響。 */
-      if (designText != null) f.designText = designText;
       fields.push(f);
     }
 
     (schema.layers || []).forEach(function (layer) {
       if (layer.hidden) return; /* 不畫出來的圖層，欄位面板也不要列 */
-      if (layer.field) addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength, layer.designText);
+      if (layer.field) addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength);
       /* 圖片框如果同時兼任一塊底色（曝品範圍），那個顏色欄位也要列出來可以改 */
       if (layer.bgField) addField(layer.bgField, layer.bgFieldLabel || '底色', 'color', layer.backgroundColor);
     });
@@ -724,10 +716,10 @@
         (repeat.layers || []).forEach(function (layer) {
           if (!layer.field) return;
           if (layer.globalField) {
-            addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength, layer.designText);
+            addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength);
           } else {
             addField(inst.key + layer.field, (inst.label || inst.key) + '・' + (layer.fieldLabel || layer.field),
-              fieldType(layer), layer.default, layer.maxLength, layer.designText);
+              fieldType(layer), layer.default, layer.maxLength);
           }
         });
       });
