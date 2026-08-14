@@ -1,0 +1,129 @@
+.Search_Image1logo_jpg {
+  position: absolute;
+  left: 1226px;
+  top: 652px;
+  width: 1125px;
+  height: 156px;
+  z-index: 210;
+}
+.logo範圍 {
+  background-color: rgb(235, 104, 119);
+  opacity: 0.4;
+  position: absolute;
+  left: 375px;
+  top: 19px;
+  width: 120px;
+  height: 121px;
+  z-index: 208;
+}
+.矩形_14 {
+  background-color: rgb(26, 71, 174);
+  position: absolute;
+  left: 496px;
+  top: 54px;
+  width: 26px;
+  height: 24px;
+  z-index: 207;
+}
+.副標案型七字內 {
+  font-size: 73.573px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.81673820329211,0,0,0.8155210708698,0,0);
+  -webkit-transform: matrix( 0.81673820329211,0,0,0.8155210708698,0,0);
+  -ms-transform: matrix( 0.81673820329211,0,0,0.8155210708698,0,0);
+  position: absolute;
+  left: 474.254px;
+  top: 34.078px;
+  z-index: 206;
+}
+.cta三角箭頭 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 1038px;
+  top: 65px;
+  width: 23px;
+  height: 26px;
+  z-index: 205;
+}
+.cta白線 {
+  position: absolute;
+  left: 1010px;
+  top: 41px;
+  width: 86px;
+  height: 86px;
+  z-index: 204;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='86' height='86' viewBox='0 0 86 86'%3E%3Ccircle cx='43' cy='43' r='37' fill='none' stroke='%23fff' stroke-width='6'/%3E%3C/svg%3E") center center / 86px 86px no-repeat !important;
+  overflow: visible;
+}
+.cta圓底 {
+  border-radius: 50%;
+  background-image: -moz-linear-gradient( 11deg, rgb(201,159,102) 0%, rgb(231,202,151) 10%, rgb(253,249,218) 25%, rgb(240,210,157) 50%, rgb(253,249,218) 76%, rgb(225,199,155) 83%, rgb(197,149,92) 93%);
+  background-image: -webkit-linear-gradient( 11deg, rgb(201,159,102) 0%, rgb(231,202,151) 10%, rgb(253,249,218) 25%, rgb(240,210,157) 50%, rgb(253,249,218) 76%, rgb(225,199,155) 83%, rgb(197,149,92) 93%);
+  background-image: -ms-linear-gradient( 11deg, rgb(201,159,102) 0%, rgb(231,202,151) 10%, rgb(253,249,218) 25%, rgb(240,210,157) 50%, rgb(253,249,218) 76%, rgb(225,199,155) 83%, rgb(197,149,92) 93%);
+  position: absolute;
+  left: 1007px;
+  top: 40px;
+  width: 80px;
+  height: 80px;
+  z-index: 203;
+}
+.主logo橫線_右 {
+  border-width: 2px;
+  border-color: rgb(255, 255, 255);
+  border-style: solid;
+  position: absolute;
+  left: 223px;
+  top: 109px;
+  width: 30px;
+  height: 0;
+  z-index: 202;
+}
+.主logo橫線_左 {
+  border-width: 2px;
+  border-color: rgb(255, 255, 255);
+  border-style: solid;
+  position: absolute;
+  left: 35px;
+  top: 109px;
+  width: 30px;
+  height: 0;
+  z-index: 201;
+}
+.官方旗艦店 {
+  font-size: 27px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  line-height: 1.618;
+  text-align: left;
+  -moz-transform: matrix( 1.01124307693929,0,0,1.09451370414144,0,0);
+  -webkit-transform: matrix( 1.01124307693929,0,0,1.09451370414144,0,0);
+  -ms-transform: matrix( 1.01124307693929,0,0,1.09451370414144,0,0);
+  position: absolute;
+  left: 76.237px;
+  top: 131.927px;
+  z-index: 200;
+}
+.蝦皮商城logo紅底 {
+  background-color: rgb(208, 2, 27);
+  position: absolute;
+  left: -56px;
+  top: -7px;
+  width: 355px;
+  height: 174px;
+  z-index: 195;
+}
+.底色 {
+  background-color: rgb(84, 84, 84);
+  position: absolute;
+  left: 247px;
+  top: -18px;
+  width: 881px;
+  height: 192px;
+  z-index: 194;
+}

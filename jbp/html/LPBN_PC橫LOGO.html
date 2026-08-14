@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>排版預覽</title>
+<style>
+@font-face { font-family: "ShopeeNotoSans (content)"; font-weight: 300; src: url("../fonts/ShopeeNotoSans(content)-Regular.ttf") format("truetype"); }
+@font-face { font-family: "ShopeeNotoSans (content)"; font-weight: 400; src: url("../fonts/ShopeeNotoSans(content)-Medium.ttf") format("truetype"); }
+@font-face { font-family: "ShopeeNotoSans (content)"; font-weight: 700; src: url("../fonts/ShopeeNotoSans(content)-Bold.ttf") format("truetype"); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width:100%;height:100%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;overflow:hidden; }
+#stage { position:relative; }
+#canvas { position:absolute;top:0;left:0;overflow:hidden;transform-origin:top left; }
+#底圖 { position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;display:none; }
+#css-err { display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#7f1d1d;color:#fca5a5;font-size:13px;font-family:monospace;padding:7px 16px;border-radius:6px;z-index:9999; }
+</style>
+</head>
+<body data-fw="1200" data-fh="400">
+<div id="css-err"></div>
+<div id="stage"><div id="canvas"><img id="底圖" src="" alt=""></div></div>
+<script>
+/* layout-runtime.js 原本是純靜態 script 標籤載入，沒有防快取機制，
+   瀏覽器可能一直用快取住的舊版本，導致改完程式碼、重新整理頁面，
+   卻像是完全沒有生效。改成動態插入＋時間戳記，強制每次重新整理都
+   向伺服器要最新版本。 */
+(function(){
+  var s = document.createElement('script');
+  s.src = '../js/layout-runtime.js?t=' + Date.now();
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+.DD_Banner_Card__橫式LOGO__jpg {
+  position: absolute;
+  left: 1180px;
+  top: 792px;
+  width: 531px;
+  height: 792px;
+  z-index: 42;
+}
+.商品範圍 {
+  background-color: rgb(235, 104, 119);
+  opacity: 0.4;
+  position: absolute;
+  left: 60px;
+  top: 361px;
+  width: 412px;
+  height: 284px;
+  z-index: 41;
+}
+.logo範圍 {
+  background-color: rgb(235, 104, 119);
+  opacity: 0.4;
+  position: absolute;
+  left: 21px;
+  top: 103px;
+  width: 490px;
+  height: 50px;
+  z-index: 40;
+}
+.放心買_安心退 {
+  font-size: 36px;
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 300;
+  color: rgb(255, 255, 255);
+  line-height: 1.2;
+  text-align: center;
+  -moz-transform: matrix( 0.80878948783308,0,0,0.80878948783308,0,0);
+  -webkit-transform: matrix( 0.80878948783308,0,0,0.80878948783308,0,0);
+  -ms-transform: matrix( 0.80878948783308,0,0,0.80878948783308,0,0);
+  position: absolute;
+  left: 139.248px;
+  top: 675.531px;
+  z-index: 37;
+}
+.cta底 {
+  border-radius: 8px;
+  background-color: rgb(15, 125, 182);
+  position: absolute;
+  left: 146px;
+  top: 675px;
+  width: 240px;
+  height: 44px;
+  z-index: 36;
+}
+.主標 {
+  font-size: 39.311px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  line-height: 1.2;
+  text-align: center;
+  -moz-transform: matrix( 1.01696924104673,0,0,1.01752605654768,0,0);
+  -webkit-transform: matrix( 1.01696924104673,0,0,1.01752605654768,0,0);
+  -ms-transform: matrix( 1.01696924104673,0,0,1.01752605654768,0,0);
+  position: absolute;
+  left: 108.576px;
+  top: 166.511px;
+  z-index: 35;
+}
+.副標 {
+  font-size: 75.323px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  -moz-transform: matrix( 0.79613810971536,0,0,0.79657401477767,0,0);
+  -webkit-transform: matrix( 0.79613810971536,0,0,0.79657401477767,0,0);
+  -ms-transform: matrix( 0.79613810971536,0,0,0.79657401477767,0,0);
+  position: absolute;
+  left: 3.874px;
+  top: 203.994px;
+  z-index: 34;
+}
+.日期 {
+  font-size: 34px;
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 300;
+  color: rgb(255, 255, 255);
+  line-height: 1.2;
+  text-align: center;
+  -moz-transform: matrix( 0.83621996370985,0,0,0.8366778145663,0,0);
+  -webkit-transform: matrix( 0.83621996370985,0,0,0.8366778145663,0,0);
+  -ms-transform: matrix( 0.83621996370985,0,0,0.8366778145663,0,0);
+  position: absolute;
+  left: 4.832px;
+  top: 285.093px;
+  z-index: 33;
+}
+
+
+/* ── 副標滿版寬度修正：原副標有 0.796 縮放，531px 會被縮成約423px；
+   改用放大後的邏輯寬度，視覺呈現寬度才會接近主標滿版。 ── */
+.副標 {
+  left: 0 !important;
+  width: 666.97px !important;
+  max-width: none !important;
+  transform-origin: left top !important;
+  white-space: nowrap;
+}
