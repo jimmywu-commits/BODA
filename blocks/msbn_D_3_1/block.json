@@ -8,7 +8,7 @@
     {
       "zIndex": 1679,
       "type": "text",
-      "left": 20.0,
+      "left": 753.0,
       "top": 75.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -19,12 +19,15 @@
       "fieldLabel": "內文",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 370,
+      "_refCenter": 938.0,
+      "topExact": 21.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1678,
       "type": "text",
-      "left": 20.0,
+      "left": 753.0,
       "top": 149.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -35,12 +38,15 @@
       "fieldLabel": "內文2",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 370,
+      "_refCenter": 938.0,
+      "topExact": 95.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1677,
       "type": "text",
-      "left": 20.0,
+      "left": 753.0,
       "top": 223.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -51,12 +57,15 @@
       "fieldLabel": "內文3",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 370,
+      "_refCenter": 938.0,
+      "topExact": 169.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1676,
       "type": "text",
-      "left": 20.0,
+      "left": 753.0,
       "top": 297.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -67,12 +76,15 @@
       "fieldLabel": "內文4",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 370,
+      "_refCenter": 938.0,
+      "topExact": 243.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1675,
       "type": "text",
-      "left": 20.0,
+      "left": 753.0,
       "top": 371.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -83,7 +95,10 @@
       "fieldLabel": "內文5",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 370,
+      "_refCenter": 938.0,
+      "topExact": 317.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1674,
@@ -99,7 +114,9 @@
       "fieldLabel": "內文6",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 1160.0,
+      "topExact": 21.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1673,
@@ -115,7 +132,9 @@
       "fieldLabel": "內文7",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 1160.0,
+      "topExact": 95.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1672,
@@ -131,7 +150,9 @@
       "fieldLabel": "內文8",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 1160.0,
+      "topExact": 169.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1671,
@@ -147,7 +168,9 @@
       "fieldLabel": "內文9",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 1160.0,
+      "topExact": 243.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1670,
@@ -163,12 +186,14 @@
       "fieldLabel": "內文10",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 1160.0,
+      "topExact": 317.36,
+      "designText": "內文一排最多9字內"
     },
     {
       "zIndex": 1669,
       "type": "text",
-      "left": 505.0,
+      "left": 78.0,
       "top": 75.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -179,12 +204,15 @@
       "fieldLabel": "項目文字",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 370,
+      "_refCenter": 263.0,
+      "topExact": 21.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1668,
       "type": "text",
-      "left": 505.0,
+      "left": 78.0,
       "top": 149.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -195,12 +223,15 @@
       "fieldLabel": "項目文字2",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 370,
+      "_refCenter": 263.0,
+      "topExact": 95.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1667,
       "type": "text",
-      "left": 505.0,
+      "left": 78.0,
       "top": 223.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -211,12 +242,15 @@
       "fieldLabel": "項目文字3",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 370,
+      "_refCenter": 263.0,
+      "topExact": 169.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1666,
       "type": "text",
-      "left": 505.0,
+      "left": 78.0,
       "top": 297.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -227,12 +261,15 @@
       "fieldLabel": "項目文字4",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 370,
+      "_refCenter": 263.0,
+      "topExact": 243.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1665,
       "type": "text",
-      "left": 505.0,
+      "left": 78.0,
       "top": 371.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -243,7 +280,10 @@
       "fieldLabel": "項目文字5",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 370,
+      "_refCenter": 263.0,
+      "topExact": 317.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1664,
@@ -253,7 +293,8 @@
       "width": 1160.0,
       "height": 74.0,
       "backgroundColor": "rgb(246, 208, 149)",
-      "opacity": 0.502
+      "opacity": 0.502,
+      "borderRadius": "15px 15px 0px 0px"
     },
     {
       "zIndex": 1662,
@@ -273,7 +314,8 @@
       "width": 1160.0,
       "height": 74.0,
       "backgroundColor": "rgb(246, 208, 149)",
-      "opacity": 0.502
+      "opacity": 0.502,
+      "borderRadius": "0px 0px 15px 15px"
     },
     {
       "zIndex": 1659,

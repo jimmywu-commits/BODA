@@ -53,7 +53,8 @@
       "textAlign": "center",
       "default": "LOGO",
       "hideIfField": "logoImg",
-      "width": 142.0
+      "width": 142.0,
+      "hidden": true
     },
     {
       "id": "logoBg",
@@ -68,7 +69,8 @@
       "field": "logoImg",
       "fieldLabel": "LOGO圖片網址",
       "imageScale": 70,
-      "keepBgWithImage": true
+      "keepBgWithImage": true,
+      "clipImage": true
     },
     {
       "id": "promo",

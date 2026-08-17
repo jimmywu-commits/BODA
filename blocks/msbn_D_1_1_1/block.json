@@ -8,7 +8,7 @@
     {
       "zIndex": 1473,
       "type": "text",
-      "left": 20.0,
+      "left": 700.0,
       "top": 306.385,
       "id": "name",
       "fontSize": 43.0,
@@ -22,12 +22,15 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 473.0,
+      "_refCenter": 936.5,
+      "topExact": 249.971,
+      "designText": "品名一排最多9字內"
     },
     {
       "zIndex": 1472,
       "type": "text",
-      "left": 20.0,
+      "left": 219.0,
       "top": 306.385,
       "id": "name",
       "fontSize": 43.0,
@@ -41,7 +44,10 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 473.0,
+      "_refCenter": 455.5,
+      "topExact": 249.971,
+      "designText": "品名一排最多9字內"
     },
     {
       "zIndex": 1471,
@@ -68,7 +74,9 @@
       "fieldLabel": "CTA文字",
       "default": "逛逛去",
       "maxLength": 6,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 318.434,
+      "designText": "逛逛去"
     },
     {
       "zIndex": 1469,
@@ -79,7 +87,8 @@
       "height": 71.0,
       "backgroundColor": "rgb(208, 1, 27)",
       "field": "ctaColor",
-      "fieldLabel": "CTA底色"
+      "fieldLabel": "CTA底色",
+      "borderRadius": "35px"
     },
     {
       "zIndex": 1468,
@@ -106,7 +115,9 @@
       "fieldLabel": "CTA文字2",
       "default": "逛逛去",
       "maxLength": 6,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 318.434,
+      "designText": "逛逛去"
     },
     {
       "zIndex": 1466,
@@ -117,7 +128,8 @@
       "height": 71.0,
       "backgroundColor": "rgb(208, 1, 27)",
       "field": "ctaColor2",
-      "fieldLabel": "CTA底色2"
+      "fieldLabel": "CTA底色2",
+      "borderRadius": "35px"
     },
     {
       "zIndex": 1465,
@@ -128,7 +140,28 @@
       "height": 385.0,
       "backgroundColor": "rgb(236, 155, 31)",
       "field": "itemImg",
-      "fieldLabel": "商品圖片網址"
+      "fieldLabel": "商品圖片網址",
+      "borderRadius": "15px 0px 0px 0px"
+    },
+    {
+      "zIndex": 1465,
+      "type": "image",
+      "left": 785.0,
+      "top": 24.0,
+      "width": 305.0,
+      "height": 226.0,
+      "field": "productImg",
+      "fieldLabel": "商品圖／情境圖（右）"
+    },
+    {
+      "zIndex": 1465,
+      "type": "image",
+      "left": 303.0,
+      "top": 24.0,
+      "width": 304.0,
+      "height": 226.0,
+      "field": "productImg2",
+      "fieldLabel": "商品圖／情境圖（左）"
     },
     {
       "zIndex": 1464,

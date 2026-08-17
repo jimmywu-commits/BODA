@@ -30,7 +30,9 @@
       "fieldLabel": "CTA文字",
       "default": "逛逛去",
       "maxLength": 6,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 298.434,
+      "designText": "逛逛去"
     },
     {
       "zIndex": 1019,
@@ -41,7 +43,8 @@
       "height": 71.0,
       "backgroundColor": "rgb(208, 1, 27)",
       "field": "ctaColor",
-      "fieldLabel": "CTA底色"
+      "fieldLabel": "CTA底色",
+      "borderRadius": "35px"
     },
     {
       "zIndex": 1018,
@@ -68,7 +71,9 @@
       "fieldLabel": "CTA文字2",
       "default": "逛逛去",
       "maxLength": 6,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 298.434,
+      "designText": "逛逛去"
     },
     {
       "zIndex": 1016,
@@ -79,7 +84,8 @@
       "height": 71.0,
       "backgroundColor": "rgb(208, 1, 27)",
       "field": "ctaColor2",
-      "fieldLabel": "CTA底色2"
+      "fieldLabel": "CTA底色2",
+      "borderRadius": "35px"
     },
     {
       "zIndex": 1015,
@@ -106,7 +112,9 @@
       "fieldLabel": "CTA文字3",
       "default": "逛逛去",
       "maxLength": 6,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 298.434,
+      "designText": "逛逛去"
     },
     {
       "zIndex": 1013,
@@ -117,7 +125,8 @@
       "height": 71.0,
       "backgroundColor": "rgb(208, 1, 27)",
       "field": "ctaColor3",
-      "fieldLabel": "CTA底色3"
+      "fieldLabel": "CTA底色3",
+      "borderRadius": "35px"
     },
     {
       "zIndex": 1012,
@@ -135,7 +144,9 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "topExact": 230.28,
+      "designText": "品名一排7字內"
     },
     {
       "zIndex": 1011,
@@ -153,7 +164,9 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "topExact": 230.28,
+      "designText": "品名一排7字內"
     },
     {
       "zIndex": 1010,
@@ -171,7 +184,9 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "topExact": 230.28,
+      "designText": "品名一排7字內"
     },
     {
       "zIndex": 1009,
@@ -187,7 +202,8 @@
       "default": "LOGO",
       "hideIfField": "logoImg",
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "hidden": true
     },
     {
       "zIndex": 1008,
@@ -203,7 +219,8 @@
       "default": "LOGO",
       "hideIfField": "logoImg",
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "hidden": true
     },
     {
       "zIndex": 1007,
@@ -219,7 +236,8 @@
       "default": "LOGO",
       "hideIfField": "logoImg",
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "hidden": true
     },
     {
       "zIndex": 1006,
@@ -232,7 +250,9 @@
       "field": "logoImg",
       "fieldLabel": "LOGO圖片網址",
       "imageScale": 70,
-      "keepBgWithImage": true
+      "keepBgWithImage": true,
+      "borderRadius": "15px 15px 0px 0px",
+      "clipImage": true
     },
     {
       "zIndex": 1005,
@@ -245,7 +265,9 @@
       "field": "logoImg2",
       "fieldLabel": "LOGO圖片網址2",
       "imageScale": 70,
-      "keepBgWithImage": true
+      "keepBgWithImage": true,
+      "borderRadius": "15px 15px 0px 0px",
+      "clipImage": true
     },
     {
       "zIndex": 1004,
@@ -258,7 +280,9 @@
       "field": "logoImg3",
       "fieldLabel": "LOGO圖片網址3",
       "imageScale": 70,
-      "keepBgWithImage": true
+      "keepBgWithImage": true,
+      "borderRadius": "15px 15px 0px 0px",
+      "clipImage": true
     },
     {
       "zIndex": 1003,

@@ -1,0 +1,75 @@
+/* ================================================
+   HBN_橫式LOGO.config.css
+   ★ 系統設定檔，不要貼 PS 的 CSS 進來
+   ★ PS 維護的 CSS 完全不需要修改
+   ================================================ */
+
+/* ── 畫布設定 ── */
+:root {
+  --canvas-w:  1200px;
+  --canvas-h: 400px;
+  --canvas-bg: #6ec6e8;
+  --bg-img:    ;
+
+  /*
+   圖層清單：class名稱|預設文字
+   純佔位框留空（|後面不填）
+   順序由低 z-index 到高 z-index
+   ★ 文字內容不可含逗號「,」（逗號是圖層分隔符）
+      例：$1,023 → 改寫 $1023
+  */
+  --layers: "bg|,左側保護|,漸層左|,商品範圍|,logo範圍|,cta底|,主標|主標$1023起,日期|5/18 12:00 - 5/25 11:59 中文,副標|副標$1023起";
+}
+
+/* ── logo範圍、商品範圍：opacity 改 rgba，避免影響子元素 ──
+   PS 匯出的 opacity: 0.4 會連子元素一起變透明，
+   上傳 logo 圖片後也會受影響，在此覆蓋為 rgba。
+────────────────────────────────────────────── */
+.logo範圍  { background-color: rgba(235, 104, 119, 0.4); opacity: 1; }
+.商品範圍  { background-color: rgba(235, 104, 119, 0.4); opacity: 1; }
+
+
+
+/* ── transform-origin 全域修正 ──────────────────
+   PS 匯出的 left/top 以元素左上角為基準計算，
+   瀏覽器預設 transform-origin: 50% 50% 會造成偏移。
+   統一改為 0 0，完全符合 PS 的座標系統。
+   新增任何圖層都自動生效，不需要額外處理。
+─────────────────────────────────────────────── */
+* { transform-origin: 0 0; }
+/* ── 文字圖層位置修正
+     值 = PS 變形面板的 X/Y（基準點左上角）
+     PS 改版後若有移動文字，重新查 X/Y 更新這裡
+──────────────────────────────────────────── */
+.主標        { left: 146.26px;     top: 147.39px; line-height: 1; white-space: nowrap; }
+.副標        { left: 146.26px;     top: 209.27px; line-height: 1; white-space: nowrap; }
+.日期        { left: 146.26px;     top: 282.14px; line-height: 1; white-space: nowrap;   font-family: "ShopeeNotoSans (content)";
+  font-weight: 300;
+}
+
+/* ── 左側保護色塊 ── */
+.左側保護 {
+  position: absolute;
+  left: 0; top: 0;
+  width: 669px; height: 550px;
+  background: #6ec6e8;
+  pointer-events: none; z-index: 3;
+}
+
+/* ── 漸層左：起點 667px ── */
+.漸層左 {
+  position: absolute;
+  left: 667px; top: 0;
+  width: 70px; height: 550px;
+  background: linear-gradient(to right, #6ec6e8 0%, transparent 100%);
+  pointer-events: none; z-index: 3;
+  --grad-dir: to right;
+}
+/* ── .bg：全畫布底色（背景圖容器）── */
+.bg {
+  position: absolute;
+  left: 0; top: 0;
+  width: 1200px; height: 550px;
+  background-color: #6ec6e8;
+  z-index: 2;
+}

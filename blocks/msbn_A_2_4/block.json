@@ -15,7 +15,8 @@
       "border": "2px solid rgb(255, 0, 0)",
       "field": "logoImg",
       "fieldLabel": "LOGO圖片網址",
-      "imageScale": 90
+      "imageScale": 90,
+      "clipImage": true
     },
     {
       "zIndex": 397,
@@ -48,7 +49,8 @@
       "border": "2px solid rgb(255, 0, 0)",
       "field": "logoImg2",
       "fieldLabel": "LOGO圖片網址2",
-      "imageScale": 90
+      "imageScale": 90,
+      "clipImage": true
     },
     {
       "zIndex": 394,
@@ -80,7 +82,9 @@
       "height": 74.0,
       "backgroundColor": "rgb(255, 255, 255)",
       "field": "bgColor",
-      "fieldLabel": "卡片背景色"
+      "fieldLabel": "卡片背景色",
+      "borderRadius": "20px 20px 0px 0px",
+      "psRadius": true
     },
     {
       "zIndex": 391,
@@ -91,7 +95,9 @@
       "height": 74.0,
       "backgroundColor": "rgb(255, 255, 255)",
       "field": "bgColor2",
-      "fieldLabel": "卡片背景色2"
+      "fieldLabel": "卡片背景色2",
+      "borderRadius": "20px 20px 0px 0px",
+      "psRadius": true
     }
   ]
 }

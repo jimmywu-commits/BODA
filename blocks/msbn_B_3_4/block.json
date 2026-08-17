@@ -21,7 +21,9 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "topExact": 322.94,
+      "designText": "警語最多放8個字"
     },
     {
       "zIndex": 1115,
@@ -39,7 +41,9 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "topExact": 322.94,
+      "designText": "警語最多放8個字"
     },
     {
       "zIndex": 1114,
@@ -57,7 +61,9 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "topExact": 322.94,
+      "designText": "警語最多放8個字"
     },
     {
       "zIndex": 1113,
@@ -75,7 +81,9 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "topExact": 275.28,
+      "designText": "品名一排7字內"
     },
     {
       "zIndex": 1112,
@@ -93,7 +101,9 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "topExact": 275.28,
+      "designText": "品名一排7字內"
     },
     {
       "zIndex": 1111,
@@ -111,7 +121,9 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "topExact": 275.28,
+      "designText": "品名一排7字內"
     },
     {
       "zIndex": 1110,
@@ -126,7 +138,8 @@
       "default": "情境圖",
       "hideIfField": "sceneImg",
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "hidden": true
     },
     {
       "zIndex": 1109,
@@ -141,7 +154,8 @@
       "default": "情境圖",
       "hideIfField": "sceneImg",
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "hidden": true
     },
     {
       "zIndex": 1108,
@@ -156,7 +170,8 @@
       "default": "情境圖",
       "hideIfField": "sceneImg",
       "whiteSpace": "pre-line",
-      "width": 374.0
+      "width": 374.0,
+      "hidden": true
     },
     {
       "zIndex": 1107,
@@ -166,9 +181,11 @@
       "width": 374.0,
       "height": 250.0,
       "backgroundColor": "rgb(255, 255, 255)",
-      "field": "sceneImg",
-      "fieldLabel": "情境圖網址",
-      "keepBgWithImage": true
+      "field": "productImg",
+      "fieldLabel": "商品圖／情境圖（右）",
+      "keepBgWithImage": true,
+      "borderRadius": "15px 15px 0px 0px",
+      "clipImage": true
     },
     {
       "zIndex": 1106,
@@ -178,9 +195,11 @@
       "width": 374.0,
       "height": 250.0,
       "backgroundColor": "rgb(255, 255, 255)",
-      "field": "sceneImg2",
-      "fieldLabel": "情境圖網址2",
-      "keepBgWithImage": true
+      "field": "productImg2",
+      "fieldLabel": "商品圖／情境圖（中）",
+      "keepBgWithImage": true,
+      "borderRadius": "15px 15px 0px 0px",
+      "clipImage": true
     },
     {
       "zIndex": 1105,
@@ -190,9 +209,11 @@
       "width": 374.0,
       "height": 250.0,
       "backgroundColor": "rgb(255, 255, 255)",
-      "field": "sceneImg3",
-      "fieldLabel": "情境圖網址3",
-      "keepBgWithImage": true
+      "field": "productImg3",
+      "fieldLabel": "商品圖／情境圖（左）",
+      "keepBgWithImage": true,
+      "borderRadius": "15px 15px 0px 0px",
+      "clipImage": true
     },
     {
       "zIndex": 1104,

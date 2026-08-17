@@ -6,72 +6,127 @@
   "refImage": "MSBN-A-2-3.jpg",
   "layers": [
     {
+      "zIndex": 373,
+      "type": "image",
+      "left": 340.0,
+      "top": 20.0,
+      "width": 260.0,
+      "height": 390.0,
+      "field": "productImg",
+      "fieldLabel": "商品圖片網址（左）",
+      "placeholderZIndex": 373,
+      "imageZIndex": 388
+    },
+    {
+      "zIndex": 373,
+      "type": "image",
+      "left": 920.0,
+      "top": 20.0,
+      "width": 260.0,
+      "height": 390.0,
+      "field": "productImg2",
+      "fieldLabel": "商品圖片網址（右）",
+      "placeholderZIndex": 373,
+      "imageZIndex": 388
+    },
+    {
+      "zIndex": 373,
+      "type": "rect",
+      "id": "artFrame",
+      "left": 339.0,
+      "top": 19.0,
+      "width": 258.0,
+      "height": 388.0,
+      "border": "2px solid rgb(255, 0, 0)",
+      "hidden": true
+    },
+    {
+      "zIndex": 373,
+      "type": "rect",
+      "id": "artFrame2",
+      "left": 918.0,
+      "top": 19.0,
+      "width": 258.0,
+      "height": 388.0,
+      "border": "2px solid rgb(255, 0, 0)",
+      "hidden": true
+    },
+    {
       "zIndex": 387,
       "type": "text",
       "left": 611.0,
       "top": 78.827,
-      "id": "promo",
+      "id": "promo2",
       "fontSize": 45.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(255, 255, 255)",
       "fontWeight": "bold",
       "lineHeight": "0.956",
       "textAlign": "center",
-      "field": "promo",
-      "fieldLabel": "促標文字",
+      "field": "promo2",
+      "fieldLabel": "促標文字2",
       "default": "促標文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 295.0
+      "width": 295.0,
+      "topExact": 23.365,
+      "designText": "促標6個字內"
     },
     {
       "zIndex": 386,
       "type": "rect",
-      "id": "promoBar",
+      "id": "promoBar2",
       "left": 611.0,
       "top": 25.0,
       "width": 295.0,
       "height": 65.0,
       "backgroundColor": "rgb(79, 159, 162)",
       "borderRadius": "10px",
-      "field": "promoColor",
-      "fieldLabel": "促標底色"
+      "field": "promoColor2",
+      "fieldLabel": "促標底色2"
     },
     {
       "zIndex": 385,
       "type": "text",
       "left": 608.687,
       "top": 149.675,
-      "id": "name",
+      "id": "name2",
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(18, 24, 39)",
       "lineHeight": "1.2",
       "textAlign": "left",
-      "field": "name",
-      "fieldLabel": "品名",
+      "field": "name2",
+      "fieldLabel": "品名2",
       "default": "品名文案",
       "maxLength": 8,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 95.28,
+      "designText": "品名一排最多8字\n品名一排最多8字"
     },
     {
       "zIndex": 384,
       "type": "text",
-      "left": 600.0,
-      "top": 89.846,
-      "id": "badgeText",
+      "left": 1069.0,
+      "top": 23.0,
+      "id": "badgeText2",
       "fontSize": 35.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(255, 255, 255)",
       "fontWeight": "bold",
-      "lineHeight": "1.514",
+      "lineHeight": 53,
       "textAlign": "center",
-      "field": "badge",
-      "fieldLabel": "圓標文字",
+      "field": "badge2",
+      "fieldLabel": "圓標文字2",
       "default": "圓標文字",
       "maxLength": 6,
-      "whiteSpace": "pre-line",
-      "width": 580.0
+      "whiteSpace": "normal",
+      "width": 80,
+      "_boxLeft": 1049.0,
+      "_boxWidth": 120.0,
+      "height": 121.0,
+      "verticalCenter": true,
+      "designText": "圓標\n5字內"
     },
     {
       "zIndex": 383,
@@ -81,8 +136,9 @@
       "width": 120.0,
       "height": 121.0,
       "backgroundColor": "rgb(114, 122, 204)",
-      "field": "badgeColor",
-      "fieldLabel": "圓標底色"
+      "field": "badgeColor2",
+      "fieldLabel": "圓標底色2",
+      "id": "badgeBg2"
     },
     {
       "zIndex": 382,
@@ -92,7 +148,8 @@
       "width": 22.0,
       "height": 26.0,
       "backgroundColor": "rgb(255, 255, 255)",
-      "clipPath": "polygon(0 0,100% 50%,0 100%)"
+      "clipPath": "polygon(0 0,100% 50%,0 100%)",
+      "id": "ctaTri2"
     },
     {
       "zIndex": 381,
@@ -102,8 +159,9 @@
       "width": 51.0,
       "height": 51.0,
       "backgroundColor": "rgb(208, 1, 27)",
-      "field": "ctaColor",
-      "fieldLabel": "CTA底色"
+      "field": "ctaColor2",
+      "fieldLabel": "CTA底色2",
+      "id": "ctaBg2"
     },
     {
       "zIndex": 380,
@@ -117,12 +175,14 @@
       "fontWeight": "bold",
       "lineHeight": "0.956",
       "textAlign": "center",
-      "field": "promo2",
-      "fieldLabel": "促標文字2",
+      "field": "promo",
+      "fieldLabel": "促標文字",
       "default": "促標文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 295.0
+      "width": 295.0,
+      "topExact": 23.365,
+      "designText": "促標6個字內"
     },
     {
       "zIndex": 379,
@@ -134,8 +194,8 @@
       "height": 65.0,
       "backgroundColor": "rgb(79, 159, 162)",
       "borderRadius": "10px",
-      "field": "promoColor2",
-      "fieldLabel": "促標底色2"
+      "field": "promoColor",
+      "fieldLabel": "促標底色"
     },
     {
       "zIndex": 378,
@@ -148,30 +208,37 @@
       "color": "rgb(18, 24, 39)",
       "lineHeight": "1.2",
       "textAlign": "left",
-      "field": "name2",
-      "fieldLabel": "品名2",
+      "field": "name",
+      "fieldLabel": "品名",
       "default": "品名文案",
       "maxLength": 8,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 95.28,
+      "designText": "品名一排最多8字\n品名一排最多8字"
     },
     {
       "zIndex": 377,
       "type": "text",
-      "left": 20.0,
-      "top": 89.846,
+      "left": 489.0,
+      "top": 23.0,
       "id": "badgeText",
       "fontSize": 35.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(255, 255, 255)",
       "fontWeight": "bold",
-      "lineHeight": "1.514",
+      "lineHeight": 53,
       "textAlign": "center",
-      "field": "badge2",
-      "fieldLabel": "圓標文字2",
+      "field": "badge",
+      "fieldLabel": "圓標文字",
       "default": "圓標文字",
       "maxLength": 6,
-      "whiteSpace": "pre-line",
-      "width": 580.0
+      "whiteSpace": "normal",
+      "width": 80,
+      "_boxLeft": 469.0,
+      "_boxWidth": 120.0,
+      "height": 121.0,
+      "verticalCenter": true,
+      "designText": "圓標\n5字內"
     },
     {
       "zIndex": 376,
@@ -181,8 +248,9 @@
       "width": 120.0,
       "height": 121.0,
       "backgroundColor": "rgb(114, 122, 204)",
-      "field": "badgeColor2",
-      "fieldLabel": "圓標底色2"
+      "field": "badgeColor",
+      "fieldLabel": "圓標底色",
+      "id": "badgeBg"
     },
     {
       "zIndex": 375,
@@ -192,7 +260,8 @@
       "width": 22.0,
       "height": 26.0,
       "backgroundColor": "rgb(255, 255, 255)",
-      "clipPath": "polygon(0 0,100% 50%,0 100%)"
+      "clipPath": "polygon(0 0,100% 50%,0 100%)",
+      "id": "ctaTri"
     },
     {
       "zIndex": 374,
@@ -202,8 +271,9 @@
       "width": 51.0,
       "height": 51.0,
       "backgroundColor": "rgb(208, 1, 27)",
-      "field": "ctaColor2",
-      "fieldLabel": "CTA底色2"
+      "field": "ctaColor",
+      "fieldLabel": "CTA底色",
+      "id": "ctaBg"
     },
     {
       "zIndex": 372,
@@ -214,8 +284,9 @@
       "height": 400.0,
       "backgroundColor": "rgb(255, 189, 169)",
       "borderRadius": "15px",
-      "field": "bgColor",
-      "fieldLabel": "卡片背景色"
+      "field": "bgColor2",
+      "fieldLabel": "卡片背景色2",
+      "id": "bg2"
     },
     {
       "zIndex": 370,
@@ -226,8 +297,9 @@
       "height": 400.0,
       "backgroundColor": "rgb(169, 197, 255)",
       "borderRadius": "15px",
-      "field": "bgColor2",
-      "fieldLabel": "卡片背景色2"
+      "field": "bgColor",
+      "fieldLabel": "卡片背景色",
+      "id": "bg"
     }
   ]
 }

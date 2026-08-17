@@ -63,12 +63,14 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "topExact": 271.28,
+      "designText": "品名最多可以放10字"
     },
     {
       "zIndex": 673,
       "type": "text",
-      "left": 605.0,
+      "left": 584.0,
       "top": 358.203,
       "id": "warn",
       "fontSize": 35.0,
@@ -81,7 +83,10 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "_refCenter": 871.5,
+      "topExact": 315.94,
+      "designText": "特色最多放8個字"
     },
     {
       "zIndex": 672,
@@ -99,12 +104,14 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "topExact": 271.28,
+      "designText": "品名最多可以放10字"
     },
     {
       "zIndex": 671,
       "type": "text",
-      "left": 20.0,
+      "left": 0.0,
       "top": 358.203,
       "id": "warn",
       "fontSize": 35.0,
@@ -117,7 +124,10 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "_refCenter": 287.5,
+      "topExact": 315.94,
+      "designText": "特色最多放8個字"
     },
     {
       "zIndex": 629,
@@ -136,7 +146,9 @@
       "default": "促標文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "topExact": 13.365,
+      "designText": "促標最多8個字內"
     },
     {
       "zIndex": 628,
@@ -148,7 +160,19 @@
       "height": 65.0,
       "backgroundColor": "rgb(79, 159, 162)",
       "field": "promoColor",
-      "fieldLabel": "促標底色"
+      "fieldLabel": "促標底色",
+      "borderRadius": "15px 15px 0px 0px"
+    },
+    {
+      "zIndex": 628,
+      "type": "image",
+      "left": 683.0,
+      "top": 103.0,
+      "width": 420.0,
+      "height": 161.0,
+      "field": "productImg",
+      "fieldLabel": "商品圖／情境圖（右）",
+      "clipBottom": true
     },
     {
       "zIndex": 627,
@@ -179,7 +203,9 @@
       "default": "促標文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "topExact": 13.365,
+      "designText": "促標最多8個字內"
     },
     {
       "zIndex": 625,
@@ -191,7 +217,19 @@
       "height": 65.0,
       "backgroundColor": "rgb(79, 159, 162)",
       "field": "promoColor2",
-      "fieldLabel": "促標底色2"
+      "fieldLabel": "促標底色2",
+      "borderRadius": "15px 15px 0px 0px"
+    },
+    {
+      "zIndex": 625,
+      "type": "image",
+      "left": 97.0,
+      "top": 103.0,
+      "width": 420.0,
+      "height": 161.0,
+      "field": "productImg2",
+      "fieldLabel": "商品圖／情境圖（左）",
+      "clipBottom": true
     },
     {
       "zIndex": 624,

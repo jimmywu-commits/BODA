@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>psd-css-toolkit — 版位預覽</title>
+<style>
+  body{margin:0;padding:24px;background:#f5f6f8;color:#121827;
+       font-family:system-ui,"Microsoft JhengHei",sans-serif;}
+  h1{font-size:19px;margin:0 0 4px;}
+  .hint{font-size:13px;color:#6b7280;margin:0 0 18px;line-height:1.75;}
+  .bar{position:sticky;top:0;z-index:99;background:#fff;border:1px solid #e5e7eb;
+       border-radius:10px;padding:11px 15px;margin-bottom:18px;display:flex;gap:20px;
+       align-items:center;flex-wrap:wrap;font-size:13.5px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .bar label{display:flex;gap:6px;align-items:center;cursor:pointer;}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:13px;
+        margin-bottom:16px;overflow:auto;}
+  h2{font-size:14px;margin:0 0 9px;}
+  h2 .id{font-size:11.5px;color:#9ca3af;font-weight:400;margin-left:7px;}
+  .stage{position:relative;transform-origin:top left;}
+  .stage img.ref{position:absolute;left:0;top:0;}
+  .stage .render{position:absolute;left:0;top:0;}
+  body.textonly .render div:not([style*="font-size"]){background:transparent!important;
+      box-shadow:none!important;border-color:transparent!important;}
+  body.textonly .render img{display:none!important;}
+  body.noref img.ref{display:none;}
+  #err{color:#b91c1c;font-size:13px;white-space:pre-wrap;}
+</style>
+</head>
+<body>
+<h1>版位預覽 — 渲染結果 vs 設計稿參考圖</h1>
+<p class="hint">
+  底圖是設計稿參考圖，上面疊的是 <code>block-renderer.js</code> 實際畫出來的圖層。<br>
+  勾「只顯示文字」把色塊藏起來，文字要跟參考圖上的字重疊在一起才算對位。
+</p>
+
+<div class="bar">
+  <label><input type="checkbox" id="t" checked> 只顯示文字</label>
+  <label><input type="checkbox" id="r"> 隱藏參考圖</label>
+  <label>文字
+    <select id="mode">
+      <option value="design">設計稿文字</option>
+      <option value="default">版位預設</option>
+      <option value="empty">留空</option>
+    </select>
+  </label>
+  <label>縮放 <input type="range" id="z" min="30" max="100" value="70"> <span id="zv">70%</span></label>
+</div>
+
+<div id="err"></div>
+<div id="list"></div>
+
+<script src="../renderer/block-renderer.js"></script>
+<script>
+/* 這一頁要用網頁伺服器開（fetch 讀不到 file:// 的檔案）：
+     cd psd-css-toolkit && python -m http.server 8000
+     然後開 http://localhost:8000/demo/ */
+var BLOCKS_DIR = '../blocks/';
+var REF_DIR = '../input/ref/';
+var FONT_DIR = '../fonts/';
+var FONT_FAMILY = 'ShopeeNotoSans (content)';
+var FONT_FILES = {
+  400: 'ShopeeNotoSans(content)-Regular.ttf',
+  500: 'ShopeeNotoSans(content)-Medium.ttf',
+  700: 'ShopeeNotoSans(content)-Bold.ttf'
+};
+
+var css = Object.keys(FONT_FILES).map(function (w) {
+  return '@font-face{font-family:"' + FONT_FAMILY + '";font-weight:' + w +
+    ';src:url("' + FONT_DIR + FONT_FILES[w] + '") format("truetype");}';
+}).join('');
+document.head.insertAdjacentHTML('beforeend', '<style>' + css + '</style>');
+
+var schemas = [];
+
+/* blocks/ 底下有哪些版位：優先讀 blocks/index.json，沒有就請使用者自己列 */
+fetch(BLOCKS_DIR + 'index.json')
+  .then(function (r) { if (!r.ok) throw new Error('沒有 blocks/index.json'); return r.json(); })
+  .then(function (ids) {
+    return Promise.all(ids.map(function (id) {
+      return fetch(BLOCKS_DIR + id + '/block.json').then(function (r) { return r.json(); });
+    }));
+  })
+  .then(function (list) { schemas = list; draw(); })
+  .catch(function (e) {
+    document.getElementById('err').textContent =
+      '讀不到版位清單：' + e.message +
+      '\n\n請確認：\n' +
+      '1. 有用網頁伺服器開這一頁（python -m http.server 8000）\n' +
+      '2. blocks/index.json 存在（跑 build_blocks 會自動產生）';
+  });
+
+function draw() {
+  var mode = document.getElementById('mode').value;
+  document.getElementById('list').innerHTML = schemas.map(function (s) {
+    var html = BlockRenderer.render(s, BlockRenderer.sampleData(s, mode), {});
+    return '<section class="card">' +
+      '<h2>' + s.name + '<span class="id">' + s.id + '　' + s.width + '×' + s.height + '</span></h2>' +
+      '<div class="stage" style="width:' + s.width + 'px;height:' + s.height + 'px;">' +
+        (s.refImage ? '<img class="ref" src="' + REF_DIR + s.refImage +
+          '" style="width:' + s.width + 'px;height:' + s.height + 'px;" onerror="this.style.display=\'none\'">' : '') +
+        '<div class="render">' + html + '</div>' +
+      '</div></section>';
+  }).join('');
+  zoom();
+}
+
+function zoom() {
+  var z = document.getElementById('z');
+  var s = z.value / 100;
+  document.getElementById('zv').textContent = z.value + '%';
+  document.querySelectorAll('.stage').forEach(function (st) {
+    st.style.transform = 'scale(' + s + ')';
+    st.parentElement.style.height = (parseFloat(st.style.height) * s + 8) + 'px';
+    st.parentElement.style.width = (parseFloat(st.style.width) * s + 8) + 'px';
+  });
+}
+
+document.getElementById('t').onchange = function () {
+  document.body.classList.toggle('textonly', this.checked);
+};
+document.getElementById('r').onchange = function () {
+  document.body.classList.toggle('noref', this.checked);
+};
+document.getElementById('mode').onchange = draw;
+document.getElementById('z').oninput = zoom;
+document.body.classList.add('textonly');
+</script>
+</body>
+</html>

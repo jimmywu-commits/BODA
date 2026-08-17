@@ -1,0 +1,90 @@
+/* ================================================
+   Search_Image3logo.config.css
+   ★ 三logo版本，無副標文字
+   ================================================ */
+:root {
+  --canvas-w:  1125px;
+  --canvas-h:  156px;
+  --canvas-bg: rgb(84, 84, 84);
+  --bg-img:    ;
+
+  --layers: "底色|,蝦皮商城logo紅底|,蝦皮商城logo圖|,主logo橫線_左|,主logo橫線_右|,官方旗艦店|官方旗艦店,logo範圍_左|,logo間隔直線_左|,logo範圍_中|,logo間隔直線_右|,logo範圍_右|,cta圓底|,cta白線|,cta三角箭頭|";
+}
+
+* { transform-origin: 0 0; }
+
+
+/* 左側紅底共用區請改 Search_Image1logo_logo.css，這裡不再重複定義。 */
+
+
+
+
+/* ════════════════════════════════════════════
+   Image3 專用：紅底 z-index 壓低
+   （Image1 PS CSS 紅底本來就是 195；
+     Image3 PS CSS 是 231，需要在這裡覆蓋）
+════════════════════════════════════════════ */
+.蝦皮商城logo紅底 {
+  z-index: 195 !important;
+}
+
+/* 橫線需要蓋過紅底，z-index 拉高 */
+.主logo橫線_左 { z-index: 999 !important; }
+.主logo橫線_右 { z-index: 999 !important; }
+
+
+/* ════════════════════════════════════════════
+   logo 範圍（Image3 獨有）
+════════════════════════════════════════════ */
+.logo範圍_左 { background-color: rgba(235, 104, 119, 0.4); opacity: 1; }
+.logo範圍_中 { background-color: rgba(235, 104, 119, 0.4); opacity: 1; }
+.logo範圍_右 { background-color: rgba(235, 104, 119, 0.4); opacity: 1; }
+
+
+/* ════════════════════════════════════════════
+   logo 間隔直線（Image3 獨有）
+════════════════════════════════════════════ */
+.logo間隔直線_左,
+.logo間隔直線_右 {
+  opacity: 0.6;
+}
+
+
+/* ════════════════════════════════════════════
+   CTA
+════════════════════════════════════════════ */
+.cta圓底 {
+  background-color: #d0021b !important;
+  background-image: none !important;
+  top: 38px;
+  left: 1007px;
+}
+.cta白線 {
+  position: absolute;
+  left: 1010px;
+  top: 41px;
+  width: 74px;
+  height: 74px;
+  z-index: 300;
+
+  border: none !important;
+  border-radius: 0 !important;
+
+  background:
+    transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='74' height='74' viewBox='0 0 74 74'%3E%3Ccircle cx='37' cy='37' r='34' fill='none' stroke='%23fff' stroke-width='6'/%3E%3C/svg%3E")
+    center center / 74px 74px no-repeat !important;
+
+  overflow: visible;
+}
+.cta三角箭頭 {
+  background: transparent;
+  width: 0;
+  height: 0;
+  border-top:    13px solid transparent;
+  border-bottom: 13px solid transparent;
+  border-left:   23px solid rgb(255, 255, 255);
+  position: absolute;
+  left: 1037px;
+  top: 65px;
+  box-sizing: content-box;
+}

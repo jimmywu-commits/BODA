@@ -22,7 +22,9 @@
       "default": "促標文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 350.0
+      "width": 350.0,
+      "topExact": 115.365,
+      "designText": "促標7個字以內"
     },
     {
       "zIndex": 831,
@@ -40,7 +42,7 @@
     {
       "zIndex": 830,
       "type": "text",
-      "left": 0,
+      "left": 0.0,
       "top": 241.675,
       "id": "name",
       "fontSize": 40.0,
@@ -53,7 +55,10 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 422.0,
+      "_refCenter": 211.0,
+      "topExact": 187.28,
+      "designText": "品名一排最多8字\n品名一排最多8字"
     },
     {
       "zIndex": 829,
@@ -100,7 +105,7 @@
     {
       "zIndex": 825,
       "type": "text",
-      "left": 0,
+      "left": 799.0,
       "top": 370.203,
       "id": "warn",
       "fontSize": 35.0,
@@ -113,7 +118,10 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 383.0,
+      "_refCenter": 990.5,
+      "topExact": 327.94,
+      "designText": "警語最多放8個字"
     },
     {
       "zIndex": 824,
@@ -131,26 +139,33 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 1200.0,
+      "topExact": 327.94,
+      "designText": "警語最多放8個字"
     },
     {
       "zIndex": 822,
       "type": "text",
-      "left": 0,
-      "top": 85.846,
+      "left": 820.0,
+      "top": 19.0,
       "id": "badgeText",
       "fontSize": 35.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(255, 255, 255)",
       "fontWeight": "bold",
-      "lineHeight": "1.514",
+      "lineHeight": 53,
       "textAlign": "center",
       "field": "badge",
       "fieldLabel": "圓標文字",
       "default": "圓標文字",
       "maxLength": 6,
-      "whiteSpace": "pre-line",
-      "width": 1200.0
+      "whiteSpace": "normal",
+      "width": 80,
+      "_boxLeft": 800.0,
+      "_boxWidth": 120.0,
+      "height": 121.0,
+      "verticalCenter": true,
+      "designText": "圓標\n5字內"
     },
     {
       "zIndex": 821,
@@ -161,26 +176,32 @@
       "height": 121.0,
       "backgroundColor": "rgb(114, 122, 204)",
       "field": "badgeColor",
-      "fieldLabel": "圓標底色"
+      "fieldLabel": "圓標底色",
+      "id": "badgeBg"
     },
     {
       "zIndex": 820,
       "type": "text",
-      "left": 0,
-      "top": 85.846,
-      "id": "badgeText",
+      "left": 433.0,
+      "top": 19.0,
+      "id": "badgeText2",
       "fontSize": 35.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(255, 255, 255)",
       "fontWeight": "bold",
-      "lineHeight": "1.514",
+      "lineHeight": 53,
       "textAlign": "center",
       "field": "badge2",
       "fieldLabel": "圓標文字2",
       "default": "圓標文字",
       "maxLength": 6,
-      "whiteSpace": "pre-line",
-      "width": 1200.0
+      "whiteSpace": "normal",
+      "width": 80,
+      "_boxLeft": 413.0,
+      "_boxWidth": 120.0,
+      "height": 121.0,
+      "verticalCenter": true,
+      "designText": "圓標\n5字內"
     },
     {
       "zIndex": 819,
@@ -191,12 +212,13 @@
       "height": 121.0,
       "backgroundColor": "rgb(114, 122, 204)",
       "field": "badgeColor2",
-      "fieldLabel": "圓標底色2"
+      "fieldLabel": "圓標底色2",
+      "id": "badgeBg2"
     },
     {
       "zIndex": 818,
       "type": "text",
-      "left": 0,
+      "left": 799.0,
       "top": 334.675,
       "id": "name",
       "fontSize": 40.0,
@@ -209,7 +231,10 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 382.0,
+      "_refCenter": 990.0,
+      "topExact": 280.28,
+      "designText": "品名一排7字內"
     },
     {
       "zIndex": 817,
@@ -227,7 +252,9 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 1200.0,
+      "topExact": 280.28,
+      "designText": "品名一排7字內"
     }
   ]
 }

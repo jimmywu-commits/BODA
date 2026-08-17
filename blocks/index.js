@@ -1,6 +1,5 @@
 /* 積木清單：之後每新增一個版位（資料夾），把 id 加進這個陣列即可 */
 window._bn_blocks_manifest_cb([
-  "msbn3p",
   "subarea_A_1_1",
   "subarea_A_1_2",
   "subarea_A_1_3",

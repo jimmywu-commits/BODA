@@ -22,7 +22,9 @@
       "default": "促標文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "topExact": 13.365,
+      "designText": "促標最多8個字內"
     },
     {
       "zIndex": 577,
@@ -34,12 +36,13 @@
       "height": 65.0,
       "backgroundColor": "rgb(79, 159, 162)",
       "field": "promoColor",
-      "fieldLabel": "促標底色"
+      "fieldLabel": "促標底色",
+      "borderRadius": "15px 15px 0px 0px"
     },
     {
       "zIndex": 576,
       "type": "text",
-      "left": 605.0,
+      "left": 468.0,
       "top": 159.675,
       "id": "name",
       "fontSize": 40.0,
@@ -52,12 +55,15 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "_refCenter": 755.5,
+      "topExact": 105.28,
+      "designText": "品名一排6字\n品名一排6字"
     },
     {
       "zIndex": 575,
       "type": "text",
-      "left": 605.0,
+      "left": 468.0,
       "top": 250.203,
       "id": "warn",
       "fontSize": 35.0,
@@ -70,7 +76,10 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "_refCenter": 755.5,
+      "topExact": 207.94,
+      "designText": "特色5個字"
     },
     {
       "zIndex": 574,
@@ -97,7 +106,9 @@
       "fieldLabel": "CTA文字",
       "default": "逛逛去",
       "maxLength": 6,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 286.434,
+      "designText": "逛逛去"
     },
     {
       "zIndex": 572,
@@ -108,7 +119,18 @@
       "height": 71.0,
       "backgroundColor": "rgb(208, 1, 27)",
       "field": "ctaColor",
-      "fieldLabel": "CTA底色"
+      "fieldLabel": "CTA底色",
+      "borderRadius": "35px"
+    },
+    {
+      "zIndex": 572,
+      "type": "image",
+      "left": 895.0,
+      "top": 102.0,
+      "width": 260.0,
+      "height": 259.0,
+      "field": "productImg",
+      "fieldLabel": "商品圖／情境圖（右）"
     },
     {
       "zIndex": 571,
@@ -139,7 +161,9 @@
       "default": "促標文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "topExact": 13.365,
+      "designText": "促標最多8個字內"
     },
     {
       "zIndex": 569,
@@ -151,12 +175,13 @@
       "height": 65.0,
       "backgroundColor": "rgb(79, 159, 162)",
       "field": "promoColor2",
-      "fieldLabel": "促標底色2"
+      "fieldLabel": "促標底色2",
+      "borderRadius": "15px 15px 0px 0px"
     },
     {
       "zIndex": 568,
       "type": "text",
-      "left": 20.0,
+      "left": -117.0,
       "top": 159.675,
       "id": "name",
       "fontSize": 40.0,
@@ -169,12 +194,15 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "_refCenter": 170.5,
+      "topExact": 105.28,
+      "designText": "品名一排6字\n品名一排6字"
     },
     {
       "zIndex": 567,
       "type": "text",
-      "left": 20.0,
+      "left": -117.0,
       "top": 250.203,
       "id": "warn",
       "fontSize": 35.0,
@@ -187,7 +215,10 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 575.0
+      "width": 575.0,
+      "_refCenter": 170.5,
+      "topExact": 207.94,
+      "designText": "特色5個字"
     },
     {
       "zIndex": 566,
@@ -214,7 +245,9 @@
       "fieldLabel": "CTA文字2",
       "default": "逛逛去",
       "maxLength": 6,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 286.434,
+      "designText": "逛逛去"
     },
     {
       "zIndex": 564,
@@ -225,7 +258,18 @@
       "height": 71.0,
       "backgroundColor": "rgb(208, 1, 27)",
       "field": "ctaColor2",
-      "fieldLabel": "CTA底色2"
+      "fieldLabel": "CTA底色2",
+      "borderRadius": "35px"
+    },
+    {
+      "zIndex": 564,
+      "type": "image",
+      "left": 310.0,
+      "top": 102.0,
+      "width": 260.0,
+      "height": 259.0,
+      "field": "productImg2",
+      "fieldLabel": "商品圖／情境圖（左）"
     },
     {
       "zIndex": 563,

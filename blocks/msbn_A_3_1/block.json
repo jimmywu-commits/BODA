@@ -6,18 +6,7 @@
   "refImage": "MSBN-A-3-1.jpg",
   "layers": [
     {
-      "zIndex": 494,
-      "type": "image",
-      "left": 24.0,
-      "top": 140.0,
-      "width": 151.0,
-      "height": 111.0,
-      "backgroundColor": "rgb(255, 127, 127)",
-      "field": "giftImg",
-      "fieldLabel": "贈品圖片網址"
-    },
-    {
-      "zIndex": 493,
+      "zIndex": 475,
       "type": "image",
       "left": 174.0,
       "top": 20.0,
@@ -25,7 +14,77 @@
       "height": 231.0,
       "backgroundColor": "rgb(169, 197, 255)",
       "field": "productImg",
-      "fieldLabel": "商品圖片網址"
+      "fieldLabel": "曝品範圍（左）",
+      "placeholderZIndex": 475,
+      "imageZIndex": 485,
+      "clipBottom": true
+    },
+    {
+      "zIndex": 475,
+      "type": "image",
+      "left": 24.0,
+      "top": 140.0,
+      "width": 151.0,
+      "height": 111.0,
+      "backgroundColor": "rgb(255, 127, 127)",
+      "field": "giftImg",
+      "fieldLabel": "贈品範圍（左）",
+      "placeholderZIndex": 475,
+      "imageZIndex": 485
+    },
+    {
+      "zIndex": 475,
+      "type": "image",
+      "left": 562.0,
+      "top": 20.0,
+      "width": 231.0,
+      "height": 231.0,
+      "backgroundColor": "rgb(169, 197, 255)",
+      "field": "productImg2",
+      "fieldLabel": "曝品範圍（中）",
+      "placeholderZIndex": 475,
+      "imageZIndex": 485,
+      "clipBottom": true
+    },
+    {
+      "zIndex": 475,
+      "type": "image",
+      "left": 412.0,
+      "top": 140.0,
+      "width": 151.0,
+      "height": 111.0,
+      "backgroundColor": "rgb(255, 127, 127)",
+      "field": "giftImg2",
+      "fieldLabel": "贈品範圍（中）",
+      "placeholderZIndex": 475,
+      "imageZIndex": 485
+    },
+    {
+      "zIndex": 475,
+      "type": "image",
+      "left": 950.0,
+      "top": 20.0,
+      "width": 231.0,
+      "height": 231.0,
+      "backgroundColor": "rgb(169, 197, 255)",
+      "field": "productImg3",
+      "fieldLabel": "曝品範圍（右）",
+      "placeholderZIndex": 475,
+      "imageZIndex": 485,
+      "clipBottom": true
+    },
+    {
+      "zIndex": 475,
+      "type": "image",
+      "left": 800.0,
+      "top": 140.0,
+      "width": 151.0,
+      "height": 111.0,
+      "backgroundColor": "rgb(255, 127, 127)",
+      "field": "giftImg3",
+      "fieldLabel": "贈品範圍（右）",
+      "placeholderZIndex": 475,
+      "imageZIndex": 485
     },
     {
       "zIndex": 490,
@@ -45,8 +104,8 @@
       "width": 51.0,
       "height": 51.0,
       "backgroundColor": "rgb(208, 1, 27)",
-      "field": "ctaColor",
-      "fieldLabel": "CTA底色"
+      "field": "ctaColor3",
+      "fieldLabel": "CTA底色3"
     },
     {
       "zIndex": 488,
@@ -87,27 +146,32 @@
       "width": 51.0,
       "height": 51.0,
       "backgroundColor": "rgb(208, 1, 27)",
-      "field": "ctaColor3",
-      "fieldLabel": "CTA底色3"
+      "field": "ctaColor",
+      "fieldLabel": "CTA底色"
     },
     {
       "zIndex": 484,
       "type": "text",
-      "left": 0,
-      "top": 85.846,
-      "id": "badgeText",
+      "left": 820.0,
+      "top": 19.0,
+      "id": "badgeText3",
       "fontSize": 35.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(255, 255, 255)",
       "fontWeight": "bold",
-      "lineHeight": "1.514",
+      "lineHeight": 53,
       "textAlign": "center",
-      "field": "badge",
-      "fieldLabel": "圓標文字",
+      "field": "badge3",
+      "fieldLabel": "圓標文字3",
       "default": "圓標文字",
       "maxLength": 6,
-      "whiteSpace": "pre-line",
-      "width": 1200.0
+      "whiteSpace": "normal",
+      "width": 80,
+      "_boxLeft": 800.0,
+      "_boxWidth": 120.0,
+      "height": 121.0,
+      "verticalCenter": true,
+      "designText": "圓標\n5字內"
     },
     {
       "zIndex": 483,
@@ -117,27 +181,33 @@
       "width": 120.0,
       "height": 121.0,
       "backgroundColor": "rgb(114, 122, 204)",
-      "field": "badgeColor",
-      "fieldLabel": "圓標底色"
+      "field": "badgeColor3",
+      "fieldLabel": "圓標底色3",
+      "id": "badgeBg3"
     },
     {
       "zIndex": 482,
       "type": "text",
-      "left": 0,
-      "top": 85.846,
-      "id": "badgeText",
+      "left": 433.0,
+      "top": 19.0,
+      "id": "badgeText2",
       "fontSize": 35.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(255, 255, 255)",
       "fontWeight": "bold",
-      "lineHeight": "1.514",
+      "lineHeight": 53,
       "textAlign": "center",
       "field": "badge2",
       "fieldLabel": "圓標文字2",
       "default": "圓標文字",
       "maxLength": 6,
-      "whiteSpace": "pre-line",
-      "width": 1200.0
+      "whiteSpace": "normal",
+      "width": 80,
+      "_boxLeft": 413.0,
+      "_boxWidth": 120.0,
+      "height": 121.0,
+      "verticalCenter": true,
+      "designText": "圓標\n5字內"
     },
     {
       "zIndex": 481,
@@ -148,26 +218,32 @@
       "height": 121.0,
       "backgroundColor": "rgb(114, 122, 204)",
       "field": "badgeColor2",
-      "fieldLabel": "圓標底色2"
+      "fieldLabel": "圓標底色2",
+      "id": "badgeBg2"
     },
     {
       "zIndex": 480,
       "type": "text",
-      "left": 0,
-      "top": 85.846,
+      "left": 45.0,
+      "top": 19.0,
       "id": "badgeText",
       "fontSize": 35.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(255, 255, 255)",
       "fontWeight": "bold",
-      "lineHeight": "1.514",
+      "lineHeight": 53,
       "textAlign": "center",
-      "field": "badge3",
-      "fieldLabel": "圓標文字3",
+      "field": "badge",
+      "fieldLabel": "圓標文字",
       "default": "圓標文字",
       "maxLength": 6,
-      "whiteSpace": "pre-line",
-      "width": 1200.0
+      "whiteSpace": "normal",
+      "width": 80,
+      "_boxLeft": 25.0,
+      "_boxWidth": 120.0,
+      "height": 121.0,
+      "verticalCenter": true,
+      "designText": "圓標\n5字內"
     },
     {
       "zIndex": 479,
@@ -177,13 +253,14 @@
       "width": 120.0,
       "height": 121.0,
       "backgroundColor": "rgb(114, 122, 204)",
-      "field": "badgeColor3",
-      "fieldLabel": "圓標底色3"
+      "field": "badgeColor",
+      "fieldLabel": "圓標底色",
+      "id": "badgeBg"
     },
     {
       "zIndex": 478,
       "type": "text",
-      "left": 0,
+      "left": 801.0,
       "top": 310.675,
       "id": "name",
       "fontSize": 40.0,
@@ -191,12 +268,15 @@
       "color": "rgb(18, 24, 39)",
       "lineHeight": "1.2",
       "textAlign": "center",
-      "field": "name",
-      "fieldLabel": "品名",
+      "field": "name3",
+      "fieldLabel": "品名3",
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 378.0,
+      "_refCenter": 990.0,
+      "topExact": 256.28,
+      "designText": "品名一排7字內"
     },
     {
       "zIndex": 477,
@@ -214,12 +294,14 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 1200.0,
+      "topExact": 256.28,
+      "designText": "品名一排7字內"
     },
     {
       "zIndex": 476,
       "type": "text",
-      "left": 0,
+      "left": 25.0,
       "top": 310.675,
       "id": "name",
       "fontSize": 40.0,
@@ -227,12 +309,16 @@
       "color": "rgb(18, 24, 39)",
       "lineHeight": "1.2",
       "textAlign": "center",
-      "field": "name3",
-      "fieldLabel": "品名3",
+      "field": "name",
+      "fieldLabel": "品名",
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 378.0,
+      "_refCenter": 214.0,
+      "topExact": 256.28,
+      "designText": "品名一排7字內"
     }
-  ]
+  ],
+  "disableImageAbsorb": true
 }

@@ -1,0 +1,7 @@
+# 產出物：跑一次指令就會重生，不用進版控
+blocks/
+preview/
+calibration.json
+config.json
+__pycache__/
+*.pyc

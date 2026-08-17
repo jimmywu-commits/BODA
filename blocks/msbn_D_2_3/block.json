@@ -8,7 +8,7 @@
     {
       "zIndex": 1655,
       "type": "text",
-      "left": 20.0,
+      "left": 890.0,
       "top": 60.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -19,12 +19,15 @@
       "fieldLabel": "內文",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 1018.0,
+      "topExact": 6.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1654,
       "type": "text",
-      "left": 20.0,
+      "left": 890.0,
       "top": 138.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -35,12 +38,15 @@
       "fieldLabel": "內文2",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 1018.0,
+      "topExact": 84.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1653,
       "type": "text",
-      "left": 20.0,
+      "left": 890.0,
       "top": 215.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -51,12 +57,15 @@
       "fieldLabel": "內文3",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 1018.0,
+      "topExact": 161.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1652,
       "type": "text",
-      "left": 20.0,
+      "left": 890.0,
       "top": 293.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -67,12 +76,15 @@
       "fieldLabel": "內文4",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 1018.0,
+      "topExact": 239.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1651,
       "type": "text",
-      "left": 20.0,
+      "left": 890.0,
       "top": 370.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -83,12 +95,15 @@
       "fieldLabel": "內文5",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 1018.0,
+      "topExact": 316.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1650,
       "type": "text",
-      "left": 20.0,
+      "left": 568.0,
       "top": 59.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -99,12 +114,15 @@
       "fieldLabel": "內文6",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 696.0,
+      "topExact": 5.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1649,
       "type": "text",
-      "left": 20.0,
+      "left": 568.0,
       "top": 137.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -115,12 +133,15 @@
       "fieldLabel": "內文7",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 696.0,
+      "topExact": 83.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1648,
       "type": "text",
-      "left": 20.0,
+      "left": 568.0,
       "top": 215.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -131,12 +152,15 @@
       "fieldLabel": "內文8",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 696.0,
+      "topExact": 161.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1647,
       "type": "text",
-      "left": 20.0,
+      "left": 568.0,
       "top": 292.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -147,12 +171,15 @@
       "fieldLabel": "內文9",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 696.0,
+      "topExact": 238.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1646,
       "type": "text",
-      "left": 20.0,
+      "left": 568.0,
       "top": 370.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -163,12 +190,15 @@
       "fieldLabel": "內文10",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 696.0,
+      "topExact": 316.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1645,
       "type": "text",
-      "left": 20.0,
+      "left": 244.0,
       "top": 59.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -179,12 +209,15 @@
       "fieldLabel": "內文11",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 372.0,
+      "topExact": 5.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1644,
       "type": "text",
-      "left": 20.0,
+      "left": 244.0,
       "top": 137.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -195,12 +228,15 @@
       "fieldLabel": "內文12",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 372.0,
+      "topExact": 83.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1643,
       "type": "text",
-      "left": 20.0,
+      "left": 244.0,
       "top": 215.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -211,12 +247,15 @@
       "fieldLabel": "內文13",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 372.0,
+      "topExact": 161.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1642,
       "type": "text",
-      "left": 20.0,
+      "left": 244.0,
       "top": 292.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -227,12 +266,15 @@
       "fieldLabel": "內文14",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 372.0,
+      "topExact": 238.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1641,
       "type": "text",
-      "left": 20.0,
+      "left": 244.0,
       "top": 370.675,
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
@@ -243,7 +285,10 @@
       "fieldLabel": "內文15",
       "default": "內文文字",
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 256,
+      "_refCenter": 372.0,
+      "topExact": 316.36,
+      "designText": "內文一排6字"
     },
     {
       "zIndex": 1640,
@@ -259,7 +304,9 @@
       "fieldLabel": "項目文字",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 190.0,
+      "topExact": 8.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1639,
@@ -275,7 +322,9 @@
       "fieldLabel": "項目文字2",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 190.0,
+      "topExact": 85.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1638,
@@ -291,7 +340,9 @@
       "fieldLabel": "項目文字3",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 190.0,
+      "topExact": 162.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1637,
@@ -307,7 +358,9 @@
       "fieldLabel": "項目文字4",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 190.0,
+      "topExact": 239.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1636,
@@ -323,7 +376,9 @@
       "fieldLabel": "項目文字5",
       "default": "項目文字",
       "whiteSpace": "pre-line",
-      "width": 190.0
+      "width": 190.0,
+      "topExact": 316.36,
+      "designText": "項目4字"
     },
     {
       "zIndex": 1635,
@@ -372,7 +427,8 @@
       "height": 385.0,
       "backgroundColor": "rgb(236, 155, 31)",
       "field": "itemImg",
-      "fieldLabel": "商品圖片網址"
+      "fieldLabel": "商品圖片網址",
+      "borderRadius": "0px 0px 0px 15px"
     },
     {
       "zIndex": 1627,

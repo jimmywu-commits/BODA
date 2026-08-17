@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>SearchICON_PRODUCT 排版預覽</title>
+<style>
+@font-face {
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 300;
+  src: url("../fonts/ShopeeNotoSans(content)-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 400;
+  src: url("../fonts/ShopeeNotoSans(content)-Medium.ttf") format("truetype");
+}
+@font-face {
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 700;
+  src: url("../fonts/ShopeeNotoSans(content)-Bold.ttf") format("truetype");
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  background: #1a1a1a;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+#stage { position: relative; }
+#canvas {
+  position: absolute; top: 0; left: 0;
+  overflow: hidden; transform-origin: top left;
+  background-color: #ffffff !important; /* 圓底外的區域永遠是白色，不受任何背景色/背景圖同步影響 */
+}
+#底圖 {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 1; pointer-events: none; display: none;
+}
+#css-err {
+  display: none; position: fixed;
+  top: 14px; left: 50%; transform: translateX(-50%);
+  background: #7f1d1d; color: #fca5a5;
+  font-size: 13px; font-family: monospace;
+  padding: 7px 16px; border-radius: 6px; z-index: 9999;
+}
+</style>
+</head>
+<!-- 搜尋頁 / 搜尋結果頁 ICON：只吃商品圖第一張（120x120px） -->
+<body data-fw="120" data-fh="120">
+<div id="css-err"></div>
+<div id="stage">
+  <div id="canvas">
+    <img id="底圖" src="" alt="">
+    <!-- 圖層由 layout-runtime.js 從 --layers 自動產生 -->
+  </div>
+</div>
+<script>
+/* layout-runtime.js 原本是純靜態 script 標籤載入，沒有防快取機制，
+   瀏覽器可能一直用快取住的舊版本，導致改完程式碼、重新整理頁面，
+   卻像是完全沒有生效。改成動態插入＋時間戳記，強制每次重新整理都
+   向伺服器要最新版本。 */
+(function(){
+  var s = document.createElement('script');
+  s.src = '../js/layout-runtime.js?t=' + Date.now();
+  document.head.appendChild(s);
+})();
+</script>
+<script>
+/* ════════════════════════════════════════════════════
+   SearchICON_PRODUCT 專用：
+   1) 商品圖(1~3張)裡，只顯示「目前最上層（z-order 排序最前面）」的那一張，
+      其餘暫時隱藏——這件事統一由 layout-runtime.js 的通用機制處理
+      （_bnSingleProductOnlyTemplate，跟人物圖「只顯示最上層商品」共用同一套
+      邏輯，只是這個版位不管有沒有人物圖都固定套用），不在這裡自己判斷、
+      也不會用 DOM remove() 直接刪掉其他商品——之前這裡是用「商品position」
+      決定留哪一張、且用 remove() 整個刪掉其他商品節點，這樣一來:
+        a) 「留哪一張」是看 position（主品/左配/右配），不是看使用者實際排的
+           上下層順序，使用者把商品2、3的上下層往前調也沒用，
+           永遠只會留 position=0 的那一張。
+        b) remove() 是真的把 DOM 節點刪掉，不是只隱藏；如果之後使用者調整
+           上下層想換一張顯示，這個版位裡已經被刪掉的商品不會自動恢復，
+           行為很不一致。
+      所以這裡不再自己攔截 bn-product-add/remove/zorder 去做這件事。
+   2) 商品圖倒入圓底畫布時，預設「上下左右置中」，
+      預設大小＝圓底畫布（120x120）的 80%（維持圖片原比例，不變形）。
+      之後仍可用滑鼠拖拉四角放大縮小、拖曳移動位置（沿用系統既有曝品圖機制）。
+   下載時額外多存一張 84x84（由 bn-editor-plugin.js 統一處理）。
+   ════════════════════════════════════════════════════ */
+(function(){
+  function applyDefaultSize(box, zone){
+    var zw = zone.clientWidth || 120, zh = zone.clientHeight || 120;
+    var target = Math.round(Math.min(zw, zh) * 0.8); /* 圓底畫布 80% */
+    function place(ratio){
+      var w = target, h = target;
+      if(ratio && ratio > 0){
+        if(ratio >= 1){ w = target; h = Math.round(target / ratio); }
+        else { h = target; w = Math.round(target * ratio); }
+      }
+      box.style.width  = w + 'px';
+      box.style.height = h + 'px';
+      box.style.left   = Math.round((zw - w) / 2) + 'px';
+      box.style.top    = Math.round((zh - h) / 2) + 'px';
+    }
+    var img = box.querySelector('img');
+    if(img){
+      if(img.complete && img.naturalWidth){
+        place(img.naturalWidth / img.naturalHeight);
+      }else{
+        place(1);
+        img.addEventListener('load', function(){
+          place(img.naturalWidth / img.naturalHeight);
+        }, {once:true});
+      }
+    }else{
+      place(1);
+    }
+  }
+
+  window.addEventListener('message', function(e){
+    if (!e.data) return;
+    if (e.data.type === 'bn-product-add') {
+      setTimeout(function(){
+        var zone = document.querySelector('.商品範圍');
+        var box = zone && zone.querySelector('.bn-prod-box[data-id="' + e.data.id + '"]');
+        /* 只有「從來沒被使用者手動調過大小/位置」的全新商品才套用 80% 預設值；
+           如果系統已經還原過使用者之前手動調整/儲存的版面（dataset.manualLayout==='1'，
+           由 layoutProducts() 在商品建立時同步設定），就不要蓋掉，
+           否則勾掉版位再勾回來，或重新整理後，使用者調過的大小就會被重置成 80%。 */
+        if(zone && box && box.dataset.manualLayout !== '1'){
+          applyDefaultSize(box, zone);
+          /* 一定要標記成「已手動定位」，否則之後任何會觸發 layoutProducts()
+             重新排版的訊息（例如上傳第2、3張商品、或人物圖可見度更新），
+             都會把這個 80% 圓形置中的尺寸蓋掉，改回三角形排版公式的尺寸，
+             而這個版位根本不是三角形排版，會整個跑版。 */
+          box.dataset.manualLayout = '1';
+        }
+      }, 20);
+    }
+  });
+})();
+</script>
+</body>
+</html>

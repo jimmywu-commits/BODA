@@ -18,7 +18,9 @@
       "field": "endorserNote",
       "fieldLabel": "代言人小字",
       "default": "代言人小字",
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 279.416,
+      "designText": "代言人小字8字內\n代言人小字8字內"
     },
     {
       "zIndex": 525,
@@ -37,7 +39,9 @@
       "default": "促標文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 476.0
+      "width": 476.0,
+      "topExact": 38.365,
+      "designText": "促標最多7字內"
     },
     {
       "zIndex": 524,
@@ -55,7 +59,7 @@
     {
       "zIndex": 523,
       "type": "text",
-      "left": 20.0,
+      "left": 600.0,
       "top": 170.088,
       "id": "name",
       "fontSize": 43.0,
@@ -68,25 +72,31 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 576.0,
+      "_refCenter": 888.0,
+      "topExact": 113.326,
+      "designText": "品名一排最多8字\n品名一排最多8字"
     },
     {
       "zIndex": 522,
       "type": "text",
-      "left": 20.0,
+      "left": 600.0,
       "top": 267.675,
       "id": "warn",
       "fontSize": 40.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(116, 116, 116)",
-      "lineHeight": "0.75",
+      "lineHeight": "1.5",
       "textAlign": "center",
       "field": "warn",
       "fieldLabel": "警語",
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 1160.0
+      "width": 578.0,
+      "_refCenter": 889.0,
+      "topExact": 222.36,
+      "designText": "小字最多可9個字內"
     },
     {
       "zIndex": 521,
@@ -113,7 +123,9 @@
       "fieldLabel": "CTA文字",
       "default": "逛逛去",
       "maxLength": 6,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 296.434,
+      "designText": "逛逛去"
     },
     {
       "zIndex": 519,
@@ -124,18 +136,24 @@
       "height": 71.0,
       "backgroundColor": "rgb(208, 1, 27)",
       "field": "ctaColor",
-      "fieldLabel": "CTA底色"
+      "fieldLabel": "CTA底色",
+      "borderRadius": "35px"
     },
     {
       "zIndex": 518,
-      "type": "rect",
+      "type": "image",
       "left": 20.0,
       "top": 15.0,
       "width": 580.0,
       "height": 370.0,
       "backgroundColor": "rgb(255, 255, 255)",
-      "field": "bgColor",
-      "fieldLabel": "卡片背景色"
+      "field": "productImg",
+      "borderRadius": "15px 0px 0px 15px",
+      "clipImage": true,
+      "bgField": "bgColor",
+      "bgFieldLabel": "曝品範圍底色",
+      "fieldLabel": "商品圖／情境圖",
+      "psRadius": true
     },
     {
       "zIndex": 517,

@@ -26,7 +26,9 @@
       "field": "signNote",
       "fieldLabel": "簽名小字",
       "default": "簽名小字",
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 164.416,
+      "designText": "簽名5小字\n簽名5小字"
     },
     {
       "zIndex": 55,
@@ -78,7 +80,9 @@
       "default": "促標文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 476.0
+      "width": 476.0,
+      "topExact": 22.365,
+      "designText": "促標最多7字內"
     },
     {
       "zIndex": 49,
@@ -96,7 +100,7 @@
     {
       "zIndex": 48,
       "type": "text",
-      "left": 0,
+      "left": 6.0,
       "top": 154.088,
       "id": "name",
       "fontSize": 43.0,
@@ -109,12 +113,15 @@
       "default": "品名文案",
       "maxLength": 8,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 608.0,
+      "_refCenter": 310.0,
+      "topExact": 97.326,
+      "designText": "品名一排最多8字\n品名一排最多8字"
     },
     {
       "zIndex": 47,
       "type": "text",
-      "left": 0,
+      "left": 8.0,
       "top": 251.675,
       "id": "warn",
       "fontSize": 40.0,
@@ -127,26 +134,34 @@
       "default": "警語文字",
       "maxLength": 10,
       "whiteSpace": "pre-line",
-      "width": 1200.0
+      "width": 606.0,
+      "_refCenter": 311.0,
+      "topExact": 206.36,
+      "designText": "小字最多可9個字內"
     },
     {
       "zIndex": 46,
       "type": "text",
-      "left": 0,
-      "top": 89.846,
+      "left": 1062.0,
+      "top": 23.0,
       "id": "badgeText",
       "fontSize": 35.0,
       "fontFamily": "ShopeeNotoSans (content)",
       "color": "rgb(255, 255, 255)",
       "fontWeight": "bold",
-      "lineHeight": "1.514",
+      "lineHeight": 53,
       "textAlign": "center",
       "field": "badge",
       "fieldLabel": "圓標文字",
       "default": "圓標文字",
       "maxLength": 6,
-      "whiteSpace": "pre-line",
-      "width": 1200.0
+      "whiteSpace": "normal",
+      "width": 80,
+      "_boxLeft": 1042.0,
+      "_boxWidth": 120.0,
+      "height": 121.0,
+      "verticalCenter": true,
+      "designText": "圓標\n5字內"
     },
     {
       "zIndex": 45,
@@ -157,7 +172,8 @@
       "height": 121.0,
       "backgroundColor": "rgb(114, 122, 204)",
       "field": "badgeColor",
-      "fieldLabel": "圓標底色"
+      "fieldLabel": "圓標底色",
+      "id": "badgeBg"
     },
     {
       "zIndex": 44,
@@ -184,7 +200,9 @@
       "fieldLabel": "CTA文字",
       "default": "逛逛去",
       "maxLength": 6,
-      "whiteSpace": "pre-line"
+      "whiteSpace": "pre-line",
+      "topExact": 343.434,
+      "designText": "逛逛去"
     },
     {
       "zIndex": 42,
@@ -195,7 +213,8 @@
       "height": 71.0,
       "backgroundColor": "rgb(208, 1, 27)",
       "field": "ctaColor",
-      "fieldLabel": "CTA底色"
+      "fieldLabel": "CTA底色",
+      "borderRadius": "35px"
     }
   ]
 }
