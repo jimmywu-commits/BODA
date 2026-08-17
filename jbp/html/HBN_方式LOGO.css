@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .HBN_方式LOGO_jpg {
   position: absolute;
   left: 3072px;
@@ -97,3 +98,104 @@
   height: 44px;
   z-index: 245;
 }
+=======
+.HBN_方式LOGO_jpg {
+  position: absolute;
+  left: 3072px;
+  top: 1773px;
+  width: 1200px;
+  height: 360px;
+  z-index: 254;
+}
+.logo範圍 {
+  background-color: rgb(235, 104, 119);
+  opacity: 0.4;
+  position: absolute;
+  left: 45px;
+  top: 126px;
+  width: 105px;
+  height: 105px;
+  z-index: 253;
+}
+.商品範圍 {
+  background-color: rgb(235, 104, 119);
+  opacity: 0.4;
+  position: absolute;
+  left: 631px;
+  top: 34px;
+  width: 547px;
+  height: 300px;
+  z-index: 252;
+}
+.副標 {
+  font-size: 76px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(37, 64, 181);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.79613810971536,0,0,0.79657401477767,0,0);
+  -webkit-transform: matrix( 0.79613810971536,0,0,0.79657401477767,0,0);
+  -ms-transform: matrix( 0.79613810971536,0,0,0.79657401477767,0,0);
+  position: absolute;
+  left: 109.945px;
+  top: 152.753px;
+  z-index: 250;
+}
+.日期 {
+  font-size: 30px;
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 300;
+  color: rgb(255, 0, 0);
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.83621996370985,0,0,0.8366778145663,0,0);
+  -webkit-transform: matrix( 0.83621996370985,0,0,0.8366778145663,0,0);
+  -ms-transform: matrix( 0.83621996370985,0,0,0.8366778145663,0,0);
+  position: absolute;
+  left: 128.219px;
+  top: 235.093px;
+  z-index: 249;
+  line-spacing: 0.5px;
+}
+.主標 {
+  font-size: 39.311px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(37, 112, 190);
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 1.01696924104673,0,0,1.01752605654768,0,0);
+  -webkit-transform: matrix( 1.01696924104673,0,0,1.01752605654768,0,0);
+  -ms-transform: matrix( 1.01696924104673,0,0,1.01752605654768,0,0);
+  position: absolute;
+  left: 163.6px;
+  top: 121.197px;
+  z-index: 248;
+  line-spacing: 0.05em;
+}
+.放心買_安心退 {
+  font-size: 34px;
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 300;
+  color: rgb(201, 230, 36);
+  line-height: 1.116;
+  text-align: center;
+  -moz-transform: matrix( 0.80878948783308,0,0,0.80878948783308,0,0);
+  -webkit-transform: matrix( 0.80878948783308,0,0,0.80878948783308,0,0);
+  -ms-transform: matrix( 0.80878948783308,0,0,0.80878948783308,0,0);
+  position: absolute;
+  left: 931.159px;
+  top: 331.862px;
+  z-index: 246;
+}
+.cta底 {
+  border-radius: 8px;
+  background-color: rgb(15, 125, 182);
+  position: absolute;
+  left: 938px;
+  top: 290px;
+  width: 240px;
+  height: 44px;
+  z-index: 245;
+}
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

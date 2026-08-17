@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -1913,3 +1914,1920 @@ document.addEventListener("DOMContentLoaded",function(){
 </body>
 
 </html>
+=======
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>BN 編輯器</title>
+<style>
+/* ════════════════════════════════
+   Reset & Base
+════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg0: #0d1117; --bg1: #161b22; --bg2: #1c2333; --bg3: #21262d;
+  --border: #30363d; --accent: #1f6feb; --accent2: #388bfd;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --green: #238636; --red: #da3633; --yellow: #9e6a03;
+  --radius: 6px;
+}
+html, body { height: 100%; background: var(--bg0); color: var(--text);
+  font-family: "Segoe UI","PingFang TC",Arial,sans-serif; font-size: 13px; }
+
+/* ════════════════════════════════
+   Tab bar
+════════════════════════════════ */
+#tab-bar {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--bg1); border-bottom: 1px solid var(--border);
+  padding: 0 16px; height: 44px; flex-shrink: 0;
+}
+.tab {
+  padding: 8px 18px; border-radius: var(--radius) var(--radius) 0 0;
+  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text2);
+  border: 1px solid transparent; border-bottom: none;
+  transition: color .15s, background .15s;
+}
+.tab:hover { color: var(--text); background: var(--bg2); }
+.tab.active { color: var(--text); background: var(--bg0); border-color: var(--border); }
+#tab-title { margin-left: auto; font-size: 12px; color: var(--text3); }
+
+/* ════════════════════════════════
+   Pages
+════════════════════════════════ */
+#app { display: flex; flex-direction: column; height: 100vh; }
+.page { flex: 1; display: none; overflow: hidden; }
+.page.active { display: flex; }
+
+/* ════════════════════════════════
+   ── 後台 ──
+════════════════════════════════ */
+#admin { flex-direction: column; padding: 24px; overflow-y: auto; background: var(--bg0); }
+#admin h2 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+#admin .sub { color: var(--text2); font-size: 12px; margin-bottom: 24px; }
+
+.card {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px; margin-bottom: 16px;
+}
+.card h3 { font-size: 13px; font-weight: 700; margin-bottom: 14px; color: var(--accent2); }
+
+.add-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.field-group { display: flex; flex-direction: column; gap: 4px; }
+.field-group label { font-size: 11px; color: var(--text2); }
+.field-group input, .field-group select {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-size: 12px; padding: 6px 10px; outline: none;
+  transition: border-color .15s;
+}
+.field-group input:focus, .field-group select:focus { border-color: var(--accent); }
+.field-group input { width: 200px; }
+
+.btn {
+  padding: 7px 16px; border-radius: var(--radius); border: none;
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s;
+}
+.btn:hover { opacity: .85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-danger  { background: var(--red);    color: #fff; padding: 4px 10px; font-size: 11px; }
+.btn-sm      { padding: 4px 10px; font-size: 11px; }
+.btn-success { background: var(--green);  color: #fff; }
+
+/* 排版列表 */
+#layout-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.layout-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 14px;
+  transition: border-color .15s;
+}
+.layout-row:hover { border-color: var(--accent); }
+.layout-row .name { font-weight: 600; flex: 1; }
+.layout-row .file { color: var(--text3); font-size: 11px; font-family: monospace; }
+.layout-row .size-tag {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 7px; font-size: 10px; color: var(--text2);
+}
+.layout-row .toggle-active {
+  width: 36px; height: 20px; border-radius: 10px;
+  background: var(--bg3); border: 1px solid var(--border);
+  cursor: pointer; position: relative; transition: background .2s;
+  flex-shrink: 0;
+}
+.layout-row .toggle-active::after {
+  content: ''; position: absolute;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--text3); top: 2px; left: 2px;
+  transition: transform .2s, background .2s;
+}
+.layout-row.enabled .toggle-active { background: var(--accent); border-color: var(--accent); }
+.layout-row.enabled .toggle-active::after { transform: translateX(16px); background: #fff; }
+.empty-hint { color: var(--text3); font-size: 12px; padding: 12px 0; }
+
+/* ════════════════════════════════
+   ── 前台 ──
+════════════════════════════════ */
+#frontend { flex-direction: row; }
+
+/* 左側工具列 */
+#sidebar {
+  width: 260px; flex-shrink: 0;
+  background: var(--bg1); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#sidebar-head {
+  padding: 12px 14px; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  color: var(--accent2); text-transform: uppercase;
+}
+#sidebar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px 0; }
+#sidebar-scroll::-webkit-scrollbar { width: 3px; }
+#sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* Section 標題 */
+.s-section { padding: 4px 14px 6px; font-size: 10px; font-weight: 700;
+  color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+
+/* 文字輸入 */
+.s-field { padding: 4px 14px; margin-bottom: 4px; }
+.s-field label { display: block; font-size: 10px; color: var(--text2); margin-bottom: 3px; }
+.s-field input {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text); font-size: 12px; padding: 5px 8px;
+  outline: none; transition: border-color .15s;
+}
+.s-field input:focus { border-color: var(--accent); }
+.s-field-inline { padding: 4px 14px; margin-bottom: 4px; }
+.s-field-inline label { display: block; font-size: 10px; color: var(--text2); margin-bottom: 3px; }
+.s-field-row {
+  display: flex; align-items: center; gap: 7px;
+}
+.s-field-row input {
+  flex: 1; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text); font-size: 12px; padding: 5px 8px;
+  outline: none; transition: border-color .15s; min-width: 0;
+}
+.s-field-row input:focus { border-color: var(--accent); }
+
+/* 排版勾選 */
+.layout-check-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px; cursor: pointer;
+  transition: background .1s; border-radius: 4px; margin: 1px 6px;
+}
+.layout-check-item:hover { background: var(--bg2); }
+.layout-check-item input[type="checkbox"] {
+  accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0;
+}
+.layout-check-item .lc-name { font-size: 12px; font-weight: 600; flex: 1; }
+.layout-check-item .lc-size { font-size: 10px; color: var(--text3); }
+.no-layouts { padding: 12px 14px; font-size: 11px; color: var(--text3); }
+
+/* 右側畫版區 */
+#preview-area {
+  flex: 1; overflow-y: auto; overflow-x: auto;
+  background: #111; padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+  align-items: flex-start; /* 讓畫版靠左，不拉伸 */
+}
+#preview-empty {
+  margin: auto; text-align: center; color: var(--text3); font-size: 13px;
+}
+#preview-empty .icon { font-size: 36px; margin-bottom: 8px; }
+
+/* 預覽載入遮罩：等待各版型 iframe 完成 CSS + 字型載入後才顯示 */
+#bn-loading-overlay {
+  position: fixed; inset: 44px 0 0 260px;
+  z-index: 100000; display: none; align-items: center; justify-content: center;
+  background: rgba(13,17,23,.82); backdrop-filter: blur(5px);
+}
+#bn-loading-overlay.show { display: flex; }
+
+/* 下載/打包中的浮動遮罩：跟上面「畫布與字體載入中」共用同一種毛玻璃卡片風格，
+   下載圖片＋暫存檔現在需要的時間比較長，加這個提醒讓使用者知道還在跑，
+   不要以為畫面卡住。 */
+#bn-download-overlay {
+  position: fixed; inset: 44px 0 0 260px;
+  z-index: 100001; display: none; align-items: center; justify-content: center;
+  background: rgba(13,17,23,.82); backdrop-filter: blur(5px);
+}
+#bn-download-overlay.show { display: flex; }
+.bn-loading-card {
+  width: min(420px, 86vw); background: #161b22; border: 1px solid #30363d;
+  border-radius: 14px; box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  padding: 24px 26px; text-align: center;
+}
+.bn-loading-spinner {
+  width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 16px;
+  border: 4px solid rgba(139,148,158,.22); border-top-color: var(--accent2);
+  animation: bnSpin .85s linear infinite;
+}
+@keyframes bnSpin { to { transform: rotate(360deg); } }
+.bn-loading-title { font-size: 15px; font-weight: 800; margin-bottom: 6px; color: var(--text); }
+.bn-loading-desc { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 14px; }
+.bn-loading-bar { height: 7px; border-radius: 999px; background: #21262d; overflow: hidden; }
+#bn-loading-progress { width: 0%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .18s ease; }
+#bn-loading-count { margin-top: 9px; font-size: 11px; color: var(--text3); }
+#bn-loading-note { margin-top: 8px; font-size: 11px; color: #f0b72f; display: none; }
+#bn-loading-overlay.slow #bn-loading-note { display: block; }
+#bn-loading-close {
+  margin-top: 12px; display: none; border: 1px solid var(--border); background: var(--bg2);
+  color: var(--text2); border-radius: 6px; padding: 5px 12px; font-size: 11px; cursor: pointer;
+}
+#bn-loading-overlay.slow #bn-loading-close { display: inline-block; }
+
+/* 單一排版預覽 */
+.preview-block {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: 8px; overflow: visible; /* 不裁切畫版 */
+  flex-shrink: 0;
+}
+.preview-block-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; background: var(--bg2); border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.preview-block-head .pname { font-weight: 700; flex: 1; }
+.preview-block-head .psize { color: var(--text3); font-size: 10px; font-family: monospace; }
+.preview-block-body {
+  position: relative; overflow: visible; /* 不裁切 */
+}
+.preview-block-body iframe {
+  border: none; display: block;
+  transform-origin: top left;
+  /* width/height/transform 由 JS 設定 */
+}
+.color-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 14px; margin-bottom: 1px;
+}
+.color-row label {
+  font-size: 10px; color: var(--text2); flex: 1; white-space: nowrap;
+}
+.color-dot {
+  width: 20px !important; height: 20px !important;
+  min-width: 20px; min-height: 20px;
+  border-radius: 50%; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,.25); cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+  display: block;
+}
+.color-dot:hover { transform: scale(1.18); box-shadow: 0 0 0 3px rgba(255,255,255,.15); }
+#cp-panel {
+  display: none; position: fixed;
+  background: #13161f; border: 1px solid #252b3d;
+  border-radius: 10px; padding: 12px 14px;
+  z-index: 9999; width: 234px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.7);
+}
+#cp-panel.open { display: block; }
+.char-count-badge { font-size:10px;color:#687090;margin-left:4px;flex-shrink:0;white-space:nowrap; }
+.char-count-badge.warn { color:#f59e0b; }
+.char-count-badge.over { color:#ef4444;font-weight:700; }
+.s-field-row.over-limit input { border-color:#ef4444 !important; box-shadow:0 0 0 2px rgba(239,68,68,.2); }
+#cp-hex-row {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 10px;
+}
+#cp-hex-label { font-size: 10px; color: #687090; flex-shrink: 0; }
+#cp-hex-input {
+  flex: 1; background: #1a1e2b; border: 1px solid #252b3d;
+  border-radius: 5px; color: #dde3f0; font-size: 12px;
+  padding: 5px 8px; outline: none; font-family: monospace;
+  transition: border-color .12s;
+}
+#cp-hex-input:focus { border-color: #4a90e2; background: #20253a; }
+#cp-native {
+  width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.15); cursor: pointer;
+  padding: 1px 2px; background: transparent;
+}
+#cp-swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.cp-swatch {
+  width: 22px; height: 22px; border-radius: 50%;
+  cursor: pointer; border: 2px solid transparent;
+  transition: transform .15s, border-color .15s; flex-shrink: 0;
+}
+.cp-swatch:hover { transform: scale(1.18); }
+.cp-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.18); }
+</style>
+
+<style>
+#manual-btn,#feedback-btn{
+position:fixed;z-index:100001;padding:10px 16px;border-radius:8px;
+background:#161b22;color:#e6edf3;border:1px solid #30363d;
+cursor:pointer;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.35);
+}
+#manual-btn{right:18px;bottom:18px;}
+#feedback-btn{right:18px;top:54px;}
+#manual-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+z-index:100002;align-items:center;justify-content:center;}
+#manual-modal.show{display:flex;}
+#manual-box{position:relative;max-width:95vw;max-height:95vh;}
+#manual-box img{max-width:95vw;max-height:95vh;display:block;border-radius:10px;}
+#manual-close{position:absolute;right:-10px;top:-10px;width:34px;height:34px;
+border-radius:50%;border:none;background:#fff;font-size:20px;cursor:pointer;}
+</style>
+
+</head>
+<body>
+<div id="app">
+
+  <!-- Tab Bar -->
+  <div id="tab-bar">
+    <div class="tab" onclick="switchTab('admin')">⚙️ 後台</div>
+    <div class="tab active" onclick="switchTab('frontend')">🖥️ 前台預覽</div>
+    <div id="tab-title">BN 編輯器</div>
+  </div>
+
+  <!-- ══════════════════════════════
+       後台
+  ══════════════════════════════ -->
+  <div id="admin" class="page">
+    <h2>排版管理</h2>
+    <p class="sub">從 <code>js/index.js</code> 自動掃描排版清單，無需手動新增。點「重新掃描」即可同步最新清單。</p>
+
+    <div class="card">
+      <h3>📡 自動掃描 html/ 資料夾</h3>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">
+        從 <code>js/index.js</code> 讀取排版清單。
+        每次新增或刪除排版 HTML 後，更新該檔案即可。
+      </p>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary" onclick="scanLayouts()">🔄 重新掃描</button>
+        <span id="scan-status" style="font-size:11px;color:var(--text3)"></span>
+      </div>
+      <div style="margin-top:14px">
+        <p style="font-size:11px;color:var(--text3);line-height:1.8">
+          <code>js/index.js</code> 格式範例：<br>
+          <code>var BN_LAYOUTS = ["SCBN_APP.html", "IG方logo.html", "活動0701.html"];</code>
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📋 排版清單</h3>
+      <div id="layout-list">
+        <div class="empty-hint">點「重新掃描」載入排版</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🖼 底圖核對</h3>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px">
+        勾選後在前台疊加底圖（50% 透明），方便核對。<br>
+        底圖放在同層 <code>bn測底圖/</code> 資料夾。
+      </p>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <button class="btn" onclick="scanBgFiles()">🔄 掃描底圖資料夾</button>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer">
+          <input type="checkbox" id="bg-all-check" onchange="toggleAllBgCheckers(this.checked)">
+          全部顯示
+        </label>
+      </div>
+      <div id="bg-checker-list" style="display:flex;flex-direction:column;gap:8px">
+        <div style="color:var(--text3);font-size:12px">點「掃描底圖資料夾」載入</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       前台
+  ══════════════════════════════ -->
+  <div id="frontend" class="page active">
+
+    <!-- 左側工具列 -->
+    <div id="sidebar">
+      <div id="sidebar-head">🎛 工具列</div>
+      <div id="sidebar-scroll">
+
+        <!-- 文字 + 顏色 inline -->
+        <div class="s-section">文字內容</div>
+        <div class="s-field-inline">
+          <label>品牌名</label>
+          <div class="s-field-row">
+            <input type="text" id="txt-brand" data-limit="9" placeholder="品牌名稱" value="品牌名不放圖$9字折內" oninput="broadcastText()">
+            <span class="char-count-badge" id="badge-品牌名"></span><div class="color-dot" id="dot-brandText" title="品牌名文字色"></div>
+          </div>
+        </div>
+        <div class="s-field-inline">
+          <label>主標</label>
+          <div class="s-field-row">
+            <input type="text" id="txt-main" data-limit="8" placeholder="主標文字" value="滿$200享9折" oninput="broadcastText()">
+            <span class="char-count-badge" id="badge-主標"></span><div class="color-dot" id="dot-mainText" title="主標文字色"></div>
+          </div>
+        </div>
+        <div class="s-field-inline">
+          <label>副標</label>
+          <div class="s-field-row">
+            <input type="text" id="txt-sub" data-limit="7" placeholder="副標文字" value="副標$500折起" oninput="broadcastText()">
+            <span class="char-count-badge" id="badge-副標"></span><div class="color-dot" id="dot-subText" title="副標文字色"></div>
+          </div>
+        </div>
+        <div class="s-field-inline">
+          <label>日期</label>
+          <div class="s-field-row">
+            <input type="text" id="txt-date" data-limit="14" placeholder="日期文字" value="5/18 12:00 - 5/25 11:59 期間限定" oninput="broadcastText()">
+            <span class="char-count-badge" id="badge-日期"></span><div class="color-dot" id="dot-dateText" title="日期文字色"></div>
+          </div>
+        </div>
+        <div class="s-field-inline">
+          <label>ICON文案</label>
+          <div class="s-field-row">
+            <input type="text" id="txt-icon" data-limit="2" placeholder="ICON文案" value="文案" oninput="broadcastText()">
+            <span class="char-count-badge" id="badge-ICON獨立文案"></span>
+          </div>
+        </div>
+
+        <!-- 其他顏色（背景、CTA） -->
+        <div class="s-section" style="margin-top:14px">其他顏色</div>
+        <div id="color-rows"></div>
+
+        <!-- 排版勾選 -->
+        <div class="s-section" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;padding-right:10px">
+          <span>排版選擇</span>
+          <span style="display:flex;gap:4px">
+            <button onclick="checkAll(true)"  style="font-size:9px;padding:1px 5px;background:var(--bg2);border:1px solid var(--border);border-radius:3px;color:var(--text2);cursor:pointer;text-transform:none;letter-spacing:0">全選</button>
+            <button onclick="checkAll(false)" style="font-size:9px;padding:1px 5px;background:var(--bg2);border:1px solid var(--border);border-radius:3px;color:var(--text2);cursor:pointer;text-transform:none;letter-spacing:0">全消</button>
+          </span>
+        </div>
+        <div id="layout-checks">
+          <div class="no-layouts">請先在後台新增排版</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 右側畫版 -->
+    <div id="preview-area">
+      <div id="preview-empty">
+        <div class="icon">🖼</div>
+        <div>請在左側勾選排版</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 預覽載入中：等待所有 iframe 的 CSS 與字體完成後自動關閉 -->
+<div id="bn-loading-overlay" aria-live="polite">
+  <div class="bn-loading-card">
+    <div class="bn-loading-spinner"></div>
+    <div class="bn-loading-title">畫布與字體載入中…</div>
+    <div class="bn-loading-desc">正在等待所有已勾選版型完成 CSS、字體與畫布初始化，完成後會自動顯示預覽。</div>
+    <div class="bn-loading-bar"><div id="bn-loading-progress"></div></div>
+    <div id="bn-loading-count">0 / 0</div>
+    <div id="bn-loading-note">這台電腦載入字體較久，若長時間停住請確認字體檔案路徑是否正確。</div>
+    <button id="bn-loading-close" onclick="bnHidePreviewLoading(true)">先關閉等待畫面</button>
+  </div>
+</div>
+
+<!-- 下載/打包中：下載圖片＋暫存檔用，跟上面「畫布與字體載入中」共用同一種視覺風格 -->
+<div id="bn-download-overlay" aria-live="polite">
+  <div class="bn-loading-card">
+    <div class="bn-loading-spinner"></div>
+    <div class="bn-loading-title">正在打包下載中…</div>
+    <div class="bn-loading-desc" id="bn-download-overlay-desc">正在截圖並打包成 ZIP，請稍候，不要關閉分頁。</div>
+    <div class="bn-loading-bar"><div id="bn-download-overlay-progress"></div></div>
+    <div id="bn-download-overlay-count"></div>
+  </div>
+</div>
+
+<!-- 浮動色票面板 -->
+<div id="cp-panel">
+  <div id="cp-hex-row">
+    <span id="cp-hex-label">色碼</span>
+    <input id="cp-hex-input" maxlength="7" placeholder="#ffffff">
+    <input type="color" id="cp-native">
+    <button id="cp-eyedrop" title="吸取螢幕顏色" style="background:none;border:1px solid #2e3347;border-radius:5px;color:#8b9dbf;cursor:pointer;padding:2px 6px;font-size:13px;flex-shrink:0" onclick="openEyeDropper()">💉</button>
+  </div>
+  <div id="cp-swatches"></div>
+  <div id="cp-swatch-groups" style="margin-top:8px;border-top:1px solid #2e3347;padding-top:8px"></div>
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   資料層 — localStorage
+════════════════════════════════════════ */
+var STORE_KEY = 'bn-layouts';
+
+function loadLayouts() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveLayouts(arr) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(arr));
+}
+
+/* ════════════════════════════════════════
+   Tab 切換
+════════════════════════════════════════ */
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t, i) {
+    t.classList.toggle('active', ['admin','frontend'][i] === name);
+  });
+  document.querySelectorAll('.page').forEach(function(p) {
+    p.classList.toggle('active', p.id === name);
+  });
+  if (name === 'frontend') { renderChecks(); setTimeout(applyBgCheckers, 500); }
+  else if (typeof bnHidePreviewLoading === 'function') { bnHidePreviewLoading(true); }
+}
+
+/* ════════════════════════════════════════
+   後台 — 掃描 html/index.json
+════════════════════════════════════════ */
+function scanLayouts() {
+  var status = document.getElementById('scan-status');
+  status.style.color = 'var(--text3)';
+
+  /* 動態插入 <script src="js/index.js">，強制重新載入（加時間戳） */
+  var old = document.getElementById('bn-index-script');
+  if (old) old.remove();
+
+  window._bn_scan_cb = function(files) {
+    if (!Array.isArray(files)) {
+      status.textContent = '❌ 格式錯誤，index.js 應為陣列';
+      status.style.color = 'var(--red)';
+      return;
+    }
+
+    var oldLayouts = loadLayouts();
+    var now = Date.now();
+
+    /* 依照 js/index.js 的 files 順序重建 layouts，避免 localStorage 舊排序卡住 */
+    var layouts = [];
+    var seen = {};
+    var changed = 0;
+
+    files.forEach(function(file, idx) {
+      file = String(file).trim();
+      if (!file) return;
+      if (!/\.html$/i.test(file)) file = file + '.html';
+
+      /* 避免 index.js 裡重複列到同一個檔案 */
+      if (seen[file]) return;
+      seen[file] = true;
+
+      var old = oldLayouts.find(function(l){ return l.file === file; });
+      if (!old) changed++;
+
+      layouts.push({
+        id: old ? old.id : now + idx,
+        name: file.replace(/\.html$/i, ''),
+        file: file,
+        w: old ? old.w : 0,
+        h: old ? old.h : 0,
+        enabled: old ? old.enabled : true
+      });
+    });
+
+    var removed = oldLayouts.filter(function(l){ return !seen[l.file]; }).length;
+
+    saveLayouts(layouts);
+    renderAdmin();
+    renderChecks();
+
+    /* 對還沒有尺寸的排版，建隱藏 iframe 靜默探測 */
+    loadLayouts().forEach(function(l) {
+      if (!l.w || !l.h) probSize(l.id);
+    });
+
+    var msg = '共 ' + layouts.length + ' 個排版';
+    if (changed) msg += '，新增 ' + changed + ' 個';
+    if (removed) msg += '，移除 ' + removed + ' 個';
+    status.textContent = '✓ ' + msg;
+
+    /* 掃完後如果在前台，立即渲染預覽 */
+    if (document.getElementById('frontend') &&
+        document.getElementById('frontend').classList.contains('active')) {
+      renderPreviews();
+    }
+  };
+
+  /* index.js 內容：var BN_LAYOUTS = [...]; */
+  /* 用 script 標籤載入，不受 CORS 限制 */
+  var s = document.createElement('script');
+  s.id  = 'bn-index-script';
+  /* index.js 最後一行呼叫 window._bn_scan_cb(BN_LAYOUTS) */
+  s.src = 'js/index.js?t=' + Date.now();
+  s.onerror = function() {
+    status.textContent = '❌ 找不到 js/index.js';
+    status.style.color = 'var(--red)';
+  };
+  document.head.appendChild(s);
+  status.textContent = '掃描中…';
+}
+
+/* 靜默探測排版尺寸：載入同名 CSS，從 <style> 解析 :root --canvas-w/h */
+function probSize(id) {
+  var layouts = loadLayouts();
+  var l = layouts.find(function(x){ return x.id === id; });
+  if (!l || (l.w && l.h)) return;
+  if (document.getElementById('probcss-' + id)) return;
+
+  /* 排版檔名去掉 .html，依序嘗試 .config.css → .css */
+  var baseName = 'html/' + l.file.replace(/\.html$/i, '');
+  var cssFiles = [baseName + '.config.css', baseName + '.css'];
+
+  function tryNextCss(idx) {
+    if (idx >= cssFiles.length) {
+      /* 全部 fetch 失敗 → 改用 <link> 注入讀 computed style */
+      probSizeViaLink(id, cssFiles[0]);
+      return;
+    }
+    var cssFile = cssFiles[idx];
+    fetch(cssFile + '?t=' + Date.now())
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function(text) {
+        var w = parseCSSVar(text, '--canvas-w');
+        var h = parseCSSVar(text, '--canvas-h');
+        if (w && h) {
+          var ls = loadLayouts();
+          var item = ls.find(function(x){ return x.id === id; });
+          if (item) {
+            item.w = w; item.h = h;
+            saveLayouts(ls);
+            renderAdmin();
+            renderChecks();
+            if (document.getElementById('frontend').classList.contains('active')) renderPreviews();
+          }
+        } else {
+          /* 這個 CSS 沒有 --canvas-w/h，試下一個 */
+          tryNextCss(idx + 1);
+        }
+      })
+      .catch(function() {
+        tryNextCss(idx + 1);
+      });
+  }
+  tryNextCss(0);
+}
+
+/* fetch 失敗時的備用方案：注入 <link>，建臨時元素讀 computed style */
+function probSizeViaLink(id, cssFile) {
+  var layouts = loadLayouts();
+  var l = layouts.find(function(x){ return x.id === id; });
+  if (!l) return;
+
+  var linkId = 'probcss-' + id;
+  if (document.getElementById(linkId)) return;
+
+  /* 建一個帶 data-prob 的 <div>，對它套用 :root 的 CSS 變數 */
+  var probeEl = document.createElement('div');
+  probeEl.id = linkId;
+  probeEl.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;';
+  document.body.appendChild(probeEl);
+
+  var lnk = document.createElement('link');
+  lnk.rel  = 'stylesheet';
+  lnk.href = cssFile + '?t=' + Date.now();
+  lnk.onload = function () {
+    requestAnimationFrame(function () {
+      var cs = getComputedStyle(document.documentElement);
+      var w  = parseFloat(cs.getPropertyValue('--canvas-w')) || 0;
+      var h  = parseFloat(cs.getPropertyValue('--canvas-h')) || 0;
+      /* 讀完後移除，避免污染 BN編輯器 自己的樣式 */
+      lnk.remove();
+      probeEl.remove();
+      if (w && h) {
+        var ls = loadLayouts();
+        var item = ls.find(function(x){ return x.id === id; });
+        if (item) {
+          item.w = w; item.h = h;
+          saveLayouts(ls);
+          renderAdmin();
+          renderChecks();
+        }
+      }
+    });
+  };
+  document.head.appendChild(lnk);
+
+  setTimeout(function () {
+    var el = document.getElementById(linkId);
+    if (el) el.remove();
+    lnk.remove();
+  }, 5000);
+}
+
+/* 從 CSS 文字解析 :root 內的自訂屬性值 */
+function parseCSSVar(cssText, varName) {
+  /* 先在 :root { ... } 區塊內找 */
+  var rootMatch = cssText.match(/:root\s*\{([^}]*)\}/);
+  var block = rootMatch ? rootMatch[1] : cssText;
+  var re = new RegExp(varName + '\s*:\s*([^;]+)');
+  var m  = block.match(re);
+  if (!m) return 0;
+  return parseFloat(m[1].trim()) || 0;
+}
+
+function toggleEnabled(id) {
+  var layouts = loadLayouts();
+  var l = layouts.find(function(x){ return x.id === id; });
+  if (l) l.enabled = !l.enabled;
+  saveLayouts(layouts);
+  renderAdmin();
+}
+
+function renderAdmin() {
+  var layouts = loadLayouts();
+  var list = document.getElementById('layout-list');
+  if (!layouts.length) {
+    list.innerHTML = '<div class="empty-hint">點「重新掃描」載入排版，或確認 html/index.json 存在</div>';
+    return;
+  }
+  list.innerHTML = layouts.map(function(l) {
+    return '<div class="layout-row' + (l.enabled ? ' enabled' : '') + '" id="lr-' + l.id + '">' +
+      '<div class="toggle-active" onclick="toggleEnabled(' + l.id + ')" title="啟用/停用"></div>' +
+      '<div class="name">' + esc(l.name) + '</div>' +
+      '<div class="file">html/' + esc(l.file) + '</div>' +
+      '<div class="size-tag">' + (l.w ? l.w + ' × ' + l.h : '—') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* ════════════════════════════════════════
+   前台 — 勾選列表
+════════════════════════════════════════ */
+var checked = {};   /* { id: bool } */
+
+function renderChecks() {
+  var layouts = loadLayouts().filter(function(l){ return l.enabled; });
+  var wrap = document.getElementById('layout-checks');
+  if (!layouts.length) {
+    wrap.innerHTML = '<div class="no-layouts">後台尚未啟用任何排版</div>';
+    return;
+  }
+  wrap.innerHTML = layouts.map(function(l) {
+    /* 預設全部勾選：checked 裡沒記錄的視為 true */
+    var defaultChecked = !/^LPBN_/i.test(l.file);
+    var isChecked = (l.id in checked) ? !!checked[l.id] : defaultChecked;
+    return '<label class="layout-check-item">' +
+      '<input type="checkbox" ' + (isChecked ? 'checked' : '') +
+        ' onchange="onCheck(' + l.id + ', this.checked)">' +
+      '<span class="lc-name">' + esc(l.name) + '</span>' +
+      '<span class="lc-size">' + (l.w ? l.w + '×' + l.h : '') + '</span>' +
+    '</label>';
+  }).join('');
+}
+
+function onCheck(id, val) {
+  checked[id] = val;
+  renderPreviews();
+}
+
+function checkAll(val) {
+  var layouts = loadLayouts().filter(function(l){ return l.enabled; });
+  layouts.forEach(function(l){ checked[l.id] = val; });
+  renderChecks();
+  renderPreviews();
+}
+
+/* ════════════════════════════════════════
+   前台 — 畫版預覽
+════════════════════════════════════════ */
+var PREVIEW_MAX = 800;   /* 寬或高最多 Npx，可在後台調整 */
+
+/* 預覽載入狀態：bn-iframe-ready 會在 iframe 內 CSS + 字型 ready 後才回報 */
+var bnPreviewLoading = { expected: {}, ready: {}, total: 0, timer: null };
+
+function bnStartPreviewLoading(layouts) {
+  var overlay = document.getElementById('bn-loading-overlay');
+  if (!overlay) return;
+  bnPreviewLoading.expected = {};
+  bnPreviewLoading.ready = {};
+  bnPreviewLoading.total = layouts.length;
+  layouts.forEach(function(l){ bnPreviewLoading.expected[String(l.id)] = true; });
+  overlay.classList.remove('slow');
+  if (bnPreviewLoading.timer) clearTimeout(bnPreviewLoading.timer);
+  if (!layouts.length) { bnHidePreviewLoading(); return; }
+  overlay.classList.add('show');
+  bnUpdatePreviewLoading();
+  bnPreviewLoading.timer = setTimeout(function(){
+    var ov = document.getElementById('bn-loading-overlay');
+    if (ov && ov.classList.contains('show')) ov.classList.add('slow');
+  }, 12000);
+}
+
+function bnMarkPreviewReady(id) {
+  id = String(id || '');
+  if (!bnPreviewLoading.expected[id]) return;
+  bnPreviewLoading.ready[id] = true;
+  bnUpdatePreviewLoading();
+  if (Object.keys(bnPreviewLoading.ready).length >= bnPreviewLoading.total) {
+    setTimeout(function(){ bnHidePreviewLoading(); }, 180);
+  }
+}
+
+function bnUpdatePreviewLoading() {
+  var total = bnPreviewLoading.total || 0;
+  var ready = Object.keys(bnPreviewLoading.ready || {}).length;
+  var pct = total ? Math.round(ready / total * 100) : 100;
+  var bar = document.getElementById('bn-loading-progress');
+  var count = document.getElementById('bn-loading-count');
+  if (bar) bar.style.width = pct + '%';
+  if (count) count.textContent = ready + ' / ' + total + ' 個版型已完成';
+}
+
+function bnHidePreviewLoading(manual) {
+  var overlay = document.getElementById('bn-loading-overlay');
+  if (bnPreviewLoading.timer) clearTimeout(bnPreviewLoading.timer);
+  bnPreviewLoading.timer = null;
+  if (overlay) {
+    overlay.classList.remove('show');
+    if (!manual) overlay.classList.remove('slow');
+  }
+}
+
+/* 下載/打包中的浮動遮罩：跟預覽載入遮罩共用同一種毛玻璃卡片風格。
+   暴露成 window 上的函式，讓 bn-editor-plugin.js 的下載流程可以直接呼叫。 */
+function bnShowDownloadOverlay(desc) {
+  var overlay = document.getElementById('bn-download-overlay');
+  if (!overlay) return;
+  var descEl = document.getElementById('bn-download-overlay-desc');
+  if (descEl && desc) descEl.textContent = desc;
+  var bar = document.getElementById('bn-download-overlay-progress');
+  var count = document.getElementById('bn-download-overlay-count');
+  if (bar) bar.style.width = '0%';
+  if (count) count.textContent = '';
+  overlay.classList.add('show');
+}
+
+function bnUpdateDownloadOverlay(text, done, total) {
+  var bar = document.getElementById('bn-download-overlay-progress');
+  var count = document.getElementById('bn-download-overlay-count');
+  if (total && bar) {
+    var pct = Math.round((done || 0) / total * 100);
+    bar.style.width = pct + '%';
+  }
+  if (count) count.textContent = text || '';
+}
+
+function bnHideDownloadOverlay() {
+  var overlay = document.getElementById('bn-download-overlay');
+  if (overlay) overlay.classList.remove('show');
+}
+window.bnShowDownloadOverlay = bnShowDownloadOverlay;
+window.bnUpdateDownloadOverlay = bnUpdateDownloadOverlay;
+window.bnHideDownloadOverlay = bnHideDownloadOverlay;
+
+function renderPreviews() {
+  /* checked 裡沒記錄的視為 true（預設全勾） */
+  var layouts = loadLayouts().filter(function(l){ return l.enabled && ((l.id in checked) ? checked[l.id] : true); });
+  var area  = document.getElementById('preview-area');
+  var empty = document.getElementById('preview-empty');
+
+  area.querySelectorAll('.preview-block').forEach(function(el){ el.remove(); });
+
+  if (!layouts.length) { empty.style.display = 'block'; bnHidePreviewLoading(); return; }
+  empty.style.display = 'none';
+  bnStartPreviewLoading(layouts);
+
+  layouts.forEach(function(l) {
+    var block = document.createElement('div');
+    block.className = 'preview-block';
+    block.dataset.id = l.id;
+
+    /* 先用佔位尺寸建立結構，onload 後再正確設定 */
+    block.innerHTML =
+      '<div class="preview-block-head">' +
+        '<span class="pname">' + esc(l.name) + '</span>' +
+        '<span class="psize" id="psize-' + l.id + '">' +
+          (l.w ? l.w + ' × ' + l.h + ' px' : '讀取尺寸中…') +
+        '</span>' +
+      '</div>' +
+      '<div class="preview-block-body" id="pbody-' + l.id + '" style="min-height:40px">' +
+        '<iframe id="iframe-' + l.id + '"' +
+          ' src="html/' + l.file + '?bnid=' + l.id + '"' +
+          ' style="border:none;display:block;transform-origin:top left;visibility:hidden"' +
+          ' onload="onIframeLoad(' + l.id + ')">' +
+        '</iframe>' +
+      '</div>';
+
+    area.appendChild(block);
+  });
+}
+
+/* iframe 載入完成：
+   1. 從 iframe CSS 讀 --canvas-w / --canvas-h
+   2. 計算等比縮放（寬、高都不超過 800px）
+   3. 更新佔位尺寸 → 顯示 iframe
+   4. 推文字 */
+/* iframe onload：只標記已載入，尺寸等 iframe 自己 postMessage 回傳 */
+function onIframeLoad(id) {
+  var iframe = document.getElementById('iframe-' + id);
+  if (!iframe) return;
+  /* 給 iframe 一點時間完成 CSS 初始化後推送尺寸 */
+  /* 尺寸由 iframe 內部透過 bn-iframe-ready message 傳回 */
+}
+
+
+function bnCalcTextUnits(text){
+  var units=0, str=String(text||'');
+  for(var i=0;i<str.length;i++) if(allowComma && str[i]===','){ continue; }
+      units += (str.charCodeAt(i)>0x2E7F) ? 1 : 0.5;
+  return Math.round(units*10)/10;
+}
+function bnTrimTextToLimit(text, limit){
+  if(!limit || !isFinite(limit)) return String(text||'');
+  var out='', sum=0, str=String(text||'');
+  for(var i=0;i<str.length;i++){
+    var w=(allowComma && str[i]===',') ? 0 : ((str.charCodeAt(i)>0x2E7F) ? 1 : 0.5);
+    if(sum+w>limit) break;
+    out+=str[i]; sum+=w;
+  }
+  return out;
+}
+function bnFieldLimitByInputId(inputId){
+  var el=document.getElementById(inputId);
+  return el ? parseFloat(el.dataset.limit||'') : 0;
+}
+
+/* 接收 iframe 傳回的尺寸與就緒通知 */
+window.addEventListener('message', function (e) {
+  if (!e.data) return;
+
+  /* iframe 就緒，回傳畫布尺寸 */
+  /* 畫布文字直接編輯後同步回左側輸入框（含 banword 轉換） */
+  if (e.data.type === 'bn-text-update') {
+    var fieldMap = { '品牌名':'txt-brand', '主標':'txt-main', '副標':'txt-sub', '日期':'txt-date', 'ICON獨立文案':'txt-icon' };
+    var roleMap  = { '品牌名':'品牌名',    '主標':'主標',     '副標':'副標',    '日期':'date',    'ICON獨立文案':'ICON獨立文案' };
+    var inputId  = fieldMap[e.data.field];
+    if(inputId){
+      var inp = document.getElementById(inputId);
+      if(inp){
+        var rawVal = e.data.value;
+        /* 套 banword 轉換：用 applyToElement（同 sba.html） */
+        /* dollarExempt=true 時：使用者主動豁免，跳過 $ 和千分位轉換，只做禁用語檢查 */
+        if(window.banwordEngine && typeof window.banwordEngine.applyToElement === 'function'){
+          /* dollarExempt：
+             - false / undefined：正常模式，完整格式化
+             - 陣列（如 ['500','1000']）：sba 同款，只豁免清單中的數字
+          */
+          var shadowId = '_bn_bw_shadow_canvas_'+inputId;
+          var shadow = document.getElementById(shadowId);
+          if(!shadow){
+            shadow = document.createElement('div');
+            shadow.id = shadowId;
+            shadow.setAttribute('contenteditable','true');
+            shadow.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;';
+            document.body.appendChild(shadow);
+          }
+          var roleMap3 = {'品牌名':'品牌名','主標':'主標','副標':'副標','日期':'date','ICON獨立文案':'ICON獨立文案'};
+          shadow.dataset.role = roleMap3[e.data.field] || '';
+          shadow.textContent = rawVal;
+          /* 豁免清單傳給 shadow，applyToElement 讀 dataset.dollarExempt */
+          if(Array.isArray(e.data.dollarExempt) && e.data.dollarExempt.length){
+            shadow.dataset.dollarExempt = JSON.stringify(e.data.dollarExempt);
+          } else {
+            shadow.dataset.dollarExempt = '';
+          }
+          var bwResult = window.banwordEngine.applyToElement(shadow,{
+            role: shadow.dataset.role, force:true,
+            getText:function(el){return el.textContent;}
+          });
+          if(bwResult && bwResult.text !== undefined) rawVal = bwResult.text;
+          if(bwResult && bwResult.message && window._bnStatePlugin && window._bnStatePlugin.toast){
+            window._bnStatePlugin.toast(bwResult.message,'err',bwResult.duration||4000);
+          }
+        }
+        var limit = bnFieldLimitByInputId(inputId);
+        if(limit && bnCalcTextUnits(rawVal) > limit){
+          rawVal = bnTrimTextToLimit(rawVal, limit);
+        }
+        if(inp.value !== rawVal){
+          inp.value = rawVal;
+        }
+        broadcastText();
+        /* 把轉換後的文字送回 iframe 更新畫布 */
+        document.querySelectorAll('.preview-block iframe').forEach(function(iframe){
+          try{
+            iframe.contentWindow.postMessage({
+              type: 'bn-text-set',
+              field: e.data.field,
+              value: rawVal
+            }, '*');
+          }catch(_){}
+        });
+      }
+    }
+    return;
+  }
+
+  /* 字數提示：iframe 回報字數，顯示在左側輸入框旁並紅框超限 */
+  if (e.data.type === 'bn-char-count') {
+    var badgeMap = {'品牌名':'badge-品牌名','主標':'badge-主標','副標':'badge-副標','日期':'badge-日期','ICON獨立文案':'badge-ICON獨立文案'};
+    var inputMap = {'品牌名':'txt-brand','主標':'txt-main','副標':'txt-sub','日期':'txt-date','ICON獨立文案':'txt-icon'};
+    var badgeEl = document.getElementById(badgeMap[e.data.field]);
+    var inpEl   = document.getElementById(inputMap[e.data.field]);
+    var rowEl   = inpEl ? inpEl.closest('.s-field-row') : null;
+    if(badgeEl){
+      if(e.data.used === null || e.data.used === undefined){
+        badgeEl.textContent=''; badgeEl.className='char-count-badge';
+        if(rowEl) rowEl.classList.remove('over-limit');
+      } else {
+        var isOver = e.data.used > e.data.limit;
+        var isWarn = !isOver && e.data.used > e.data.limit * 0.85;
+        badgeEl.textContent = e.data.used.toFixed(1)+'/'+e.data.limit;
+        badgeEl.className = 'char-count-badge'+(isOver?' over':isWarn?' warn':'');
+        if(rowEl){ if(isOver) rowEl.classList.add('over-limit'); else rowEl.classList.remove('over-limit'); }
+      }
+    }
+    return;
+  }
+
+  /* Escape 取消編輯：把原本的文字推回去 */
+  if (e.data.type === 'bn-text-cancel') {
+    var fieldMap2 = { '品牌名':'txt-brand', '主標':'txt-main', '副標':'txt-sub', '日期':'txt-date', 'ICON獨立文案':'txt-icon' };
+    var inp2 = document.getElementById(fieldMap2[e.data.field]);
+    if(inp2) broadcastText();
+    return;
+  }
+
+  if (e.data.type === 'bn-iframe-ready') {
+    var W = e.data.w || 0;
+    var H = e.data.h || 0;
+    var id = e.data.id || 0;
+    if (!id || !W || !H) return;
+
+    var iframe = document.getElementById('iframe-' + id);
+    if (!iframe) return;
+    bnMarkPreviewReady(id);
+
+    var scale = Math.min(PREVIEW_MAX / W, PREVIEW_MAX / H, 1);
+    var dispW = Math.round(W * scale);
+    var dispH = Math.round(H * scale);
+
+    iframe.style.width      = W + 'px';
+    iframe.style.height     = H + 'px';
+    iframe.style.transform  = 'scale(' + scale + ')';
+    iframe.style.visibility = 'visible';
+
+    var body = document.getElementById('pbody-' + id);
+    if (body) { body.style.width = dispW + 'px'; body.style.height = dispH + 'px'; }
+
+    var psize = document.getElementById('psize-' + id);
+    if (psize) psize.textContent = W + ' × ' + H + ' px（縮放 ' + Math.round(scale*100) + '%）';
+
+    var layouts = loadLayouts();
+    var l = layouts.find(function(x){ return x.id === id; });
+    if (l && (!l.w || !l.h)) {
+      l.w = W; l.h = H;
+      saveLayouts(layouts); renderAdmin(); renderChecks(); if (document.getElementById('frontend').classList.contains('active')) renderPreviews();
+    }
+
+    /* 清掉靜默探測 iframe */
+    var prob = document.getElementById('prob-' + id);
+    if (prob) prob.remove();
+
+    /* 推送目前文字與顏色 */
+    if (iframe) {
+      iframe.contentWindow.postMessage({ type: 'bn-text',  data: getTextData() }, '*');
+      iframe.contentWindow.postMessage({ type: 'bn-color', data: getColorData() }, '*');
+    }
+
+    /* 通知 plugin（logo 推送） */
+    if (window._bnOnIframeReady) window._bnOnIframeReady(id);
+
+    /* 套用底圖核對 */
+    setTimeout(applyBgCheckers, 100);
+    /* 套用背景圖（由 bn-editor-plugin 的 _bgStates 管理）*/
+    if(window._bnBgReadyCallback) window._bnBgReadyCallback(id);
+  }
+});
+
+/* 廣播顏色給所有已勾選的 iframe */
+function broadcastColors() {
+  var data = getColorData();
+  document.querySelectorAll('.preview-block iframe').forEach(function(iframe) {
+    try { iframe.contentWindow.postMessage({ type: 'bn-color', data: data }, '*'); }
+    catch(e) {}
+  });
+}
+
+function getColorData() {
+  var lockedCanvasBg = getCanvasBgHardLock();
+  var data = {
+    mainText:  colorState.mainText,
+    subText:   colorState.subText,
+    dateText:  colorState.dateText,
+    brandText: colorState.brandText,
+    canvasBg:  lockedCanvasBg || colorState.canvasBg,
+    ctaText:   colorState.ctaText,
+    ctaBg:     colorState.ctaBg,
+    searchImageCtaBg: colorState.searchImageCtaBg,
+    tagColor: colorState.tagColor || 'red',
+    logoColor: colorState.logoColor || 'white'
+  };
+  /* ZIP 匯出期間或剛匯出後，以最後一次使用者實際色票為準，避免舊暫存預設藍回灌。 */
+  if (window._bnFrozenColorData) data = Object.assign(data, cloneColorDataSafe(window._bnFrozenColorData));
+  else if (isColorGuardActive() && window._bnLastUserColorState) data = Object.assign(data, cloneColorDataSafe(window._bnLastUserColorState));
+  /* 掛標顏色必須以目前工具列狀態為準，不讓色彩 guard 的舊暫存值覆蓋，避免畫布先閃一下又跳回紅色。 */
+  data.tagColor = (colorState && colorState.tagColor === 'white') ? 'white' : 'red';
+  /* 蝦皮LOGO顏色同理，以目前工具列狀態為準，不被舊暫存值回灌。 */
+  data.logoColor = (colorState && colorState.logoColor === 'orange') ? 'orange' : 'white';
+  lockedCanvasBg = getCanvasBgHardLock();
+  if (lockedCanvasBg) data.canvasBg = lockedCanvasBg;
+  var authoritativeCanvasBg = getAuthoritativeCanvasBg();
+  if (authoritativeCanvasBg) data.canvasBg = authoritativeCanvasBg;
+  return data;
+}
+
+/* 廣播文字給所有已勾選的 iframe */
+function broadcastText() {
+  var data = getTextData();
+  document.querySelectorAll('.preview-block iframe').forEach(function(iframe) {
+    try { iframe.contentWindow.postMessage({ type: 'bn-text', data: data }, '*'); }
+    catch(e) {}
+  });
+}
+
+function getTextData() {
+  return {
+    品牌名: document.getElementById('txt-brand').value,
+    主標:   document.getElementById('txt-main').value,
+    副標:   document.getElementById('txt-sub').value,
+    日期:   document.getElementById('txt-date').value,
+    ICON獨立文案: document.getElementById('txt-icon').value
+  };
+}
+
+/* ════════════════════════════════════════
+   色票選色器
+════════════════════════════════════════ */
+/* 分組色票 */
+var SWATCH_GROUPS = [
+  { label: '蝦皮品牌色', colors: ['#ee4d2d','#f5a623','#f8e71c','#6bc0ec','#2b79c4','#2540b5'] },
+  { label: '文字常用', colors: ['#ffffff','#000000','#1a1a2e','#2d3748','#4a5568','#718096'] },
+  { label: 'CTA', colors: ['#c9e624','#0f7db6','#ff6b35','#00b894','#6c5ce7','#fd79a8'] },
+  { label: '淺色', colors: ['#f7faff','#eef3f8','#dbeafe','#d1fae5','#fef3c7','#fce7f3'] },
+];
+
+var SWATCHES = [
+  '#ff6b35','#ff3b3b','#ff69b4','#e040fb',
+  '#7c4dff','#3d5afe','#2b79c4','#00bcd4',
+  '#26c6da','#00e676','#69f0ae','#ffeb3b',
+  '#ffa726','#6bc0ec','#ffffff','#1a1a1a'
+];
+
+/* 目前顏色狀態 */
+var colorState = {
+  mainText:  '#2b79c4',
+  subText:   '#2540b5',
+  dateText:  '#ffffff',
+  brandText: '#ffffff',
+  canvasBg:  '#6bc0ec',
+  ctaText:   '#6bc0ec',
+  ctaBg:     '#ffffff',
+  searchImageCtaBg: '#d0021b',
+  tagColor: 'red',
+  logoColor: 'white'
+};
+
+/* 使用者目前設定的背景色唯一權威來源。
+   多圖 ZIP 匯出、iframe ready、舊暫存回灌時，都不得用預設藍覆蓋它。 */
+window._bnAuthoritativeCanvasBg = window._bnAuthoritativeCanvasBg || null;
+
+function cloneColorDataSafe(data){
+  try { return JSON.parse(JSON.stringify(data || {})); }
+  catch(_) { return Object.assign({}, data || {}); }
+}
+function isColorGuardActive(){
+  return window._bnFrozenColorData || (window._bnBgColorExportGuardUntil && Date.now() < window._bnBgColorExportGuardUntil);
+}
+var BN_DEFAULT_CANVAS_BG = '#6bc0ec';
+function isHexCanvasBg(v){ return /^#[0-9a-fA-F]{6}$/.test(v || ''); }
+function isNonDefaultCanvasBg(v){ return isHexCanvasBg(v) && String(v).toLowerCase() !== BN_DEFAULT_CANVAS_BG; }
+function setAuthoritativeCanvasBg(v){
+  if(!isHexCanvasBg(v)) return;
+  window._bnAuthoritativeCanvasBg = v;
+  window._bnCanvasBgHardLock = v;
+  window._bnPersistentCanvasBg = v;
+  window._bnUserCanvasBgLocked = true;
+  window._bnBgColorExportGuardUntil = Date.now() + 30000;
+  if(colorState) colorState.canvasBg = v;
+  if(window._bnLastUserColorState) window._bnLastUserColorState.canvasBg = v;
+  if(window._bnFrozenColorData) window._bnFrozenColorData.canvasBg = v;
+}
+function getAuthoritativeCanvasBg(){
+  if(isHexCanvasBg(window._bnAuthoritativeCanvasBg) && (window._bnUserCanvasBgLocked || isNonDefaultCanvasBg(window._bnAuthoritativeCanvasBg))) return window._bnAuthoritativeCanvasBg;
+  return null;
+}
+window._bnSetAuthoritativeCanvasBg = setAuthoritativeCanvasBg;
+window._bnGetAuthoritativeCanvasBg = getAuthoritativeCanvasBg;
+function getCanvasBgHardLock(){
+  var authoritativeCanvasBg = getAuthoritativeCanvasBg();
+  if (authoritativeCanvasBg) return authoritativeCanvasBg;
+  /* 不讓初始化時的預設藍成為永久鎖。
+     多圖 ZIP 期間若舊暫存/iframe ready 回灌預設藍，這裡會優先保留目前使用者實際設定的背景色。 */
+  if (colorState && isHexCanvasBg(colorState.canvasBg) && (window._bnUserCanvasBgLocked || isNonDefaultCanvasBg(colorState.canvasBg))) {
+    return colorState.canvasBg;
+  }
+  if (window._bnCanvasBgHardLock && isHexCanvasBg(window._bnCanvasBgHardLock) && (window._bnUserCanvasBgLocked || isNonDefaultCanvasBg(window._bnCanvasBgHardLock))) return window._bnCanvasBgHardLock;
+  if (window._bnPersistentCanvasBg && isHexCanvasBg(window._bnPersistentCanvasBg) && (window._bnUserCanvasBgLocked || isNonDefaultCanvasBg(window._bnPersistentCanvasBg))) return window._bnPersistentCanvasBg;
+  return null;
+}
+function rememberCurrentColorState(){
+  window._bnLastUserColorState = cloneColorDataSafe(colorState);
+  if (colorState && isHexCanvasBg(colorState.canvasBg)) {
+    window._bnPersistentCanvasBg = colorState.canvasBg;
+    if (window.cpActiveKey === 'canvasBg' || isNonDefaultCanvasBg(colorState.canvasBg) || window._bnUserCanvasBgLocked) {
+      setAuthoritativeCanvasBg(colorState.canvasBg);
+    }
+  }
+}
+
+var COLOR_FIELDS = [
+  { key: 'canvasBg',  label: '背景色' },
+  { key: 'ctaText',   label: 'CTA 文字色' },
+  { key: 'ctaBg',     label: 'CTA 底色' },
+  { key: 'searchImageCtaBg', label: 'Search Image CTA 底色' }
+];
+
+function applyTagColor(mode) {
+  mode = (mode === 'white') ? 'white' : 'red';
+  colorState.tagColor = mode;
+  window._bnTagColor = mode;
+  /* 先更新最後使用者色彩快照，避免 broadcastColors() 被舊快照回灌成預設紅色。 */
+  try { window._bnLastUserColorState = cloneColorDataSafe(colorState); } catch(_) {}
+  document.querySelectorAll('.tag-color-dot').forEach(function(dot) {
+    dot.classList.toggle('active', dot.dataset.tagColor === mode);
+  });
+  broadcastColors();
+  document.querySelectorAll('.preview-block iframe').forEach(function(iframe) {
+    try {
+      if (iframe.contentWindow && typeof iframe.contentWindow._bnSetTagColor === 'function') {
+        iframe.contentWindow._bnSetTagColor(mode);
+      } else if (iframe.contentWindow && typeof iframe.contentWindow._bnApplyTag === 'function') {
+        iframe.contentWindow._bnTagColor = mode;
+        iframe.contentWindow._bnApplyTag();
+      }
+    } catch(_) {}
+  });
+  /* 有些 iframe 會在收到 bn-color 後再做一次 layout/init，延遲補套用一次，避免只閃一下沒有真正切換。 */
+  [50, 250].forEach(function(delay) {
+    setTimeout(function() {
+      document.querySelectorAll('.preview-block iframe').forEach(function(iframe) {
+        try {
+          if (iframe.contentWindow && typeof iframe.contentWindow._bnSetTagColor === 'function') {
+            iframe.contentWindow._bnSetTagColor(mode);
+          }
+        } catch(_) {}
+      });
+    }, delay);
+  });
+  try { document.dispatchEvent(new CustomEvent('bn-state-dirty')); } catch(_) {}
+}
+
+function applyLogoColor(mode) {
+  mode = (mode === 'orange') ? 'orange' : 'white';
+  colorState.logoColor = mode;
+  window._bnLogoColor = mode;
+  /* 先更新最後使用者色彩快照，避免 broadcastColors() 被舊快照回灌成預設白色。 */
+  try { window._bnLastUserColorState = cloneColorDataSafe(colorState); } catch(_) {}
+  document.querySelectorAll('.logo-color-dot').forEach(function(dot) {
+    dot.classList.toggle('active', dot.dataset.logoColor === mode);
+  });
+  broadcastColors();
+  document.querySelectorAll('.preview-block iframe').forEach(function(iframe) {
+    try {
+      if (iframe.contentWindow && typeof iframe.contentWindow._bnSetLogoColor === 'function') {
+        iframe.contentWindow._bnSetLogoColor(mode);
+      } else if (iframe.contentWindow && typeof iframe.contentWindow._bnApplyShopeeLogo === 'function') {
+        iframe.contentWindow._bnLogoColor = mode;
+        iframe.contentWindow._bnApplyShopeeLogo();
+      }
+    } catch(_) {}
+  });
+  /* 有些 iframe 會在收到 bn-color 後再做一次 layout/init，延遲補套用一次，避免只閃一下沒有真正切換。 */
+  [50, 250].forEach(function(delay) {
+    setTimeout(function() {
+      document.querySelectorAll('.preview-block iframe').forEach(function(iframe) {
+        try {
+          if (iframe.contentWindow && typeof iframe.contentWindow._bnSetLogoColor === 'function') {
+            iframe.contentWindow._bnSetLogoColor(mode);
+          }
+        } catch(_) {}
+      });
+    }, delay);
+  });
+  try { document.dispatchEvent(new CustomEvent('bn-state-dirty')); } catch(_) {}
+}
+
+function renderLogoColorRow(afterRow) {
+  if (!afterRow || document.getElementById('logo-color-row')) return;
+  var row = document.createElement('div');
+  row.className = 'color-row';
+  row.id = 'logo-color-row';
+
+  var lbl = document.createElement('label');
+  lbl.textContent = '蝦皮LOGO';
+  row.appendChild(lbl);
+
+  var box = document.createElement('div');
+  box.style.cssText = 'display:flex;gap:8px;align-items:center;';
+
+  [
+    {mode:'white', color:'#ffffff', title:'白色蝦皮LOGO'},
+    {mode:'orange', color:'#ee4d2d', title:'橘色蝦皮LOGO'}
+  ].forEach(function(item){
+    var dot = document.createElement('div');
+    dot.className = 'color-dot logo-color-dot';
+    dot.dataset.logoColor = item.mode;
+    dot.title = item.title;
+    dot.style.background = item.color;
+    dot.style.boxShadow = item.mode === 'white' ? 'inset 0 0 0 1px rgba(0,0,0,.35)' : '';
+    dot.addEventListener('click', function(e){
+      e.stopPropagation();
+      applyLogoColor(item.mode);
+    });
+    box.appendChild(dot);
+  });
+
+  row.appendChild(box);
+  afterRow.parentNode.insertBefore(row, afterRow.nextSibling);
+  applyLogoColor(colorState.logoColor || 'white');
+}
+
+function renderTagColorRow(afterRow) {
+  if (!afterRow || document.getElementById('tag-color-row')) return;
+  var row = document.createElement('div');
+  row.className = 'color-row';
+  row.id = 'tag-color-row';
+
+  var lbl = document.createElement('label');
+  lbl.textContent = '掛標顏色';
+  row.appendChild(lbl);
+
+  var box = document.createElement('div');
+  box.style.cssText = 'display:flex;gap:8px;align-items:center;';
+
+  [
+    {mode:'red', color:'#d0021b', title:'紅色掛標'},
+    {mode:'white', color:'#ffffff', title:'白色掛標'}
+  ].forEach(function(item){
+    var dot = document.createElement('div');
+    dot.className = 'color-dot tag-color-dot';
+    dot.dataset.tagColor = item.mode;
+    dot.title = item.title;
+    dot.style.background = item.color;
+    dot.style.boxShadow = item.mode === 'white' ? 'inset 0 0 0 1px rgba(0,0,0,.35)' : '';
+    dot.addEventListener('click', function(e){
+      e.stopPropagation();
+      applyTagColor(item.mode);
+    });
+    box.appendChild(dot);
+  });
+
+  row.appendChild(box);
+  afterRow.parentNode.insertBefore(row, afterRow.nextSibling);
+  applyTagColor(colorState.tagColor || 'red');
+}
+
+/* 文字色 dot（inline，和輸入框同行） */
+var TEXT_COLOR_KEYS = ['brandText','mainText','subText','dateText'];
+
+/* 目前開啟面板對應的 key */
+var cpActiveKey = null;
+
+function renderColorPickers() {
+  var wrap = document.getElementById('color-rows');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  COLOR_FIELDS.forEach(function(f) {
+    var row = document.createElement('div');
+    row.className = 'color-row';
+
+    var lbl = document.createElement('label');
+    lbl.textContent = f.label;
+    row.appendChild(lbl);
+
+    var dot = document.createElement('div');
+    dot.className = 'color-dot';
+    dot.id = 'dot-' + f.key;
+    dot.style.background = colorState[f.key];
+    dot.addEventListener('click', (function(k){ return function(e){ openPanel(k, e); }; })(f.key));
+    row.appendChild(dot);
+
+    wrap.appendChild(row);
+    if (f.key === 'searchImageCtaBg') {
+      renderTagColorRow(row);
+      renderLogoColorRow(document.getElementById('tag-color-row'));
+    }
+  });
+
+  /* 初始化 inline 文字色 dot（bound 保護，避免 renderColorPickers 重複呼叫時累積多個 handler）*/
+  TEXT_COLOR_KEYS.forEach(function(k) {
+    var dot = document.getElementById('dot-' + k);
+    if (!dot) return;
+    dot.style.background = colorState[k];
+    if(!dot.dataset.bound){
+      dot.dataset.bound = '1';
+      dot.addEventListener('click', (function(key){ return function(e){ openPanel(key, e); }; })(k));
+    }
+  });
+
+  /* 建快速色票（原有） */
+  var sw = document.getElementById('cp-swatches');
+  sw.innerHTML = '';
+  SWATCHES.forEach(function(c) {
+    var s = document.createElement('div');
+    s.className = 'cp-swatch';
+    s.style.background = c;
+    s.title = c;
+    s.addEventListener('click', function(){ applyColor(c); });
+    sw.appendChild(s);
+  });
+
+  /* 建分組色票 */
+  var sg = document.getElementById('cp-swatch-groups');
+  if(sg){
+    sg.innerHTML = '';
+    SWATCH_GROUPS.forEach(function(group){
+      var lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:9px;color:#687090;margin-bottom:4px;margin-top:4px';
+      lbl.textContent = group.label;
+      sg.appendChild(lbl);
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px';
+      group.colors.forEach(function(c){
+        var s = document.createElement('div');
+        s.className = 'cp-swatch';
+        s.style.background = c;
+        s.title = c;
+        s.addEventListener('click', function(){ applyColor(c); });
+        row.appendChild(s);
+      });
+      sg.appendChild(row);
+    });
+  }
+
+  /* hex input 事件（只綁一次，避免 renderColorPickers 重複呼叫時累積多個 handler 造成閃色）*/
+  var hexInpEl = document.getElementById('cp-hex-input');
+  if(hexInpEl && !hexInpEl.dataset.bound){
+    hexInpEl.dataset.bound = '1';
+    hexInpEl.addEventListener('input', function() {
+      var v = this.value.trim();
+      if (!/^#/.test(v)) v = '#' + v;
+      var native = document.getElementById('cp-native');
+      if (native && /^#[0-9a-fA-F]{6}$/.test(v)) native.value = v;
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) applyColor(v);
+    });
+  }
+
+  /* cp-native 原生色彩選擇器事件（只綁一次） */
+  var nativeEl = document.getElementById('cp-native');
+  if(nativeEl && !nativeEl.dataset.bound){
+    nativeEl.dataset.bound = '1';
+    nativeEl.addEventListener('input', function(){
+      applyColor(this.value);
+    });
+    nativeEl.addEventListener('change', function(){
+      applyColor(this.value);
+    });
+  }
+}
+
+function openPanel(key, e) {
+  e.stopPropagation(); /* 先擋掉，避免被 document.click 立刻關閉 */
+  cpActiveKey = key;
+  var panel  = document.getElementById('cp-panel');
+  var cur    = colorState[key];
+  var native = document.getElementById('cp-native');
+
+  document.getElementById('cp-hex-input').value = cur;
+  if (native) native.value = /^#[0-9a-fA-F]{6}$/.test(cur) ? cur : '#000000';
+  document.querySelectorAll('.cp-swatch').forEach(function(s) {
+    s.classList.toggle('active', s.title.toLowerCase() === cur.toLowerCase());
+  });
+
+  /* 定位：點擊右側，防超出視窗 */
+  var x = e.clientX + 14;
+  var y = e.clientY - 20;
+  if (x + 244 > window.innerWidth)  x = e.clientX - 254;
+  if (y + 240 > window.innerHeight) y = window.innerHeight - 244;
+  panel.style.left = x + 'px';
+  panel.style.top  = y + 'px';
+  panel.classList.add('open');
+}
+
+function applyColor(color) {
+  if (!cpActiveKey) return;
+  colorState[cpActiveKey] = color;
+  if (cpActiveKey === 'canvasBg' && /^#[0-9a-fA-F]{6}$/.test(color || '')) {
+    setAuthoritativeCanvasBg(color);
+  }
+  rememberCurrentColorState();
+
+  /* 更新圓點（sidebar 和 inline 共用同一個 id） */
+  var dot = document.getElementById('dot-' + cpActiveKey);
+  if (dot) dot.style.background = color;
+
+  /* 更新面板 hex input 和 native color picker */
+  var hexInp = document.getElementById('cp-hex-input');
+  var native  = document.getElementById('cp-native');
+  if (hexInp) hexInp.value = color;
+  if (native) native.value = /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#000000';
+
+  /* 更新色票 active 狀態 */
+  document.querySelectorAll('.cp-swatch').forEach(function(s) {
+    s.classList.toggle('active', s.title.toLowerCase() === color.toLowerCase());
+  });
+
+  /* 同步到所有 iframe */
+  broadcastColors();
+
+  /* 顏色變更也要寫入本機暫存。
+     背景圖上傳後自動吸色會走 applyColor('canvasBg')，
+     若不標記 dirty，下載/重整後可能從舊暫存回到預設藍。 */
+  try { document.dispatchEvent(new CustomEvent('bn-state-dirty')); } catch(_) {}
+}
+
+/* 點面板外關閉 */
+document.addEventListener('click', function(e) {
+  var panel = document.getElementById('cp-panel');
+  if (panel && !panel.contains(e.target)) panel.classList.remove('open');
+});
+
+/* EyeDropper 吸管 */
+function openEyeDropper(){
+  if(!window.EyeDropper){
+    alert('你的瀏覽器不支援吸管功能（需要 Chrome 95+）');
+    return;
+  }
+  var ed = new EyeDropper();
+  ed.open().then(function(result){
+    applyColor(result.sRGBHex);
+  }).catch(function(){});
+}
+
+/* banword 警告（inline 顯示在輸入框旁） */
+function showBanwordWarningInline(inp, msg){
+  var wid = '_bw_warn_'+inp.id;
+  var el = document.getElementById(wid);
+  if(!el){
+    el = document.createElement('div');
+    el.id = wid;
+    el.style.cssText=[
+      'position:absolute;z-index:9999;',
+      'background:#7f1d1d;color:#fca5a5;',
+      'font-size:10px;padding:3px 8px;border-radius:5px;',
+      'white-space:nowrap;pointer-events:none;',
+    ].join('');
+    document.body.appendChild(el);
+  }
+  el.textContent = '⚠ ' + msg;
+  var r = inp.getBoundingClientRect();
+  el.style.left = r.left + 'px';
+  el.style.top  = (r.bottom + 3) + 'px';
+  el.style.display = 'block';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(function(){ el.style.display='none'; }, 4000);
+}
+
+/* ════════════════════════════════════════
+   背景圖上傳
+════════════════════════════════════════ */
+var _bgDataUrl = null;
+
+function broadcastBg(src){
+  _bgDataUrl = src || null;
+
+  /* 同步到新版 bn-editor-plugin 的完整背景狀態，讓本機暫存/下載暫存
+     都能包含背景圖、fit、scale、x、y，而不是只在 iframe 裡顯示。 */
+  if(window._bnSetBgStates){
+    var states = {};
+    document.querySelectorAll('.preview-block iframe').forEach(function(iframe){
+      var id = null;
+      try{ id = new URLSearchParams((iframe.src||'').split('?')[1]||'').get('bnid'); }catch(_){}
+      if(id) states[id] = {src:src||null, fit:'auto', scale:100, x:50, y:50, _initialized:true};
+    });
+    try{ window._bnSetBgStates(states, null); }catch(_){}
+  }
+
+  document.querySelectorAll('.preview-block iframe').forEach(function(iframe){
+    try{
+      iframe.contentWindow.postMessage({ type:'bn-bg', src: src||null, fit:'auto', scale:100, x:50, y:50 }, '*');
+    }catch(_){}
+  });
+
+  try{ document.dispatchEvent(new CustomEvent('bn-state-dirty')); }catch(_){}
+}
+
+function initBgUpload(){
+  var inp = document.getElementById('bg-upload-input');
+  var clearBtn = document.getElementById('bg-clear-btn');
+  var nameEl = document.getElementById('bg-upload-name');
+  var previewWrap = document.getElementById('bg-preview-wrap');
+  var previewImg = document.getElementById('bg-preview-img');
+  if(!inp) return;
+
+  inp.addEventListener('change', function(){
+    var file = this.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      _bgDataUrl = e.target.result;
+      nameEl.textContent = file.name;
+      previewImg.src = _bgDataUrl;
+      previewWrap.style.display = 'block';
+      broadcastBg(_bgDataUrl);
+    };
+    reader.readAsDataURL(file);
+    inp.value = '';
+  });
+
+  clearBtn.addEventListener('click', function(){
+    _bgDataUrl = null;
+    nameEl.textContent = '';
+    previewWrap.style.display = 'none';
+    previewImg.src = '';
+    broadcastBg(null);
+  });
+}
+
+/* ════════════════════════════════════════
+   底圖核對工具
+════════════════════════════════════════ */
+var _bgCheckers = []; /* [{file, enabled}] */
+
+/* 掃描 bn測底圖/ 資料夾
+   因為瀏覽器無法直接列目錄，改用 fetch 讀 index.json
+   若無 index.json，提示手動建立 */
+function scanBgFiles(){
+  var list = document.getElementById('bg-checker-list');
+  list.innerHTML = '<div style="color:var(--text3);font-size:12px">掃描中...</div>';
+
+  /* 嘗試讀取 bn測底圖/index.json（格式：["hbn.jpg","scbn.png",...]）*/
+  fetch('bn測底圖/index.json?t=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(files){
+      if(!Array.isArray(files) || !files.length){
+        list.innerHTML = '<div style="color:var(--text3);font-size:12px">index.json 是空的</div>';
+        return;
+      }
+      /* 保留已有的 enabled 狀態 */
+      var prev = {};
+      _bgCheckers.forEach(function(b){ prev[b.file] = b.enabled; });
+      _bgCheckers = files.map(function(f){
+        return { file: f, enabled: !!prev[f] };
+      });
+      renderBgCheckers();
+    })
+    .catch(function(){
+      /* 找不到 index.json，顯示說明 */
+      list.innerHTML = [
+        '<div style="color:var(--text3);font-size:12px;line-height:1.8">',
+        '找不到 <code>bn測底圖/index.json</code><br>',
+        '請在 bn測底圖/ 資料夾建立 index.json：<br>',
+        '<code>["hbn底圖.jpg","scbn底圖.png"]</code>',
+        '</div>'
+      ].join('');
+    });
+}
+
+function toggleAllBgCheckers(checked){
+  _bgCheckers.forEach(function(b){ b.enabled = checked; });
+  renderBgCheckers();
+  applyBgCheckers();
+}
+
+function renderBgCheckers(){
+  var list = document.getElementById('bg-checker-list');
+  if(!list) return;
+  if(!_bgCheckers.length){
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px">尚無底圖</div>';
+    return;
+  }
+  list.innerHTML = '';
+  _bgCheckers.forEach(function(item, i){
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = item.enabled;
+    cb.addEventListener('change', function(){
+      _bgCheckers[i].enabled = cb.checked;
+      applyBgCheckers();
+    });
+
+    var label = document.createElement('span');
+    label.textContent = item.file;
+    label.style.cssText = 'flex:1;font-size:12px;color:var(--text2);';
+
+    row.appendChild(cb); row.appendChild(label);
+    list.appendChild(row);
+  });
+}
+
+function applyBgCheckers(){
+  document.querySelectorAll('.preview-block').forEach(function(block){
+    var pname = (block.querySelector('.pname') || {}).textContent || '';
+    var iframe = block.querySelector('iframe');
+    if(!iframe) return;
+
+    /* 模糊比對：底圖檔名（去副檔名）跟版位名互相包含 */
+    var matched = null;
+    _bgCheckers.forEach(function(item){
+      if(!matched && item.enabled){
+        var fileBase = item.file.replace(/\.[^.]+$/, '').toLowerCase();
+        var layoutName = pname.toLowerCase();
+        if(layoutName.indexOf(fileBase) !== -1 || fileBase.indexOf(layoutName) !== -1){
+          matched = item.file;
+        }
+      }
+    });
+
+    try{
+      iframe.contentWindow.postMessage({
+        type: 'bn-bg-overlay',
+        src: matched ? '../bn測底圖/' + matched : null
+      }, '*');
+    }catch(_){}
+  });
+}
+
+/* ════════════════════════════════════════
+   工具
+════════════════════════════════════════ */
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ════════════════════════════════════════
+   初始化
+════════════════════════════════════════ */
+renderAdmin();
+renderColorPickers();
+/* 切換到前台 */
+switchTab('frontend');
+/* 掃描排版（非同步，完成後 callback 裡會呼叫 renderPreviews） */
+scanLayouts();
+initBgUpload();
+
+/* 暴露函式給 bn-state-plugin */
+window.renderColorPickers = renderColorPickers;
+window.broadcastColors    = broadcastColors;
+window.renderChecks       = renderChecks;
+window.renderPreviews     = renderPreviews;
+window.saveChecked        = function(c){ var ls=loadLayouts(); ls.forEach(function(l){ if(c[l.id]!==undefined) l.checked=c[l.id]; }); saveLayouts(ls); };
+window.loadChecked        = function(){ var checked={}; loadLayouts().forEach(function(l){ checked[l.id]=l.checked!==false; }); return checked; };
+</script>
+<!-- BN Editor Plugin -->
+<script>
+/* 這 4 支是整個工具最核心的外掛程式，之前是用純靜態 <script src="..."> 標籤載入，
+   完全沒有防快取機制——瀏覽器很可能把它們快取住，即使伺服器上的檔案已經換成
+   新版本，瀏覽器還是繼續用快取的舊版本，導致改完程式碼、重新整理頁面，
+   看起來卻「完全沒有變化」。這不是程式碼邏輯的問題，是瀏覽器快取的問題。
+   改成動態插入＋時間戳記（跟上面 js/index.js 既有的防快取做法一致），
+   確保每次重新整理頁面都會強制向伺服器要最新版本，不會再被快取檔案卡住。
+   async=false 是為了保持原本 4 支檔案依序載入、依序執行的順序
+   （bn-state-plugin.js 等後面幾支依賴 bn-editor-plugin.js 先準備好一些東西），
+   動態插入的 script 預設是非同步、載入完成順序不保證，一定要手動關掉。 */
+(function(){
+  var _t = Date.now();
+  ['js/bn-editor-plugin.js','js/bn-state-plugin.js','js/bn-workorder-upload-plugin.js','js/bn-bg-library-plugin.js'].forEach(function(src){
+    var s = document.createElement('script');
+    s.src = src + '?t=' + _t;
+    s.async = false;
+    document.head.appendChild(s);
+  });
+})();
+</script>
+
+<!-- IG Shopee Logo Card Overlay -->
+<img id="ig-shopee-logo-card"
+     src="img/ig-shopee-logo-card.png"
+     style="position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;display:none;z-index:9998;">
+
+<script>
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='bn-ig-layout-show'){
+    document.getElementById('ig-shopee-logo-card').style.display = e.data.show ? 'block' : 'none';
+  }
+});
+</script>
+
+<script>
+/* 左側文字工具列：依照版位字數規則限制輸入（中文/全形 1 字，其餘 0.5 字） */
+document.addEventListener('DOMContentLoaded',function(){
+  var fields=[
+    ['txt-brand','badge-品牌名'],
+    ['txt-main','badge-主標'],
+    ['txt-sub','badge-副標'],
+    ['txt-date','badge-日期'],
+    ['txt-icon','badge-ICON獨立文案']
+  ];
+
+  function calcUnits(text, allowComma){
+    var units=0, str=String(text||'');
+    for(var i=0;i<str.length;i++){
+      if(allowComma && str[i]===','){ continue; }
+      units += (str.charCodeAt(i)>0x2E7F) ? 1 : 0.5;
+    }
+    return Math.round(units*10)/10;
+  }
+  function trimToLimit(text, limit, allowComma){
+    var out='', sum=0, str=String(text||'');
+    for(var i=0;i<str.length;i++){
+      var w=(allowComma && str[i]===',') ? 0 : ((str.charCodeAt(i)>0x2E7F) ? 1 : 0.5);
+      if(sum+w>limit) break;
+      out+=str[i]; sum+=w;
+    }
+    return out;
+  }
+  function setCaretToEnd(input){
+    try{ input.setSelectionRange(input.value.length,input.value.length); }catch(_){}
+  }
+  function nextValue(input, insertText){
+    var start=input.selectionStart==null ? input.value.length : input.selectionStart;
+    var end=input.selectionEnd==null ? input.value.length : input.selectionEnd;
+    return input.value.slice(0,start)+String(insertText||'')+input.value.slice(end);
+  }
+  function flashLimit(input, badge){
+    if(badge) badge.title='已達輸入上限';
+    var row=input.closest('.s-field-row');
+    if(row) row.classList.add('over-limit');
+    clearTimeout(input._bnLimitTimer);
+    input._bnLimitTimer=setTimeout(function(){ if(row) row.classList.remove('over-limit'); },450);
+  }
+
+  fields.forEach(function(a){
+    var input=document.getElementById(a[0]);
+    var badge=document.getElementById(a[1]);
+    if(!input) return;
+    var limit=parseFloat(input.dataset.limit||'');
+    if(!limit) return;
+    var allowComma = input.id==='txt-date';
+
+    input.addEventListener('beforeinput',function(e){
+      if(e.inputType && e.inputType.indexOf('delete')===0) return;
+      if(e.isComposing) return;
+      var insert=e.data||'';
+      if(!insert && e.inputType!=='insertText') return;
+      if(calcUnits(nextValue(input, insert), allowComma)>limit){
+        e.preventDefault();
+        flashLimit(input,badge);
+      }
+    });
+
+    input.addEventListener('paste',function(e){
+      var text=(e.clipboardData||window.clipboardData).getData('text')||'';
+      if(calcUnits(nextValue(input,text), allowComma)<=limit) return;
+      e.preventDefault();
+      var start=input.selectionStart==null ? input.value.length : input.selectionStart;
+      var end=input.selectionEnd==null ? input.value.length : input.selectionEnd;
+      var prefix=input.value.slice(0,start);
+      var suffix=input.value.slice(end);
+      var remaining=limit-calcUnits(prefix+suffix, allowComma);
+      var safe=trimToLimit(text,remaining, allowComma);
+      if(safe){
+        input.value=prefix+safe+suffix;
+        setCaretToEnd(input);
+        broadcastText();
+      }
+      flashLimit(input,badge);
+    });
+
+    input.addEventListener('input',function(){
+      if(calcUnits(input.value, allowComma)>limit){
+        input.value=trimToLimit(input.value,limit, allowComma);
+        setCaretToEnd(input);
+        broadcastText();
+        flashLimit(input,badge);
+      }
+      if(calcUnits(input.value, allowComma)>=limit && badge) badge.title='已達輸入上限';
+    });
+  });
+});
+</script>
+
+<div id="feedback-btn">📝 使用反饋表</div>
+<div id="manual-btn">📖 使用說明書</div>
+<div id="manual-modal">
+  <div id="manual-box">
+    <button id="manual-close">×</button>
+    <img src="使用說明書.png" alt="使用說明書">
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+ const m=document.getElementById("manual-modal");
+ document.getElementById("manual-btn").onclick=function(){m.classList.add("show");};
+ document.getElementById("manual-close").onclick=function(){m.classList.remove("show");};
+ m.onclick=function(e){if(e.target===m)m.classList.remove("show");};
+ document.getElementById("feedback-btn").onclick=function(){
+   window.open("https://docs.google.com/spreadsheets/d/1uCciWBKAqEDsAY3qeCqbYfLSrE7LshGo0L2pGdX0Zys/edit?gid=1634192695#gid=1634192695","_blank");
+ };
+});
+</script>
+
+</body>
+
+</html>
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

@@ -567,10 +567,13 @@
     }
 
     var content = '';
-    var fieldKey = resolveFieldKey(layer, fieldPrefix);
+    /* fixedImage：版型內建且不允許替換的圖（例如 C 系列蝦皮購物 LOGO、
+       C-1-4 中間的 3C 家電圖）。這種圖不建立欄位、不接受拖放，也不提供
+       滾輪縮放或滑鼠拖曳；永遠只畫 block.json 的 defaultSrc。 */
+    var fieldKey = layer.fixedImage ? null : resolveFieldKey(layer, fieldPrefix);
 
     if (layer.type === 'image') {
-      var rawUrl = fieldKey ? data[fieldKey] : null;
+      var rawUrl = layer.fixedImage ? null : (fieldKey ? data[fieldKey] : null);
       /* 只留真的載得到的圖片來源；純檔名（還沒上傳對應素材）不算，走下面的佔位卡 */
       var urls = splitImageList(rawUrl).filter(isRenderableImageUrl);
       /* defaultSrc：這個框有一張「內建的圖」，例如 C 系列券上的蝦皮 LOGO。
@@ -634,14 +637,22 @@
         else if (layer.id === 'productArea' || layer.id === 'productArea1' || layer.id === 'productArea2' || layer.id === 'bg') scalePct = CONFIG.image.productImageInsetScalePercent;
         else scalePct = layer.imageScale != null ? layer.imageScale : 100;
 
-        var imgsHtml = urls.map(function (u) {
-          /* onerror：萬一是外部網址載不到，就把這張藏起來，不要留一個破圖圖示在版面上 */
-          return '<img src="' + esc(u) + '" class="bn-imggroup-img" onerror="this.style.display=\'none\'" ' +
-            'style="height:100%;width:auto;object-fit:contain;display:block;flex-shrink:0;">';
-        }).join('');
-        content = '<div class="bn-imggroup" data-field-key="' + esc(fieldKey || '') + '" ' +
-          'style="width:' + scalePct + '%;height:' + scalePct + '%;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
-          imgsHtml + '</div>';
+        if (layer.fixedImage) {
+          /* 固定圖直接畫成一般 img，不建立 .bn-imggroup，因此 image-layout.js
+             不會替它綁定縮放、拖曳、雙擊復原等互動。 */
+          style.push('pointer-events:none');
+          content = '<img src="' + esc(urls[0]) + '" onerror="this.style.display=\'none\'" ' +
+            'style="width:' + scalePct + '%;height:' + scalePct + '%;object-fit:contain;display:block;pointer-events:none;">';
+        } else {
+          var imgsHtml = urls.map(function (u) {
+            /* onerror：萬一是外部網址載不到，就把這張藏起來，不要留一個破圖圖示在版面上 */
+            return '<img src="' + esc(u) + '" class="bn-imggroup-img" onerror="this.style.display=\'none\'" ' +
+              'style="height:100%;width:auto;object-fit:contain;display:block;flex-shrink:0;">';
+          }).join('');
+          content = '<div class="bn-imggroup" data-field-key="' + esc(fieldKey || '') + '" ' +
+            'style="width:' + scalePct + '%;height:' + scalePct + '%;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
+            imgsHtml + '</div>';
+        }
       }
     } else if (layer.type === 'rect') {
       var rectColor = (fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor;
@@ -665,18 +676,23 @@
       var textColor = themeColorOf(layer, opts) || layer.color; /* 全站統一顏色（促標字色／圓標字色／CTA字色）優先 */
       if (textColor) style.push('color:' + textColor);
       if (layer.fontWeight) style.push('font-weight:' + layer.fontWeight);
-      var ls = CONFIG.letterSpacing[layer.id];
-      if (ls) style.push('letter-spacing:' + ls + 'px');
+      /* PS 有些文字層有自己的 tracking（例如有字 CTA 是 -0.025em，
+         42px 時等於 -1.05px）。圖層自己的值優先，沒有才使用全站設定。 */
+      var ls = layer.letterSpacing != null ? Number(layer.letterSpacing) : CONFIG.letterSpacing[layer.id];
+      if (ls != null && isFinite(Number(ls)) && Number(ls) !== 0) style.push('letter-spacing:' + Number(ls) + 'px');
       /* 代言人／簽名小字這類多行小字，行距用設定檔壓緊（兩行之間靠近一點）。
          用跟上面垂直修正同一支函式解析，兩邊保證一致。 */
       var lhOut = lineHeightCss(effectiveLineHeight(layer));
       if (lhOut != null) style.push('line-height:' + lhOut);
       if (layer.textAlign) style.push('text-align:' + layer.textAlign);
       if (layer.textDecoration) style.push('text-decoration:' + layer.textDecoration);
-      style.push('white-space:' + (layer.whiteSpace || 'nowrap'));
+      /* 有字 CTA 永遠是單行；中文字瀏覽器預設可在任意字之間斷行，
+         因此即使只差 1px 也會把第三個字折到下一行。 */
+      style.push('white-space:' + (isCenteredCtaText ? 'nowrap' : (layer.whiteSpace || 'nowrap')));
       if (layer.transform) style.push('transform:matrix(' + layer.transform.join(',') + ')');
-      /* 所有文字都不能超出自己的範圍：裁掉多餘的部分，不會擠壓/蓋到旁邊的圖層 */
-      style.push('overflow:hidden');
+      /* 一般文字仍裁在自己的框內；CTA 的框是定位參考，文字必須保持單行，
+         所以允許極小的字型量測差異溢出，不會因此換行。 */
+      style.push('overflow:' + (isCenteredCtaText ? 'visible' : 'hidden'));
       if (isCenteredCtaText) {
         /* 高度與 CTA 底色塊完全相同；align-items:center 讓文字行框中心
            永遠落在底色塊中心，不再依賴不同電腦的字型 top/baseline。 */
@@ -716,7 +732,7 @@
        空的圖片框從 DOM 上認不出自己是哪個欄位 —— 匯入頁要做「拖曳圖片進畫布」
        就需要空框也認得出來（拖進去的通常正是還沒有圖的框）。
        同時附上中文欄位名，拖放時的提示文字可以直接用。 */
-    if (layer.type === 'image' && fieldKey) {
+    if (layer.type === 'image' && fieldKey && !layer.fixedImage) {
       attrs += ' data-img-field="' + esc(fieldKey) + '"' +
         ' data-img-label="' + esc(layer.fieldLabel || '圖片') + '"';
 
@@ -885,6 +901,7 @@
 
     (schema.layers || []).forEach(function (layer) {
       if (layer.hidden) return; /* 不畫出來的圖層，欄位面板也不要列 */
+      if (layer.fixedImage) return; /* 版型內建固定圖不提供替換／縮放欄位 */
       if (layer.field) addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength, layer.designText);
       /* 圖片框如果同時兼任一塊底色（曝品範圍），那個顏色欄位也要列出來可以改 */
       if (layer.bgField) addField(layer.bgField, layer.bgFieldLabel || '底色', 'color', layer.backgroundColor);

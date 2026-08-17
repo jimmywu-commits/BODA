@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ================================================
    Search_Image1logo_logo.css
    共用左側紅底 Logo 區（Image1 / Image2 / Image3 共用）
@@ -97,3 +98,104 @@ svg.main-logo-auto-lines {
   content: none !important;
   display: none !important;
 }
+=======
+/* ================================================
+   Search_Image1logo_logo.css
+   共用左側紅底 Logo 區（Image1 / Image2 / Image3 共用）
+   只改這支檔案即可同步三個 Search_Image 左側紅底區。
+   ================================================ */
+* { transform-origin: 0 0; }
+
+.蝦皮商城logo紅底 {
+  background-color: rgb(208, 2, 27) !important;
+  position: absolute !important;
+  left: -56px !important;
+  top: -7px !important;
+  width: 355px !important;
+  height: 174px !important;
+  z-index: 195 !important;
+}
+
+.底色 { z-index: 194 !important; }
+
+.蝦皮商城logo紅底::before,
+.蝦皮商城logo紅底::after {
+  content: none !important;
+  display: none !important;
+}
+
+.蝦皮商城logo圖 {
+  position: absolute !important;
+  left: 39px !important;
+  top: 37px !important;
+  width: 219px !important;
+  height: 50px !important;
+  background-image: url('img/蝦皮商城logo.png') !important;
+  background-size: 219px 50px !important;
+  background-repeat: no-repeat !important;
+  pointer-events: none !important;
+  z-index: 196 !important;
+}
+
+.主logo橫線,
+svg.main-logo-auto-lines {
+  display: none !important;
+}
+
+.主logo橫線_左 {
+  position: absolute !important;
+  left: 35px !important;
+  top: 110.4px !important; /* 原本 115px，跟「官方旗艦店」文字垂直中心（96.4+30/2=111.4）對齊：
+                               110.4 + 2(高度)/2 = 111.4，跟文字水平置中，不再偏低。 */
+  width: 30px !important;
+  height: 2px !important; /* 原本 1.5px 是次像素高度，html2canvas 光柵化時容易四捨五入成
+                              忽厚忽薄（實測畫面上是2列像素，下載出來常只剩1列），
+                              改成整數 2px 讓截圖跟畫面顯示一致，不會變細/消失。 */
+  background: #fff !important;
+  border: none !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 999 !important;
+}
+
+.主logo橫線_右 {
+  position: absolute !important;
+  left: 223px !important;
+  top: 110.4px !important; /* 理由同左側 */
+  width: 30px !important;
+  height: 2px !important; /* 同左側，理由一樣：改成整數高度避免 html2canvas 次像素四捨五入 */
+  background: #fff !important;
+  border: none !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 999 !important;
+}
+
+.官方旗艦店 {
+  position: absolute !important;
+  left: 69px !important;
+  top: 98px !important;
+  height: 30px !important;
+  display: block !important;
+  line-height: 30px !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  font-family: "ShopeeNotoSans (content)" !important;
+  font-weight: 300 !important;
+  font-size: 29.63px !important;
+  color: #fff !important;
+  transform: none !important;
+  -moz-transform: none !important;
+  -webkit-transform: none !important;
+  -ms-transform: none !important;
+  z-index: 999 !important;
+}
+
+.官方旗艦店::before,
+.官方旗艦店::after {
+  content: none !important;
+  display: none !important;
+}
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

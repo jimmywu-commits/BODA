@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -137,3 +138,144 @@ svg.main-logo-auto-lines {
 <link rel="stylesheet" href="Search_Image1logo_logo.css">
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>Search_Image2logo 排版預覽</title>
+<style>
+@font-face {
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 300;
+  src: url("../fonts/ShopeeNotoSans(content)-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 400;
+  src: url("../fonts/ShopeeNotoSans(content)-Medium.ttf") format("truetype");
+}
+@font-face {
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 700;
+  src: url("../fonts/ShopeeNotoSans(content)-Bold.ttf") format("truetype");
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  background: #1a1a1a;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+#stage { position: relative; }
+#canvas {
+  position: absolute; top: 0; left: 0;
+  overflow: hidden; transform-origin: top left;
+}
+#底圖 {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 1; pointer-events: none; display: none;
+}
+#css-err {
+  display: none; position: fixed;
+  top: 14px; left: 50%; transform: translateX(-50%);
+  background: #7f1d1d; color: #fca5a5;
+  font-size: 13px; font-family: monospace;
+  padding: 7px 16px; border-radius: 6px; z-index: 9999;
+}
+</style>
+<style id="export-stable-overrides">
+/*
+  官方旗艦店：純文字，不用 flex，不用偽元素
+  橫線改由真實 DOM（主logo橫線_左 / _右）負責
+  html2canvas 可以正確截到真實 DOM，但無法正確處理 flex + ::before/::after
+*/
+.主logo橫線,
+svg.main-logo-auto-lines {
+  display: none !important;
+}
+
+/* 主logo橫線_左 / _右：真實 DOM，讓 html2canvas 能截到 */
+.主logo橫線_左,
+.主logo橫線_右 {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* 紅底的 ::before/::after fallback 關掉，避免跟真實 DOM 橫線重複 */
+.蝦皮商城logo紅底::before,
+.蝦皮商城logo紅底::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* 官方旗艦店：純文字，位置正確，不用 flex */
+.官方旗艦店 {
+  position: absolute !important;
+  left: 69px !important;      /* 共用 Image1 左側官方旗艦店位置 */
+  top: 96.4px !important;
+  height: 30px !important;
+
+  display: block !important;  /* 取消 flex */
+  line-height: 30px !important;
+  white-space: nowrap !important;
+
+  font-family: "ShopeeNotoSans (content)" !important;
+  font-weight: 300 !important;
+  font-size: 29.63px !important;
+  color: #fff !important;
+  text-align: center !important;
+
+  transform: none !important;
+  -moz-transform: none !important;
+  -webkit-transform: none !important;
+  -ms-transform: none !important;
+
+  z-index: 999 !important;
+}
+
+/* 官方旗艦店 偽元素全部關掉 */
+.官方旗艦店::before,
+.官方旗艦店::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* 副標案型七字內：拿掉 PS matrix，用等效字號 */
+.副標案型七字內 {
+  transform: none !important;
+  -moz-transform: none !important;
+  -webkit-transform: none !important;
+  -ms-transform: none !important;
+  font-size: 60.08px !important;
+  line-height: 1 !important;
+}
+</style>
+</head>
+<!-- data-fw/fh：CSS 讀不到時的 fallback 尺寸 -->
+<body data-fw="1125" data-fh="156">
+<div id="css-err"></div>
+<div id="stage">
+  <div id="canvas">
+    <img id="底圖" src="" alt="">
+    <!-- 圖層由 layout-runtime.js 從 --layers 自動產生 -->
+  </div>
+</div>
+<script>
+/* layout-runtime.js 原本是純靜態 script 標籤載入，沒有防快取機制，
+   瀏覽器可能一直用快取住的舊版本，導致改完程式碼、重新整理頁面，
+   卻像是完全沒有生效。改成動態插入＋時間戳記，強制每次重新整理都
+   向伺服器要最新版本。 */
+(function(){
+  var s = document.createElement('script');
+  s.src = '../js/layout-runtime.js?t=' + Date.now();
+  document.head.appendChild(s);
+})();
+</script>
+<!-- 共用左側紅底 Logo 最終覆蓋：放在 runtime 後面，手動改 Search_Image1logo_logo.css 才會生效 -->
+<link rel="stylesheet" href="Search_Image1logo_logo.css">
+</body>
+</html>
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

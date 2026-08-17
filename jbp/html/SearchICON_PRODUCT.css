@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ================================================
    SearchICON_PRODUCT.css
    搜尋頁 / 搜尋結果頁 ICON：只吃商品圖第一張（120x120px）
@@ -25,3 +26,32 @@
   height: 120px;
   z-index: 5;
 }
+=======
+/* ================================================
+   SearchICON_PRODUCT.css
+   搜尋頁 / 搜尋結果頁 ICON：只吃商品圖第一張（120x120px）
+   ================================================ */
+.背景色 {
+  background-color: rgb(42, 171, 166);
+  border-radius: 50%;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 120px;
+  height: 120px;
+  z-index: 1;
+}
+
+/* 內容範圍＝整顆圓底畫布（120x120），商品圖置中對齊，預設大小為圓底畫布的
+   80%（見 .html 內 script）。圓形裁切（遮色）用 !important 寫在
+   SearchICON_PRODUCT.config.css，因為系統每次新增商品都會用 JS
+   把 overflow 重設為 visible，一般規則寫在這裡會被蓋掉。 */
+.商品範圍 {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 120px;
+  height: 120px;
+  z-index: 5;
+}
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

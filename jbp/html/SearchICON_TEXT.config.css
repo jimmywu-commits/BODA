@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ================================================
    SearchICON_TEXT.config.css
    搜尋頁 / 搜尋結果頁 ICON：純文字（120x120px，<50kb）
@@ -33,3 +34,40 @@
   -webkit-transform: none !important;
   -ms-transform: none !important;
 }
+=======
+/* ================================================
+   SearchICON_TEXT.config.css
+   搜尋頁 / 搜尋結果頁 ICON：純文字（120x120px，<50kb）
+   不連動其他版位文字內容，字級 50px（規格「50pt」）
+   下載時額外多存一張 84x84（bn-editor-plugin.js 統一處理，檔名 _84x84）
+   ★ 系統設定檔，不要貼 PS 的 CSS 進來
+   ================================================ */
+:root {
+  --canvas-w:  120px;
+  --canvas-h:  120px;
+  --canvas-bg: rgb(42, 171, 166); /* 跟其他版位背景色連動 */
+  --bg-img:    ;
+
+  /* 背景色       → 跟全部版位背景色連動
+     ICON獨立文案 → 獨立文字內容，不跟其他版位連動，可在畫布上雙擊直接編輯 */
+  --layers: "背景色|,ICON獨立文案|文案";
+}
+
+* { transform-origin: 0 0; }
+
+/* 只吃背景色連動，不吃背景圖片（原因說明見 SearchICON_LOGO.config.css） */
+.背景色 {
+  background-image: none !important;
+}
+
+.ICON獨立文案 {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  border-radius: 50% !important;
+  transform: none !important;
+  -moz-transform: none !important;
+  -webkit-transform: none !important;
+  -ms-transform: none !important;
+}
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

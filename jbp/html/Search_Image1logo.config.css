@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ================================================
    Search_Image1logo.config.css
    ★ 系統設定檔，不要貼 PS 的 CSS 進來
@@ -69,3 +70,76 @@
   top: 65px;
   box-sizing: content-box;
 }
+=======
+/* ================================================
+   Search_Image1logo.config.css
+   ★ 系統設定檔，不要貼 PS 的 CSS 進來
+   左側紅底共用區請改 Search_Image1logo_logo.css
+   ================================================ */
+:root {
+  --canvas-w:  1125px;
+  --canvas-h:  156px;
+  --canvas-bg: rgb(84, 84, 84);
+  --bg-img:    ;
+
+  /* 圖層清單：依 z-index 由低到高 */
+  --layers: "底色|,蝦皮商城logo紅底|,蝦皮商城logo圖|,主logo橫線_左|,主logo橫線_右|,官方旗艦店|官方旗艦店,logo範圍|,副標案型七字內|副標$500起,cta圓底|,cta白線|,cta三角箭頭|";
+}
+
+* { transform-origin: 0 0; }
+
+/* PS CSS 的同名舊橫線關掉 */
+.主logo橫線 { display: none !important; }
+
+/* 副標案型七字內 */
+.副標案型七字內 {
+  transform: none !important;
+  -moz-transform: none !important;
+  -webkit-transform: none !important;
+  -ms-transform: none !important;
+  font-size: 60.08px !important;
+  font-family: "ShopeeNotoSans (content)" !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  color: rgb(255, 255, 255) !important;
+}
+
+.logo範圍 {
+  background-color: rgba(235, 104, 119, 0.4);
+  opacity: 1;
+}
+
+.cta圓底 {
+  background-color: #d0021b !important;
+  background-image: none !important;
+  top: 38px;
+  left: 1007px;
+}
+.cta白線 {
+  position: absolute;
+  left: 1010px;
+  top: 41px;
+  width: 74px;
+  height: 74px;
+  z-index: 300;
+  border: none !important;
+  border-radius: 0 !important;
+  background:
+    transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='74' height='74' viewBox='0 0 74 74'%3E%3Ccircle cx='37' cy='37' r='34' fill='none' stroke='%23fff' stroke-width='6'/%3E%3C/svg%3E")
+    center center / 74px 74px no-repeat !important;
+  overflow: visible;
+}
+.cta三角箭頭 {
+  background: transparent;
+  width: 0;
+  height: 0;
+  border-top:    13px solid transparent;
+  border-bottom: 13px solid transparent;
+  border-left:   23px solid rgb(255, 255, 255);
+  position: absolute;
+  left: 1037px;
+  top: 65px;
+  box-sizing: content-box;
+}
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

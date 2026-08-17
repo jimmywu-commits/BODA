@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
@@ -22,3 +23,29 @@ service firebase.storage {
     }
   }
 }
+=======
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      // 必須和 firestore.rules、feedback-config.js 使用相同管理者 UID。
+      return isSignedIn() && request.auth.uid in [
+        "請貼上管理者_UID"
+      ];
+    }
+
+    match /bn_feedback_attachments/{feedbackId}/{fileName} {
+      // 一般使用者可上傳附件；限制 10 MB。
+      allow create: if isSignedIn()
+        && request.resource.size <= 10 * 1024 * 1024;
+
+      // 附件只讓管理者查看及刪除。
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

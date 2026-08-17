@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -29,3 +30,36 @@ service cloud.firestore {
     }
   }
 }
+=======
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      // 將下方 UID 換成 Firebase Console > Authentication > Users 的管理者 UID。
+      return isSignedIn() && request.auth.uid in [
+        "QoPe75RsJehf8imORa9p4KXy1fu2"
+      ];
+    }
+
+    match /bn_feedback/{feedbackId} {
+      // 一般使用者只允許新增，不可讀取其他人的反饋。
+      allow create: if isSignedIn()
+        && request.resource.data.createdByUid == request.auth.uid
+        && request.resource.data.fixed == false
+        && request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.summary is string
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.email.size() <= 160
+        && request.resource.data.summary.size() <= 5000;
+
+      // 只有管理者能查看、修改狀態或刪除。
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

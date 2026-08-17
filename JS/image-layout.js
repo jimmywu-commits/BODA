@@ -120,6 +120,7 @@
       img.style.maxWidth = 'none';   /* 不讓任何外部樣式把放大後的圖片又壓回範圍內 */
       img.style.maxHeight = 'none';
       applyOffset(img, groupKey, i); /* 重新排版後，之前拖過的位移要留著 */
+<<<<<<< HEAD
     });
   }
 
@@ -214,6 +215,8 @@
         seen[sourceField] = true;
         applyAspectSwitch(scope, sourceField);
       });
+=======
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1
     });
   }
 

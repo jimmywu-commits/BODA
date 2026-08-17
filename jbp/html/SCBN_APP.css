@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ══════════════════════════════════════
    SCBN_APP.css  ★ PS 右鍵 Copy CSS 直接貼這裡
 ══════════════════════════════════════ */
@@ -82,4 +83,90 @@
   width: 1143px;
   height: 154px;
   z-index: 39;
+=======
+/* ══════════════════════════════════════
+   SCBN_APP.css  ★ PS 右鍵 Copy CSS 直接貼這裡
+══════════════════════════════════════ */
+
+.商品範圍 {
+  background-color: rgb(235, 104, 119);
+  opacity: 0.4;
+  position: absolute;
+  left: 583px;
+  top: 15px;
+  width: 318px;
+  height: 175px;
+  z-index: 46;
+}
+.品牌名 {
+  font-size: 53px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.67496564743563,0,0,0.67533520761497,0,0);
+  -webkit-transform: matrix( 0.67496564743563,0,0,0.67533520761497,0,0);
+  -ms-transform: matrix( 0.67496564743563,0,0,0.67533520761497,0,0);
+  position: absolute;
+  left: 0.352px;
+  top: 57.352px;
+  z-index: 44;
+}
+.副標 {
+  font-size: 93.287px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(37, 64, 181);
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 0.67496564743563,0,0,0.67533520761497,0,0);
+  -webkit-transform: matrix( 0.67496564743563,0,0,0.67533520761497,0,0);
+  -ms-transform: matrix( 0.67496564743563,0,0,0.67533520761497,0,0);
+  position: absolute;
+  left: -15.983px;
+  top: 91.481px;
+  z-index: 43;
+}
+.逛逛去三角標 {
+  background-color: rgb(107, 192, 236);
+  position: absolute;
+  left: 1082px;
+  top: 116px;
+  width: 17px;
+  height: 20px;
+  z-index: 42;
+}
+.逛逛去 {
+  font-size: 19.622px;
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 300;
+  color: rgb(107, 192, 236);
+  line-height: 1.2;
+  text-align: left;
+  -moz-transform: matrix( 1.88099121384501,0,0,1.88564171568263,0,0);
+  -webkit-transform: matrix( 1.88099121384501,0,0,1.88564171568263,0,0);
+  -ms-transform: matrix( 1.88099121384501,0,0,1.88564171568263,0,0);
+  position: absolute;
+  left: 992.773px;
+  top: 113.178px;
+  z-index: 41;
+}
+.逛逛去底 {
+  background-color: rgb(255, 255, 255);
+  position: absolute;
+  left: 941px;
+  top: 95px;
+  width: 183px;
+  height: 61px;
+  z-index: 40;
+}
+.背景色 {
+  background-color: rgb(107, 192, 236);
+  position: absolute;
+  left: 28px;
+  top: 46px;
+  width: 1143px;
+  height: 154px;
+  z-index: 39;
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1
 }

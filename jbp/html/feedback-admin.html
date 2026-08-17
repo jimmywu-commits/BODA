@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -22,3 +23,29 @@
 <script src="js/feedback-admin.js"></script>
 </body>
 </html>
+=======
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BN 使用反饋管理</title>
+<style>
+:root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--line:#30363d;--text:#e6edf3;--muted:#8b98a8;--accent:#ee4d2d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans TC",sans-serif}.wrap{max-width:1500px;margin:auto;padding:28px}.head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:20px}.head h1{margin:0 0 6px;font-size:24px}.muted{color:var(--muted);font-size:12px}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.toolbar input,.toolbar select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 11px}.toolbar input{min-width:280px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}table{width:100%;border-collapse:collapse;min-width:1100px}th,td{padding:12px 13px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{position:sticky;top:0;background:#1c2128;color:#aab4c3;font-size:12px;z-index:1}td{font-size:13px;line-height:1.5}.summary{min-width:360px;white-space:normal}.is-fixed{opacity:.55}.is-fixed .summary{text-decoration:line-through}.fixed-box{width:18px;height:18px;accent-color:var(--accent)}a{color:#58a6ff}.delete-btn{background:transparent;color:#ff7b72;border:1px solid #7d3131;border-radius:7px;padding:5px 9px;cursor:pointer}.empty{text-align:center;padding:50px;color:var(--muted)}.badge{border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:12px;color:#b8c2cf}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div><h1>使用反饋管理</h1><div id="mode" class="muted"></div></div>
+    <div class="toolbar"><input id="search" type="search" placeholder="搜尋姓名、公司、郵件或內容"><select id="filter"><option value="all">全部</option><option value="open">未修正</option><option value="fixed">已修正</option></select><span id="count" class="badge">共 0 筆</span></div>
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>已修正</th><th>送出時間</th><th>姓名／公司</th><th>郵件</th><th>簡述</th><th>附件</th><th>操作</th></tr></thead><tbody id="tbody"></tbody></table></div>
+</div>
+<script src="js/feedback-config.js"></script>
+<script src="js/feedback-plugin.js"></script>
+<script src="js/feedback-admin.js"></script>
+</body>
+</html>
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

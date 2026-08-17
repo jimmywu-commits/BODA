@@ -255,6 +255,32 @@
       "width": 1200.0,
       "topExact": 280.28,
       "designText": "品名一排7字內"
+    },
+    {
+      "type": "image",
+      "field": "productImg2",
+      "zIndex": 810,
+      "left": 405.0,
+      "top": 20.0,
+      "width": 383.0,
+      "height": 263.0,
+      "backgroundColor": "#a9c5ff",
+      "fieldLabel": "曝品範圍（中）",
+      "placeholderZIndex": 810,
+      "imageZIndex": 900
+    },
+    {
+      "type": "image",
+      "field": "productImg3",
+      "zIndex": 810,
+      "left": 795.0,
+      "top": 20.0,
+      "width": 383.0,
+      "height": 263.0,
+      "backgroundColor": "#a9c5ff",
+      "fieldLabel": "曝品範圍（右）",
+      "placeholderZIndex": 810,
+      "imageZIndex": 900
     }
   ]
 }

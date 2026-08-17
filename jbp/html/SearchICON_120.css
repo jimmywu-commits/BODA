@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ================================================
    SearchICON_120.css
    搜尋頁 / 搜尋結果頁 ICON（120x120px）
@@ -53,3 +54,60 @@
   height: 84px;
   z-index: 7;
 }
+=======
+/* ================================================
+   SearchICON_120.css
+   搜尋頁 / 搜尋結果頁 ICON（120x120px）
+   本檔為此版位「獨立編輯」的樣式（尺寸／位置／字級），
+   不影響、也不受其他版位（Search_Image1/2/3、HBN、IG…等）影響。
+   ================================================ */
+
+/* 背景圓：120x120 全畫布圓形，顏色由 --canvas-bg 帶入，
+   並與其他版位的背景色連動（bn-color 廣播） */
+.背景色 {
+  background-color: rgb(42, 171, 166);
+  border-radius: 50%;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 120px;
+  height: 120px;
+  z-index: 1;
+}
+
+/* 內容安全區：置中 84x84px（對應設計稿 R111 內圈虛線範圍）
+   商品圖 / LOGO / 文案 三選一放這裡，皆置中、避免裁切 */
+.商品範圍 {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  width: 84px;
+  height: 84px;
+  z-index: 5;
+}
+
+.logo範圍 {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  width: 84px;
+  height: 84px;
+  z-index: 6;
+}
+
+/* 文案（沿用「案型七字內」文字內容，樣式獨立設定） */
+.副標案型七字內 {
+  font-size: 26px;
+  font-family: "ShopeeNotoSans (content)";
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  line-height: 1.15;
+  text-align: center;
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  width: 84px;
+  height: 84px;
+  z-index: 7;
+}
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

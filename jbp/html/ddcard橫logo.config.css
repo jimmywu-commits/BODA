@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ================================================
    ddcard方logo.config.css
    ★ 系統設定檔，不要貼 PS 的 CSS 進來
@@ -94,3 +95,101 @@
   z-index: 3;
 }
 
+=======
+/* ================================================
+   ddcard方logo.config.css
+   ★ 系統設定檔，不要貼 PS 的 CSS 進來
+   ================================================ */
+:root {
+  --canvas-w:  531px;
+  --canvas-h:  792px;
+  --canvas-bg: #6ec6e8;
+  --bg-img:    ;
+
+  /* 圖層清單：依 z-index 由低到高 */
+  --layers: "bg|,上保護|,商品範圍|,logo範圍|,cta底|,放心買_安心退|放心買 安心退,cta三角標|,主標|主標$1023起,副標|副標$1023起,日期|5/18 12:00 - 5/25 11:59 期間限定,漸層上|,漸層下|,下保護|";
+}
+
+/* ── transform-origin 全域修正 ── */
+* { transform-origin: 0 0; }
+
+/* ── 商品範圍、logo範圍：避免 opacity 影響子元素 ── */
+.商品範圍 { background-color: rgba(235, 104, 119, 0.4); opacity: 1; }
+.logo範圍 { background-color: rgba(235, 104, 119, 0.4); opacity: 1; z-index: 200; }
+
+/* ── 文字置中：left:0 + width 等於版位寬，text-align:center 才生效 ── */
+/* ── 同時修正 top（PS 變形面板 Y）和 transform-origin ── */
+.主標 { left: 0; width: 531px; top: 168.4px;  transform-origin: center top; line-height: 1; }
+.副標 { left: 0; width: 531px; top: 217px; transform-origin: center top; line-height: 1; }
+.日期 { left: 0; width: 531px; top: 291.5px;  transform-origin: center top; line-height: 1;   font-family: "ShopeeNotoSans (content)";
+  font-weight: 300;
+}
+
+/* ── CTA ── */
+.cta三角標 {
+  position: absolute;
+  box-sizing: content-box;
+  background: transparent;
+  width: 0; height: 0;
+  border-top:    9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left:   13px solid rgb(201, 230, 36);
+  left: 359px;
+  top: 689px;
+  z-index: 292;
+}
+.放心買_安心退 {
+  font-family: "ShopeeNotoSans (content)";
+  font-weight: 300; left: 161.62px; top: 681px; letter-spacing: 0.05em; line-height: 1; white-space: nowrap; }
+
+/* ── bg 圖層（背景圖容器）── */
+.bg {
+  position: absolute;
+  left: 0; top: 0;
+  width: 531px; height: 792px;
+  z-index: 1;
+}
+
+/* ── 上方保護色塊（頂部到漸層起點+2px）── */
+.上保護 {
+  position: absolute;
+  left: 0; top: 0;
+  width: 531px; height: 295px;
+  background: #6ec6e8;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* ── 漸層上：起點 y=293px ── */
+.漸層上 {
+  position: absolute;
+  left: 0; top: 293px;
+  width: 531px; height: 70px;
+  background: linear-gradient(to bottom, #6ec6e8 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 3;
+  --grad-dir: to bottom;
+}
+
+/* ── 漸層下：起點 y=676px ── */
+.漸層下 {
+  position: absolute;
+  left: 0; top: 676px;
+  width: 531px; height: 70px;
+  background: linear-gradient(to top, #6ec6e8 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 3;
+  --grad-dir: to top;
+}
+
+/* ── 下方保護色塊（漸層下端-2px 到底部）── */
+.下保護 {
+  position: absolute;
+  left: 0; top: 744px;
+  width: 531px; height: 48px;
+  background: #6ec6e8;
+  pointer-events: none;
+  z-index: 3;
+}
+
+>>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1
