@@ -87,7 +87,8 @@
       "fontWeight": "bold",
       "id": "promo",
       "maxLength": 10,
-      "designText": "文案最多10個字以內"
+      "designText": "文案最多10個字以內",
+      "themeRole": "bodyText"
     },
     {
       "zIndex": 542,

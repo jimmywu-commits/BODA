@@ -3614,9 +3614,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
   "MSBN-D-3-1.jpg": {
     "n": 3,
     "groups": [
-      [{"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}],
-      [{"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}],
-      [{"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}]
+      [{"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}],
+      [{"type": "項目文字", "hint": "項目文字4字"}, {"type": "項目文字", "hint": "項目文字4字"}, {"type": "項目文字", "hint": "項目文字4字"}, {"type": "項目文字", "hint": "項目文字4字"}, {"type": "項目文字", "hint": "項目文字4字"}],
+      [{"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}]
     ]
   }
 }
@@ -4189,7 +4189,10 @@ var LABEL_TO_FIELD_BASE = {
   '簽名小字': 'signNote',
   '代言人小字': 'endorserNote',
   '商品圖': 'productImg',
-  '贈品圖': 'giftImg'
+  '贈品圖': 'giftImg',
+  '文案': 'promo',
+  '內文': 'content',
+  '項目文字': 'itemText'
 };
 
 /* 匯出的試算表欄位名稱有時候會多帶說明文字，例如「商品 (多圖用逗號分開)」
@@ -4218,52 +4221,73 @@ function detectVariant(fam, entries) {
 function smartMapEntriesToFields(entries, blockDef) {
   var fieldKeys = blockDef.fields.map(function (f) { return f.key; });
   var groups = {};
-  entries.forEach(function (e) {
+  entries.forEach(function (e, order) {
     var m = /^(.+?)(?:-(\d+))?$/.exec(e.label);
     if (!m) return;
     var base = m[1], idx = m[2] ? parseInt(m[2], 10) : null;
-    (groups[base] = groups[base] || []).push({ idx: idx, value: e.value });
+    (groups[base] = groups[base] || []).push({ idx: idx, value: e.value, order: order });
   });
 
   var data = {};
   Object.keys(groups).forEach(function (base) {
     var baseKey = LABEL_TO_FIELD_BASE[base];
     if (!baseKey) return;
-    var items = groups[base].slice().sort(function (a, b) { return (a.idx || 0) - (b.idx || 0); });
 
-    if (items.length === 1 && items[0].idx == null) {
-      if (fieldKeys.indexOf(baseKey) !== -1) data[baseKey] = items[0].value;
-      else if (fieldKeys.indexOf(baseKey + '1') !== -1) data[baseKey + '1'] = items[0].value;
+    /* 同一種欄位可能同時有兩種重複方式：
+       1. 同一個位置重複多列，但版型只有一個欄位，例如兩列「簽名小字」
+          → 合併成同一欄的多行文字。
+       2. 同一個位置重複多列，而且版型真的有多個獨立欄位，例如 D-3-1
+          左欄五列內文、右欄五列內文 → 依畫面順序分配到 content～content10。
+
+       先把項目按「位置（左／中／右）」分組，再找出版型實際存在的連號欄位。
+       連號欄位足夠時一列對一欄；不足時才把同位置的多列合併。 */
+    var byPosition = {};
+    groups[base].forEach(function (it) {
+      var pos = it.idx == null ? 1 : it.idx;
+      (byPosition[pos] = byPosition[pos] || []).push(it);
+    });
+    var positions = Object.keys(byPosition).map(function (x) { return parseInt(x, 10); })
+      .sort(function (a, b) { return a - b; });
+    positions.forEach(function (pos) {
+      byPosition[pos].sort(function (a, b) { return a.order - b.order; });
+    });
+
+    var keyRe = new RegExp('^' + baseKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\d*)$');
+    var available = fieldKeys.filter(function (key) { return keyRe.test(key); })
+      .sort(function (a, b) {
+        var ma = keyRe.exec(a), mb = keyRe.exec(b);
+        var na = ma && ma[1] ? parseInt(ma[1], 10) : 1;
+        var nb = mb && mb[1] ? parseInt(mb[1], 10) : 1;
+        return na - nb;
+      });
+    if (!available.length) return;
+
+    var ordered = [];
+    positions.forEach(function (pos) {
+      byPosition[pos].forEach(function (it) { ordered.push(it); });
+    });
+
+    if (available.length >= ordered.length) {
+      /* D-3-1：10 筆內文對到 content、content2…content10；
+         一般左右版位的一筆一欄也同樣走這條。 */
+      ordered.forEach(function (it, i) {
+        data[available[i]] = it.value;
+      });
       return;
     }
 
-    /* 不同版位的多欄位命名習慣不一樣：舊格式（例如副區 E 系列）是
-       「品名-1」「品名-2」都帶編號；MSBN 是第1個位置用不加編號的原始欄位
-       （name/warn/badge…），第2個位置開始才加編號（name2/warn2…）。
-       這裡兩種都試，實際用 blockDef 裡真的存在哪個欄位來決定怎麼拆，
-       而不是只看「baseKey+'1' 存不存在」（那樣會誤判 MSBN 的命名習慣，
-       把不同位置的內容錯誤合併成一欄）。 */
-    var byKey = {};
-    var anyResolved = false;
-    items.forEach(function (it, i) {
-      var candidates = it.idx != null
-        ? [baseKey + it.idx]
-        : [baseKey, baseKey + '1']; /* 沒帶編號的當第1個位置，兩種命名習慣都試 */
-      var key = candidates.filter(function (k) { return fieldKeys.indexOf(k) !== -1; })[0];
-      if (key) anyResolved = true;
-      key = key || (baseKey + (it.idx != null ? it.idx : (i + 1))); /* 都對不到就照舊編號兜一個，反正下面會再檢查存不存在 */
-      (byKey[key] = byKey[key] || []).push(it.value);
-    });
-
-    if (anyResolved) {
-      /* 同一個欄位收到不只一筆內容（例如同一個位置裡兩行小字），合併成多行文字 */
-      Object.keys(byKey).forEach(function (key) {
-        if (fieldKeys.indexOf(key) !== -1) data[key] = byKey[key].filter(Boolean).join('\n');
+    if (available.length >= positions.length) {
+      /* A-2-1 這類每個位置各有兩列小字，但每個位置只有一個文字框：
+         左邊兩列合併到 signNote，右邊兩列合併到 signNote2。 */
+      positions.forEach(function (pos, i) {
+        data[available[i]] = byPosition[pos].map(function (it) { return it.value; })
+          .filter(Boolean).join('\n');
       });
-    } else if (fieldKeys.indexOf(baseKey) !== -1) {
-      /* 完全對不到任何有編號的欄位，退回舊邏輯：目標是單一欄位，把多筆內容合併成多行文字 */
-      data[baseKey] = items.map(function (it) { return it.value; }).filter(Boolean).join('\n');
+      return;
     }
+
+    /* 極舊版型的退路：所有內容合併到第一個可用欄位，不讓資料直接遺失。 */
+    data[available[0]] = ordered.map(function (it) { return it.value; }).filter(Boolean).join('\n');
   });
   return data;
 }

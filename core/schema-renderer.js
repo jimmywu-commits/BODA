@@ -187,6 +187,11 @@
      （留著反而危險：真的有一張 LOGO 圖底色剛好是這個藍綠色時會被誤判成促標底。） */
 
   function themeRoleOf(layer) {
+    /* 少數圖層的欄位 key 是沿用舊命名，但視覺語意不同。
+       例如 MSBN B-1-4 的「文案」仍使用 field=promo，若只看欄位名，
+       會誤套全域的「促標字色」（常見預設為白色）。
+       block.json 可用 themeRole 明確指定它應歸類到哪一種顏色角色。 */
+    if (layer && layer.themeRole) return String(layer.themeRole);
     var id = String(layer.id || '').replace(/[0-9]+$/, '');
     var fld = String(layer.field || '').replace(/[0-9]+$/, '').toLowerCase();
     /* 三角形跟著 CTA 的「字色」走，不是底色（不然改底色時三角形會跟底色融成一塊看不見） */
