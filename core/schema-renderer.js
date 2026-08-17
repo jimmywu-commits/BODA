@@ -42,10 +42,11 @@
      "text"   → 文字，field 對應到可編輯內容
 
    renderInstance 的 opts（都可以不給）：
-     opts.editable  文字圖層加上 contenteditable，可以直接在畫布上點著改
-     opts.theme     全站統一的顏色覆寫，改一次所有版位一起變（匯入工單頁面在用）：
-                    { bg, promoBg, promoText, badgeBg, badgeText, ctaBg, ctaText }
-                    空字串／不給＝不覆寫，維持每個版位自己原本的顏色。
+     opts.editable          文字圖層加上 contenteditable，可以直接在畫布上點著改
+     opts.theme             全站統一的顏色覆寫，改一次所有版位一起變（匯入工單頁面在用）
+     opts.imageAbsorb       false 時保留所有圖片預設範圍（維修／全部預覽模式使用）
+     opts.forceImageAbsorb  true 時，即使版型原本關閉吸收，也在匯入編輯模式套用：
+                            沒有贈品／代言人／簽名圖時，空間由曝品圖使用。
 ════════════════════════════════════════ */
 (function (global) {
 
@@ -134,6 +135,9 @@
      真的可以載入的來源，其他（純檔名、空白、還沒填）一律走下面的「尚未上傳圖片」佔位卡。 */
   function isRenderableImageUrl(u) {
     return /^(data:|https?:|blob:)/i.test(String(u == null ? '' : u).trim());
+  }
+  function hasRenderableImageValue(v) {
+    return splitImageList(v).some(isRenderableImageUrl);
   }
 
   /* 尚未上傳圖片時的佔位卡：柔和的底色＋淡淡的虛線框＋小圖示，
@@ -424,6 +428,14 @@
     if (layer.hideIfField) {
       var hideKey = fieldPrefix ? fieldPrefix + layer.hideIfField : layer.hideIfField;
       if (data[hideKey]) return '';
+    }
+
+    /* requiresImageField：文字必須跟某張實際已上傳的圖片一起出現。
+       主要用在「代言人小字」：只有檔名、空白或尚未上傳圖片時都不顯示；
+       圖片一放進去，文字才跟著恢復。repeat 圖層同樣會套上實例前綴。 */
+    if (layer.requiresImageField) {
+      var requiredImageKey = fieldPrefix ? fieldPrefix + layer.requiresImageField : layer.requiresImageField;
+      if (!hasRenderableImageValue(data && data[requiredImageKey])) return '';
     }
 
     /* 有字 CTA 已在 schema 註冊時跟底色塊綁成同一個垂直範圍。
@@ -769,11 +781,17 @@
      有編號的欄位各自成一組：productImg 配 endorserImg/signImg/signNote/giftImg，
      productImg2 配 endorserImg2/signImg2/signNote2/giftImg2，以此類推。 */
   var ABSORB_GROUPS = [
-    { target: 'productImg', donors: ['endorserImg', 'signImg', 'signNote', 'endorserNote'] },
+    /* 每一種可選圖片各自歸還空間，不綁成同一大組：
+       只補簽名圖時只還簽名範圍；代言人仍空白時，那一塊仍可由曝品使用。 */
+    { target: 'productImg', donors: ['endorserImg', 'endorserNote'] },
+    { target: 'productImg', donors: ['signImg', 'signNote'] },
     { target: 'productImg', donors: ['giftImg'] }
   ];
 
   function isFieldUnfilled(layer, data, key) {
+    /* 文字有圖片依賴、但圖片尚未真正上傳時，視為空白。
+       這讓代言人小字不會單獨佔住圖片空間。 */
+    if (layer.requiresImageField && !hasRenderableImageValue(data && data[layer.requiresImageField])) return true;
     var v = data ? data[key] : null;
     if (v == null) return true;
     v = String(v).trim();
@@ -782,18 +800,24 @@
     return def !== '' && v === def; /* 還是原本的預設內容＝沒填 */
   }
 
-  function computeAbsorb(schema, data) {
+  function computeAbsorb(schema, data, opts) {
     var res = { skip: [], targets: [], boxes: [] };
-    /* 有些特殊版型（MSBN A-2-2）要求曝品與贈品兩個範圍永遠同時存在，
-       贈品沒填也不能把空間併給商品圖；由 schema 明確關閉吸收規則。 */
-    if (schema.disableImageAbsorb) return res;
+    /* 維修頁／全部版位預覽要看得到每個原始框，所以可以明確關掉。
+       匯入編輯模式則 forceImageAbsorb=true：即使 A-2-2 / A-3-1 為了設計稿預覽
+       設了 disableImageAbsorb，也會依實際有沒有上傳圖片動態歸還空間。 */
+    if (opts && opts.imageAbsorb === false) return res;
+    if (schema.disableImageAbsorb && !(opts && opts.forceImageAbsorb)) return res;
     var layers = schema.layers || [];
     ABSORB_GROUPS.forEach(function (group) {
       layers.forEach(function (target) {
         if (target.type !== 'image' || !target.field) return;
         if (target.width == null || target.height == null) return;
-        var m = new RegExp('^' + group.target + '(\\d*)$').exec(target.field);
+        var m = new RegExp('^' + group.target + '(\d*)$').exec(target.field);
         if (!m) return;
+        /* 只有曝品真的已上傳時才接收其他空白圖片範圍。
+           尚未上傳任何圖的預設狀態仍要把曝品／贈品／代言人／簽名各自的
+           範圍與 icon 全部畫出來，方便使用者知道有哪些欄位可以新增。 */
+        if (!hasRenderableImageValue(data && data[target.field])) return;
         var suffix = m[1] || '';
 
         var donors = [];
@@ -856,7 +880,7 @@
         'px;overflow:' + overflow + ';background:' + canvasBg + ';font-family:sans-serif;">';
 
       /* 沒填的代言人／贈品空間讓給商品圖（範圍變大，被讓出來的圖層不畫） */
-      var absorb = computeAbsorb(schema, data);
+      var absorb = computeAbsorb(schema, data, opts);
       (schema.layers || []).forEach(function (layer) {
         if (absorb.skip.indexOf(layer) !== -1) return;
         var ti = absorb.targets.indexOf(layer);
@@ -992,8 +1016,29 @@
     return out;
   }
 
+  /* 自動把「代言人小字」綁到同位置的代言人圖片。
+     有獨立 endorserImg 就優先用它；B-1 系列是「商品／人物／情境」共用 productImg，
+     則退回綁 productImg。這樣所有現有與後續版位都不用各自重寫相同規則。 */
+  function assignImageTextDependencies(schema) {
+    function apply(layers) {
+      var fields = {};
+      (layers || []).forEach(function (l) { if (l.field) fields[l.field] = true; });
+      (layers || []).forEach(function (l) {
+        if (l.requiresImageField || l.type !== 'text') return;
+        var m = /^endorserNote(\d*)$/.exec(String(l.field || ''));
+        if (!m) return;
+        var suffix = m[1] || '';
+        if (fields['endorserImg' + suffix]) l.requiresImageField = 'endorserImg' + suffix;
+        else if (fields['productImg' + suffix]) l.requiresImageField = 'productImg' + suffix;
+      });
+    }
+    apply(schema.layers || []);
+    (schema.repeats || []).forEach(function (repeat) { apply(repeat.layers || []); });
+  }
+
   function registerFromSchema(schema) {
     if (!schema || !schema.id) { console.error('[BNSchemaRenderer] schema 缺少 id'); return; }
+    assignImageTextDependencies(schema);
     normalizeSchemaZOrder(schema);
     global.BNCore.registerBlock({
       id: schema.id,

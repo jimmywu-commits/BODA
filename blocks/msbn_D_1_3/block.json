@@ -22,7 +22,8 @@
       "width": 370,
       "_refCenter": 937.0,
       "topExact": 6.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1545,
@@ -41,7 +42,8 @@
       "width": 370,
       "_refCenter": 937.0,
       "topExact": 84.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1544,
@@ -60,7 +62,8 @@
       "width": 370,
       "_refCenter": 937.0,
       "topExact": 161.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1543,
@@ -79,7 +82,8 @@
       "width": 370,
       "_refCenter": 937.0,
       "topExact": 239.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1542,
@@ -98,7 +102,8 @@
       "width": 370,
       "_refCenter": 937.0,
       "topExact": 316.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1541,
@@ -117,7 +122,8 @@
       "width": 370,
       "_refCenter": 453.0,
       "topExact": 5.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1540,
@@ -136,7 +142,8 @@
       "width": 370,
       "_refCenter": 453.0,
       "topExact": 83.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1539,
@@ -155,7 +162,8 @@
       "width": 370,
       "_refCenter": 453.0,
       "topExact": 161.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1538,
@@ -174,7 +182,8 @@
       "width": 370,
       "_refCenter": 453.0,
       "topExact": 238.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1537,
@@ -193,7 +202,8 @@
       "width": 370,
       "_refCenter": 453.0,
       "topExact": 316.36,
-      "designText": "內文一排最多9字內"
+      "designText": "內文一排最多9字內",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1536,
@@ -211,7 +221,8 @@
       "whiteSpace": "pre-line",
       "width": 190.0,
       "topExact": 8.36,
-      "designText": "項目4字"
+      "designText": "項目4字",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1535,
@@ -229,7 +240,8 @@
       "whiteSpace": "pre-line",
       "width": 190.0,
       "topExact": 85.36,
-      "designText": "項目4字"
+      "designText": "項目4字",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1534,
@@ -247,7 +259,8 @@
       "whiteSpace": "pre-line",
       "width": 190.0,
       "topExact": 162.36,
-      "designText": "項目4字"
+      "designText": "項目4字",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1533,
@@ -265,7 +278,8 @@
       "whiteSpace": "pre-line",
       "width": 190.0,
       "topExact": 239.36,
-      "designText": "項目4字"
+      "designText": "項目4字",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1532,
@@ -283,7 +297,8 @@
       "whiteSpace": "pre-line",
       "width": 190.0,
       "topExact": 316.36,
-      "designText": "項目4字"
+      "designText": "項目4字",
+      "fontWeight": "400"
     },
     {
       "zIndex": 1531,
@@ -316,14 +331,12 @@
     },
     {
       "zIndex": 1525,
-      "type": "image",
+      "type": "rect",
       "left": 20.0,
       "top": 0.0,
       "width": 190.0,
       "height": 385.0,
       "backgroundColor": "rgb(236, 155, 31)",
-      "field": "itemImg",
-      "fieldLabel": "商品圖片網址",
       "borderRadius": "0px 0px 0px 15px"
     },
     {

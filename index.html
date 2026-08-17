@@ -85,6 +85,10 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-drop .id-icon{font-size:28px;margin-bottom:8px;}
 #import-drop .id-text{font-size:12px;color:var(--ink2);}
 #import-drop .id-text b{color:var(--ink);}
+#import-generator-load{margin:0 16px 8px;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:6px;}
+#import-generator-load .igl-count{font-size:10px;font-weight:700;color:var(--teal-dark);background:var(--teal-tint);border-radius:999px;padding:1px 7px;}
+#import-generator-load:disabled .igl-count{color:var(--ink3);background:var(--bg);}
+#import-generator-hint{margin:0 16px 10px;font-size:10.5px;color:var(--ink3);line-height:1.55;text-align:center;}
 
 #import-log{margin:0 16px;font-size:11px;color:var(--ink3);line-height:1.6;}
 #import-log .err{color:var(--danger);}
@@ -112,6 +116,13 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .color-field-row{display:flex;gap:6px;align-items:center;}
 .color-field-row input.fv-picker{flex-shrink:0;width:36px;height:30px;padding:2px;border:1px solid var(--border);border-radius:4px;cursor:pointer;}
 .color-field-row input.fv{flex:1;min-width:0;font-family:monospace;font-size:11.5px;}
+.text-field-row,.local-color-field-row{display:flex;align-items:center;gap:6px;}
+.text-field-row input.fv,.local-color-field-row input.fv{flex:1;min-width:0;}
+.local-color-field-row input.local-color-picker{flex-shrink:0;width:36px;height:30px;padding:2px;border:1px solid var(--border);border-radius:5px;background:#fff;cursor:pointer;}
+.field-mini-btn{flex-shrink:0;height:30px;min-width:30px;padding:0 7px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--ink3);font-size:11px;cursor:pointer;}
+.field-mini-btn:hover{border-color:var(--teal);color:var(--teal-dark);background:var(--teal-tint);}
+.field-mini-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:#fbeceb;}
+.local-field-note{font-size:9.5px;color:var(--ink3);line-height:1.45;margin-top:4px;}
 
 #import-canvas-area{flex:1;min-width:0;overflow:auto;padding:24px;position:relative;}
 /* 畫布上方的工具列：左邊標題、右邊縮放下拉（比照工單生成器的那個） */
@@ -274,6 +285,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 
 /* ══════════════ 畫布：MSBN 區（接在副區下方，合計最多10顆） ══════════════ */
 #msbn-area{margin-top:22px;}
+/* 即使第一張是較矮的 MSBN 細版，也至少保留約兩格的可捲動高度，
+   避免畫布底部不足讓 MSBN 頁簽被捲動同步誤判回副區。 */
+#msbn-area.msbn-enabled{min-height:930px;}
 .msbn-area-head{font-size:calc(12px * var(--zinv,1));font-weight:700;color:var(--ink2);margin-bottom:8px;}
 .msbn-area-head b{color:var(--teal-dark);}
 /* 第一格的紅字補充說明 */
@@ -295,15 +309,19 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
   justify-content:center;line-height:1;padding:0;}
 .msbn-row .mctl button:hover{background:var(--teal-dark);}
 .msbn-row .mctl button[data-act=rm]:hover{background:var(--danger);}
-#msbn-drop{width:1200px;height:430px;border:2px dashed var(--border-strong);
+#msbn-drop,#msbn-empty-slot-2{width:1200px;height:430px;border:2px dashed var(--border-strong);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
   text-align:center;color:var(--ink3);font-size:calc(13px * var(--zinv,1));margin-top:10px;background:#fbfcfc;transition:.12s;}
-#msbn-drop b{color:var(--ink2);}
+#msbn-drop b,#msbn-empty-slot-2 b{color:var(--ink2);}
 #msbn-drop .quota{font-size:calc(15px * var(--zinv,1));}
 #msbn-drop .quota b{color:var(--teal-dark);font-size:calc(22px * var(--zinv,1));}
 #msbn-drop.dragover-ok{border-color:var(--teal);background:var(--teal-tint);}
 #msbn-drop.dragover-bad{border-color:var(--danger);background:#fbeceb;}
 #msbn-drop.full{opacity:.55;}
+/* 畫布還沒有 MSBN 時，預設保留兩格視覺高度。第二格只作為空間預留，
+   不計入已選版位，也不會被匯出到工單。 */
+#msbn-empty-slot-2{opacity:.72;pointer-events:none;}
+#msbn-empty-slot-2 .slot-no{font-weight:800;color:var(--ink2);font-size:calc(14px * var(--zinv,1));}
 .msbn-row{cursor:grab;}
 .msbn-row.drag-target{outline:2px solid var(--teal);outline-offset:-2px;z-index:2;}
 
@@ -605,6 +623,8 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
             <div class="id-text"><b>拖曳檔案到這裡</b>或點擊選擇</div>
             <input type="file" id="import-file-input" accept=".xlsx,.json" hidden>
           </div>
+          <button class="btn" id="import-generator-load" type="button">🧩 載入工單生成器版配 <span class="igl-count">0 格</span></button>
+          <div id="import-generator-hint">在工單生成器排好版後，切到這裡會直接載入成可編輯畫布；也可以按此按鈕重新同步。</div>
           <button class="btn ghost" id="btn-preview-all" style="margin:0 16px 12px;width:calc(100% - 32px);">🧪 直接預覽全部版位（不用匯入檔案）</button>
           <div id="import-log"></div>
 
@@ -3385,238 +3405,1430 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
   "MSBN-A-1-1.jpg": {
     "n": 1,
     "groups": [
-      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, "圓標", {"type": "警語", "hint": "小字最多可9個字內"}, "CTA", "簽名小字", "簽名小字", "商品", "代言人圖", "簽名圖"]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        "圓標",
+        {
+          "type": "警語",
+          "hint": "小字最多可9個字內"
+        },
+        "CTA",
+        "簽名小字",
+        "簽名小字",
+        "商品",
+        "代言人圖",
+        "簽名圖"
+      ]
     ]
   },
   "MSBN-A-1-2.jpg": {
     "n": 1,
     "groups": [
-      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, "圓標", {"type": "警語", "hint": "小字最多可9個字內"}, "CTA", "簽名小字", "簽名小字", "商品", "代言人圖", "簽名圖"]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        "圓標",
+        {
+          "type": "警語",
+          "hint": "小字最多可9個字內"
+        },
+        "CTA",
+        "簽名小字",
+        "簽名小字",
+        "商品",
+        "代言人圖",
+        "簽名圖"
+      ]
     ]
   },
   "MSBN-A-2-1.jpg": {
     "n": 2,
     "groups": [
-      ["圓標", "簽名小字", "簽名小字", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}, "商品", "代言人圖", "簽名圖"],
-      ["圓標", "簽名小字", "簽名小字", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}, "商品", "代言人圖", "簽名圖"]
+      [
+        "圓標",
+        "簽名小字",
+        "簽名小字",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        },
+        "商品",
+        "代言人圖",
+        "簽名圖"
+      ],
+      [
+        "圓標",
+        "簽名小字",
+        "簽名小字",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        },
+        "商品",
+        "代言人圖",
+        "簽名圖"
+      ]
     ]
   },
   "MSBN-A-2-2.jpg": {
     "n": 2,
     "groups": [
-      [{"type": "促標", "hint": "促標最多6個字內"}, "商品", "贈品圖", {"type": "品名", "hint": "品名一排最多8個字"}, {"type": "品名", "hint": "品名一排最多8個字"}, "圓標"],
-      [{"type": "促標", "hint": "促標最多6個字內"}, "商品", "贈品圖", {"type": "品名", "hint": "品名一排最多8個字"}, {"type": "品名", "hint": "品名一排最多8個字"}, "圓標"]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多6個字內"
+        },
+        "商品",
+        "贈品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排最多8個字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8個字"
+        },
+        "圓標"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多6個字內"
+        },
+        "商品",
+        "贈品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排最多8個字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8個字"
+        },
+        "圓標"
+      ]
     ]
   },
   "MSBN-A-2-3.jpg": {
     "n": 2,
     "groups": [
-      [{"type": "促標", "hint": "促標6個字內"}, "商品", {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, "圓標"],
-      [{"type": "促標", "hint": "促標6個字內"}, "商品", {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, "圓標"]
+      [
+        {
+          "type": "促標",
+          "hint": "促標6個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        "圓標"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標6個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        "圓標"
+      ]
     ]
   },
   "MSBN-A-2-4.jpg": {
     "n": 2,
     "groups": [
-      ["LOGO圖", "CTA"],
-      ["LOGO圖", "CTA"]
+      [
+        "LOGO圖"
+      ],
+      [
+        "LOGO圖"
+      ]
     ]
   },
   "MSBN-A-3-1.jpg": {
     "n": 3,
     "groups": [
-      ["商品", "贈品圖", "圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}],
-      ["商品", "贈品圖", "圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}],
-      ["商品", "贈品圖", "圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}]
+      [
+        "商品",
+        "贈品圖",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        }
+      ],
+      [
+        "商品",
+        "贈品圖",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        }
+      ],
+      [
+        "商品",
+        "贈品圖",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        }
+      ]
     ]
   },
   "MSBN-A-3-2.jpg": {
     "n": 3,
     "groups": [
-      ["LOGO圖", "CTA"],
-      ["LOGO圖", "CTA"],
-      ["LOGO圖", "CTA"]
+      [
+        "LOGO圖"
+      ],
+      [
+        "LOGO圖"
+      ],
+      [
+        "LOGO圖"
+      ]
     ]
   },
   "MSBN-B-1-1.jpg": {
     "n": 1,
     "groups": [
-      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "警語", "hint": "小字最多可9個字內"}, "CTA", {"type": "代言人小字", "hint": "代言人小字8字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}, "代言人圖"]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可9個字內"
+        },
+        "CTA",
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        "商品圖"
+      ]
     ]
   },
   "MSBN-B-1-2.jpg": {
     "n": 1,
     "groups": [
-      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "警語", "hint": "小字最多可9個字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}, "代言人圖"]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可9個字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        "商品圖"
+      ]
     ]
   },
   "MSBN-B-1-3.jpg": {
     "n": 1,
     "groups": [
-      ["LOGO圖", {"type": "文案", "hint": "文案最多10個字以內"}, "CTA", {"type": "代言人小字", "hint": "代言人小字8字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}, "代言人圖"]
+      [
+        "LOGO圖",
+        {
+          "type": "文案",
+          "hint": "文案最多10個字以內"
+        },
+        "CTA",
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        "商品圖"
+      ]
     ]
   },
   "MSBN-B-1-4.jpg": {
     "n": 1,
     "groups": [
-      [{"type": "代言人小字", "hint": "代言人小字8字內"}, {"type": "代言人小字", "hint": "代言人小字8字內"}]
+      [
+        "LOGO圖",
+        {
+          "type": "文案",
+          "hint": "文案最多10個字以內"
+        },
+        "CTA",
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        "商品圖"
+      ]
     ]
   },
   "MSBN-B-2-1.jpg": {
     "n": 2,
     "groups": [
-      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", {"type": "品名", "hint": "品名一排6字"}, {"type": "品名", "hint": "品名一排6字"}, {"type": "特色", "hint": "特色5個字"}, "CTA"],
-      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", {"type": "品名", "hint": "品名一排6字"}, {"type": "品名", "hint": "品名一排6字"}, {"type": "特色", "hint": "特色5個字"}, "CTA"]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名一排6字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排6字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色5個字"
+        },
+        "CTA"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名一排6字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排6字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色5個字"
+        },
+        "CTA"
+      ]
+    ],
+    "labels": [
+      "右",
+      "左"
     ]
   },
   "MSBN-B-2-2.jpg": {
     "n": 2,
     "groups": [
-      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", "CTA", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}],
-      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", "CTA", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        }
+      ]
+    ],
+    "labels": [
+      "右",
+      "左"
     ]
   },
   "MSBN-B-2-3.jpg": {
     "n": 2,
     "groups": [
-      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}],
-      [{"type": "促標", "hint": "促標最多8個字內"}, "商品", {"type": "品名", "hint": "品名最多可以放10個字"}, {"type": "特色", "hint": "特色最多放8個字"}]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        }
+      ]
+    ],
+    "labels": [
+      "右",
+      "左"
     ]
   },
   "MSBN-B-3-1.jpg": {
     "n": 3,
     "groups": [
-      [{"type": "促標", "hint": "促標7個字以內"}, {"type": "品名", "hint": "品名一排最多8字"}, {"type": "品名", "hint": "品名一排最多8字"}],
-      ["商品", "圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}],
-      ["商品", "圓標", "CTA", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}]
+      [
+        {
+          "type": "促標",
+          "hint": "促標7個字以內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        }
+      ],
+      [
+        "商品",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ],
+      [
+        "商品",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ]
     ]
   },
   "MSBN-B-3-2.jpg": {
     "n": 3,
     "groups": [
-      ["商品", {"type": "警語", "hint": "警語最多放8個字"}, "圓標", "品名"],
-      ["商品", {"type": "警語", "hint": "警語最多放8個字"}, "圓標", "品名"],
-      ["商品", {"type": "警語", "hint": "警語最多放8個字"}, "圓標", "品名"]
+      [
+        "商品",
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        },
+        "圓標",
+        "品名"
+      ],
+      [
+        "商品",
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        },
+        "圓標",
+        "品名"
+      ],
+      [
+        "商品",
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        },
+        "圓標",
+        "品名"
+      ]
     ]
   },
   "MSBN-B-3-3.jpg": {
     "n": 3,
     "groups": [
-      ["LOGO圖", {"type": "品名", "hint": "品名一排7字內"}, "CTA"],
-      ["LOGO圖", {"type": "品名", "hint": "品名一排7字內"}, "CTA"],
-      ["LOGO圖", {"type": "品名", "hint": "品名一排7字內"}, "CTA"]
+      [
+        "LOGO圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        "CTA"
+      ],
+      [
+        "LOGO圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        "CTA"
+      ],
+      [
+        "LOGO圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        "CTA"
+      ]
+    ],
+    "labels": [
+      "右",
+      "中",
+      "左"
     ]
   },
   "MSBN-B-3-4.jpg": {
     "n": 3,
     "groups": [
-      ["情境圖", "商品圖", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}],
-      ["情境圖", "商品圖", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}],
-      ["情境圖", "商品圖", {"type": "品名", "hint": "品名一排7字內"}, {"type": "警語", "hint": "警語最多放8個字"}]
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ]
+    ],
+    "labels": [
+      "右",
+      "中",
+      "左"
     ]
   },
   "MSBN-B-4-1.jpg": {
     "n": 4,
     "groups": [
-      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, "CTA"],
-      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, "CTA"],
-      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, "CTA"],
-      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, "CTA"]
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        "CTA"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        "CTA"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        "CTA"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        "CTA"
+      ]
+    ],
+    "labels": [
+      "右",
+      "中右",
+      "中左",
+      "左"
     ]
   },
   "MSBN-B-4-2.jpg": {
     "n": 4,
     "groups": [
-      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, {"type": "警語", "hint": "小字警語6字"}],
-      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, {"type": "警語", "hint": "小字警語6字"}],
-      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, {"type": "警語", "hint": "小字警語6字"}],
-      [{"type": "促標", "hint": "促標5字內"}, {"type": "品名", "hint": "品名5字內"}, {"type": "警語", "hint": "小字警語6字"}]
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字警語6字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字警語6字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字警語6字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字警語6字"
+        }
+      ]
+    ],
+    "labels": [
+      "右",
+      "中右",
+      "中左",
+      "左"
     ]
   },
   "MSBN-C-1-1.jpg": {
     "n": 1,
     "groups": [
-      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, "LOGO圖", {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "警語", "hint": "小字最多可10個字以內"}, {"type": "警語", "hint": "小字最多可10個字以內"}]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        "LOGO圖",
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可10個字以內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可10個字以內"
+        }
+      ]
     ]
   },
   "MSBN-C-1-2.jpg": {
     "n": 1,
     "groups": [
-      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, "LOGO圖", {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "警語", "hint": "小字最多可10個字以內"}, {"type": "警語", "hint": "小字最多可10個字以內"}]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        "LOGO圖",
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可10個字以內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可10個字以內"
+        }
+      ]
     ]
   },
   "MSBN-C-1-3.jpg": {
     "n": 1,
     "groups": [
-      [{"type": "促標", "hint": "促標最多7字內"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "文案", "hint": "文案一排最多6字"}, {"type": "警語", "hint": "小字最多可10個字以內"}, {"type": "警語", "hint": "小字最多可10個字以內"}]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可10個字以內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可10個字以內"
+        }
+      ]
     ]
   },
   "MSBN-C-1-4.jpg": {
     "n": 1,
     "groups": [
-      [{"type": "促標", "hint": "促標最多6字"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "CTA", "hint": "領券去"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "CTA", "hint": "領券去"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "促標", "hint": "促標最多6字"}, "信用卡圖", {"type": "CTA", "hint": "刷卡去"}]
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多6字"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字"
+        },
+        {
+          "type": "CTA",
+          "hint": "領券去"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字"
+        },
+        {
+          "type": "CTA",
+          "hint": "領券去"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字"
+        },
+        "信用卡圖",
+        {
+          "type": "CTA",
+          "hint": "刷卡去"
+        }
+      ]
     ]
   },
   "MSBN-C-1-5.jpg": {
     "n": 1,
     "groups": [
-      ["商品圖", "情境圖", {"type": "促標", "hint": "促標最多6字"}, {"type": "促標", "hint": "促標最多6字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "文案", "hint": "文案一排4字"}, "LOGO圖", {"type": "文案", "hint": "文案一排4字"}, {"type": "文案", "hint": "文案一排4字"}, {"type": "CTA", "hint": "領券去"}]
+      [
+        "商品圖",
+        {
+          "type": "促標",
+          "hint": "促標最多6字"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字"
+        },
+        "LOGO圖",
+        {
+          "type": "文案",
+          "hint": "文案一排4字"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字"
+        },
+        {
+          "type": "CTA",
+          "hint": "領券去"
+        }
+      ]
     ]
   },
   "MSBN-D-1-1-1.jpg": {
-    "n": 1,
+    "n": 2,
+    "labels": [
+      "右",
+      "左"
+    ],
     "groups": [
-      ["商品", {"type": "品名", "hint": "品名一排最多09字內"}, "CTA"]
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排最多09字內"
+        },
+        "CTA"
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排最多09字內"
+        },
+        "CTA"
+      ]
     ]
   },
   "MSBN-D-1-1-2.jpg": {
-    "n": 1,
+    "n": 2,
+    "labels": [
+      "右",
+      "左"
+    ],
     "groups": [
-      ["商品", "CTA"]
+      [
+        "商品圖",
+        "CTA"
+      ],
+      [
+        "商品圖",
+        "CTA"
+      ]
     ]
   },
   "MSBN-D-1-2.jpg": {
     "n": 1,
     "groups": [
-      ["商品", {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}]
+      [
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        }
+      ]
     ]
   },
   "MSBN-D-1-3.jpg": {
     "n": 1,
     "groups": [
-      ["商品", {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "內文", "hint": "內文一排最多09字內"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}]
+      [
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        }
+      ]
     ]
   },
   "MSBN-D-2-1-1.jpg": {
-    "n": 1,
+    "n": 3,
+    "labels": [
+      "右",
+      "中",
+      "左"
+    ],
     "groups": [
-      ["商品", {"type": "品名", "hint": "品名一排06字"}, "CTA"]
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排06字"
+        },
+        "CTA"
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排06字"
+        },
+        "CTA"
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排06字"
+        },
+        "CTA"
+      ]
     ]
   },
   "MSBN-D-2-1-2.jpg": {
-    "n": 1,
+    "n": 3,
+    "labels": [
+      "右",
+      "中",
+      "左"
+    ],
     "groups": [
-      ["商品", "CTA"]
+      [
+        "商品圖",
+        "CTA"
+      ],
+      [
+        "商品圖",
+        "CTA"
+      ],
+      [
+        "商品圖",
+        "CTA"
+      ]
     ]
   },
   "MSBN-D-2-2.jpg": {
     "n": 1,
     "groups": [
-      ["商品", {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}]
+      [
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        }
+      ]
     ]
   },
   "MSBN-D-2-3.jpg": {
     "n": 1,
     "groups": [
-      ["商品", {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "項目文字", "hint": "項目文字04字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}, {"type": "內文", "hint": "內文一排06字"}]
+      [
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        }
+      ]
     ]
   },
   "MSBN-D-3-1.jpg": {
     "n": 3,
     "groups": [
-      [{"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}],
-      [{"type": "項目文字", "hint": "項目文字4字"}, {"type": "項目文字", "hint": "項目文字4字"}, {"type": "項目文字", "hint": "項目文字4字"}, {"type": "項目文字", "hint": "項目文字4字"}, {"type": "項目文字", "hint": "項目文字4字"}],
-      [{"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}, {"type": "內文", "hint": "內文一排最多9字內"}]
+      [
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        }
+      ],
+      [
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        }
+      ],
+      [
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        }
+      ]
     ]
   }
 }
@@ -4083,7 +5295,7 @@ function exportWorkOrderXlsx() {
         return;
       }
       /* 位置標籤列（從第2欄開始，第1欄留給左邊的檔名） */
-      var labels = MSBN_POS_LABELS[spec.n] || ['左右'];
+      var labels = spec.labels || MSBN_POS_LABELS[spec.n] || ['左右'];
       for (var gi = 0; gi < spec.n; gi++) {
         var pc = ws.getCell(r, 2 + gi * 2);
         pc.value = labels[gi];
@@ -4189,6 +5401,8 @@ var LABEL_TO_FIELD_BASE = {
   '簽名小字': 'signNote',
   '代言人小字': 'endorserNote',
   '商品圖': 'productImg',
+  '情境圖': 'productImg',
+  '信用卡圖': 'productImg',
   '贈品圖': 'giftImg',
   '文案': 'promo',
   '內文': 'content',
@@ -4362,7 +5576,7 @@ function parseImportOwnJSONMsbn(obj, startBand) {
 /* 副區表頭格式：「XXX（A-1-2）」（新格式，精準）或「XXX（A）」（舊格式，只有家族字母）*/
 var SUBAREA_HEADER_RE = /（([A-F])(?:-(\d+)-(\d+))?）\s*$/;
 /* MSBN 每一顆最上面那列，第2欄固定是這三種位置標籤之一（MSBN_POS_LABELS 各種 n 值的第1個） */
-var MSBN_POS1_LABELS = ['左右', '左', '左1'];
+var MSBN_POS1_LABELS = ['左右', '左', '左1', '右'];
 
 /* 解析填好的 .xlsx（用 ExcelJS 讀） → 同樣回傳原始欄位清單。
    ────────────────────────────────────────
@@ -4606,22 +5820,186 @@ function renderImageGallery() {
   });
 }
 
-/* 目前畫面上的匯入結果（重新上傳圖片後要重畫欄位面板用） */
+/* 目前畫面上的匯入結果（重新上傳圖片後要重畫欄位面板用）。
+   source 用來區分目前內容是檔案匯入、暫存檔，或工單生成器直接同步而來：
+   只有 generator 來源會在再次切進「匯入工單」時自動對照新版配，
+   不會把使用者已匯入的試算表／暫存檔無聲覆蓋掉。 */
 var currentImportColumns = [];
+var currentImportSource = 'saved';
+var currentGeneratorSignature = '';
 var IMPORT_STORAGE_KEY = 'wo_import_state_v1';
 
 function saveImportState() {
   try {
-    var toSave = currentImportColumns.map(function (c) {
-      return { blockId: c.blockId, data: c.data, header: c.header, band: c.band };
-    });
+    var toSave = {
+      version: 2,
+      source: currentImportSource,
+      generatorSignature: currentGeneratorSignature,
+      columns: currentImportColumns.map(function (c) {
+        return {
+          blockId: c.blockId,
+          data: c.data,
+          header: c.header,
+          band: c.band,
+          sourceKey: c.sourceKey || ''
+        };
+      })
+    };
     localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(toSave));
   } catch (e) { /* 存不了就算了，不影響操作 */ }
 }
 
 function loadImportState() {
-  try { return JSON.parse(localStorage.getItem(IMPORT_STORAGE_KEY)) || null; }
-  catch (e) { return null; }
+  try {
+    var saved = JSON.parse(localStorage.getItem(IMPORT_STORAGE_KEY));
+    if (!saved) return null;
+    /* 舊版直接存 columns 陣列；讀進來時包成新版結構，原內容完全保留。 */
+    if (Array.isArray(saved)) {
+      return { version: 1, source: 'saved', generatorSignature: '', columns: saved };
+    }
+    return {
+      version: saved.version || 2,
+      source: saved.source || 'saved',
+      generatorSignature: saved.generatorSignature || '',
+      columns: Array.isArray(saved.columns) ? saved.columns : []
+    };
+  } catch (e) { return null; }
+}
+
+/* 原始工單格 → BNCore 的 block id。檔案匯入與「工單生成器直接帶入」共用
+   同一支轉換，確保兩條路徑永遠指到同一個可編輯版位。 */
+function rawColumnBlockId(c) {
+  if (!c) return '';
+  if (c.blockId) return c.blockId;
+  if (c.kind === 'msbn' && c.msbnFile) {
+    return 'msbn_' + String(c.msbnFile)
+      .replace(/\.(jpg|jpeg|png)$/i, '')
+      .replace(/^MSBN-/i, '')
+      .replace(/-/g, '_');
+  }
+  if (!c.family) return '';
+  var variant = c.variant || detectVariant(c.family, c.entries || []);
+  var combo = c.combo || detectCombo(c.family, c.entries || []);
+  return 'subarea_' + c.family + '_' + variant + '_' + combo;
+}
+
+/* 把工單生成器目前畫布上的選擇，轉成跟 XLSX／JSON 匯入相同的 raw columns。
+   這裡只帶「選了哪個版配」；文字與圖片內容會從版位預設值開始，進到匯入頁後
+   就能直接在左側工具列或畫布上編輯。 */
+function generatorSelectionRawColumns() {
+  if (typeof state === 'undefined' || !state) return [];
+  var out = [];
+  var band = 0;
+
+  var topSlots = state.slots || [];
+  var hasTop = state.group !== null && topSlots.some(function (slot) { return !!slot; });
+  if (hasTop) {
+    band++;
+    topSlots.forEach(function (slot, slotIndex) {
+      if (!slot) return;
+      out.push({
+        family: slot.family,
+        variant: slot.variant,
+        combo: slot.combo,
+        entries: [],
+        header: slot.label || slot.file || ('副區 ' + slot.family),
+        band: band,
+        sourceKey: 'generator:top:' + slotIndex
+      });
+    });
+  }
+
+  (state.msbn || []).forEach(function (row, rowIndex) {
+    if (!row) return;
+    if (typeof isSubRow === 'function' && isSubRow(row)) {
+      var subSlots = row.slots || [];
+      if (!subSlots.some(function (slot) { return !!slot; })) return;
+      band++;
+      subSlots.forEach(function (slot, slotIndex) {
+        if (!slot) return;
+        out.push({
+          family: slot.family,
+          variant: slot.variant,
+          combo: slot.combo,
+          entries: [],
+          header: slot.label || slot.file || ('副區 ' + slot.family),
+          band: band,
+          sourceKey: 'generator:msbn-sub:' + rowIndex + ':' + slotIndex
+        });
+      });
+      return;
+    }
+    if (!row.file) return;
+    band++;
+    out.push({
+      kind: 'msbn',
+      msbnFile: row.file,
+      entries: [],
+      header: row.label || row.file,
+      band: band,
+      sourceKey: 'generator:msbn:' + rowIndex
+    });
+  });
+  return out;
+}
+
+function generatorSelectionSignature(rawColumns) {
+  return JSON.stringify((rawColumns || []).map(function (c) {
+    return [c.sourceKey || '', rawColumnBlockId(c), c.band == null ? '' : c.band];
+  }));
+}
+
+function refreshGeneratorImportButton() {
+  var btn = document.getElementById('import-generator-load');
+  if (!btn) return;
+  var count = generatorSelectionRawColumns().length;
+  var badge = btn.querySelector('.igl-count');
+  if (badge) badge.textContent = count + ' 格';
+  btn.disabled = count === 0;
+  btn.title = count
+    ? '把工單生成器目前選好的 ' + count + ' 格載入成可編輯版位'
+    : '工單生成器畫布目前沒有已選版配';
+}
+
+/* 將工單生成器的選擇載入匯入頁。
+   - generator 來源：新版配有變動時只重建變動格，未變動格保留已編輯內容。
+   - file/snapshot 來源：自動進頁時絕不覆蓋；只有從生成器切頁或手動按按鈕時才詢問。 */
+function loadGeneratorSelectionIntoImport(options) {
+  options = options || {};
+  var raw = generatorSelectionRawColumns();
+  refreshGeneratorImportButton();
+  var log = document.getElementById('import-log');
+  if (!raw.length) {
+    if (!options.auto) {
+      if (log) log.innerHTML = '<span class="err">工單生成器畫布目前沒有已選版配</span>';
+    }
+    return false;
+  }
+
+  var sig = generatorSelectionSignature(raw);
+  if (currentImportSource === 'generator' && currentGeneratorSignature === sig && currentImportColumns.length) {
+    if (!options.auto && log) log.innerHTML = '<span class="ok">✓ 已與工單生成器同步，目前是 ' + raw.length + ' 格</span>';
+    return false;
+  }
+
+  var replacingOtherSource = currentImportColumns.length && currentImportSource !== 'generator';
+  if (replacingOtherSource) {
+    /* 重新整理後直接停在匯入頁，不應彈窗、更不能覆蓋既有檔案內容。 */
+    if (options.auto && !options.fromGeneratorView) return false;
+    var ok = confirm(
+      '匯入工單目前已有 ' + currentImportColumns.length + ' 格編輯內容。\n\n' +
+      '載入工單生成器版配會取代目前畫布；原內容仍可先用「下載圖片＋編輯暫存檔」保存。\n\n' +
+      '確定要改載入生成器目前選好的 ' + raw.length + ' 格嗎？'
+    );
+    if (!ok) return false;
+  }
+
+  afterImportParsed(raw, {
+    source: 'generator',
+    generatorSignature: sig,
+    preserveExisting: currentImportSource === 'generator'
+  });
+  return true;
 }
 
 
@@ -4657,7 +6035,7 @@ function renderPreviewAllStacked(columns) {
     var def = BNCore.getBlock(col.blockId);
     if (!def) return;
     var mount = document.getElementById('prevall-mount-' + idx);
-    if (mount) mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(false));
+    if (mount) mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(false, 'preview'));
   });
 }
 
@@ -4827,7 +6205,7 @@ function setImportFieldImages(idx, key, urls, ctxName) {
   ctx.afterChange();
   var mount = document.getElementById(ctx.mountId(idx));
   if (mount) {
-    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true));
+    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, ctxName === 'maint' ? 'maint' : 'import'));
     bindCanvasInteractions(mount, col, idx, ctxName);
   }
 }
@@ -5163,13 +6541,21 @@ function sampledRoleColors() {
 }
 
 /* 交給 BNCore.renderInstance 的 opts（畫布上可直接點著改文字＋統一顏色覆寫） */
-function importRenderOpts(editable) {
+function importRenderOpts(editable, mode) {
+  mode = mode || 'import';
   var theme = { bg: resolvedImportBg() };
   IMPORT_COLOR_ITEMS.forEach(function (it) {
     if (it.key === 'bg') return;
     if (importTheme[it.key]) theme[it.key] = importTheme[it.key];
   });
-  return { editable: editable !== false, theme: theme };
+  return {
+    editable: editable !== false,
+    theme: theme,
+    /* 正式匯入編輯才把沒有使用的贈品／代言人／簽名範圍還給曝品；
+       維修與全部版位預覽仍顯示設計稿的每一個原始範圍，方便檢查。 */
+    imageAbsorb: mode === 'import',
+    forceImageAbsorb: mode === 'import'
+  };
 }
 
 /* 預覽外框的底色也跟著背景色走，四周留白才不會是突兀的黑邊 */
@@ -5252,7 +6638,7 @@ function applyImportTheme() {
   currentImportColumns.forEach(function (col, idx) {
     var mount = document.getElementById('imp-mount-' + idx);
     if (!mount) return;
-    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true));
+    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import'));
     bindCanvasInteractions(mount, col, idx, 'import');
   });
 }
@@ -5380,15 +6766,17 @@ function renderImportColumns(columns, skipPreviewRerender) {
     }
 
     /* 每個版位一張卡：
-       - 圖片欄位：只放縮圖，右邊三顆按鈕（編輯／換圖／刪除），不再顯示一長串圖片網址
-       - 文字欄位：照舊可以直接打字
-       - 顏色欄位：不放在這裡了，統一在上面的「🎨 統一顏色」區一次改全部 */
+       - 圖片欄位：縮圖＋編輯／換圖／刪除
+       - 文字欄位：直接修改，並可一鍵清空（空白就是刪除該資訊）
+       - 顏色欄位：每個版位自己的色票可獨立換色／還原；上方「統一顏色」仍可整批覆寫 */
     var box = document.createElement('div');
     box.className = 'imp-col';
     box.setAttribute('data-col', idx);
+    var fieldDefsByKey = {};
+    def.fields.forEach(function (f) { fieldDefsByKey[f.key] = f; });
     var fieldsHtml = def.fields.map(function (f) {
-      if (f.type === 'color') return ''; /* 顏色改到「統一顏色」區處理 */
       var val = col.data[f.key] != null ? col.data[f.key] : f.default;
+      if (val == null) val = '';
       var limitHint = f.maxLength ? '<span class="field-limit">限' + f.maxLength + '字</span>' : '';
 
       if (f.type === 'image') {
@@ -5405,16 +6793,31 @@ function renderImportColumns(columns, skipPreviewRerender) {
             '<div class="if-acts">' +
               '<button type="button" class="if-btn" data-act="edit"' + (hasImg ? '' : ' disabled') +
                 ' title="裁切／去背／擦除／影子">✏️ 編輯</button>' +
-              '<button type="button" class="if-btn" data-act="swap" title="換一張圖">🔄 換圖</button>' +
+              '<button type="button" class="if-btn" data-act="swap" title="新增或更換圖片">🔄 換圖</button>' +
               '<button type="button" class="if-btn danger" data-act="del"' + (hasImg ? '' : ' disabled') +
-                ' title="清掉這張圖">✕ 刪除</button>' +
+                ' title="刪除這個圖片內容">✕ 刪除</button>' +
             '</div>' +
           '</div></div>';
       }
 
+      if (f.type === 'color') {
+        return '<div class="field local-color-field" data-key="' + f.key + '">' +
+          '<label>' + esc(f.label || f.key) + '</label>' +
+          '<div class="local-color-field-row">' +
+            '<input type="color" class="local-color-picker" value="' + esc(colorToHex(val || f.default || '#000000')) + '" title="選擇顏色">' +
+            '<input type="text" class="fv local-color-text" value="' + esc(val) + '" placeholder="#RRGGBB 或 rgb(...)" aria-label="' + esc(f.label || f.key) + '">' +
+            '<button type="button" class="field-mini-btn local-color-reset" title="還原這個版位的預設色">↺</button>' +
+          '</div>' +
+          '<div class="local-field-note">此色只修改本版位；若上方統一顏色有設定，畫面會優先使用統一色。</div>' +
+        '</div>';
+      }
+
       var maxAttr = f.maxLength ? ' maxlength="' + f.maxLength + '"' : '';
-      return '<div class="field" data-key="' + f.key + '"><label>' + esc(f.label) + limitHint + '</label>' +
-        '<input type="text" class="fv"' + maxAttr + ' value="' + esc(val) + '"></div>';
+      return '<div class="field text-field" data-key="' + f.key + '"><label>' + esc(f.label) + limitHint + '</label>' +
+        '<div class="text-field-row">' +
+          '<input type="text" class="fv text-fv"' + maxAttr + ' value="' + esc(val) + '">' +
+          '<button type="button" class="field-mini-btn danger text-clear" title="清空／刪除此資訊">✕</button>' +
+        '</div></div>';
     }).join('');
     box.innerHTML = '<div class="ic-head">' + (idx + 1) + '. ' + esc(def.name) + '</div>' + fieldsHtml;
     scroll.appendChild(box);
@@ -5423,16 +6826,44 @@ function renderImportColumns(columns, skipPreviewRerender) {
       col.data[key] = value;
       saveImportState();
       var mount = document.getElementById('imp-mount-' + idx);
-      if (mount) mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true));
+      if (mount) mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import'));
       bindCanvasInteractions(mount, col, idx, 'import');
     }
 
     box.querySelectorAll('.field').forEach(function (fieldEl) {
       var key = fieldEl.getAttribute('data-key');
-      var textInput = fieldEl.querySelector('input.fv');
+      var fieldDef = fieldDefsByKey[key] || {};
+      var textInput = fieldEl.querySelector('input.text-fv');
       if (textInput) {
         textInput.addEventListener('input', function () { updateAndRerender(key, this.value); });
+        var clearBtn = fieldEl.querySelector('.text-clear');
+        if (clearBtn) clearBtn.addEventListener('click', function () {
+          textInput.value = '';
+          updateAndRerender(key, '');
+        });
       }
+
+      var colorPicker = fieldEl.querySelector('.local-color-picker');
+      var colorText = fieldEl.querySelector('.local-color-text');
+      if (colorPicker && colorText) {
+        colorPicker.addEventListener('input', function () {
+          colorText.value = this.value;
+          updateAndRerender(key, this.value);
+        });
+        colorText.addEventListener('input', function () {
+          var v = this.value.trim();
+          if (v) colorPicker.value = colorToHex(v);
+          updateAndRerender(key, v);
+        });
+        var resetBtn = fieldEl.querySelector('.local-color-reset');
+        if (resetBtn) resetBtn.addEventListener('click', function () {
+          var v = fieldDef.default || '';
+          colorText.value = v;
+          colorPicker.value = colorToHex(v || '#000000');
+          updateAndRerender(key, v);
+        });
+      }
+
       fieldEl.querySelectorAll('.if-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var act = btn.getAttribute('data-act');
@@ -5440,7 +6871,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
           else if (act === 'swap') pickImportFieldImage(idx, key);
           else if (act === 'del') {
             updateAndRerender(key, '');
-            renderImportFieldsForCurrentColumns(); /* 縮圖換成「未上傳」 */
+            renderImportFieldsForCurrentColumns(); /* 縮圖換成「未上傳」，可再新增 */
           }
         });
       });
@@ -5459,7 +6890,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
     }
     var mountEl = document.getElementById('imp-mount-' + idx);
     if (mountEl) {
-      mountEl.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true));
+      mountEl.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import'));
       bindCanvasInteractions(mountEl, col, idx, 'import');
     }
   });
@@ -5588,28 +7019,48 @@ function bindCanvasImageDrop(mountEl, col, idx, ctxName) {
   });
 }
 
-function afterImportParsed(rawColumns) {
+function afterImportParsed(rawColumns, options) {
+  options = options || {};
   var importLog = document.getElementById('import-log');
-  if (!rawColumns || !rawColumns.length) { importLog.innerHTML = '<span class="err">沒有讀到任何版位資料，確認檔案格式是否正確</span>'; return; }
-  importLog.innerHTML = '<span class="ok">✓ 讀到 ' + rawColumns.length + ' 格</span>';
+  if (!rawColumns || !rawColumns.length) {
+    importLog.innerHTML = '<span class="err">沒有讀到任何版位資料，確認檔案格式是否正確</span>';
+    return;
+  }
+  importLog.innerHTML = '<span class="ok">✓ 讀到 ' + rawColumns.length + ' 格，載入可編輯版位中…</span>';
   ensureBlocksLoaded(function () {
+    var oldBySourceKey = {};
+    if (options.preserveExisting) {
+      currentImportColumns.forEach(function (oldCol) {
+        if (oldCol.sourceKey) oldBySourceKey[oldCol.sourceKey] = oldCol;
+      });
+    }
+
     var columns = rawColumns.map(function (c) {
-      /* MSBN 那幾格是用檔名（例如 MSBN-A-2-1）認版位，不是 family/variant/combo；
-         直接把「MSBN-」換成「msbn_」、破折號換底線，剛好對到 blocks/msbn_A_2_1 這個資料夾 */
-      var variant = c.variant || detectVariant(c.family, c.entries);
-      var combo = c.combo || detectCombo(c.family, c.entries);
-      var blockId = c.kind === 'msbn'
-        ? 'msbn_' + c.msbnFile.replace(/\.(jpg|jpeg|png)$/i, '').replace(/^MSBN-/i, '').replace(/-/g, '_')
-        : 'subarea_' + c.family + '_' + variant + '_' + combo;
+      var blockId = rawColumnBlockId(c);
       var def = BNCore.getBlock(blockId);
-      var data = def ? Object.assign({}, BNCore.defaultData(blockId), smartMapEntriesToFields(c.entries, def)) : {};
-      /* band＝這一格屬於哪一段（同一段在畫布上排成一橫排），右邊畫布排版時要用 */
-      return { blockId: blockId, data: data, header: c.header, band: c.band };
+      var defaults = def ? BNCore.defaultData(blockId) : {};
+      var mapped = def ? smartMapEntriesToFields(c.entries || [], def) : {};
+      var oldCol = c.sourceKey ? oldBySourceKey[c.sourceKey] : null;
+      var data = (oldCol && oldCol.blockId === blockId)
+        ? Object.assign({}, defaults, oldCol.data || {})
+        : Object.assign({}, defaults, mapped);
+      return {
+        blockId: blockId,
+        data: data,
+        header: c.header,
+        band: c.band,
+        sourceKey: c.sourceKey || ''
+      };
     });
+
+    currentImportSource = options.source || 'file';
+    currentGeneratorSignature = options.generatorSignature || '';
     currentImportColumns = columns;
     autoMatchImagesToColumns();
     renderImportColumns(columns);
-    importLog.innerHTML = '<span class="ok">✓ 已畫出 ' + columns.length + ' 格</span>';
+    importLog.innerHTML = currentImportSource === 'generator'
+      ? '<span class="ok">✓ 已從工單生成器載入 ' + columns.length + ' 格，可直接編輯</span>'
+      : '<span class="ok">✓ 已畫出 ' + columns.length + ' 格</span>';
   });
 }
 
@@ -5625,10 +7076,10 @@ function handleImportFile(file) {
         if (parsed && parsed.type === 'wo_import_snapshot') {
           restoreImportSnapshot(parsed);
         } else {
-          afterImportParsed(parseImportOwnJSON(parsed));
+          afterImportParsed(parseImportOwnJSON(parsed), { source: 'file' });
         }
       } else {
-        parseImportXlsx(reader.result).then(afterImportParsed).catch(function (err) {
+        parseImportXlsx(reader.result).then(function (raw) { afterImportParsed(raw, { source: 'file' }); }).catch(function (err) {
           importLog.innerHTML = '<span class="err">解析失敗：' + esc(err.message) + '</span>';
         });
       }
@@ -5681,7 +7132,13 @@ function buildImportSnapshot() {
     return Promise.all(keys.map(function (k) {
       return inlineBlobUrls(col.data[k]).then(function (v) { dataCopy[k] = v; });
     })).then(function () {
-      return { blockId: col.blockId, header: col.header, band: col.band, data: dataCopy };
+      return {
+        blockId: col.blockId,
+        header: col.header,
+        band: col.band,
+        sourceKey: col.sourceKey || '',
+        data: dataCopy
+      };
     });
   });
   var imageJobs = uploadedImages.map(function (img) {
@@ -5691,8 +7148,10 @@ function buildImportSnapshot() {
   return Promise.all([Promise.all(columnJobs), Promise.all(imageJobs)]).then(function (res) {
     return {
       type: 'wo_import_snapshot',
-      version: 1,
+      version: 2,
       savedAt: new Date().toISOString(),
+      source: currentImportSource,
+      generatorSignature: currentGeneratorSignature,
       columns: res[0],
       uploadedImages: res[1],
       theme: JSON.parse(JSON.stringify(importTheme)), /* 統一顏色也一起存，還原後顏色一模一樣 */
@@ -5776,8 +7235,18 @@ function restoreImportSnapshot(snap) {
     renderImportColorPanel();
   }
   ensureBlocksLoaded(function () {
+    /* 暫存檔是使用者明確載入的內容；即使它最初來自生成器，也不要在之後進頁時
+       被目前這台電腦的生成器選擇無聲覆蓋。 */
+    currentImportSource = 'snapshot';
+    currentGeneratorSignature = '';
     currentImportColumns = (snap.columns || []).map(function (c) {
-      return { blockId: c.blockId, header: c.header, band: c.band, data: c.data || {} };
+      return {
+        blockId: c.blockId,
+        header: c.header,
+        band: c.band,
+        sourceKey: c.sourceKey || '',
+        data: c.data || {}
+      };
     });
     renderImportColumns(currentImportColumns);
     importLog.innerHTML = '<span class="ok">✓ 已從暫存檔還原 ' + currentImportColumns.length + ' 格（含編輯結果）</span>' +
@@ -5912,6 +7381,7 @@ function loadState() {
 function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch (e) { /* 存不了就算了，不影響操作 */ }
+  refreshGeneratorImportButton();
 }
 
 function maxPerRow(fam) { return FAMILIES[fam] ? FAMILIES[fam].maxPerRow : 4; }
@@ -6024,9 +7494,12 @@ function scrollCanvasToTab(tab) {
   canvasArea.scrollTo({ top: Math.max(targetTop, 0), behavior: 'smooth' });
   clearTimeout(scrollCanvasToTab._t);
   scrollCanvasToTab._t = setTimeout(function () {
+    /* 點頁簽後以使用者的選擇為準，不在捲動結束時立刻用邊界位置反推一次。
+       MSBN 位於畫布最下方時，瀏覽器可能因為底部空間不足而無法把區塊頂端
+       捲到參考線；舊邏輯會因此誤判成副區並把頁簽拉回去。之後使用者真的
+       手動捲動畫布時，scroll 事件仍會照實際位置同步頁簽。 */
     suppressScrollSync = false;
-    syncTabFromScroll(); /* 捲動完成後照實際位置校正一次，避免邊界誤差；沒捲軸的話這裡本來就會直接跳過 */
-  }, 500);
+  }, 700);
 }
 
 /* 拖拉一張新的 MSBN 圖進畫布後，自動往下捲一點：
@@ -6431,6 +7904,9 @@ function appendMsbnArea(stage) {
     return;
   }
 
+  /* 有 MSBN 額度時保留至少兩格的畫布高度；空白格本身不進 state，也不占額度。 */
+  area.classList.add('msbn-enabled');
+
   /* 第一格的補充說明（紅字）：第一格除了放 MSBN 的圖，也可以改用副區的版配 */
   var firstNote = document.createElement('div');
   firstNote.className = 'msbn-first-note';
@@ -6636,6 +8112,20 @@ function appendMsbnArea(stage) {
   });
   area.appendChild(drop);
 
+  /* 尚未選任何 MSBN 時，畫布預設先顯示兩格。
+     第一格是上面的實際拖放區；第二格只補足畫布高度，避免點 MSBN 頁簽時，
+     因最下方空間不足無法捲到判斷線而被自動切回「副區」。第一張放入後，
+     實際版位＋下一個拖放區自然仍維持至少兩格。 */
+  if (count === 0 && MSBN_MAX > 1) {
+    var empty2 = document.createElement('div');
+    empty2.id = 'msbn-empty-slot-2';
+    empty2.setAttribute('aria-hidden', 'true');
+    empty2.innerHTML = '<div class="slot-no">MSBN 第 2 格</div>'
+      + '<div>加入第 1 格後，可繼續在這個位置放下一個版位</div>'
+      + '<div>此空格不計入已選數量，也不會匯出工單</div>';
+    area.appendChild(empty2);
+  }
+
   stage.appendChild(area);
 }
 
@@ -6643,6 +8133,7 @@ function appendMsbnArea(stage) {
    畫布渲染
 ════════════════════════════════════════ */
 function renderCanvas() {
+  refreshGeneratorImportButton();
   var stage = document.getElementById('stage');
   var info = document.getElementById('canvas-info');
 
@@ -7087,7 +8578,7 @@ function renderMaintList() {
     var mount = item.querySelector('.mt-mount');
     if (!mount) return;
     mount.id = 'mnt-mount-' + idx;
-    mount.innerHTML = BNCore.renderInstance(id, col.data, importRenderOpts(true));
+    mount.innerHTML = BNCore.renderInstance(id, col.data, importRenderOpts(true, 'maint'));
     bindCanvasInteractions(mount, col, idx, 'maint');
   });
 
@@ -7217,6 +8708,9 @@ function showView(name, options) {
   options = options || {};
   if (!isValidView(name)) name = 'home';
 
+  var activeView = document.querySelector('.view.active');
+  var previousName = activeView ? activeView.id.replace(/^view-/, '') : null;
+
   document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.id === 'view-' + name); });
   document.querySelectorAll('.nav-item').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-view') === name); });
   /* 鎖頭跟編輯提示條只跟「工單生成器」有關，其他頁面藏起來 */
@@ -7226,6 +8720,16 @@ function showView(name, options) {
   /* 進到「匯入工單」時，把背景顏色跟曝光資源目前的背景色同步一次
      （只有還沒手動改過背景色時才會動） */
   if (name === 'import' && typeof syncImportBgFromExposure === 'function') syncImportBgFromExposure();
+  if (name === 'import') {
+    /* 從工單生成器直接切過來＝優先把剛排好的版配帶進可編輯畫布。
+       重新整理後本來就在匯入頁：只有畫布為空，或原本就是 generator 來源時才自動同步；
+       試算表／暫存檔來源不會被無聲覆蓋。 */
+    if (previousName === 'generator') {
+      loadGeneratorSelectionIntoImport({ auto: true, fromGeneratorView: true });
+    } else if (!currentImportColumns.length || currentImportSource === 'generator') {
+      loadGeneratorSelectionIntoImport({ auto: true, fromGeneratorView: false });
+    }
+  }
 
   var showLock = (name === 'generator');
   lockFab.style.display = showLock ? '' : 'none';
@@ -7269,6 +8773,10 @@ importDrop.addEventListener('drop', function (e) {
   if (e.dataTransfer.files[0]) handleImportFile(e.dataTransfer.files[0]);
 });
 
+document.getElementById('import-generator-load').addEventListener('click', function () {
+  loadGeneratorSelectionIntoImport({ auto: false, fromGeneratorView: false });
+});
+
 var importImgDrop = document.getElementById('import-img-drop');
 var importImgInput = document.getElementById('import-img-input');
 importImgDrop.addEventListener('click', function () { importImgInput.click(); });
@@ -7305,18 +8813,36 @@ document.getElementById('btn-preview-all').addEventListener('click', function ()
   });
 });
 
-showView(getSavedView()); /* 還原上次所在工具頁，不再每次強制回首頁 */
+/* 先把上次匯入工單的內容與來源讀回記憶體，再決定要開哪個工具頁。
+   如此重新整理後停在匯入頁時，能分辨既有內容是 generator 還是檔案來源，
+   不會因為同步判斷太早而誤蓋資料。 */
+var savedImportState = loadImportState();
+if (savedImportState && savedImportState.columns && savedImportState.columns.length) {
+  currentImportSource = savedImportState.source || 'saved';
+  currentGeneratorSignature = savedImportState.generatorSignature || '';
+  currentImportColumns = savedImportState.columns.map(function (c) {
+    return {
+      blockId: c.blockId,
+      data: c.data || {},
+      header: c.header,
+      band: c.band,
+      sourceKey: c.sourceKey || ''
+    };
+  });
+}
+refreshGeneratorImportButton();
+
+var initialView = getSavedView();
+showView(initialView); /* 還原上次所在工具頁，不再每次強制回首頁 */
 window.addEventListener('hashchange', function () {
   var hashView = String(window.location.hash || '').replace(/^#/, '');
   if (isValidView(hashView)) showView(hashView, { skipHash: true });
 });
-ensureBlocksLoaded(function () {}); /* 背景預先載入版位模板，使用者實際匯入時大多已經載好了；跟使用者觸發的載入共用同一個機制，不會重複觸發 */
-
-/* 還原上次匯入工單的本機暫存內容（不用重新上傳檔案） */
-var savedImportState = loadImportState();
-if (savedImportState && savedImportState.length) {
-  ensureBlocksLoaded(function () { renderImportColumns(savedImportState); });
-}
+/* 背景預先載入全部版位。載完後若本機有匯入暫存，直接畫回來；
+   若 showView 已觸發 generator 同步，這裡會畫目前最新的 currentImportColumns。 */
+ensureBlocksLoaded(function () {
+  if (currentImportColumns.length) renderImportColumns(currentImportColumns);
+});
 </script>
 
 

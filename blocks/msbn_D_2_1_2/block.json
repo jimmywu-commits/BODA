@@ -13,7 +13,9 @@
       "width": 25.0,
       "height": 25.0,
       "backgroundColor": "rgb(255, 255, 255)",
-      "border": "1px solid rgb(134, 134, 134)"
+      "border": "1px solid rgb(134, 134, 134)",
+      "field": "swatchColor",
+      "fieldLabel": "左・圓形色塊1"
     },
     {
       "zIndex": 1589,
@@ -22,7 +24,9 @@
       "top": 270.0,
       "width": 25.0,
       "height": 25.0,
-      "backgroundColor": "rgb(139, 190, 192)"
+      "backgroundColor": "rgb(139, 190, 192)",
+      "field": "swatchColor2",
+      "fieldLabel": "左・圓形色塊2"
     },
     {
       "zIndex": 1588,
@@ -31,7 +35,9 @@
       "top": 270.0,
       "width": 25.0,
       "height": 25.0,
-      "backgroundColor": "rgb(52, 51, 55)"
+      "backgroundColor": "rgb(52, 51, 55)",
+      "field": "swatchColor3",
+      "fieldLabel": "左・圓形色塊3"
     },
     {
       "zIndex": 1587,
@@ -41,7 +47,9 @@
       "width": 25.0,
       "height": 25.0,
       "backgroundColor": "rgb(255, 255, 255)",
-      "border": "1px solid rgb(134, 134, 134)"
+      "border": "1px solid rgb(134, 134, 134)",
+      "field": "swatchColor4",
+      "fieldLabel": "中・圓形色塊1"
     },
     {
       "zIndex": 1586,
@@ -50,7 +58,9 @@
       "top": 270.0,
       "width": 25.0,
       "height": 25.0,
-      "backgroundColor": "rgb(139, 190, 192)"
+      "backgroundColor": "rgb(139, 190, 192)",
+      "field": "swatchColor5",
+      "fieldLabel": "中・圓形色塊2"
     },
     {
       "zIndex": 1585,
@@ -59,7 +69,9 @@
       "top": 270.0,
       "width": 25.0,
       "height": 25.0,
-      "backgroundColor": "rgb(52, 51, 55)"
+      "backgroundColor": "rgb(52, 51, 55)",
+      "field": "swatchColor6",
+      "fieldLabel": "中・圓形色塊3"
     },
     {
       "zIndex": 1584,
@@ -69,7 +81,9 @@
       "width": 25.0,
       "height": 25.0,
       "backgroundColor": "rgb(255, 255, 255)",
-      "border": "1px solid rgb(134, 134, 134)"
+      "border": "1px solid rgb(134, 134, 134)",
+      "field": "swatchColor7",
+      "fieldLabel": "右・圓形色塊1"
     },
     {
       "zIndex": 1583,
@@ -78,7 +92,9 @@
       "top": 270.0,
       "width": 25.0,
       "height": 25.0,
-      "backgroundColor": "rgb(139, 190, 192)"
+      "backgroundColor": "rgb(139, 190, 192)",
+      "field": "swatchColor8",
+      "fieldLabel": "右・圓形色塊2"
     },
     {
       "zIndex": 1582,
@@ -87,7 +103,9 @@
       "top": 270.0,
       "width": 25.0,
       "height": 25.0,
-      "backgroundColor": "rgb(52, 51, 55)"
+      "backgroundColor": "rgb(52, 51, 55)",
+      "field": "swatchColor9",
+      "fieldLabel": "右・圓形色塊3"
     },
     {
       "zIndex": 1578,
@@ -214,14 +232,12 @@
     },
     {
       "zIndex": 1569,
-      "type": "image",
+      "type": "rect",
       "left": 20.0,
       "top": 15.0,
       "width": 190.0,
       "height": 385.0,
       "backgroundColor": "rgb(236, 155, 31)",
-      "field": "itemImg",
-      "fieldLabel": "商品圖片網址",
       "borderRadius": "15px 0px 0px 0px"
     },
     {

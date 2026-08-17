@@ -133,14 +133,12 @@
     },
     {
       "zIndex": 1465,
-      "type": "image",
+      "type": "rect",
       "left": 20.0,
       "top": 15.0,
       "width": 190.0,
       "height": 385.0,
       "backgroundColor": "rgb(236, 155, 31)",
-      "field": "itemImg",
-      "fieldLabel": "商品圖片網址",
       "borderRadius": "15px 0px 0px 0px"
     },
     {

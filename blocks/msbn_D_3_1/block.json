@@ -23,7 +23,7 @@
       "_refCenter": 262.5,
       "topExact": 21.48,
       "designText": "內文一排最多9字內",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -44,7 +44,7 @@
       "_refCenter": 262.5,
       "topExact": 95.48,
       "designText": "內文一排最多9字內",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -65,7 +65,7 @@
       "_refCenter": 262.5,
       "topExact": 169.48,
       "designText": "內文一排最多9字內",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -86,7 +86,7 @@
       "_refCenter": 262.5,
       "topExact": 243.48,
       "designText": "內文一排最多9字內",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -107,7 +107,7 @@
       "_refCenter": 262.5,
       "topExact": 317.48,
       "designText": "內文一排最多9字內",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -128,7 +128,7 @@
       "topExact": 21.48,
       "designText": "內文一排最多9字內",
       "_refCenter": 937.5,
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -149,7 +149,7 @@
       "topExact": 95.48,
       "designText": "內文一排最多9字內",
       "_refCenter": 937.5,
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -170,7 +170,7 @@
       "topExact": 169.48,
       "designText": "內文一排最多9字內",
       "_refCenter": 937.5,
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -191,7 +191,7 @@
       "topExact": 243.48,
       "designText": "內文一排最多9字內",
       "_refCenter": 937.5,
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -212,7 +212,7 @@
       "topExact": 317.48,
       "designText": "內文一排最多9字內",
       "_refCenter": 937.5,
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -233,7 +233,7 @@
       "_refCenter": 600.0,
       "topExact": 21.48,
       "designText": "項目4字",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -254,7 +254,7 @@
       "_refCenter": 600.0,
       "topExact": 95.48,
       "designText": "項目4字",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -275,7 +275,7 @@
       "_refCenter": 600.0,
       "topExact": 169.48,
       "designText": "項目4字",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -296,7 +296,7 @@
       "_refCenter": 600.0,
       "topExact": 243.48,
       "designText": "項目4字",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
@@ -317,7 +317,7 @@
       "_refCenter": 600.0,
       "topExact": 317.48,
       "designText": "項目4字",
-      "fontWeight": "500",
+      "fontWeight": "400",
       "letterSpacing": -1.3
     },
     {
