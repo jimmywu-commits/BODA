@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>吸底圖便捷編輯器</title>
+  <link rel="stylesheet" href="src/ui/style.css" />
+  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+  <script src="https://unpkg.com/jszip@3/dist/jszip.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- 分頁（多條吸底圖）獨立成滿版橫 Bar，跟一般欄位分開，一眼就看得到 -->
+    <div id="tabbar"></div>
+
+    <div id="workspace">
+      <!-- 畫布在左、操作面板在右（面板靠右邊比較好操作） -->
+      <main id="stage-wrap">
+        <!-- 依規範：字體 100% 載入成功前不繪製畫布，避免字體閃爍或用錯字體匯出 -->
+        <div id="font-status">
+          <div class="spinner"></div>
+          <p class="font-status-main">正在載入 ShopeeNotoSans 字體…</p>
+          <p class="font-status-sub">
+            首次載入約 10MB，需要幾秒鐘。<br />
+            依規範必須等字體完全就緒才會繪製，以免匯出成錯誤字體。
+          </p>
+        </div>
+        <div id="konva-container" hidden></div>
+        <!-- 縮放列浮在畫布上方，只影響檢視，不影響匯出 -->
+        <div id="zoom-bar" hidden></div>
+      </main>
+      <aside id="panel"></aside>
+    </div>
+  </div>
+
+  <!-- 依相依順序載入的傳統 script（非 ES module），確保雙擊 index.html 用 file:// 開啟也能正常運作，不需要另外架 server -->
+  <script src="src/util/textLimit.js"></script>
+  <script src="src/state/actions.js"></script>
+  <script src="src/state/reducers.js"></script>
+  <script src="src/state/selectors.js"></script>
+  <script src="src/state/store.js"></script>
+  <script src="src/templates/templates.js"></script>
+  <script src="src/icons/manifest.js"></script>
+  <script src="src/state/projectFile.js"></script>
+  <script src="src/render/colorTheme.js"></script>
+  <script src="src/render/bgRemove.js"></script>
+  <script src="src/render/fontLoader.js"></script>
+  <script src="src/render/iconImageCache.js"></script>
+  <script src="src/render/viewport.js"></script>
+  <script src="src/render/canvas.js"></script>
+  <script src="src/export/exportBatch.js"></script>
+  <script src="src/importers/workOrderImporter.js"></script>
+  <script src="src/ui/imageEditor.js"></script>
+  <script src="src/ui/zoomBar.js"></script>
+  <script src="src/ui/iconPicker.js"></script>
+  <script src="src/ui/panel.js"></script>
+  <!-- 開場對話框要用 PanelUI.mount() 交回來的匯入入口，所以排在 panel 之後 -->
+  <script src="src/ui/startupDialog.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

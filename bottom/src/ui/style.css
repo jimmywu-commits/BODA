@@ -1,0 +1,1112 @@
+/*
+ * 深色主題，變數命名沿用 bn.html，色值往上提亮成「真正的深灰」並拉大對比。
+ * 三層階梯刻意分明，讓使用者一眼看出哪裡可以操作：
+ *   面板底 #2b2b2b  →  卡片 #343434  →  控件（輸入框/按鈕）#454545
+ * 邊框也一併提亮到 #5c5c5c，控件輪廓才清楚。
+ */
+:root {
+  --bg0: #1e1e1e;
+  --bg1: #2b2b2b;
+  --bg2: #343434;
+  --bg3: #454545;
+  --border: #5c5c5c;
+  --border-strong: #757575;
+  --accent: #ee4d2d;
+  --accent2: #f06040;
+  --text: #f5f5f5;
+  --text2: #c0c0c0;
+  --text3: #8f8f8f;
+  --green: #2ea043;
+  --red: #da3633;
+  --radius: 6px;
+
+  /*
+   * 上傳待確認區的亮黃色系。亮黃底一定要配深色字——
+   * 黃底白字的對比只有約 1.5:1，等於看不見；黃底 #1a1a1a 深字約 12:1。
+   */
+  --yellow: #ffc83d;
+  --yellow-hover: #ffd66b;
+  --on-yellow: #1a1a1a;
+
+  /* 畫布工作區底色（= 透明區看到的顏色，依規範的灰 #848484） */
+  --canvas-backdrop: #848484;
+
+  /*
+   * 按鈕與欄位的整體縮放旋鈕。所有控件的 padding / font-size 都乘上這個值，
+   * 想再放大或縮小只要改這一個數字，不用逐條調整。目前 = 放大 5%。
+   */
+  --ui-scale: 1.05;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg0);
+  color: var(--text);
+  font-family: "Segoe UI", "Microsoft JhengHei", "PingFang TC", Arial, sans-serif;
+  font-size: 13px;
+}
+
+/* 上：滿版分頁 Bar／下：左畫布 + 右面板 */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* ── 右側控制面板 ── */
+#panel {
+  width: 380px;
+  flex: 0 0 380px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg1);
+  border-left: 1px solid var(--border);
+}
+
+#panel-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+#panel-scroll::-webkit-scrollbar { width: 3px; }
+#panel-scroll::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* 釘在底部、永遠看得到的匯出區 */
+#panel-footer {
+  flex: 0 0 auto;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+#panel-footer .panel-section { margin-bottom: 0; }
+
+/* ── 畫布預覽區 ── */
+/*
+ * 檢視區。可縮放之後這裡不再捲動也不再置中——Konva 的 stage 直接填滿它，
+ * 畫布的位置與大小由 stage 的 scale/position 決定（見 render/viewport.js）。
+ * overflow:hidden 是必要的：放大之後畫布會超出檢視區，不裁掉會撐開版面。
+ */
+#stage-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--canvas-backdrop);
+}
+
+#konva-container {
+  position: absolute;
+  inset: 0;
+}
+
+#konva-container[hidden] { display: none; }
+
+/*
+ * 字體載入／失敗畫面不歸 stage 管，檢視區改用絕對定位之後要自己置中。
+ * 用 translate 而不是 inset:0，下面那條 max-width 才有意義。
+ */
+#font-status {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#font-status[hidden] { display: none; }
+
+/* ── 縮放列 ── */
+#zoom-bar {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  /* 半透明深底：浮在 #848484 的工作區上仍然看得清楚，又不會完全擋住底下的圖 */
+  background: rgba(24, 24, 24, .88);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .4);
+  font-size: 11px;
+  color: var(--text2);
+  user-select: none;
+}
+
+#zoom-bar[hidden] { display: none; }
+
+.zoom-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  background: var(--bg2);
+}
+
+.zoom-readout {
+  min-width: 44px;
+  text-align: center;
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.zoom-hint {
+  margin-left: 6px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+/*
+ * 畫布底色與工作區同為 #848484 純色（不用棋盤格）。因為兩者同色，上方 20px 的透明區
+ * 會跟底色融在一起，一定要有一條外框線才看得出圖的實際範圍——但那條線現在畫在 Konva
+ * 場景裡（canvas.js 的 drawArtboard），不能再用 CSS box-shadow：容器已經是整個檢視區，
+ * 框在容器上會變成框住整個工作區，而且不會跟著縮放平移。
+ */
+
+/* ── 區塊 ── */
+.panel-section { margin-bottom: 20px; }
+
+.panel-section h3 {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin: 0 0 8px;
+}
+
+.note {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-top: 6px;
+}
+
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── 表單元件 ── */
+button {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: calc(7px * var(--ui-scale)) calc(12px * var(--ui-scale));
+  font-size: calc(12px * var(--ui-scale));
+  font-family: inherit;
+  transition: background .15s, border-color .15s, opacity .15s;
+}
+
+button:hover { background: #565656; border-color: var(--border-strong); }
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+button.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+button.primary[disabled] { opacity: .55; cursor: default; }
+
+/* 亮黃 = 「這裡有東西等你確認」，和橘色的常規動作明顯區隔 */
+button.warn {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--on-yellow);
+  font-weight: 700;
+}
+
+button.warn:hover { background: var(--yellow-hover); border-color: var(--yellow-hover); }
+
+button.block {
+  width: 100%;
+  padding: calc(9px * var(--ui-scale)) calc(12px * var(--ui-scale));
+}
+
+button.mini {
+  padding: calc(4px * var(--ui-scale)) calc(8px * var(--ui-scale));
+  font-size: calc(11px * var(--ui-scale));
+}
+
+/* 反白顏色按鈕：色塊表示顏色，文字維持高對比（不把文字染成深品牌色） */
+.accent-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-variant-numeric: tabular-nums;
+}
+
+.accent-btn.selected { color: #fff; font-weight: 700; }
+
+.accent-chip {
+  width: calc(13px * var(--ui-scale));
+  height: calc(13px * var(--ui-scale));
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .55);
+}
+
+input[type="text"],
+select {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: calc(12px * var(--ui-scale));
+  padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
+  outline: none;
+  font-family: inherit;
+  transition: border-color .15s;
+}
+
+input[type="text"]:hover,
+select:hover { border-color: var(--border-strong); }
+
+/* 聚焦時除了換色還加一圈光暈，正在編輯哪個欄位不會搞錯 */
+input[type="text"]:focus,
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(238, 77, 45, .25);
+}
+
+input[type="file"] {
+  width: 100%;
+  font-size: calc(11px * var(--ui-scale));
+  color: var(--text2);
+}
+
+input[type="file"]::file-selector-button {
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: calc(5px * var(--ui-scale)) calc(10px * var(--ui-scale));
+  margin-right: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: calc(11px * var(--ui-scale));
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: #565656;
+  border-color: var(--border-strong);
+}
+
+/* ── 每顆內容卡 ── */
+.slot-card {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  padding: 10px;
+  margin-bottom: 8px;
+  transition: border-color .15s, background .15s;
+}
+
+/* 目前反白中的那一顆，左側粗邊 + 底色染橘，一眼分辨 */
+.slot-card.active {
+  border-color: var(--accent);
+  border-left-color: var(--accent);
+  background: rgba(238, 77, 45, .14);
+}
+
+.slot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.slot-no { font-size: 11px; color: var(--text3); }
+
+.icon-row { display: flex; align-items: center; gap: 5px; }
+.upload-btn { flex: 0 0 auto; white-space: nowrap; }
+
+/*
+ * 檔期文字輸入框（9.9 / 10.10）。
+ * 用實際輸出的字體與字重顯示，所見即所得——這一格畫出來就是 Bold。
+ */
+.date-input {
+  flex: 1;
+  min-width: 0;
+  font-family: ShopeeNotoSansContent, "Microsoft JhengHei", sans-serif;
+  font-weight: 700;
+  font-size: calc(15px * var(--ui-scale));
+  letter-spacing: .5px;
+}
+
+/* ── 圖像化素材選單 ── */
+
+/*
+ * 每一格上「目前選了什麼」的那顆按鈕。左邊是縮圖、右邊是名稱。
+ * 縮圖底是淺色：素材是橘色 + 透明鏤空，放在深色面板上鏤空處會糊成一片，
+ * 淺底才和最終輸出的白色區塊一致，看到的形狀就是實際會印出來的形狀。
+ */
+.icon-trigger {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 4px;
+  text-align: left;
+  background: var(--bg2);
+}
+
+.icon-trigger:hover { background: var(--bg3); }
+
+.icon-trigger-thumb {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: #f2f2f2;
+  overflow: hidden;
+}
+
+.icon-trigger-thumb img {
+  max-width: 28px;
+  max-height: 28px;
+  object-fit: contain;
+}
+
+/* 沒選圖時用虛線空框，和畫布上的空欄位提示同一個語彙 */
+.icon-trigger.empty .icon-trigger-thumb {
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+}
+
+.icon-trigger-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-trigger.empty .icon-trigger-label { color: var(--text3); }
+
+.icon-trigger-caret { flex: 0 0 auto; color: var(--text3); font-size: 10px; }
+
+/*
+ * 浮動選單。fixed + 掛在 body 上，因為側邊面板是 overflow:auto，
+ * 塞在卡片裡會被裁掉。位置由 JS 依按鈕算，捲動時直接關閉（算好的位置會失效）。
+ */
+.icon-picker {
+  position: fixed;
+  z-index: 60;
+  width: 336px;
+  max-height: min(60vh, 460px);
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg1);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .55);
+}
+
+.icon-picker-head {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.icon-picker-head input[type="text"] { flex: 1; min-width: 0; }
+
+.icon-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+}
+
+.icon-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  background: var(--bg2);
+  border-color: transparent;
+}
+
+.icon-tile:hover { background: var(--bg3); border-color: var(--border-strong); }
+
+.icon-tile.selected {
+  border-color: var(--accent);
+  background: rgba(238, 77, 45, .16);
+}
+
+.icon-tile img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #f2f2f2;
+  padding: 3px;
+}
+
+.icon-tile-fallback {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px dashed var(--border-strong);
+  color: var(--text3);
+}
+
+/* 名稱一定要留著：縮圖只解決「哪張圖」，工單比對用的是名稱 */
+.icon-tile-name {
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--text2);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-tile-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  background: #5a5a5a;
+  color: #fff;
+}
+
+.icon-picker-empty {
+  padding: 18px 8px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.icon-picker-empty[hidden] { display: none; }
+
+.text-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* 文字框直接用實際輸出的字體，所見即所得 */
+.slot-card input[type="text"] {
+  font-family: ShopeeNotoSansContent, "Microsoft JhengHei", sans-serif;
+}
+
+.counter {
+  font-size: calc(11px * var(--ui-scale));
+  color: var(--text3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter.full { color: var(--accent2); font-weight: 700; }
+
+/* 超過上限：紅色，跟「剛好用滿」的橘色分得開 */
+.counter.over { color: #ff6b63; font-weight: 700; }
+
+/*
+ * 超字的輸入框。5 字是軟性建議不是硬限制，所以不擋輸入，改用紅框 + 光暈警告。
+ * 用 !important 是因為 :hover / :focus 也會設 border-color，
+ * 不蓋掉的話滑鼠移過去或點進去編輯時紅框就消失了——那正是最需要看到它的時候。
+ */
+input[type="text"].over-limit,
+input[type="text"].over-limit:hover,
+input[type="text"].over-limit:focus {
+  border-color: #e5484d !important;
+  box-shadow: 0 0 0 2px rgba(229, 72, 77, .3);
+}
+
+/* ── 匯出區的超字提醒 ── */
+.over-warning {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #ff8a84;
+  background: rgba(229, 72, 77, .12);
+  border: 1px solid rgba(229, 72, 77, .55);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+}
+
+.over-warning[hidden] { display: none; }
+
+.field-label { font-size: 11px; color: var(--text2); }
+
+/*
+ * 上傳後在卡片內就地確認的表單。
+ * 整塊走亮黃色系（不是橘），一眼就看得出「這是待確認的暫存項目」，
+ * 和面板上其他常規操作（橘色）明顯區隔。
+ */
+.inline-upload {
+  margin-top: 8px;
+  padding: 9px;
+  border: 1px solid var(--yellow);
+  border-left: 4px solid var(--yellow);
+  border-radius: var(--radius);
+  background: rgba(255, 200, 61, .12);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inline-upload-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  color: var(--yellow);
+}
+
+/* 黃底區塊裡的欄位加深底色，才不會跟黃色背景糊在一起 */
+.inline-upload input[type="text"],
+.inline-upload select {
+  background: var(--bg1);
+  border-color: #7a6220;
+}
+
+.inline-upload .note { color: #f0d489; }
+
+/*
+ * 型別按鈕：按鈕底色 = 這個型別實際會被渲染成的顏色。
+ * icon 走品牌橘（反白時的顏色），LOGO 走規範灰 #848484（LOGO 永遠不套橘紅，
+ * 未選中時就是這個灰）。等寬各佔一半，視覺上是對等的二選一而不是主/次動作。
+ */
+.type-row {
+  display: flex;
+  gap: 6px;
+}
+
+.type-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  color: #fff;
+  font-weight: 700;
+  white-space: nowrap;
+  padding-left: calc(6px * var(--ui-scale));
+  padding-right: calc(6px * var(--ui-scale));
+}
+
+.type-icon { background: var(--accent); border-color: var(--accent); }
+.type-icon:hover { background: var(--accent2); border-color: var(--accent2); }
+
+/*
+ * LOGO 鈕刻意不直接用規範灰 #848484 當底色：#848484 的亮度和品牌橘 #ee4d2d 幾乎相同
+ *（亮度比 1.02:1），並排時只剩色相在區分，對色弱使用者等於沒有區隔，白字對比也只有 3.7:1。
+ * 改用同色相但更深的 #5a5a5a：白字 6.90:1、和橘鈕拉開到 1.89:1，仍然一眼是「中性灰＝不上色」。
+ */
+.type-logo { background: #5a5a5a; border-color: #8a8a8a; }
+.type-logo:hover { background: #6e6e6e; border-color: #a5a5a5; }
+
+/* 取消是離開動作，靠右且刻意做小，不跟上面兩顆搶 */
+.cancel-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── 字體載入 / 失敗狀態 ── */
+#font-status {
+  max-width: 460px;
+  padding: 28px 32px;
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.font-status-main {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 14px 0 8px;
+}
+
+.font-status-main.error { color: var(--accent2); margin-top: 0; }
+
+.font-status-sub {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.8;
+  margin: 0 0 4px;
+}
+
+#font-status button { margin-top: 14px; }
+
+.spinner {
+  width: 26px;
+  height: 26px;
+  margin: 0 auto;
+  border: 3px solid var(--bg3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 裁切 Modal ── */
+.crop-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .65);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10020;
+}
+
+.crop-modal.open { display: flex; }
+
+.crop-panel {
+  width: min(90vw, 860px);
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.crop-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+/*
+ * 編輯器裡的透明區必須看得見——外擴裁切與去背都會產生透明像素，看不見等於盲切。
+ * 只有這個彈窗用棋盤格，主畫布維持規範的 #848484 純色。
+ */
+.crop-body {
+  /* 四周留白是刻意的：viewMode:0 的裁切框要拖到圖外，得先有地方可以拖 */
+  padding: 26px;
+  background: #111;
+}
+
+/*
+ * 棋盤格要鋪三個地方，缺一不可：
+ *   .crop-body        → 圖片以外的留白區
+ *   .cropper-canvas   → 圖片本身的範圍（透明像素從這裡透出來）
+ *   .cropper-view-box → 裁切框內。這個最重要——CropperJS 會在整個容器上蓋一層黑色
+ *                       遮罩（.cropper-modal），只鋪 body 的話透明區會被蓋成一片深灰，
+ *                       棋盤格等於白做。view-box 在遮罩之上，鋪在這裡才看得到。
+ */
+.crop-body.checker,
+.crop-body .cropper-canvas,
+.crop-body .cropper-view-box {
+  background-color: #2a2a2a;
+  background-image:
+    linear-gradient(45deg, #3c3c3c 25%, transparent 25%, transparent 75%, #3c3c3c 75%),
+    linear-gradient(45deg, #3c3c3c 25%, transparent 25%, transparent 75%, #3c3c3c 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+
+/* 遮罩調淡一點，裁切框外的內容還是要看得出來 */
+.crop-body .cropper-modal { opacity: .5; }
+
+.crop-body img {
+  max-width: 100%;
+  max-height: 52vh;
+  display: block;
+  margin: 0 auto;
+}
+
+.crop-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.crop-hint { font-size: 11px; color: var(--text3); margin-left: auto; }
+
+/* 工具列左側的分組標籤（裁切 / 去背） */
+.crop-group-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text3);
+  width: 34px;
+  flex-shrink: 0;
+}
+
+.crop-slider {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--text2);
+  margin-left: auto;
+}
+
+.crop-slider input[type="range"] {
+  width: 130px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.crop-slider span {
+  min-width: 24px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.crop-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.crop-status {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text2);
+  text-align: right;
+}
+
+/* 停用狀態要看得出來，否則使用者會一直點沒反應的按鈕 */
+button[disabled] {
+  opacity: .4;
+  cursor: default;
+}
+
+button[disabled]:hover {
+  background: var(--bg3);
+  border-color: var(--border);
+}
+
+/* ── 分頁 Bar（瀏覽器風格，滿版置頂） ──
+ *
+ * 「相連」的做法：Bar 底部留一條 4px、顏色 = 作用中頁籤底色的邊，
+ * 作用中頁籤用同一個底色 + 上方圓角，看起來就是從那條底延伸上來的。
+ * 未作用的頁籤用更深的底色，才會明顯退到後面。
+ */
+#tabbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  padding: 8px 12px 0;
+  background: var(--bg0);
+  border-bottom: 4px solid var(--bg1);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#tabbar::-webkit-scrollbar { height: 3px; }
+#tabbar::-webkit-scrollbar-thumb { background: var(--border); }
+
+.banner-tab {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 260px;
+  padding: calc(8px * var(--ui-scale)) calc(12px * var(--ui-scale));
+  font-size: calc(12px * var(--ui-scale));
+  /* 比 Bar 底色再深一階，未作用的頁籤才會真的退到後面 */
+  background: #161616;
+  border: 1px solid #3a3a3a;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.banner-tab:hover { background: #262626; border-color: var(--border-strong); color: var(--text2); }
+
+.banner-tab.active {
+  background: var(--bg1);
+  border-color: var(--border-strong);
+  color: var(--text);
+  font-weight: 700;
+  padding-top: calc(10px * var(--ui-scale)); /* 比未作用的高一點，側面看得出來 */
+}
+
+.banner-tab.active:hover { background: var(--bg1); color: var(--text); }
+
+/* 深色主題下光靠「比較亮」不夠明顯，補一條頂部品牌色 */
+.banner-tab.active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: -1px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 8px 8px 0 0;
+}
+
+.banner-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 顆數／文案摘要比編號次要，壓低對比免得跟主標搶 */
+.banner-tab-meta {
+  color: #6b6b6b;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.banner-tab.active .banner-tab-meta { color: var(--text2); }
+
+.banner-tab-close {
+  flex: 0 0 auto;
+  width: calc(16px * var(--ui-scale));
+  height: calc(16px * var(--ui-scale));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  opacity: .55;
+  font-size: calc(13px * var(--ui-scale));
+  line-height: 1;
+}
+
+.banner-tab-close:hover { opacity: 1; background: rgba(255, 255, 255, .15); }
+
+.banner-tab-add {
+  color: var(--text);
+  font-weight: 700;
+  padding-left: calc(13px * var(--ui-scale));
+  padding-right: calc(13px * var(--ui-scale));
+}
+
+/* 復原/重做是跨分頁的全域操作，放頂列比放在某一條的面板裡合理 */
+#tabbar .tabbar-tools {
+  margin-left: auto;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding-bottom: 6px;
+  flex: 0 0 auto;
+}
+
+/* ── 匯入結果明細（預設收合） ── */
+.import-detail-box {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+}
+
+.import-detail-box > summary {
+  cursor: pointer;
+  padding: 7px 10px;
+  font-size: 11px;
+  color: var(--text2);
+  list-style: none;
+  user-select: none;
+}
+
+.import-detail-box > summary::-webkit-details-marker { display: none; }
+
+/* 自己畫箭頭，展開時轉 90 度 */
+.import-detail-box > summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 12px;
+  color: var(--text3);
+  transition: transform .12s;
+}
+
+.import-detail-box[open] > summary::before { transform: rotate(90deg); }
+.import-detail-box > summary:hover { color: var(--text); background: var(--bg3); }
+
+.import-detail {
+  margin: 0;
+  padding: 0 10px 8px 28px;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--text2);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.import-detail li { margin-bottom: 2px; }
+
+/*
+ * ── 開場對話框（上傳工單）─────────────────────────────
+ *
+ * 版型沿用蝦導播 bn.html 的 workorder-popup：標題 → 說明 → 一塊大的虛線拖放區
+ * → 下方兩顆次要按鈕。差別只有配色改用本專案的橘色主色，
+ * 借來的藍在這支工具裡會是唯一一處藍，看起來像別的程式。
+ */
+#startup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, .72);
+  /* 背後的畫布是高對比的白底彩圖，不模糊的話會一直搶走視線 */
+  backdrop-filter: blur(6px);
+}
+
+#startup-overlay.open { display: flex; }
+
+.startup-card {
+  width: min(440px, 92vw);
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 26px 24px 20px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .55);
+  text-align: center;
+  /* 淡入 + 微微上浮，讓它看起來是「跳出來」而不是「本來就在」 */
+  transform: translateY(8px);
+  opacity: 0;
+  transition: transform .2s ease, opacity .2s ease;
+}
+
+#startup-overlay.open .startup-card { transform: translateY(0); opacity: 1; }
+
+.startup-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.startup-sub {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+
+/* 整塊是 <label>，點哪裡都會開檔案選擇器 */
+.startup-drop {
+  display: block;
+  position: relative;
+  padding: 24px 16px;
+  cursor: pointer;
+  border: 1.6px dashed var(--border-strong);
+  border-radius: 12px;
+  background: var(--bg2);
+  transition: border-color .15s, background .15s, transform .15s;
+}
+
+.startup-drop:hover,
+.startup-drop.dragover {
+  border-color: var(--accent);
+  background: rgba(238, 77, 45, .12);
+  transform: translateY(-1px);
+}
+
+.startup-drop-icon { font-size: 30px; line-height: 1; margin-bottom: 8px; }
+.startup-drop-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.startup-drop-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/*
+ * 真正的 <input type="file"> 鋪滿整塊、完全透明。
+ * 不用 display:none + JS 觸發 click()，因為包在 <label> 裡的原生行為
+ * 連拖放與鍵盤操作都會一起正確運作。
+ */
+.startup-file {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.startup-minor-row { display: flex; gap: 10px; margin-top: 14px; }
+
+.startup-minor {
+  flex: 1;
+  position: relative;
+  padding: 10px 8px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg2);
+  color: var(--text2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  transition: border-color .14s, color .14s, background .14s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.startup-minor:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(238, 77, 45, .12);
+}
+
+/*
+ * 錯誤訊息固定佔一行的高度：不預留的話，出錯時整張卡片會往下跳一截，
+ * 剛好在使用者要再按一次的時候把按鈕移走。
+ */
+.startup-error {
+  min-height: 17px;
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #ff8080;
+}
+
+/*
+ * 「這格套到其他分頁」。獨立一排放在卡片最下面，不擠進已經有四顆按鈕的 icon 列。
+ * 靠右對齊：它是次要動作，不該和左邊的主要操作搶同一條視覺起跑線。
+ */
+.copy-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
