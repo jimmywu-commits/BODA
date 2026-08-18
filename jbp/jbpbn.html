@@ -1268,6 +1268,64 @@ function getTextData() {
   };
 }
 
+/* 外層 BODA 匯入工單會把「工單總覽」B12／B13／B14 寫入此共用資料。
+   ts 用來和曝光資源自己的本機暫存比較：只有較新的工單匯入才覆蓋舊狀態，
+   使用者在曝光資源後續手動修改並儲存後，重新整理不會又被舊工單蓋回去。 */
+var BODA_WORKORDER_OVERVIEW_TEXT_KEY = 'wo_shared_exposure_text_v1';
+function bnNormalizeWorkorderOverviewText(raw) {
+  raw = raw && typeof raw === 'object' ? raw : {};
+  var ts = Number(raw.ts);
+  return {
+    main: raw.main == null ? '' : String(raw.main),
+    sub: raw.sub == null ? '' : String(raw.sub),
+    date: raw.date == null ? '' : String(raw.date),
+    ts: isFinite(ts) && ts > 0 ? ts : 0
+  };
+}
+function bnReadStoredWorkorderOverviewText() {
+  try {
+    var raw = localStorage.getItem(BODA_WORKORDER_OVERVIEW_TEXT_KEY);
+    return raw ? bnNormalizeWorkorderOverviewText(JSON.parse(raw)) : null;
+  } catch (_) { return null; }
+}
+function bnStoreWorkorderOverviewText(raw) {
+  var payload = bnNormalizeWorkorderOverviewText(raw);
+  if (!payload.ts) payload.ts = Date.now();
+  try { localStorage.setItem(BODA_WORKORDER_OVERVIEW_TEXT_KEY, JSON.stringify(payload)); } catch (_) {}
+  return payload;
+}
+function bnApplyWorkorderOverviewText(raw, options) {
+  options = options || {};
+  var payload = bnNormalizeWorkorderOverviewText(raw);
+  if (options.onlyIfNewer && payload.ts && payload.ts <= (Number(options.stateTs) || 0)) return false;
+
+  var fields = [
+    ['txt-main', payload.main],
+    ['txt-sub', payload.sub],
+    ['txt-date', payload.date]
+  ];
+  fields.forEach(function (pair) {
+    var el = document.getElementById(pair[0]);
+    if (el) el.value = pair[1];
+  });
+  /* 三格先一次設好再觸發事件，畫布收到的每次廣播都是完整的一組資料。 */
+  fields.forEach(function (pair) {
+    var el = document.getElementById(pair[0]);
+    if (!el) return;
+    try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+    try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+  });
+  if (typeof bnRefreshLimitAlert === 'function') bnRefreshLimitAlert();
+  try { document.dispatchEvent(new CustomEvent('bn-state-dirty')); } catch (_) {}
+  if (typeof broadcastText === 'function') broadcastText();
+  window._bnLastWorkorderOverviewTextTs = payload.ts || Date.now();
+  return true;
+}
+window._bnApplyStoredWorkorderOverviewText = function (stateTs) {
+  var payload = bnReadStoredWorkorderOverviewText();
+  return payload ? bnApplyWorkorderOverviewText(payload, { onlyIfNewer: true, stateTs: stateTs || 0 }) : false;
+};
+
 /* ════════════════════════════════════════
    色票選色器
 ════════════════════════════════════════ */
@@ -1312,10 +1370,18 @@ function isColorGuardActive(){
   return window._bnFrozenColorData || (window._bnBgColorExportGuardUntil && Date.now() < window._bnBgColorExportGuardUntil);
 }
 var BN_DEFAULT_CANVAS_BG = '#6bc0ec';
+var BODA_SHARED_CANVAS_BG_KEY = 'wo_shared_canvas_bg_v1';
 function isHexCanvasBg(v){ return /^#[0-9a-fA-F]{6}$/.test(v || ''); }
 function isNonDefaultCanvasBg(v){ return isHexCanvasBg(v) && String(v).toLowerCase() !== BN_DEFAULT_CANVAS_BG; }
-function setAuthoritativeCanvasBg(v){
+function readSharedCanvasBg(){
+  try {
+    var v = localStorage.getItem(BODA_SHARED_CANVAS_BG_KEY);
+    return isHexCanvasBg(v) ? v : null;
+  } catch(_) { return null; }
+}
+function setAuthoritativeCanvasBg(v, silent){
   if(!isHexCanvasBg(v)) return;
+  var changed = !isHexCanvasBg(window._bnAuthoritativeCanvasBg) || String(window._bnAuthoritativeCanvasBg).toLowerCase() !== String(v).toLowerCase();
   window._bnAuthoritativeCanvasBg = v;
   window._bnCanvasBgHardLock = v;
   window._bnPersistentCanvasBg = v;
@@ -1324,13 +1390,29 @@ function setAuthoritativeCanvasBg(v){
   if(colorState) colorState.canvasBg = v;
   if(window._bnLastUserColorState) window._bnLastUserColorState.canvasBg = v;
   if(window._bnFrozenColorData) window._bnFrozenColorData.canvasBg = v;
+  try { localStorage.setItem(BODA_SHARED_CANVAS_BG_KEY, v); } catch(_) {}
+  if(changed && !silent && window.parent && window.parent !== window){
+    try { window.parent.postMessage({ type:'wo-bg', color:v }, '*'); } catch(_) {}
+  }
 }
 function getAuthoritativeCanvasBg(){
   if(isHexCanvasBg(window._bnAuthoritativeCanvasBg) && (window._bnUserCanvasBgLocked || isNonDefaultCanvasBg(window._bnAuthoritativeCanvasBg))) return window._bnAuthoritativeCanvasBg;
   return null;
 }
+function applySharedCanvasBg(v, silent){
+  if(!isHexCanvasBg(v)) return false;
+  setAuthoritativeCanvasBg(v, !!silent);
+  colorState.canvasBg = v;
+  var dot = document.getElementById('dot-canvasBg');
+  if(dot) dot.style.background = v;
+  if(typeof broadcastColors === 'function') broadcastColors();
+  return true;
+}
 window._bnSetAuthoritativeCanvasBg = setAuthoritativeCanvasBg;
 window._bnGetAuthoritativeCanvasBg = getAuthoritativeCanvasBg;
+window._bnApplySharedCanvasBg = applySharedCanvasBg;
+var _bnInitialSharedCanvasBg = readSharedCanvasBg();
+if(_bnInitialSharedCanvasBg) setAuthoritativeCanvasBg(_bnInitialSharedCanvasBg, true);
 function getCanvasBgHardLock(){
   var authoritativeCanvasBg = getAuthoritativeCanvasBg();
   if (authoritativeCanvasBg) return authoritativeCanvasBg;
@@ -2423,16 +2505,26 @@ document.addEventListener("DOMContentLoaded",function(){
   /* ── 跟工單生成器（外層 index.html）連動 ─────────────── */
   window.addEventListener('message', function (e) {
     if (e.data && e.data.type === 'wo-level' && e.data.level) applyLevel(e.data.level, false);
+    if (e.data && e.data.type === 'wo-workorder-overview-text') {
+      var overviewPayload = bnStoreWorkorderOverviewText(Object.assign({}, e.data.data || {}, { ts: e.data.ts || Date.now() }));
+      bnApplyWorkorderOverviewText(overviewPayload);
+    }
+    if (e.data && e.data.type === 'wo-bg' && isHexCanvasBg(e.data.color)) {
+      applySharedCanvasBg(e.data.color, true); /* 外層推送，不再回傳造成循環 */
+    }
     if (e.data && e.data.type === 'wo-level-ask' && window.parent && window.parent !== window) {
       try { window.parent.postMessage({ type: 'wo-level', level: currentLevelId }, '*'); } catch (err) {}
     }
   });
-  /* 同一個瀏覽器的其他分頁改了等級也跟著變 */
+  /* 同一個瀏覽器的其他分頁改了等級或共用背景色也跟著變 */
   window.addEventListener('storage', function (e) {
     if (e.key === LEVEL_KEY && e.newValue) applyLevel(readLevel(), false);
+    if (e.key === BODA_SHARED_CANVAS_BG_KEY && isHexCanvasBg(e.newValue)) applySharedCanvasBg(e.newValue, true);
   });
 
   function boot() {
+    var sharedBg = readSharedCanvasBg();
+    if (sharedBg) applySharedCanvasBg(sharedBg, true);
     mountSelect();
     hook();
     paintNote();

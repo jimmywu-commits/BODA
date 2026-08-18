@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /* ================================================
    SearchICON_LOGO.config.css
    搜尋頁 / 搜尋結果頁 ICON：只吃 LOGO（120x120px，<50kb）
@@ -36,42 +35,3 @@
   overflow: hidden !important;
   border-radius: 50% !important;
 }
-=======
-/* ================================================
-   SearchICON_LOGO.config.css
-   搜尋頁 / 搜尋結果頁 ICON：只吃 LOGO（120x120px，<50kb）
-   下載時額外多存一張 84x84（bn-editor-plugin.js 統一處理，檔名 _84x84）
-   ★ 系統設定檔，不要貼 PS 的 CSS 進來
-   ================================================ */
-:root {
-  --canvas-w:  120px;
-  --canvas-h:  120px;
-  --canvas-bg: rgb(42, 171, 166); /* 跟其他版位背景色連動 */
-  --bg-img:    ;
-
-  /* 背景色 → 跟全部版位背景色連動
-     logo範圍 → 跟全部版位 LOGO 連動；本身即整顆圓，放大超過圓底範圍時
-                會被圓形裁切遮色，可用滑鼠拖曳/縮放（見 .html 內 script） */
-  --layers: "背景色|,logo範圍|";
-}
-
-* { transform-origin: 0 0; }
-
-/* 只吃背景色連動，不吃背景圖片：系統的「背景圖調整」功能是對全部版位廣播的，
-   即使沒有顯示調整面板（bn-editor-plugin.js 已排除），background 訊息還是會送到
-   這裡的 .背景色 並嘗試設定 background-image；用 !important 擋掉，
-   確保這顆圓永遠只用純色，不會被背景圖覆蓋。 */
-.背景色 {
-  background-image: none !important;
-}
-
-.logo範圍 {
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  background: transparent !important;
-  opacity: 1 !important;
-  overflow: hidden !important;
-  border-radius: 50% !important;
-}
->>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

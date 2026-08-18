@@ -209,9 +209,13 @@
       return 'bodyText';
     }
     if (layer.type === 'image') {
-      return null;   /* 圖片沒有顏色角色（促標色帶已經改成 rect，走下面那條） */
+      /* 有些版位的整體底圖本身是 image 圖層；沒有上傳圖片時仍會顯示
+         backgroundColor，所以也要能把畫布上的實際底色帶回工具列。 */
+      if (id === 'bg' || fld === 'bgimage' || String(layer.bgField || '').replace(/[0-9]+$/, '').toLowerCase() === 'bgcolor') return 'bg';
+      return null;   /* 其他圖片沒有顏色角色（促標色帶已經改成 rect，走下面那條） */
     }
     if (layer.type === 'rect' || layer.type === 'circle') {
+      if (id === 'bg' || fld === 'bgcolor') return 'bg';
       if (id === 'promoBg' || id === 'promoBar' || fld === 'promocolor') return 'promoBg';
       if (id === 'badgeBg' || fld === 'badgecolor') return 'badgeBg';
       if (id === 'ctaBg' || fld === 'ctacolor') return 'ctaBg';
@@ -331,6 +335,15 @@
     if (!theme) return null;
     var role = themeRoleOf(layer);
     if (!role) return null;
+
+    /* 匯入工單的「背景顏色」同時控制整張畫布與 MSBN D 卡片背景；
+       但副區及其他 MSBN 的卡片背景要保留版位自己的色。
+       theme.bgScope='msbn-d' 時，只允許 msbn_D_* 的 bg 圖層吃 theme.bg。 */
+    if (role === 'bg' && theme.bgScope === 'msbn-d') {
+      var schemaId = String((opts && opts._schemaId) || '');
+      if (!/^msbn_D_/i.test(schemaId)) return null;
+    }
+
     var v = theme[role];
     return (v && String(v).trim()) ? String(v).trim() : null;
   }
@@ -343,6 +356,132 @@
     if (!layer.field) return null;
     if (!fieldPrefix || layer.globalField) return layer.field;
     return fieldPrefix + layer.field;
+  }
+
+  /* A layer can derive its color from another editable color field.
+     D-series cards use this for two linked treatments:
+       - the solid accent is the card background darkened by 20 percentage points in HSL;
+       - translucent horizontal bands use the same derived shade and keep layer.opacity.
+     The source first follows the active global theme color, then the instance data, then fallback. */
+  function clamp01(n) { return Math.max(0, Math.min(1, Number(n))); }
+  function parseCssColor(value) {
+    var s = String(value == null ? '' : value).trim().toLowerCase();
+    if (!s) return null;
+    if (s === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+
+    var m = /^#([0-9a-f]{3,8})$/i.exec(s);
+    if (m) {
+      var h = m[1];
+      if (h.length === 3 || h.length === 4) {
+        return {
+          r: parseInt(h.charAt(0) + h.charAt(0), 16),
+          g: parseInt(h.charAt(1) + h.charAt(1), 16),
+          b: parseInt(h.charAt(2) + h.charAt(2), 16),
+          a: h.length === 4 ? parseInt(h.charAt(3) + h.charAt(3), 16) / 255 : 1
+        };
+      }
+      if (h.length === 6 || h.length === 8) {
+        return {
+          r: parseInt(h.slice(0, 2), 16),
+          g: parseInt(h.slice(2, 4), 16),
+          b: parseInt(h.slice(4, 6), 16),
+          a: h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1
+        };
+      }
+    }
+
+    m = /^rgba?\((.*)\)$/i.exec(s);
+    if (!m) return null;
+    var body = m[1].trim();
+    var alphaPart = null;
+    if (body.indexOf('/') !== -1) {
+      var split = body.split('/');
+      body = split[0].trim();
+      alphaPart = split[1].trim();
+    }
+    var parts = body.split(/[\s,]+/).filter(Boolean);
+    if (parts.length < 3) return null;
+    function channel(v) {
+      return /%$/.test(v) ? Math.round(clamp01(parseFloat(v) / 100) * 255) :
+        Math.max(0, Math.min(255, Math.round(parseFloat(v))));
+    }
+    function alpha(v) {
+      if (v == null || v === '') return 1;
+      return /%$/.test(v) ? clamp01(parseFloat(v) / 100) : clamp01(parseFloat(v));
+    }
+    var a = alphaPart != null ? alpha(alphaPart) : alpha(parts[3]);
+    var out = { r: channel(parts[0]), g: channel(parts[1]), b: channel(parts[2]), a: a };
+    return [out.r, out.g, out.b, out.a].every(function (v) { return isFinite(v); }) ? out : null;
+  }
+  function rgbToHsl(c) {
+    var r = c.r / 255, g = c.g / 255, b = c.b / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h = 0, s = 0, l = (max + min) / 2;
+    var d = max - min;
+    if (d) {
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+      else if (max === g) h = ((b - r) / d + 2) / 6;
+      else h = ((r - g) / d + 4) / 6;
+    }
+    return { h: h, s: s, l: l, a: c.a };
+  }
+  function hslToRgb(c) {
+    var r, g, b;
+    if (c.s === 0) {
+      r = g = b = c.l;
+    } else {
+      function hue2rgb(p, q, t) {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      }
+      var q = c.l < 0.5 ? c.l * (1 + c.s) : c.l + c.s - c.l * c.s;
+      var p = 2 * c.l - q;
+      r = hue2rgb(p, q, c.h + 1 / 3);
+      g = hue2rgb(p, q, c.h);
+      b = hue2rgb(p, q, c.h - 1 / 3);
+    }
+    return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255), a: c.a };
+  }
+  function colorToCss(c) {
+    if (!c) return null;
+    if (c.a != null && c.a < 0.999) {
+      return 'rgba(' + c.r + ', ' + c.g + ', ' + c.b + ', ' +
+        Math.round(c.a * 1000) / 1000 + ')';
+    }
+    return 'rgb(' + c.r + ', ' + c.g + ', ' + c.b + ')';
+  }
+  function transformDerivedColor(source, cfg) {
+    if (!source) return null;
+    var mode = String((cfg && cfg.mode) || 'copy').toLowerCase();
+    if (mode === 'copy' || mode === 'identity') return source;
+    var parsed = parseCssColor(source);
+    if (!parsed) return source;
+    var hsl = rgbToHsl(parsed);
+    var amount = clamp01(cfg && cfg.amount != null ? cfg.amount : 0.2);
+    if (mode === 'darken') hsl.l = clamp01(hsl.l - amount);
+    else if (mode === 'lighten') hsl.l = clamp01(hsl.l + amount);
+    else return source;
+    return colorToCss(hslToRgb(hsl));
+  }
+  function derivedColorOf(layer, data, fieldPrefix, opts) {
+    var cfg = layer && layer.derivedColor;
+    if (!cfg) return null;
+    var source = null;
+    var themeRole = cfg.fromThemeRole;
+    if (themeRole && opts && opts.theme && opts.theme[themeRole] && String(opts.theme[themeRole]).trim()) {
+      source = String(opts.theme[themeRole]).trim();
+    }
+    if (!source && cfg.fromField) {
+      var sourceKey = resolveFieldKey({ field: cfg.fromField, globalField: !!cfg.globalField }, fieldPrefix);
+      if (sourceKey && data && data[sourceKey] && String(data[sourceKey]).trim()) source = String(data[sourceKey]).trim();
+    }
+    if (!source && cfg.fallback) source = cfg.fallback;
+    return transformDerivedColor(source, cfg);
   }
 
 
@@ -588,6 +727,12 @@
        C-1-4 中間的 3C 家電圖）。這種圖不建立欄位、不接受拖放，也不提供
        滾輪縮放或滑鼠拖曳；永遠只畫 block.json 的 defaultSrc。 */
     var fieldKey = layer.fixedImage ? null : resolveFieldKey(layer, fieldPrefix);
+    /* 匯入工單畫布可直接點顏色圖層叫出色盤。
+       圓形色塊預設可點；其他形狀只有明確標 canvasColorEditable:true 才開啟，
+       避免一般底色矩形擋住底下的圖片拖放區。 */
+    var directColorEditable = !!(opts && opts.editable && fieldKey &&
+      (layer.type === 'circle' || layer.canvasColorEditable));
+    var renderedColorValue = null;
 
     if (layer.type === 'image') {
       var rawUrl = layer.fixedImage ? null : (fieldKey ? data[fieldKey] : null);
@@ -612,7 +757,8 @@
          現在改成圖片框讓人可以把圖拖進去，但那個顏色欄位要留著
          （不然使用者在匯入頁改卡片顏色時，這一塊會變成改不到的死白）。 */
       var bgFieldKey = layer.bgField ? resolveFieldKey({ field: layer.bgField }, fieldPrefix) : null;
-      var imgBgColor = themeColorOf(layer, opts)
+      var imgBgColor = derivedColorOf(layer, data, fieldPrefix, opts)
+        || themeColorOf(layer, opts)
         || (bgFieldKey && data[bgFieldKey])
         || layer.backgroundColor;
       /* 有 bgField 的圖片框，本身就是設計稿上一塊看得到的色塊（曝品範圍就是這種），
@@ -672,19 +818,25 @@
         }
       }
     } else if (layer.type === 'rect') {
-      var rectColor = (fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor;
+      var rectColor = derivedColorOf(layer, data, fieldPrefix, opts)
+        || ((fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor);
       rectColor = themeColorOf(layer, opts) || rectColor; /* 全站統一顏色（促標底／CTA底…）優先 */
+      renderedColorValue = rectColor || '';
       if (rectColor) style.push('background-color:' + rectColor);
       if (layer.backgroundImage) style.push('background-image:' + layer.backgroundImage); /* 漸層等裝飾底 */
       if (layer.border) style.push('border:' + layer.border);
       if (layer.opacity != null) style.push('opacity:' + layer.opacity);
-      /* 色塊沒有任何互動，不該擋住滑鼠——底下如果是圖片框，還要能把圖片拖進去 */
-      style.push('pointer-events:none');
+      /* 一般色塊不擋滑鼠；明確開啟直接換色的色塊才接收點擊。 */
+      style.push('pointer-events:' + (directColorEditable ? 'auto' : 'none'));
+      if (directColorEditable) style.push('cursor:pointer');
     } else if (layer.type === 'circle') {
-      style.push('pointer-events:none');
+      style.push('pointer-events:' + (directColorEditable ? 'auto' : 'none'));
+      if (directColorEditable) style.push('cursor:pointer');
       if (!isCtaBgLayer(layer)) style.push('border-radius:50%'); /* CTA 底色塊上面已經套過統一圓角了 */
-      var color = (fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor;
+      var color = derivedColorOf(layer, data, fieldPrefix, opts)
+        || ((fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor);
       color = themeColorOf(layer, opts) || color; /* 全站統一顏色（圓標底／CTA底…）優先 */
+      renderedColorValue = color || '';
       if (color) style.push('background-color:' + color);
       if (layer.border) style.push('border:' + layer.border);
     } else if (layer.type === 'text') {
@@ -742,6 +894,12 @@
       style.push('outline:none');
       style.push('cursor:text');
       attrs = ' contenteditable="true" spellcheck="false" data-field="' + esc(fieldKey) + '"';
+    }
+    if (directColorEditable) {
+      attrs += ' data-color-field="' + esc(fieldKey) + '"' +
+        ' data-color-label="' + esc(layer.fieldLabel || '色塊') + '"' +
+        ' data-color-value="' + esc(renderedColorValue || '') + '"' +
+        ' title="點一下直接換色"';
     }
 
     /* 圖片範圍一律標上自己的欄位 key，不管裡面現在有沒有圖。
@@ -868,28 +1026,35 @@
 
   function buildRender(schema) {
     return function (data, opts) {
+      /* 每次渲染都把目前 schema id 帶進 opts，讓顏色覆寫能判斷「這是不是 MSBN D」。
+         淺複製避免修改呼叫端共用的 options 物件。 */
+      var renderOpts = {};
+      Object.keys(opts || {}).forEach(function (k) { renderOpts[k] = opts[k]; });
+      renderOpts._schemaId = schema.id;
+
       /* 外層容器本身是「整個版位的畫布邊界」，不是卡片，不需要圓角，維持直角矩形；
          真正看起來像卡片的圓角，是靠版位自己的「背景」「促標底」這些圖層各自的border-radius做出來的 */
       var overflow = schema.cornerRadius ? 'hidden' : 'visible';
       /* 整個版位的底色（卡片與卡片之間、四周留白露出來的那個顏色）。
-         匯入工單頁面可以用 opts.theme.bg 統一換掉（預設會去吃「曝光資源」目前的背景色），
-         沒有給就沿用原本的暖色佔位底 #eee2cf。 */
-      var canvasBg = (opts && opts.theme && opts.theme.bg && String(opts.theme.bg).trim()) || '#eee2cf';
+         canvasBg 專門控制畫布；舊呼叫端只有 theme.bg 時仍相容。 */
+      var canvasBg = (renderOpts.theme && renderOpts.theme.canvasBg && String(renderOpts.theme.canvasBg).trim())
+        || (renderOpts.theme && renderOpts.theme.bg && String(renderOpts.theme.bg).trim())
+        || '#eee2cf';
       var html = '<div class="blk-' + schema.id + '" data-bn-schema-id="' + esc(schema.id) +
         '" style="position:relative;width:' + schema.width + 'px;height:' + schema.height +
         'px;overflow:' + overflow + ';background:' + canvasBg + ';font-family:sans-serif;">';
 
       /* 沒填的代言人／贈品空間讓給商品圖（範圍變大，被讓出來的圖層不畫） */
-      var absorb = computeAbsorb(schema, data, opts);
+      var absorb = computeAbsorb(schema, data, renderOpts);
       (schema.layers || []).forEach(function (layer) {
         if (absorb.skip.indexOf(layer) !== -1) return;
         var ti = absorb.targets.indexOf(layer);
         if (ti !== -1) {
           var grown = layerWithBox(layer, absorb.boxes[ti]);
-          html += renderLayer(grown, grown.left, grown.top, data, null, opts);
+          html += renderLayer(grown, grown.left, grown.top, data, null, renderOpts);
           return;
         }
-        html += renderLayer(layer, layer.left, layer.top, data, null, opts);
+        html += renderLayer(layer, layer.left, layer.top, data, null, renderOpts);
       });
 
       (schema.repeats || []).forEach(function (repeat) {
@@ -897,7 +1062,7 @@
           (repeat.layers || []).forEach(function (layer) {
             var relLeft = layer.left - repeat.templateBaseLeft;
             var left = inst.baseLeft + relLeft;
-            html += renderLayer(layer, left, layer.top, data, inst.key, opts);
+            html += renderLayer(layer, left, layer.top, data, inst.key, renderOpts);
           });
         });
       });
@@ -931,7 +1096,11 @@
     (schema.layers || []).forEach(function (layer) {
       if (layer.hidden) return; /* 不畫出來的圖層，欄位面板也不要列 */
       if (layer.fixedImage) return; /* 版型內建固定圖不提供替換／縮放欄位 */
-      if (layer.field) addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength, layer.designText);
+      if (layer.field) {
+        var directType = fieldType(layer);
+        var directDefault = directType === 'color' && layer.default == null ? layer.backgroundColor : layer.default;
+        addField(layer.field, layer.fieldLabel || layer.field, directType, directDefault, layer.maxLength, layer.designText);
+      }
       /* 圖片框如果同時兼任一塊底色（曝品範圍），那個顏色欄位也要列出來可以改 */
       if (layer.bgField) addField(layer.bgField, layer.bgFieldLabel || '底色', 'color', layer.backgroundColor);
     });
@@ -940,11 +1109,13 @@
       repeat.instances.forEach(function (inst) {
         (repeat.layers || []).forEach(function (layer) {
           if (!layer.field) return;
+          var repeatType = fieldType(layer);
+          var repeatDefault = repeatType === 'color' && layer.default == null ? layer.backgroundColor : layer.default;
           if (layer.globalField) {
-            addField(layer.field, layer.fieldLabel || layer.field, fieldType(layer), layer.default, layer.maxLength, layer.designText);
+            addField(layer.field, layer.fieldLabel || layer.field, repeatType, repeatDefault, layer.maxLength, layer.designText);
           } else {
             addField(inst.key + layer.field, (inst.label || inst.key) + '・' + (layer.fieldLabel || layer.field),
-              fieldType(layer), layer.default, layer.maxLength, layer.designText);
+              repeatType, repeatDefault, layer.maxLength, layer.designText);
           }
         });
       });
@@ -1008,9 +1179,18 @@
       var p = priorityOf(l, role);
       if (out[role] && pri[role] >= p) return;
       var color = null;
-      if (l.type === 'text') color = l.color;
-      else if (l.field && data && data[l.field]) color = data[l.field];
-      else color = l.backgroundColor;
+      if (l.type === 'text') {
+        color = l.color;
+      } else if (l.type === 'image') {
+        /* image 欄位的 data 是圖片網址，不能拿來當色號；有 bgField 時取它，
+           否則取圖片框本身正在顯示的 backgroundColor。 */
+        if (l.bgField && data && data[l.bgField]) color = data[l.bgField];
+        else color = l.backgroundColor;
+      } else if (l.field && data && data[l.field]) {
+        color = data[l.field];
+      } else {
+        color = l.backgroundColor;
+      }
       if (color) { out[role] = color; pri[role] = p; }
     });
     return out;

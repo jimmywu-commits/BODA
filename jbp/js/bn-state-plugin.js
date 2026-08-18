@@ -684,6 +684,12 @@
     catch(e){ console.warn('[BNState] localStorage light autoSave 失敗',e); }
   }
 
+  function applyImportedOverviewAfterState(stateTs){
+    if(typeof global._bnApplyStoredWorkorderOverviewText !== 'function') return;
+    try{ global._bnApplyStoredWorkorderOverviewText(Number(stateTs)||0); }
+    catch(e){ console.warn('[BNState] 工單總覽文案同步失敗', e); }
+  }
+
   function autoLoad(){
     var localFull = readLocalState(STORAGE_KEY + '_full');
     var localLight = readLocalState(STORAGE_KEY);
@@ -696,18 +702,32 @@
       if(full){
         full = mergeLightIntoFull(full, localLight);
         applyState(full);
+        applyImportedOverviewAfterState(full.ts);
         console.log('[BNState] 完整本機暫存載入完成，來源時間:', new Date(full.ts || Date.now()).toLocaleString());
         return;
       }
       if(localLight){
         applyState(localLight);
+        applyImportedOverviewAfterState(localLight.ts);
         console.log('[BNState] 輕量本機暫存載入完成，來源時間:', new Date(localLight.ts || Date.now()).toLocaleString());
+        return;
       }
+      applyImportedOverviewAfterState(0);
     }).catch(function(e){
       console.warn('[BNState] IndexedDB autoLoad 失敗，改用 localStorage', e);
       var full = getNewestState([localFull], true);
-      if(full){ applyState(mergeLightIntoFull(full, localLight)); return; }
-      if(localLight) applyState(localLight);
+      if(full){
+        full = mergeLightIntoFull(full, localLight);
+        applyState(full);
+        applyImportedOverviewAfterState(full.ts);
+        return;
+      }
+      if(localLight){
+        applyState(localLight);
+        applyImportedOverviewAfterState(localLight.ts);
+        return;
+      }
+      applyImportedOverviewAfterState(0);
     });
   }
 

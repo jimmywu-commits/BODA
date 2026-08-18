@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /* ================================================
    SearchICON_TEXT.css
    搜尋頁 / 搜尋結果頁 ICON：純文字（120x120px）
@@ -41,47 +40,3 @@
   box-sizing: border-box;
   z-index: 7;
 }
-=======
-/* ================================================
-   SearchICON_TEXT.css
-   搜尋頁 / 搜尋結果頁 ICON：純文字（120x120px）
-   ================================================ */
-.背景色 {
-  background-color: rgb(42, 171, 166);
-  border-radius: 50%;
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: 120px;
-  height: 120px;
-  z-index: 1;
-}
-
-/* 遮色範圍＝整顆圓底畫布（120x120，圓形 overflow:hidden），
-   文字用 padding 保持視覺置中在較窄的安全區內；
-   已鎖 2 字元上限，正常情況不會貼到圓邊
-
-   垂直置中改用 line-height（= padding 內的可視高度 90px）而不是
-   flex align-items:center：flex 置中文字在畫布上看起來是對的，
-   但 html2canvas 截圖時的文字基準線算法跟瀏覽器即時渲染不一致，
-   實際下載出來會偏上；line-height 置中在截圖時才會跟畫布上看到的
-   一致。 */
-.ICON獨立文案 {
-  font-size: 50px;
-  font-family: "ShopeeNotoSans (content)";
-  color: rgb(255, 255, 255);
-  font-weight: bold;
-  line-height: 90px;
-  text-align: center;
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: 120px;
-  height: 120px;
-  padding: 15px 8px;
-  border-radius: 50%;
-  overflow: hidden;
-  box-sizing: border-box;
-  z-index: 7;
-}
->>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1

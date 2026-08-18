@@ -163,7 +163,14 @@
       "width": 190.0,
       "height": 385.0,
       "backgroundColor": "rgb(236, 155, 31)",
-      "borderRadius": "15px 0px 0px 0px"
+      "borderRadius": "15px 0px 0px 0px",
+      "derivedColor": {
+        "fromField": "bgColor",
+        "fromThemeRole": "bg",
+        "mode": "darken",
+        "amount": 0.2,
+        "fallback": "rgb(246, 208, 149)"
+      }
     },
     {
       "zIndex": 1479,

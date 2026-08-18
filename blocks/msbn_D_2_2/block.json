@@ -426,7 +426,14 @@
       "width": 1160.0,
       "height": 80.0,
       "backgroundColor": "rgb(246, 208, 149)",
-      "opacity": 0.502
+      "opacity": 0.502,
+      "derivedColor": {
+        "fromField": "bgColor",
+        "fromThemeRole": "bg",
+        "mode": "darken",
+        "fallback": "rgb(246, 208, 149)",
+        "amount": 0.2
+      }
     },
     {
       "zIndex": 1597,
@@ -436,7 +443,14 @@
       "width": 1160.0,
       "height": 80.0,
       "backgroundColor": "rgb(246, 208, 149)",
-      "opacity": 0.502
+      "opacity": 0.502,
+      "derivedColor": {
+        "fromField": "bgColor",
+        "fromThemeRole": "bg",
+        "mode": "darken",
+        "fallback": "rgb(246, 208, 149)",
+        "amount": 0.2
+      }
     },
     {
       "zIndex": 1595,
@@ -446,7 +460,14 @@
       "width": 1160.0,
       "height": 80.0,
       "backgroundColor": "rgb(246, 208, 149)",
-      "opacity": 0.502
+      "opacity": 0.502,
+      "derivedColor": {
+        "fromField": "bgColor",
+        "fromThemeRole": "bg",
+        "mode": "darken",
+        "fallback": "rgb(246, 208, 149)",
+        "amount": 0.2
+      }
     },
     {
       "zIndex": 1594,
@@ -455,7 +476,14 @@
       "top": 0.0,
       "width": 190.0,
       "height": 400.0,
-      "backgroundColor": "rgb(236, 155, 31)"
+      "backgroundColor": "rgb(236, 155, 31)",
+      "derivedColor": {
+        "fromField": "bgColor",
+        "fromThemeRole": "bg",
+        "mode": "darken",
+        "amount": 0.2,
+        "fallback": "rgb(246, 208, 149)"
+      }
     },
     {
       "zIndex": 1593,

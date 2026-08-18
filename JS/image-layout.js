@@ -43,6 +43,19 @@
   /* 每張圖被拖曳過的位移，跟權重一樣用同一組識別碼記住：{ groupKey: { index: {x,y} } } */
   var offsetStore = {};
 
+  /* 匯入工單頁會在頁籤切換、統一換色、文字輸入時大量重建 DOM；另外畫布本身
+     還會用 transform 縮放。某些瀏覽器在圖片載入時該頁仍是 display:none，
+     clientWidth/clientHeight 會是 0，第一次排版就直接略過。
+     ResizeObserver 會在圖片框真正有尺寸時再補做一次，避免看得到圖卻無法縮放／拖曳。 */
+  var groupResizeObserver = typeof ResizeObserver !== 'undefined'
+    ? new ResizeObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var group = entry.target;
+          if (group && group.isConnected) applyLayout(group);
+        });
+      })
+    : null;
+
   function getGroupKey(group) {
     var el = group;
     while (el && !el.id) el = el.parentElement;
@@ -120,7 +133,6 @@
       img.style.maxWidth = 'none';   /* 不讓任何外部樣式把放大後的圖片又壓回範圍內 */
       img.style.maxHeight = 'none';
       applyOffset(img, groupKey, i); /* 重新排版後，之前拖過的位移要留著 */
-<<<<<<< HEAD
     });
   }
 
@@ -215,8 +227,6 @@
         seen[sourceField] = true;
         applyAspectSwitch(scope, sourceField);
       });
-=======
->>>>>>> d0c1f49ca454b8cb7adfad3de1a2ba8ba35521b1
     });
   }
 
@@ -303,6 +313,10 @@
 
   function processGroup(group) {
     layoutWhenReady(group); /* 每次都要重新排版一次(套用之前記住的權重) */
+    if (groupResizeObserver && !group._bnImgResizeObserved) {
+      group._bnImgResizeObserved = true;
+      groupResizeObserver.observe(group);
+    }
     if (group._bnImgLayoutBound) return; /* 滾輪/拖曳事件是綁在<img>本身上，重新渲染出的新<img>節點還是要重新綁一次 */
     group._bnImgLayoutBound = true;
     enableImageInteractions(group);
@@ -333,6 +347,11 @@
   function start() {
     observer.observe(document.body, { childList: true, subtree: true });
     scanAndProcess(document.body);
+    /* ResizeObserver 不支援時的退路；也處理瀏覽器縮放／視窗尺寸改變。 */
+    window.addEventListener('resize', function () { scanAndProcess(document.body); });
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) scanAndProcess(document.body);
+    });
   }
 
   if (document.readyState === 'loading') {
