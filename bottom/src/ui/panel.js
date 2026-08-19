@@ -264,6 +264,32 @@
       ])
     );
 
+    /* 嵌入 BODA 時，可以直接取用主工具「匯入工單」最近選過的同一份 xlsx。
+       真正解析仍呼叫上面的 importWorkOrderFile，不複製任何工單格式判斷。 */
+    if (window.BottomParentBridge && window.BottomParentBridge.isEmbedded()) {
+      node.appendChild(
+        el("button", {
+          class: "block",
+          style: "margin-top:6px;",
+          title: "把主工具『匯入工單』最近選過的 xlsx 同步到吸底工具",
+          onClick: function () {
+            ui.importMessage = "正在向主工具取得最近匯入的工單…";
+            rerender();
+            window.BottomParentBridge.requestLatestWorkOrder().then(function (result) {
+              if (!result || result.status === "empty") {
+                ui.importMessage = (result && result.message) || "主工具目前尚未匯入 xlsx；也可以直接使用上方按鈕選檔。";
+                rerender();
+              }
+            }).catch(function (err) {
+              ui.importMessage = "同步主工具工單失敗：" + (err && err.message ? err.message : err);
+              rerender();
+            });
+          },
+        }, ["↻ 同步主工具最近匯入的工單"])
+      );
+      node.appendChild(note("主工具匯入 xlsx 後，第一次切到吸底也會自動帶入；這裡仍可獨立選擇其他工單。"));
+    }
+
     // ── 載入進度存檔 ──
     var projectInput = el("input", { type: "file", accept: ".json", style: "display:none;" });
     projectInput.addEventListener("change", function (e) {

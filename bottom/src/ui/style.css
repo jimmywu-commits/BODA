@@ -64,6 +64,49 @@ html, body {
   display: flex;
 }
 
+
+/* ── 嵌入 BODA 工單生成器 ──
+ * 父頁的「素材庫／副區／MSBN／吸底」標題列保留在左上方；iframe 本身鋪滿生成器。
+ * 用 CSS Grid + display:contents 把原本在右邊的 #panel 移到左欄，#tabbar 只佔右側，
+ * 因此右側畫布不再被 380px 面板擠壓，並且能從最上方開始使用完整高度。
+ */
+html.embed-generator #app {
+  display: grid;
+  grid-template-columns: var(--host-panel-width, 340px) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+html.embed-generator #workspace { display: contents; }
+
+html.embed-generator #panel {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  order: initial;
+  width: auto;
+  min-width: 0;
+  flex: none;
+  padding-top: var(--host-panel-top, 112px);
+  border-left: 0;
+  border-right: 1px solid var(--border);
+}
+
+html.embed-generator #tabbar {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+html.embed-generator #stage-wrap {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 左欄寬度較原獨立版窄，微調內距但不縮小可點擊區與字級。 */
+html.embed-generator #panel-scroll { padding: 12px; }
+html.embed-generator #panel-footer { padding: 10px 12px; }
+
 /* ── 右側控制面板 ── */
 #panel {
   width: 380px;

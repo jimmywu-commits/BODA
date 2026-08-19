@@ -39,12 +39,15 @@
 
     var panel = window.PanelUI.mount(document.getElementById("panel"), window.store, window.Actions);
 
-    /*
-     * 開場的「上傳工單」對話框放在最後，而且是在字體閘門通過之後才會走到這裡——
-     * 所以它不需要自己再預載一次字體，也不可能出現字體閃爍。
-     * 它拿到的是面板交出來的匯入入口，走的是跟面板按鈕完全相同的那條路。
-     */
-    window.StartupDialog.mount(panel);
+    /* 嵌入主工具時先啟動 postMessage 橋；父頁送來的 xlsx 仍走 panel.importWorkOrder，
+       因此和手動匯入共用完全相同的解析、核對訊息與 undo 行為。 */
+    if (window.BottomParentBridge) window.BottomParentBridge.mount(panel);
+
+    /* 單獨開啟 bottom/index.html 時保留原本的開場工單對話框；嵌入 BODA 時工具列
+       已經直接放在左欄，並會自動接主工具工單，不再用 Modal 擋住畫布。 */
+    if (!window.BottomParentBridge || !window.BottomParentBridge.isEmbedded()) {
+      window.StartupDialog.mount(panel);
+    }
   }
 
   function showFailure(err) {

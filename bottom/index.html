@@ -4,6 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>吸底圖便捷編輯器</title>
+  <script>
+    (function () {
+      try {
+        if (new URLSearchParams(location.search).get('embed') === 'generator') {
+          document.documentElement.classList.add('embed-generator');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="src/ui/style.css" />
   <script src="https://unpkg.com/konva@9/konva.min.js"></script>
   <script src="https://unpkg.com/jszip@3/dist/jszip.min.js"></script>
@@ -14,7 +23,7 @@
     <div id="tabbar"></div>
 
     <div id="workspace">
-      <!-- 畫布在左、操作面板在右（面板靠右邊比較好操作） -->
+      <!-- 單獨開啟時維持畫布左／面板右；嵌入 BODA 時由 CSS 改為面板左／畫布右。 -->
       <main id="stage-wrap">
         <!-- 依規範：字體 100% 載入成功前不繪製畫布，避免字體閃爍或用錯字體匯出 -->
         <div id="font-status">
@@ -54,6 +63,8 @@
   <script src="src/ui/zoomBar.js"></script>
   <script src="src/ui/iconPicker.js"></script>
   <script src="src/ui/panel.js"></script>
+  <!-- 主工具橋接沿用 PanelUI 的同一套匯入入口，不另寫第二套解析邏輯。 -->
+  <script src="src/integration/parentBridge.js"></script>
   <!-- 開場對話框要用 PanelUI.mount() 交回來的匯入入口，所以排在 panel 之後 -->
   <script src="src/ui/startupDialog.js"></script>
   <script src="src/app.js"></script>

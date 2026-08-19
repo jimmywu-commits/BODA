@@ -38,7 +38,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .view{display:none;height:100%;overflow:auto;}
 .view.active{display:block;}
 #view-generator.active{display:flex;}
-#app{display:flex;height:100%;width:100%;}
+#app{display:flex;height:100%;width:100%;position:relative;}
 
 /* ══════════════ 首頁 ══════════════ */
 #view-home.active{display:flex;align-items:center;justify-content:center;}
@@ -366,6 +366,30 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 
 /* ══════════════ 右：畫布 ══════════════ */
 #canvas-area{flex:1;overflow:auto;padding:28px 32px;display:flex;flex-direction:column;gap:16px;}
+/* 「吸底」頁簽使用同層 bottom/index.html，但不再把整套工具塞在右側畫布裡。
+   iframe 會覆蓋整個工單生成器；bottom 的嵌入模式把操作面板放到左欄、畫布放右欄。
+   父層素材庫的標題與頁簽保留在 iframe 上方，因此操作工具會真正出現在「吸底」頁簽下方。 */
+#canvas-area.bottom-tool-mode{overflow:hidden;background:#1e1e1e;}
+#canvas-area.bottom-tool-mode > *{visibility:hidden!important;pointer-events:none!important;}
+#bottom-tool-wrap{display:none;position:absolute;inset:0;z-index:40;min-width:0;min-height:0;background:#1e1e1e;}
+#bottom-tool-wrap.active{display:block;}
+#bottom-tool-frame{width:100%;height:100%;border:0;display:block;background:#1e1e1e;}
+#bottom-tool-fallback{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;background:var(--bg);color:var(--ink2);}
+#bottom-tool-wrap.missing #bottom-tool-fallback{display:flex;}
+#bottom-tool-wrap.missing #bottom-tool-frame{display:none;}
+#bottom-tool-fallback .btf-icon{font-size:42px;}
+#bottom-tool-fallback .btf-title{font-size:16px;font-weight:800;color:var(--ink);}
+#bottom-tool-fallback .btf-desc{font-size:12px;line-height:1.8;}
+#bottom-tool-fallback b{color:var(--teal-dark);}
+/* iframe 在最上層，但素材庫標題與頁簽要浮在它上面；其餘左欄內容由 bottom 面板取代。 */
+#palette.sticky-tool-mode{background:transparent;border-right-color:transparent;}
+#palette.sticky-tool-mode #palette-head,
+#palette.sticky-tool-mode #palette-tabs{position:relative;z-index:60;}
+#palette.sticky-tool-mode #palette-head{background:var(--panel);}
+#palette.sticky-tool-mode #palette-tabs{background:var(--bg);}
+#palette.sticky-tool-mode #palette-level,#palette.sticky-tool-mode #palette-footer{display:none;}
+#palette.sticky-tool-mode #palette-scroll{visibility:hidden;pointer-events:none;padding:0;}
+
 #toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 #toolbar h2{font-size:15px;font-weight:800;margin-right:auto;}
 .btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);
@@ -598,6 +622,16 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
           <div id="stage"><div id="row"></div></div>
           <div id="footnote">
             本機暫存已開啟：排版內容會自動存在這台瀏覽器裡，重新整理頁面不會消失。「下載試算表／JSON」會依畫布上目前放的每一格圖片，帶出對應的欄位（促標／LOGO圖／商品／品名／警語／圓標／CTA）跟字數上限。
+          </div>
+        </div>
+
+        <div id="bottom-tool-wrap" aria-hidden="true">
+          <iframe id="bottom-tool-frame" title="吸底圖便捷編輯器" allow="clipboard-write; clipboard-read"></iframe>
+          <div id="bottom-tool-fallback">
+            <div class="btf-icon">📌</div>
+            <div class="btf-title">找不到吸底工具</div>
+            <div class="btf-desc">請確認 <b>bottom/index.html</b> 與整個 <b>bottom/</b> 資料夾，
+              都放在主程式 index.html 的同一層。</div>
           </div>
         </div>
 
@@ -8094,6 +8128,9 @@ function handleImportFile(file) {
           afterImportParsed(parseImportOwnJSON(parsed), { source: 'file' });
         }
       } else {
+        /* 同一份工單也交給吸底工具原本的 WorkOrderImporter；如果使用者尚未開啟
+           「吸底」頁簽，先暫存在記憶體，第一次開啟時再自動帶入。 */
+        rememberBottomWorkOrder(file.name, reader.result);
         parseImportXlsx(reader.result).then(function (raw) { afterImportParsed(raw, { source: 'file' }); }).catch(function (err) {
           importLog.innerHTML = '<span class="err">解析失敗：' + esc(err.message) + '</span>';
         });
@@ -8407,23 +8444,186 @@ function famWidth(fam) { return FAMILIES[fam] ? FAMILIES[fam].width : 300; }
 ════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════
    素材庫頁簽（副區 / MSBN / 吸底）
-   只切換左側選單顯示的內容，右邊畫布完全不動。
-   「副區」= 原本的素材庫；MSBN、吸底的選單內容之後再補，
-   先用佔位畫面呈現，切換機制已經就緒，之後只要把
-   renderPalette() 裡對應分支換成實際內容即可。
+   「副區」與「MSBN」切換左側素材並維持原畫布；「吸底」則載入同層 bottom/index.html，
+   以 iframe 隔離完整工具，三個頁簽可直接來回切換。
 ══════════════════════════════════════════════════ */
 var currentPaletteTab = 'subarea'; /* 'subarea' | 'msbn' | 'sticky' */
 var PALETTE_TAB_INFO = {
   msbn: { label: 'MSBN', icon: '🧱' },
   sticky: { label: '吸底', icon: '📌' }
 };
+var bottomToolLoaded = false;
+var bottomBridgeReady = false;
+var latestBottomWorkOrder = null;
+var bottomWorkOrderVersion = 0;
+var bottomLastAutoSentVersion = 0;
+
+/* 主工具最近一次匯入的 xlsx 會保留在記憶體，切到吸底時交給 bottom 原本的
+   WorkOrderImporter 解析。只保留目前分頁生命週期，不把大型檔案塞進 localStorage。 */
+function rememberBottomWorkOrder(name, arrayBuffer) {
+  if (!arrayBuffer || !/\.(xlsx|xlsm)$/i.test(String(name || ''))) return;
+  try {
+    latestBottomWorkOrder = {
+      name: name || '工單.xlsx',
+      buffer: arrayBuffer.slice ? arrayBuffer.slice(0) : arrayBuffer,
+      savedAt: Date.now(),
+      version: ++bottomWorkOrderVersion
+    };
+  } catch (e) {
+    latestBottomWorkOrder = null;
+    return;
+  }
+  if (bottomBridgeReady && currentPaletteTab === 'sticky') sendLatestWorkOrderToBottom('main-import');
+}
+
+function postToBottom(message, transfer) {
+  var frame = document.getElementById('bottom-tool-frame');
+  if (!frame || !frame.contentWindow) return false;
+  try {
+    frame.contentWindow.postMessage(message, '*', transfer || []);
+    return true;
+  } catch (e) {
+    try { frame.contentWindow.postMessage(message, '*'); return true; }
+    catch (e2) { return false; }
+  }
+}
+
+function sendBottomHostLayout() {
+  var app = document.querySelector('#view-generator #app');
+  var palette = document.getElementById('palette');
+  var scroll = document.getElementById('palette-scroll');
+  if (!app || !palette || !scroll) return;
+  var appRect = app.getBoundingClientRect();
+  var scrollRect = scroll.getBoundingClientRect();
+  postToBottom({
+    source: 'BODA_PARENT',
+    type: 'HOST_LAYOUT',
+    panelTop: Math.max(0, Math.round(scrollRect.top - appRect.top)),
+    panelWidth: Math.max(280, Math.round(palette.getBoundingClientRect().width || 340))
+  });
+}
+
+function sendLatestWorkOrderToBottom(reason, requestId) {
+  if (!latestBottomWorkOrder || !latestBottomWorkOrder.buffer) {
+    postToBottom({
+      source: 'BODA_PARENT', type: 'NO_WORKORDER',
+      requestId: requestId || '',
+      message: '主工具目前尚未匯入含吸底資料的 xlsx 工單。'
+    });
+    return false;
+  }
+  var isManual = !!requestId || reason === 'manual-request';
+  /* 自動同步每份工單只做一次，避免切離／切回吸底時把使用者已編輯的內容重置。
+     面板上的「同步主工具最近匯入的工單」屬於手動動作，不受此限制。 */
+  if (!isManual && latestBottomWorkOrder.version <= bottomLastAutoSentVersion) return false;
+  var copy = latestBottomWorkOrder.buffer.slice(0);
+  var sent = postToBottom({
+    source: 'BODA_PARENT', type: 'WORKORDER_FILE',
+    requestId: requestId || '',
+    reason: reason || 'sync',
+    name: latestBottomWorkOrder.name,
+    buffer: copy
+  }, [copy]);
+  if (sent && !isManual) bottomLastAutoSentVersion = latestBottomWorkOrder.version;
+  return sent;
+}
+
+/* bottom/index.html 是一套完整的吸底編輯器，仍用 iframe 隔離 CSS、Konva 與狀態。
+   嵌入模式由 bottom 自己把面板排到左側，父頁只保留素材庫標題與三個頁簽。 */
+function ensureBottomToolLoaded(forceReload) {
+  var frame = document.getElementById('bottom-tool-frame');
+  var wrap = document.getElementById('bottom-tool-wrap');
+  if (!frame || !wrap) return;
+
+  if (forceReload) {
+    bottomToolLoaded = false;
+    bottomBridgeReady = false;
+    bottomLastAutoSentVersion = 0;
+    wrap.classList.remove('missing');
+    frame.removeAttribute('src');
+  }
+  if (bottomToolLoaded && frame.getAttribute('src')) {
+    requestAnimationFrame(sendBottomHostLayout);
+    return;
+  }
+
+  bottomToolLoaded = true;
+  wrap.classList.remove('missing');
+  frame.onload = function () {
+    setTimeout(function () {
+      try {
+        var doc = frame.contentDocument;
+        if (doc && !doc.getElementById('app')) wrap.classList.add('missing');
+        else wrap.classList.remove('missing');
+      } catch (e) {
+        /* file:// 有時不讓父頁讀 iframe；postMessage 仍可正常用。 */
+        wrap.classList.remove('missing');
+      }
+      sendBottomHostLayout();
+    }, 80);
+  };
+  frame.onerror = function () { wrap.classList.add('missing'); };
+  frame.src = 'bottom/index.html?embed=generator&bridge=1';
+}
+
+function syncGeneratorToolMode() {
+  var isSticky = currentPaletteTab === 'sticky';
+  var palette = document.getElementById('palette');
+  var canvas = document.getElementById('canvas-area');
+  var wrap = document.getElementById('bottom-tool-wrap');
+  var generatorView = document.getElementById('view-generator');
+  var generatorActive = !!(generatorView && generatorView.classList.contains('active'));
+
+  if (palette) palette.classList.toggle('sticky-tool-mode', isSticky);
+  if (canvas) canvas.classList.toggle('bottom-tool-mode', isSticky);
+  if (wrap) {
+    wrap.classList.toggle('active', isSticky);
+    wrap.setAttribute('aria-hidden', isSticky ? 'false' : 'true');
+  }
+  if (isSticky) {
+    ensureBottomToolLoaded(false);
+    requestAnimationFrame(function () {
+      sendBottomHostLayout();
+      if (bottomBridgeReady && latestBottomWorkOrder) sendLatestWorkOrderToBottom('open-sticky');
+    });
+  }
+
+  var lock = document.getElementById('lock-fab');
+  var banner = document.getElementById('edit-banner');
+  if (lock) lock.style.display = (generatorActive && !isSticky) ? '' : 'none';
+  if (banner) banner.classList.toggle('show', !!(generatorActive && !isSticky && typeof unlocked !== 'undefined' && unlocked));
+}
+
+/* 父頁與吸底 iframe 的同源/跨 file:// 安全橋：只接受目前這一個 iframe 的訊息。 */
+window.addEventListener('message', function (event) {
+  var frame = document.getElementById('bottom-tool-frame');
+  if (!frame || event.source !== frame.contentWindow) return;
+  var msg = event.data || {};
+  if (msg.source !== 'BODA_BOTTOM') return;
+
+  if (msg.type === 'READY') {
+    bottomBridgeReady = true;
+    sendBottomHostLayout();
+    if (currentPaletteTab === 'sticky' && latestBottomWorkOrder) {
+      sendLatestWorkOrderToBottom('bridge-ready');
+    }
+  } else if (msg.type === 'REQUEST_LATEST_WORKORDER') {
+    sendLatestWorkOrderToBottom('manual-request', msg.requestId);
+  }
+});
+
+window.addEventListener('resize', function () {
+  if (currentPaletteTab === 'sticky') requestAnimationFrame(sendBottomHostLayout);
+});
 
 function setPaletteTab(tab) {
+  if (['subarea', 'msbn', 'sticky'].indexOf(tab) === -1) tab = 'subarea';
   currentPaletteTab = tab;
   document.querySelectorAll('#palette-tabs .ptab').forEach(function (b) {
     b.classList.toggle('active', b.getAttribute('data-ptab') === tab);
   });
   renderPalette();
+  syncGeneratorToolMode();
 }
 
 document.querySelectorAll('#palette-tabs .ptab').forEach(function (btn) {
@@ -8432,7 +8632,9 @@ document.querySelectorAll('#palette-tabs .ptab').forEach(function (btn) {
     console.log('[UX-SYNC] 點了頁簽：' + tab + '（目前 currentPaletteTab=' + currentPaletteTab + '）');
     if (tab === currentPaletteTab) { console.log('[UX-SYNC] 跟目前頁簽一樣，不處理'); return; }
     setPaletteTab(tab);
-    scrollCanvasToTab(tab); /* 頁簽切換 → 畫布跟著捲過去（本來就在那一區就不動） */
+    if (tab !== 'sticky') {
+      scrollCanvasToTab(tab); /* 副區／MSBN：頁簽切換 → 畫布跟著捲過去 */
+    }
   });
 });
 
@@ -8441,7 +8643,7 @@ document.querySelectorAll('#palette-tabs .ptab').forEach(function (btn) {
    - 畫布捲到「MSBN 區」下方 → 左側頁簽自動跳到 MSBN；捲回「副區」→ 頁簽跳回副區
    - 點左側頁簽 → 畫布捲到對應區塊；但如果畫布本來就已經在那一區裡（不管在哪一張），
      不吸回該區塊最頂端（第一格），維持使用者目前的捲動位置
-   - 「吸底」頁簽的畫布區塊還沒做，先不參與捲動同步（getPaletteSectionEl 回傳 null 即略過）
+   - 「吸底」使用獨立 iframe，不參與副區／MSBN 畫布捲動同步
 ══════════════════════════════════════════════════ */
 /* 真正會出現捲軸的其實是 #stage（那張白色照片卡片本身），不是 #canvas-area：
    #stage 只設了 overflow-x:auto、沒設 overflow-y，瀏覽器會把沒設的那軸也一併變成 auto，
@@ -8458,7 +8660,7 @@ function getPaletteSectionEl(tab) {
     var inner = document.getElementById('stage-inner');
     return inner ? inner.firstElementChild : null; /* #row 或 #empty-drop，固定是第一個子節點 */
   }
-  return null; /* 吸底：之後補上對應區塊再接進來即可 */
+  return null; /* 吸底使用獨立 iframe，不參與副區／MSBN 畫布捲動同步 */
 }
 
 /* 參考線是否落在某個區塊範圍內（用來判斷畫布目前顯示哪一區） */
@@ -8480,6 +8682,7 @@ function canvasIsScrollable() {
 var WO_DEBUG = true; /* 除錯用：Console 裡看得到 [UX-SYNC] 開頭的訊息，確認之後改成 false 或整段刪掉 */
 
 function syncTabFromScroll() {
+  if (currentPaletteTab === 'sticky') { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：目前是吸底 iframe'); return; }
   if (suppressScrollSync) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：suppressScrollSync=true（程式自己正在捲）'); return; }
   if (!document.getElementById('msbn-area')) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：找不到 #msbn-area'); return; }
   if (!canvasIsScrollable()) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：canvasIsScrollable()=false，scrollHeight=' + canvasArea.scrollHeight + ' clientHeight=' + canvasArea.clientHeight); return; }
@@ -8632,14 +8835,20 @@ function renderPalette() {
     return;
   }
 
-  /* 非「副區」頁簽：先顯示佔位內容（選單資料之後再補） */
+  /* 吸底工具的完整操作面板由全幅 iframe 的左欄提供；父層素材清單保持空白，
+     才不會在 iframe 下方再出現第二套說明或按鈕。 */
+  if (currentPaletteTab === 'sticky') {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  /* 其他未知頁簽保留保險佔位。 */
   if (currentPaletteTab !== 'subarea') {
     var info = PALETTE_TAB_INFO[currentPaletteTab] || { label: currentPaletteTab, icon: '🗂' };
     wrap.innerHTML =
       '<div class="ptab-placeholder">' +
       '<span class="pp-icon">' + info.icon + '</span>' +
-      '<b>' + esc(info.label) + '</b> 的素材選單準備中<br>' +
-      '之後會在這裡列出可拖曳到畫布的 ' + esc(info.label) + ' 版位' +
+      '<b>' + esc(info.label) + '</b> 尚未設定內容' +
       '</div>';
     return;
   }
@@ -9732,7 +9941,8 @@ function showView(name, options) {
 
   document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.id === 'view-' + name); });
   document.querySelectorAll('.nav-item').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-view') === name); });
-  /* 鎖頭跟編輯提示條只跟「工單生成器」有關，其他頁面藏起來 */
+  if (name === 'generator' && typeof syncGeneratorToolMode === 'function') syncGeneratorToolMode();
+  /* 鎖頭跟編輯提示條只跟「工單生成器」的副區／MSBN 有關，吸底工具有自己的面板 */
   if (name === 'exposure') ensureExposureLoaded();
   /* 維修頁第一次進去才載入（要多抓未註冊的版位，不必在開頁時就做） */
   if (name === 'maint') ensureMaintLoaded();
@@ -9758,7 +9968,7 @@ function showView(name, options) {
     });
   }
 
-  var showLock = (name === 'generator');
+  var showLock = (name === 'generator' && currentPaletteTab !== 'sticky');
   lockFab.style.display = showLock ? '' : 'none';
   if (!showLock) editBanner.classList.remove('show');
   else editBanner.classList.toggle('show', unlocked);
@@ -9785,6 +9995,7 @@ document.querySelectorAll('.home-card').forEach(function (b) {
 updateLockUI();
 renderPalette();
 renderCanvas();
+syncGeneratorToolMode();
 loadRemoteConfig(function () { renderPalette(); }); /* 讀 config.json（file:// 或檔案不存在時安靜失敗，不影響其他功能） */
 /* ════════════════════════════════════════
    匯入工單：拖放區域事件
