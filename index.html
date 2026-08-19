@@ -49,7 +49,11 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .home-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;
   padding:36px 24px;cursor:pointer;transition:.15s;text-align:center;}
 .home-card:hover{border-color:var(--teal);box-shadow:var(--shadow-md);transform:translateY(-3px);}
-.home-card .hc-icon{font-size:44px;margin-bottom:14px;}
+.home-card .hc-icon{width:54px;height:54px;margin:0 auto 14px;color:var(--teal);
+  display:grid;place-items:center;transition:color .15s,transform .15s;}
+.home-card .hc-icon svg{width:44px;height:44px;display:block;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.home-card:hover .hc-icon{color:var(--teal-dark);transform:translateY(-1px);}
 .home-card .hc-title{font-size:16px;font-weight:800;margin-bottom:6px;}
 .home-card .hc-desc{font-size:12px;color:var(--ink2);}
 
@@ -229,7 +233,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 /* ══════════════ 左：素材庫 ══════════════ */
 #palette{width:340px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
   display:flex;flex-direction:column;overflow:hidden;}
-#palette-head{padding:18px 18px 14px;}
+#palette-head{padding:18px 18px 14px;flex-shrink:0;}
 #palette-head h1{font-size:15px;font-weight:800;letter-spacing:.3px;}
 #palette-head p{font-size:11.5px;color:var(--ink2);margin-top:5px;line-height:1.6;}
 /* 等級下拉（素材庫標題/說明 與 頁簽 之間） */
@@ -242,7 +246,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #palette-level .lv-hint{font-size:11px;color:var(--ink2);line-height:1.6;}
 #palette-level .lv-hint b{color:var(--teal-dark);}
 #palette-tabs{display:flex;gap:3px;padding:8px 10px 0;background:var(--bg);
-  border-bottom:1px solid var(--border);align-items:flex-end;}
+  border-bottom:1px solid var(--border);align-items:flex-end;flex-shrink:0;}
 .ptab{flex:1;appearance:none;font-size:12.5px;font-weight:700;cursor:pointer;
   padding:9px 4px;border-radius:10px 10px 0 0;position:relative;margin-bottom:-1px;
   background:transparent;border:1px solid transparent;border-bottom:none;color:var(--ink3);
@@ -369,11 +373,11 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 /* 「吸底」頁簽使用同層 bottom/index.html，但不再把整套工具塞在右側畫布裡。
    iframe 會覆蓋整個工單生成器；bottom 的嵌入模式把操作面板放到左欄、畫布放右欄。
    父層素材庫的標題與頁簽保留在 iframe 上方，因此操作工具會真正出現在「吸底」頁簽下方。 */
-#canvas-area.bottom-tool-mode{overflow:hidden;background:#1e1e1e;}
+#canvas-area.bottom-tool-mode{overflow:hidden;background:var(--bg);}
 #canvas-area.bottom-tool-mode > *{visibility:hidden!important;pointer-events:none!important;}
-#bottom-tool-wrap{display:none;position:absolute;inset:0;z-index:40;min-width:0;min-height:0;background:#1e1e1e;}
+#bottom-tool-wrap{display:none;position:absolute;inset:0;z-index:40;min-width:0;min-height:0;background:var(--bg);}
 #bottom-tool-wrap.active{display:block;}
-#bottom-tool-frame{width:100%;height:100%;border:0;display:block;background:#1e1e1e;}
+#bottom-tool-frame{width:100%;height:100%;border:0;display:block;background:var(--bg);}
 #bottom-tool-fallback{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;background:var(--bg);color:var(--ink2);}
 #bottom-tool-wrap.missing #bottom-tool-fallback{display:flex;}
 #bottom-tool-wrap.missing #bottom-tool-frame{display:none;}
@@ -381,13 +385,17 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #bottom-tool-fallback .btf-title{font-size:16px;font-weight:800;color:var(--ink);}
 #bottom-tool-fallback .btf-desc{font-size:12px;line-height:1.8;}
 #bottom-tool-fallback b{color:var(--teal-dark);}
-/* iframe 在最上層，但素材庫標題與頁簽要浮在它上面；其餘左欄內容由 bottom 面板取代。 */
-#palette.sticky-tool-mode{background:transparent;border-right-color:transparent;}
+/* iframe 在最上層，但素材庫標題、等級、小字與三個頁簽固定維持原本位置與外觀。
+   只把頁簽下方的素材內容交給 bottom 面板，切換吸底時上方不再縮短或跳動。 */
+#palette.sticky-tool-mode{background:var(--panel);border-right-color:var(--border);}
 #palette.sticky-tool-mode #palette-head,
+#palette.sticky-tool-mode #palette-level,
 #palette.sticky-tool-mode #palette-tabs{position:relative;z-index:60;}
-#palette.sticky-tool-mode #palette-head{background:var(--panel);}
+#palette.sticky-tool-mode #palette-head,
+#palette.sticky-tool-mode #palette-level{display:flex;background:var(--panel);}
+#palette.sticky-tool-mode #palette-head{display:block;}
 #palette.sticky-tool-mode #palette-tabs{background:var(--bg);}
-#palette.sticky-tool-mode #palette-level,#palette.sticky-tool-mode #palette-footer{display:none;}
+#palette.sticky-tool-mode #palette-footer{display:none;}
 #palette.sticky-tool-mode #palette-scroll{visibility:hidden;pointer-events:none;padding:0;}
 
 #toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -544,17 +552,17 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
         </div>
         <div id="home-cards">
           <button class="home-card" data-goto="generator">
-            <div class="hc-icon">🧩</div>
+            <div class="hc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg></div>
             <div class="hc-title">工單生成器</div>
             <div class="hc-desc">拖拉排版、產生工單試算表</div>
           </button>
           <button class="home-card" data-goto="exposure">
-            <div class="hc-icon">🖼️</div>
+            <div class="hc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></div>
             <div class="hc-title">曝光資源</div>
             <div class="hc-desc">BN／DDCARD／Search 等曝光版位編輯器</div>
           </button>
           <button class="home-card" data-goto="import">
-            <div class="hc-icon">📥</div>
+            <div class="hc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></div>
             <div class="hc-title">匯入工單</div>
             <div class="hc-desc">把填好的工單匯入，直接畫出成品</div>
           </button>
@@ -5222,8 +5230,13 @@ function exportWorkOrderXlsx(exportOptions) {
   });
   var settingsWs = wb.addWorksheet('設定');
   var metaWs = wb.addWorksheet('_BODA_META');
+  /* 吸底欄位的可見內容放在 MS Layout 最下方；這張 veryHidden 對照表只記錄
+     5 顆的實際儲存格位置，讓 bottom 原本的工單匯入器能精準讀回，不受欄寬、
+     合併儲存格或未來 MS Layout 排版調整影響。 */
+  var bottomMetaWs = wb.addWorksheet('_BODA_BOTTOM');
   settingsWs.state = 'veryHidden';
   metaWs.state = 'veryHidden';
+  bottomMetaWs.state = 'veryHidden';
 
   var COLORS = {
     black: 'FF171717', dark: 'FF202124', dark2: 'FF3C4043', white: 'FFFFFFFF',
@@ -5669,6 +5682,214 @@ function exportWorkOrderXlsx(exportOptions) {
     }
     layoutRow = endRow + 2;
   });
+
+  /* ──────────────────────────────────────────────
+     吸底圖：所有工單／全版位試算表固定附在 MS Layout 最下方
+     ──────────────────────────────────────────────
+     版面參考「吸底圖demo.xlsx」：最少 2 顆、最多 5 顆，每顆可填 Icon 或 Logo
+     （二選一）與一段 5 字內文案。右側數字不是固定上限，而是實際字數公式：
+     中文 1 字、英數／半形符號 0.5 字。可填欄位解除保護；標題、說明與計數鎖定。 */
+  function appendBottomWorkOrderSection(startRow) {
+    var headerRow = startRow;
+    var iconRow = startRow + 1;
+    var logoRow = startRow + 2;
+    var textRow = startRow + 3;
+    /* 依 MS Layout 既有欄寬分成五個視覺上接近等寬的區段。 */
+    var spans = [
+      { start: 3,  end: 7  },  /* C:G  */
+      { start: 8,  end: 12 },  /* H:L  */
+      { start: 13, end: 17 },  /* M:Q  */
+      { start: 18, end: 25 },  /* R:Y  */
+      { start: 26, end: 33 }   /* Z:AG */
+    ];
+    var firstIconPlaceholder = '(輸入許願的Icon，例：房子)';
+    var firstLogoPlaceholder = '(輸入圖檔名，例：三星.png)';
+    var optionalPlaceholder = '(需要再填即可)';
+    var textPlaceholder = '文案5字內';
+    var stickyLine = { style: 'thin', color: { argb: 'FF999999' } };
+    var stickyDotted = { style: 'dotted', color: { argb: 'FF999999' } };
+
+    function stickyBorder(top, right, bottom, left) {
+      return {
+        top: top || stickyLine,
+        right: right || stickyLine,
+        bottom: bottom || stickyLine,
+        left: left || stickyLine
+      };
+    }
+    function setStickyRangeBorder(r1, c1, r2, c2, border) {
+      for (var rr = r1; rr <= r2; rr++) {
+        for (var cc = c1; cc <= c2; cc++) layoutWs.getCell(rr, cc).border = border || stickyBorder();
+      }
+    }
+    function setStickyInput(master, r1, c1, r2, c2, optional, placeholder, noteText) {
+      master.value = placeholder;
+      master.note = noteText;
+      master.font = {
+        name: 'Arial', size: 9,
+        color: { argb: optional ? COLORS.staticText : COLORS.inputText },
+        italic: true
+      };
+      master.fill = solid(optional ? COLORS.gray : COLORS.input);
+      master.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+      setProtection(layoutWs, r1, c1, r2, c2, false);
+      setStickyRangeBorder(r1, c1, r2, c2);
+    }
+    function quotedExcelText(value) {
+      return '"' + String(value).replace(/"/g, '""') + '"';
+    }
+    function isPlaceholderFormula(addr, placeholder) {
+      return 'OR(' + addr + '=\"\",' + addr + '=' + quotedExcelText(placeholder) + ')';
+    }
+
+    /* 左側固定說明。 */
+    mergeSafe(layoutWs, iconRow, 1, textRow, 1).value = '吸底圖';
+    mergeSafe(layoutWs, iconRow, 2, textRow, 2).value = '填你要的資訊\n最少2格、最多5格\n（不要的不填即可）';
+    setStaticStyle(layoutWs.getCell(iconRow, 1), {
+      color: COLORS.staticText, fill: COLORS.white, horizontal: 'center', size: 11
+    });
+    setStaticStyle(layoutWs.getCell(iconRow, 2), {
+      color: COLORS.black, fill: COLORS.white, horizontal: 'center', size: 9
+    });
+    setStickyRangeBorder(iconRow, 1, textRow, 2, stickyBorder(stickyDotted, stickyLine, stickyDotted, stickyDotted));
+
+    bottomMetaWs.getCell('A1').value = 'BODA_BOTTOM_V1';
+    bottomMetaWs.getCell('B1').value = 'MS Layout';
+    ['group', 'title', 'iconAddress', 'logoAddress', 'textAddress', 'countAddress', 'optional'].forEach(function (h, idx) {
+      bottomMetaWs.getCell(2, idx + 1).value = h;
+    });
+
+    spans.forEach(function (span, i) {
+      var optional = i >= 2;
+      var title = '第' + (i + 1) + '顆';
+      var labelCol = span.start + 1;
+      var inputStart = span.start + 2;
+      var inputEnd = span.end;
+      var iconPlaceholder = optional ? optionalPlaceholder : firstIconPlaceholder;
+      var logoPlaceholder = optional ? optionalPlaceholder : firstLogoPlaceholder;
+      var thisTextPlaceholder = optional ? optionalPlaceholder : textPlaceholder;
+
+      var titleCell = mergeSafe(layoutWs, headerRow, span.start, headerRow, span.end);
+      titleCell.value = title;
+      setStaticStyle(titleCell, {
+        bold: true, color: COLORS.white, fill: COLORS.black, horizontal: 'center', size: 10
+      });
+      setStickyRangeBorder(headerRow, span.start, headerRow, span.end, stickyBorder());
+
+      var intro = mergeSafe(layoutWs, iconRow, span.start, logoRow, span.start);
+      intro.value = 'Icon與Logo\n2選1填即可';
+      setStaticStyle(intro, {
+        color: COLORS.black, fill: COLORS.white, horizontal: 'center', size: 8.5
+      });
+      setStickyRangeBorder(iconRow, span.start, logoRow, span.start, stickyBorder(stickyLine, stickyDotted, stickyLine, stickyLine));
+
+      var iconLabel = layoutWs.getCell(iconRow, labelCol);
+      var logoLabel = layoutWs.getCell(logoRow, labelCol);
+      iconLabel.value = 'Icon';
+      logoLabel.value = 'Logo';
+      setStaticStyle(iconLabel, { fill: COLORS.white, horizontal: 'center', size: 9 });
+      setStaticStyle(logoLabel, { fill: COLORS.white, horizontal: 'center', size: 9 });
+      iconLabel.border = stickyBorder(stickyLine, stickyDotted, stickyDotted, stickyDotted);
+      logoLabel.border = stickyBorder(stickyDotted, stickyDotted, stickyLine, stickyDotted);
+
+      var iconInput = mergeSafe(layoutWs, iconRow, inputStart, iconRow, inputEnd);
+      var logoInput = mergeSafe(layoutWs, logoRow, inputStart, logoRow, inputEnd);
+      setStickyInput(
+        iconInput, iconRow, inputStart, iconRow, inputEnd, optional, iconPlaceholder,
+        'Icon 與 Logo 二選一。請輸入素材庫名稱，例如：房子。'
+      );
+      setStickyInput(
+        logoInput, logoRow, inputStart, logoRow, inputEnd, optional, logoPlaceholder,
+        'Icon 與 Logo 二選一。請輸入 Logo 圖檔名，例如：三星.png。'
+      );
+
+      /* 二選一：若 Icon 與 Logo 都填入真實內容，兩格都標紅並阻擋後輸入的那格。 */
+      var iconAddr = iconInput.address;
+      var logoAddr = logoInput.address;
+      var iconEmpty = isPlaceholderFormula(iconAddr, iconPlaceholder);
+      var logoEmpty = isPlaceholderFormula(logoAddr, logoPlaceholder);
+      var chooseOneFormula = 'OR(' + iconEmpty + ',' + logoEmpty + ')';
+      iconInput.dataValidation = {
+        type: 'custom', formulae: [chooseOneFormula], allowBlank: true,
+        showErrorMessage: true, errorStyle: 'stop', errorTitle: 'Icon／Logo 請二選一',
+        error: '同一顆只能填 Icon 或 Logo；請先清空另一格。',
+        showInputMessage: true, promptTitle: 'Icon／Logo 二選一',
+        prompt: 'Icon 填素材名稱；Logo 填圖檔名。'
+      };
+      logoInput.dataValidation = iconInput.dataValidation;
+      var bothFilledFormula = 'AND(NOT(' + iconEmpty + '),NOT(' + logoEmpty + '))';
+      layoutWs.addConditionalFormatting({
+        ref: iconAddr + ':' + logoAddr,
+        rules: [{
+          type: 'expression', priority: cfPriority++, formulae: [bothFilledFormula],
+          style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) }
+        }]
+      });
+
+      var textInput = mergeSafe(layoutWs, textRow, span.start, textRow, span.end - 1);
+      var countCell = layoutWs.getCell(textRow, span.end);
+      setStickyInput(
+        textInput, textRow, span.start, textRow, span.end - 1, optional, thisTextPlaceholder,
+        '吸底文案最多 5 字；中文算 1，英數與半形符號算 0.5。'
+      );
+      textInput.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      var textAddr = textInput.address;
+      var textEmpty = isPlaceholderFormula(textAddr, thisTextPlaceholder);
+      textInput.dataValidation = {
+        type: 'custom', formulae: ['OR(' + textEmpty + ',LENB(' + textAddr + ')/2<=5)'],
+        allowBlank: true, showErrorMessage: true, errorStyle: 'stop',
+        errorTitle: '超過吸底文案字數',
+        error: '最多 5 個字；中文算 1，英數與半形符號算 0.5。',
+        showInputMessage: true, promptTitle: '吸底文案：最多 5 字',
+        prompt: '中文算 1，英數與半形符號算 0.5。'
+      };
+      layoutWs.addConditionalFormatting({
+        ref: textAddr,
+        rules: [{
+          type: 'expression', priority: cfPriority++,
+          formulae: ['AND(NOT(' + textEmpty + '),LENB(' + textAddr + ')/2>5)'],
+          style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) }
+        }]
+      });
+
+      countCell.value = {
+        formula: 'IF(' + textEmpty + ',\"\",LENB(' + textAddr + ')/2)',
+        result: ''
+      };
+      countCell.note = '實際字數：中文 1 字；英數與半形符號 0.5 字；上限 5。';
+      countCell.numFmt = '0.0;-0.0;0';
+      setStaticStyle(countCell, { fill: COLORS.white, color: COLORS.staticText, horizontal: 'center', size: 9 });
+      countCell.border = stickyBorder(stickyLine, stickyLine, stickyLine, stickyDotted);
+      countCell.protection = { locked: true };
+      layoutWs.addConditionalFormatting({
+        ref: countCell.address,
+        rules: [
+          { type: 'expression', priority: cfPriority++, formulae: [countCell.address + '>5'], style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) } },
+          { type: 'expression', priority: cfPriority++, formulae: ['AND(ISNUMBER(' + countCell.address + '),' + countCell.address + '<=5)'], style: { font: { color: { argb: COLORS.linkedText }, bold: true } } }
+        ]
+      });
+
+      var mr = 3 + i;
+      [i + 1, title, iconAddr, logoAddr, textAddr, countCell.address, optional ? 1 : 0].forEach(function (v, idx) {
+        bottomMetaWs.getCell(mr, idx + 1).value = v;
+      });
+    });
+
+    layoutWs.getRow(headerRow).height = 22;
+    layoutWs.getRow(iconRow).height = 30;
+    layoutWs.getRow(logoRow).height = 30;
+    layoutWs.getRow(textRow).height = 30;
+
+    /* A/B 的標題列留白，比照 demo；仍把底色鎖定，避免誤編輯。 */
+    layoutWs.getCell(headerRow, 1).fill = solid(COLORS.white);
+    layoutWs.getCell(headerRow, 2).fill = solid(COLORS.white);
+    layoutWs.getCell(headerRow, 1).protection = { locked: true };
+    layoutWs.getCell(headerRow, 2).protection = { locked: true };
+
+    return textRow + 1;
+  }
+
+  layoutRow = appendBottomWorkOrderSection(layoutRow);
 
   layoutWs.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 33 } };
   layoutWs.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, margins: { left: 0.25, right: 0.25, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } };
@@ -8491,14 +8712,18 @@ function postToBottom(message, transfer) {
 function sendBottomHostLayout() {
   var app = document.querySelector('#view-generator #app');
   var palette = document.getElementById('palette');
+  var tabs = document.getElementById('palette-tabs');
   var scroll = document.getElementById('palette-scroll');
-  if (!app || !palette || !scroll) return;
+  if (!app || !palette || (!tabs && !scroll)) return;
   var appRect = app.getBoundingClientRect();
-  var scrollRect = scroll.getBoundingClientRect();
+  /* 以三個頁簽的實際下緣當作吸底工具列起點。這會把素材庫標題、等級下拉、
+     等級說明小字與頁簽全部固定保留，切換頁簽時高度不會因內容顯示／隱藏而改變。 */
+  var anchorRect = tabs ? tabs.getBoundingClientRect() : scroll.getBoundingClientRect();
+  var panelTop = tabs ? anchorRect.bottom - appRect.top : anchorRect.top - appRect.top;
   postToBottom({
     source: 'BODA_PARENT',
     type: 'HOST_LAYOUT',
-    panelTop: Math.max(0, Math.round(scrollRect.top - appRect.top)),
+    panelTop: Math.max(0, Math.round(panelTop)),
     panelWidth: Math.max(280, Math.round(palette.getBoundingClientRect().width || 340))
   });
 }

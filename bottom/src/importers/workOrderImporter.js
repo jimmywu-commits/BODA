@@ -32,6 +32,11 @@
 
   var RE_ICON = /^icon\s*[：:]/i;
   var RE_LOGO = /^logo\s*[：:]/i;
+  /* BODA 新版 MS Layout 的吸底區把標籤與輸入格分開（Icon／Logo 各自一格），
+     舊工單則是「Icon：名稱」寫在同一格。兩種格式都保留支援。 */
+  var RE_ICON_LABEL = /^icon\s*$/i;
+  var RE_LOGO_LABEL = /^logo\s*$/i;
+  var RE_TEMPLATE_PLACEHOLDER = /^[（(].*(?:需要再填|輸入).*[)）]$/;
   var RE_PATH = /^(?:[a-z]:[\\/]|\\\\)/i;
   var RE_NAVBAR = /nav\.?\s*bar/i;
   var RE_STICKY = /吸底/;
@@ -96,6 +101,157 @@
 
   function stripLabel(v, re) {
     return str(v).replace(re, "").replace(/^\s*[：:]\s*/, "").trim();
+  }
+
+  function cleanTemplateValue(v) {
+    var s = str(v);
+    if (!s) return '';
+    if (RE_TEMPLATE_PLACEHOLDER.test(s)) return '';
+    if (s === '文案5字內' || s === '文案05字內') return '';
+    return s;
+  }
+
+  function sheetCellValue(sheet, address) {
+    if (!sheet || !address) return '';
+    var c = sheet[String(address)];
+    if (!c) return '';
+    return cleanTemplateValue(c.w !== undefined ? c.w : c.v);
+  }
+
+  /* BODA 自己匯出的試算表會附 veryHidden「_BODA_BOTTOM」：
+     只記錄可見 MS Layout 裡五顆吸底欄位的地址。這是最精準的路徑，
+     使用者怎麼調整欄寬或合併儲存格，都不會讓匯入對錯欄。 */
+  function analyseBodaBottomMeta(workbook) {
+    if (!workbook || !workbook.Sheets || !workbook.Sheets._BODA_BOTTOM) return null;
+    var meta = workbook.Sheets._BODA_BOTTOM;
+    var marker = str(meta.A1 && (meta.A1.w !== undefined ? meta.A1.w : meta.A1.v));
+    if (marker !== 'BODA_BOTTOM_V1') return null;
+    var sheetName = str(meta.B1 && (meta.B1.w !== undefined ? meta.B1.w : meta.B1.v)) || 'MS Layout';
+    var target = workbook.Sheets[sheetName];
+    if (!target) return null;
+
+    var metaRows = window.XLSX.utils.sheet_to_json(meta, {
+      header: 1, defval: '', blankrows: true, raw: false
+    });
+    var groups = [];
+    for (var r = 2; r < metaRows.length; r++) {
+      var row = metaRows[r] || [];
+      var index = parseInt(str(row[0]), 10);
+      if (!index) continue;
+      var iconName = sheetCellValue(target, row[2]);
+      var logoName = sheetCellValue(target, row[3]);
+      var text = sheetCellValue(target, row[4]);
+      groups.push({
+        index: index - 1,
+        columns: [],
+        type: logoName ? 'logo' : 'icon',
+        iconName: iconName,
+        logoName: logoName,
+        name: logoName || iconName,
+        iconChecked: iconName ? true : null,
+        logoChecked: logoName ? true : null,
+        text: text,
+        assetPath: '',
+        bothProvided: !!(iconName && logoName)
+      });
+    }
+    if (groups.length < MIN_GROUPS) return null;
+    groups.sort(function (a, b) { return a.index - b.index; });
+    while (groups.length > MIN_GROUPS) {
+      var last = groups[groups.length - 1];
+      if (last.text || last.iconName || last.logoName) break;
+      groups.pop();
+    }
+    return {
+      sheetName: sheetName,
+      iconRow: null,
+      logoRow: null,
+      pathRow: null,
+      textRow: null,
+      score: 100,
+      signals: ['BODA_BOTTOM_V1 精準欄位對照'],
+      groups: groups
+    };
+  }
+
+  /* 相容使用者提供的「吸底圖demo.xlsx」：
+     A/B 欄是吸底圖說明，同列重複出現獨立的 Icon 標籤，下一列是 Logo，
+     再下一列是文案與計數。標籤和輸入值分開，因此不能沿用舊版的 Icon：名稱解析。 */
+  function buildTemplateSpans(iconCols, rowLength) {
+    var spans = [];
+    for (var i = 0; i < iconCols.length; i++) {
+      var start = Math.max(0, iconCols[i] - 1);
+      var end = i < iconCols.length - 1
+        ? Math.max(start, iconCols[i + 1] - 2)
+        : Math.min(Math.max(rowLength - 1, start + 4), start + 7);
+      spans.push({ start: start, end: end, labelCol: iconCols[i] });
+    }
+    return spans;
+  }
+
+  function firstTemplateValue(rows, rowIndex, fromCol, toCol) {
+    var row = rows[rowIndex] || [];
+    for (var c = fromCol; c <= toCol; c++) {
+      var v = cleanTemplateValue(row[c]);
+      if (!v) continue;
+      if (RE_ICON_LABEL.test(v) || RE_LOGO_LABEL.test(v) || RE_NUMERIC.test(v)) continue;
+      return v;
+    }
+    return '';
+  }
+
+  function detectTemplateBlocks(rows, sheetName) {
+    var blocks = [];
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r] || [];
+      if (!(RE_STICKY.test(cell(rows, r, 0)) || RE_STICKY.test(cell(rows, r, 1)))) continue;
+      var iconCols = colsMatching(row, RE_ICON_LABEL);
+      if (iconCols.length < MIN_GROUPS) continue;
+
+      var logoRow = null;
+      for (var lr = r + 1; lr <= Math.min(rows.length - 1, r + 3); lr++) {
+        if (colsMatching(rows[lr], RE_LOGO_LABEL).length >= MIN_GROUPS) { logoRow = lr; break; }
+      }
+      if (logoRow === null) continue;
+      var textRow = logoRow + 1;
+      if (textRow >= rows.length) continue;
+
+      var spans = buildTemplateSpans(iconCols, row.length);
+      var groups = spans.map(function (span, k) {
+        var iconName = firstTemplateValue(rows, r, span.labelCol + 1, span.end);
+        var logoName = firstTemplateValue(rows, logoRow, span.labelCol + 1, span.end);
+        var text = firstTemplateValue(rows, textRow, span.start, Math.max(span.start, span.end - 1));
+        return {
+          index: k,
+          columns: [span.start, span.end],
+          type: logoName ? 'logo' : 'icon',
+          iconName: iconName,
+          logoName: logoName,
+          name: logoName || iconName,
+          iconChecked: iconName ? true : null,
+          logoChecked: logoName ? true : null,
+          text: text,
+          assetPath: '',
+          bothProvided: !!(iconName && logoName)
+        };
+      });
+      while (groups.length > MIN_GROUPS) {
+        var last = groups[groups.length - 1];
+        if (last.text || last.iconName || last.logoName) break;
+        groups.pop();
+      }
+      blocks.push({
+        sheetName: sheetName,
+        iconRow: r,
+        logoRow: logoRow,
+        pathRow: null,
+        textRow: textRow,
+        score: 90,
+        signals: ['吸底圖 demo 格式', iconCols.length + ' 顆'],
+        groups: groups
+      });
+    }
+    return blocks;
   }
 
   /* ---------------- 區塊分析 ---------------- */
@@ -291,11 +447,15 @@
   }
 
   function analyseWorkbook(workbook) {
+    /* BODA 匯出的精準欄位對照優先，避免同一段又被結構掃描重複匯入。 */
+    var exact = analyseBodaBottomMeta(workbook);
+    if (exact) return [exact];
+
     var blocks = [];
     workbook.SheetNames.forEach(function (name) {
-      detectBlocks(sheetToRows(workbook, name), name).forEach(function (b) {
-        blocks.push(b);
-      });
+      var rows = sheetToRows(workbook, name);
+      detectTemplateBlocks(rows, name).forEach(function (b) { blocks.push(b); });
+      detectBlocks(rows, name).forEach(function (b) { blocks.push(b); });
     });
     return blocks;
   }
@@ -359,6 +519,13 @@
           );
         }
 
+        if (g.bothProvided) {
+          notes.push(
+            '第 ' + (bi + 1) + ' 條第 ' + (i + 1) + ' 格同時填了 Icon 與 Logo，' +
+              '依工單二選一規則已優先使用 Logo「' + g.logoName + '」'
+          );
+        }
+
         var matched = matchLibraryIcon(library, g.name, g.type);
         if (g.name && !matched) {
           notes.push(
@@ -382,9 +549,12 @@
 
   function summarise(blocks) {
     return blocks.map(function (b, i) {
+      var location = b.iconRow === null || b.iconRow === undefined
+        ? "精準欄位對照"
+        : ("第 " + (b.iconRow + 1) + " 列");
       return (
         "第 " + (i + 1) + " 條：" + (b.sheetName ? b.sheetName + " " : "") +
-        "第 " + (b.iconRow + 1) + " 列，" + b.groups.length + " 格（" +
+        location + "，" + b.groups.length + " 格（" +
         b.groups.map(function (g) { return g.text || "（無文案）"; }).join(" / ") + "）"
       );
     });
@@ -406,8 +576,9 @@
             var blocks = analyseWorkbook(wb);
             if (!blocks.length) {
               throw new Error(
-                "在這份工單裡找不到吸底圖區塊。偵測方式是找「同一列有 2 個以上的 Icon：」，" +
-                  "請確認工單包含該區塊，或工單格式是否有大幅變動。"
+                "在這份工單裡找不到吸底圖區塊。支援 BODA 匯出的精準欄位、" +
+                  "「吸底圖demo」格式，以及舊版同列 2 個以上 Icon：的格式；" +
+                  "請確認工單確實包含吸底欄位。"
               );
             }
             onDone(blocks);

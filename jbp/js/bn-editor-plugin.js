@@ -149,6 +149,34 @@
     /* ── 工具 ── */
     function readFile(file){ return new Promise(function(res,rej){var r=new FileReader();r.onload=function(e){res(e.target.result);};r.onerror=rej;r.readAsDataURL(file);}); }
     function loadImg(src){ return new Promise(function(res,rej){var i=new Image();i.onload=function(){res(i);};i.onerror=rej;i.src=src;}); }
+    /* LOGO 的自動裁切只適用於四角皆為不透明近白色的白底圖；帶色底的 LOGO 完整保留。 */
+    function autoTrimWhiteLogo(img){
+      var max=1200,sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+      var w=Math.max(1,Math.round(img.naturalWidth*sc)),h=Math.max(1,Math.round(img.naturalHeight*sc));
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      var ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);
+      var d=ctx.getImageData(0,0,w,h).data;
+      function white(x,y){var i=(y*w+x)*4;return d[i+3]>245&&d[i]>245&&d[i+1]>245&&d[i+2]>245;}
+      if(!white(0,0)||!white(w-1,0)||!white(0,h-1)||!white(w-1,h-1)) return {src:img.src,ratio:img.naturalWidth/img.naturalHeight};
+      var x0=w,y0=h,x1=-1,y1=-1;
+      for(var y=0;y<h;y++)for(var x=0;x<w;x++){var p=(y*w+x)*4;if(d[p+3]>18&&!(d[p]>245&&d[p+1]>245&&d[p+2]>245)){if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;}}
+      if(x1<0)return {src:img.src,ratio:img.naturalWidth/img.naturalHeight};
+      var pad=Math.round(Math.max(w,h)*.015);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(w-1,x1+pad);y1=Math.min(h-1,y1+pad);
+      var tw=x1-x0+1,th=y1-y0+1,out=document.createElement('canvas');out.width=tw;out.height=th;
+      out.getContext('2d').drawImage(c,x0,y0,tw,th,0,0,tw,th);
+      return {src:out.toDataURL('image/png'),ratio:tw/th};
+    }
+    /* 單張直式 LOGO 用方版；多張或橫式／正方形 LOGO 用橫版。 */
+    var _bnLogoVariantSeq=0;
+    function autoSelectLogoVariant(logos){
+      var seq=++_bnLogoVariantSeq;logos=Array.isArray(logos)?logos:[];
+      if(!window.bnAutoSelectLogoVariant)return;
+      if(logos.length!==1){window.bnAutoSelectLogoVariant('horizontal');return;}
+      var logo=logos[0],ratio=Number(logo.ratio);
+      function apply(r){if(seq===_bnLogoVariantSeq&&window._bnLogos&&window._bnLogos.length===1&&window._bnLogos[0].id===logo.id)window.bnAutoSelectLogoVariant(r<1?'square':'horizontal');}
+      if(isFinite(ratio)&&ratio>0){apply(ratio);return;}
+      loadImg(logo.src).then(function(img){logo.ratio=img.naturalWidth/img.naturalHeight;apply(logo.ratio);})['catch'](function(){});
+    }
     /* 動態載入 script 只做一次：避免使用者快速連點（例如連按兩次「編輯Logo」）
        在第一支 script 還沒 onload 完成前，window.BNLogoMenu/HBNProductEditorPlugin
        都還是 undefined，導致同一個 <script src> 被插入兩次、整支檔案的初始化邏輯
@@ -170,7 +198,7 @@
     function autoTrim(img){var max=1200,sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));var w=Math.max(1,Math.round(img.naturalWidth*sc)),h=Math.max(1,Math.round(img.naturalHeight*sc));var c=document.createElement('canvas');c.width=w;c.height=h;var ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);var id=ctx.getImageData(0,0,w,h),d=id.data,bg=sampleCorner(d,w,h);var x0=w,y0=h,x1=-1,y1=-1;for(var y=0;y<h;y++)for(var x=0;x<w;x++){var i=(y*w+x)*4,a=d[i+3];if(a>18&&(a<245||Math.abs(d[i]-bg.r)+Math.abs(d[i+1]-bg.g)+Math.abs(d[i+2]-bg.b)>46)&&!(d[i]>246&&d[i+1]>246&&d[i+2]>246)){if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;}}if(x1<0)return{src:img.src,ratio:img.naturalWidth/img.naturalHeight};var pad=Math.round(Math.max(w,h)*.015);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(w-1,x1+pad);y1=Math.min(h-1,y1+pad);var tw=x1-x0+1,th=y1-y0+1;var o=document.createElement('canvas');o.width=tw;o.height=th;o.getContext('2d').drawImage(c,x0,y0,tw,th,0,0,tw,th);return{src:o.toDataURL('image/png'),ratio:tw/th};}
 
     /* ── 廣播 ── */
-    function broadcast(msg){document.querySelectorAll('.preview-block iframe').forEach(function(f){try{f.contentWindow.postMessage(msg,'*');}catch(e){}});}
+    function broadcast(msg){document.querySelectorAll('.preview-block iframe').forEach(function(f){try{f.contentWindow.postMessage(msg,'*');}catch(e){}});if(msg&&msg.type==='bn-logos')autoSelectLogoVariant(msg.logos);}
     function broadcastTo(id,msg){var f=document.getElementById('iframe-'+id);if(f)try{f.contentWindow.postMessage(msg,'*');}catch(e){}}
     function requestProductLayouts(){ broadcast({type:'bn-product-layout-request'}); }
     function markStateDirty(){ try{ document.dispatchEvent(new CustomEvent('bn-state-dirty')); }catch(_){ } }
@@ -432,7 +460,10 @@
             lo.src = newSrc;
             imgEl.src = newSrc;
             window._bnLogoDataUrl = window._bnLogos[0].src;
-            broadcast({type:'bn-logos', logos:window._bnLogos});
+            loadImg(newSrc).then(function(updated){
+              lo.ratio = updated.naturalWidth / updated.naturalHeight;
+              broadcast({type:'bn-logos', logos:window._bnLogos});
+            })['catch'](function(){ broadcast({type:'bn-logos', logos:window._bnLogos}); });
           }
         });
       } else if(action === 'swap'){
@@ -514,13 +545,14 @@
     function doLoadLogo(file){
       if(window._bnLogos.length>=MAX_LOGOS)return;
       readFile(file).then(function(s){
-        var id='logo_'+Date.now();
-        window._bnLogos.push({id:id,src:s});
-        window._bnLogoDataUrl=window._bnLogos[0].src;
-        renderLogoList();
-        /* 廣播：送出全部 logos */
-        broadcast({type:'bn-logos',logos:window._bnLogos});
-      });
+        return loadImg(s).then(function(img){
+          var trimmed=autoTrimWhiteLogo(img),id='logo_'+Date.now();
+          window._bnLogos.push({id:id,src:trimmed.src,ratio:trimmed.ratio});
+          window._bnLogoDataUrl=window._bnLogos[0].src;
+          renderLogoList();
+          broadcast({type:'bn-logos',logos:window._bnLogos});
+        });
+      })['catch'](function(){alert('LOGO 圖片讀取失敗，請換一張圖片再試');});
     }
 
     /* ══ 人物上傳（單張；可超出商品範圍與畫布；有人物圖時商品僅顯示第1張） ══ */

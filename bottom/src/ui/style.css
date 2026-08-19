@@ -1153,3 +1153,219 @@ button[disabled]:hover {
   justify-content: flex-end;
   margin-top: 6px;
 }
+
+
+/* ── BODA 工單生成器嵌入模式：與主工具一致的淺色工具列 ──
+ * 單獨開啟 bottom/index.html 時仍保留原本深色主題；只有 embed=generator 才套用。
+ * 色票、字色、按鈕、欄位與頁籤統一採用 BODA 的白底／灰框／藍綠重點色。
+ */
+html.embed-generator {
+  --bg0: #f4f6f5;
+  --bg1: #ffffff;
+  --bg2: #f7f9f8;
+  --bg3: #ffffff;
+  --border: #dde3e1;
+  --border-strong: #c3cdc9;
+  --accent: #4d9b95;
+  --accent2: #357872;
+  --text: #1f2b29;
+  --text2: #5b6a67;
+  --text3: #93a19d;
+  --green: #2f8f67;
+  --red: #d4392e;
+  --yellow: #f1c75b;
+  --yellow-hover: #f6d77f;
+  --on-yellow: #1f2b29;
+}
+
+html.embed-generator,
+html.embed-generator body {
+  background: transparent;
+  color: var(--text);
+  font-family: "PingFang TC", "Microsoft JhengHei", "Segoe UI", Arial, sans-serif;
+}
+
+html.embed-generator #panel {
+  background: var(--bg1);
+  border-left: 0;
+  border-right: 1px solid var(--border);
+}
+
+html.embed-generator #panel-scroll {
+  background: var(--bg1);
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+html.embed-generator #panel-scroll::-webkit-scrollbar { width: 10px; }
+html.embed-generator #panel-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 3px solid var(--bg1);
+}
+
+html.embed-generator #panel-footer {
+  background: var(--bg1);
+  border-top-color: var(--border);
+  box-shadow: 0 -4px 12px rgba(20, 40, 35, .06);
+}
+
+html.embed-generator .panel-section h3 {
+  color: var(--text2);
+  letter-spacing: .4px;
+  text-transform: none;
+}
+
+html.embed-generator button {
+  background: #fff;
+  color: var(--text);
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+
+html.embed-generator button:hover {
+  background: #f4f6f5;
+  color: var(--accent2);
+  border-color: var(--accent);
+}
+
+html.embed-generator button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+html.embed-generator button.primary:hover {
+  background: var(--accent2);
+  border-color: var(--accent2);
+  color: #fff;
+}
+
+html.embed-generator button.warn {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--on-yellow);
+}
+
+html.embed-generator button.warn:hover {
+  background: var(--yellow-hover);
+  border-color: var(--yellow-hover);
+  color: var(--on-yellow);
+}
+
+html.embed-generator input[type="text"],
+html.embed-generator select,
+html.embed-generator input[type="file"]::file-selector-button {
+  background: #fff;
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+html.embed-generator input[type="text"]:hover,
+html.embed-generator select:hover,
+html.embed-generator input[type="file"]::file-selector-button:hover {
+  background: #fff;
+  border-color: var(--accent);
+}
+
+html.embed-generator input[type="text"]:focus,
+html.embed-generator select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(77, 155, 149, .18);
+}
+
+html.embed-generator .slot-card,
+html.embed-generator .import-detail-box,
+html.embed-generator .icon-trigger,
+html.embed-generator .icon-tile,
+html.embed-generator .startup-drop,
+html.embed-generator .startup-minor {
+  background: var(--bg2);
+}
+
+html.embed-generator .slot-card.active,
+html.embed-generator .icon-tile.selected {
+  border-color: var(--accent);
+  border-left-color: var(--accent);
+  background: #e6f2f0;
+}
+
+html.embed-generator .icon-trigger:hover,
+html.embed-generator .icon-tile:hover,
+html.embed-generator .import-detail-box > summary:hover,
+html.embed-generator .startup-minor:hover {
+  background: #eef4f2;
+  border-color: var(--accent);
+  color: var(--accent2);
+}
+
+html.embed-generator .icon-picker,
+html.embed-generator #font-status,
+html.embed-generator .crop-panel,
+html.embed-generator .startup-card {
+  background: var(--bg1);
+  border-color: var(--border);
+  box-shadow: 0 10px 28px rgba(20, 40, 35, .16);
+}
+
+html.embed-generator .inline-upload {
+  background: rgba(241, 199, 91, .16);
+}
+
+html.embed-generator .inline-upload-title { color: #8a6500; }
+html.embed-generator .inline-upload input[type="text"],
+html.embed-generator .inline-upload select {
+  background: #fff;
+  border-color: #c9a84d;
+}
+html.embed-generator .inline-upload .note { color: #7d6a33; }
+
+/* 吸底內部的多條圖分頁也改成和主工具相同的白底頁籤語彙。 */
+html.embed-generator #tabbar {
+  background: #f4f6f5;
+  border-bottom: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+html.embed-generator .banner-tab {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text3);
+}
+
+html.embed-generator .banner-tab:hover {
+  background: rgba(255, 255, 255, .72);
+  border-color: var(--border);
+  color: var(--text2);
+}
+
+html.embed-generator .banner-tab.active,
+html.embed-generator .banner-tab.active:hover {
+  background: #fff;
+  border-color: var(--border);
+  color: var(--accent2);
+}
+
+html.embed-generator .banner-tab.active::before { background: var(--accent); }
+html.embed-generator .banner-tab-meta { color: var(--text3); }
+html.embed-generator .banner-tab.active .banner-tab-meta { color: var(--text2); }
+html.embed-generator .banner-tab-close:hover { background: rgba(31, 43, 41, .08); }
+
+/* 畫布本身保留中性灰工作區；只有浮動縮放列維持深底，確保在畫布上有足夠對比。 */
+html.embed-generator #stage-wrap { background: var(--canvas-backdrop); }
+html.embed-generator #zoom-bar {
+  background: rgba(31, 43, 41, .9);
+  border-color: rgba(255, 255, 255, .24);
+  color: #dce5e2;
+}
+html.embed-generator #zoom-bar button {
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+  border-color: rgba(255, 255, 255, .22);
+}
+html.embed-generator #zoom-bar button:hover {
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, .38);
+}
+html.embed-generator .zoom-readout { color: #fff; }
+html.embed-generator .zoom-hint { color: #c7d2cf; border-left-color: rgba(255, 255, 255, .2); }
