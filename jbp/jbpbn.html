@@ -2489,9 +2489,13 @@ document.addEventListener("DOMContentLoaded",function(){
     if (typeof window.renderPreviews === 'function') window.renderPreviews();
   }
 
-  /* 僅在同一組同時有方／橫兩個版本時，依 LOGO 狀態反勾另一個版本。 */
+  /*
+     僅在同一組同時有方／橫兩個版本時，依 LOGO 狀態切換版型：
+     - 無 LOGO：方、橫版都顯示；
+     - 正方形／直式 LOGO：方版；橫式或多個 LOGO：橫版。
+  */
   window.bnAutoSelectLogoVariant = function (variant) {
-    variant = variant === 'square' ? 'square' : 'horizontal';
+    variant = variant === 'all' ? 'all' : (variant === 'square' ? 'square' : 'horizontal');
     var groups = {}, rows = planForLevel().rows || [];
     function layoutVariant(layout) {
       var s = String((layout && (layout.name || layout.file)) || '');
@@ -2505,7 +2509,7 @@ document.addEventListener("DOMContentLoaded",function(){
     Object.keys(groups).forEach(function (k) {
       var pair = groups[k]; if (!pair.square || !pair.horizontal) return;
       [pair.square, pair.horizontal].forEach(function (layout) {
-        var next = layoutVariant(layout) === variant;
+        var next = variant === 'all' || layoutVariant(layout) === variant;
         if (checked[layout.id] !== next) { checked[layout.id] = next; changed = true; }
         userTouched[layout.id] = true;
       });

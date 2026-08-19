@@ -166,14 +166,18 @@
       out.getContext('2d').drawImage(c,x0,y0,tw,th,0,0,tw,th);
       return {src:out.toDataURL('image/png'),ratio:tw/th};
     }
-    /* 單張直式 LOGO 用方版；多張或橫式／正方形 LOGO 用橫版。 */
+    /*
+     * 單張直式／正方形 LOGO 用方版；多張或橫式 LOGO 用橫版。
+     * 沒有 LOGO 時不預設任何方向：同組的方、橫版都要顯示，讓使用者自行決定。
+     */
     var _bnLogoVariantSeq=0;
     function autoSelectLogoVariant(logos){
       var seq=++_bnLogoVariantSeq;logos=Array.isArray(logos)?logos:[];
       if(!window.bnAutoSelectLogoVariant)return;
+      if(!logos.length){window.bnAutoSelectLogoVariant('all');return;}
       if(logos.length!==1){window.bnAutoSelectLogoVariant('horizontal');return;}
       var logo=logos[0],ratio=Number(logo.ratio);
-      function apply(r){if(seq===_bnLogoVariantSeq&&window._bnLogos&&window._bnLogos.length===1&&window._bnLogos[0].id===logo.id)window.bnAutoSelectLogoVariant(r<1?'square':'horizontal');}
+      function apply(r){if(seq===_bnLogoVariantSeq&&window._bnLogos&&window._bnLogos.length===1&&window._bnLogos[0].id===logo.id)window.bnAutoSelectLogoVariant(r<=1?'square':'horizontal');}
       if(isFinite(ratio)&&ratio>0){apply(ratio);return;}
       loadImg(logo.src).then(function(img){logo.ratio=img.naturalWidth/img.naturalHeight;apply(logo.ratio);})['catch'](function(){});
     }
