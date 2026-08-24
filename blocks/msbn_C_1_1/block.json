@@ -187,7 +187,7 @@
       "height": 121.0,
       "field": "logoImg",
       "fieldLabel": "LOGO圖片網址",
-      "backgroundColor": "#727acc",
+      "backgroundColor": "#ffffff",
       "borderRadius": "60px",
       "psRadius": true,
       "clipImage": true,

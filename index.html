@@ -178,6 +178,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
   background-color:var(--teal-tint) !important;}
 /* 版位卡片裡的圖片欄位：左邊縮圖，右邊三顆按鈕（編輯／換圖／刪除） */
 .imp-col .img-field .if-row{display:flex;gap:8px;align-items:stretch;}
+.imp-col .img-field .if-list{display:flex;flex-direction:column;gap:7px;}
+.imp-col .if-index{position:absolute;left:3px;top:2px;background:rgba(20,40,35,.72);color:#fff;
+  font-size:9px;padding:0 3px;border-radius:99px;line-height:1.35;}
 .imp-col .if-thumb{position:relative;flex-shrink:0;width:64px;height:64px;border:1px solid var(--border);
   border-radius:7px;background:#fbfcfc;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 .imp-col .if-thumb img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;}
@@ -4892,8 +4895,8 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 <script src="JS/fonts-embed.js"></script>
 <script src="JS/render-config.js"></script>
 <script src="core/core-engine.js"></script>
-<script src="core/schema-renderer.js?v=20260818-3"></script>
-<script src="JS/image-layout.js?v=20260818-3"></script>
+<script src="core/schema-renderer.js?v=20260824-3"></script>
+<script src="JS/image-layout.js?v=20260824-3"></script>
 <script src="JS/editor-plugin.js"></script>
 
 <script>
@@ -7155,25 +7158,35 @@ function isUsableImageValue(v) {
    src 屬性──這裡用 MutationObserver 監看 src 有沒有被改掉，改掉了就同步寫回
    我們自己的資料(col.data)，這樣才會存檔、下次重新渲染也不會被蓋回舊圖。
    所有圖片欄位都能用（商品圖、代言人、簽名檔、LOGO、贈品圖…）。
-   如果欄位本身是逗號分隔的多張圖，目前只支援編輯「第一張」，
-   其他張維持原樣、用逗號接回去。 */
-function openImportFieldImageEditor(idx, fieldKey) {
+   如果欄位本身是逗號分隔的多張圖，每一張都可以獨立編輯，
+   編輯結果只會寫回目前選取的那一張。 */
+function openImportFieldImageEditor(idx, fieldKey, imageIndex) {
   if (typeof window.HBNProductEditorPlugin === 'undefined' && typeof window.openEraseEditor === 'undefined') {
     alert('圖片編輯器外掛(editor-plugin.js)還沒載入成功，確認檔案是否放在 JS/ 資料夾裡');
+    return;
+  }
+
+  var col = currentImportColumns[idx];
+  var parts = splitImageList(col.data[fieldKey] || '');
+  if (!parts.length) parts = [''];
+  var selectedIndex = Number(imageIndex);
+  if (!isFinite(selectedIndex) || selectedIndex < 0) selectedIndex = 0;
+  selectedIndex = Math.floor(selectedIndex);
+  if (selectedIndex >= parts.length || !isUsableImageValue(parts[selectedIndex])) {
+    alert('這個欄位的第 ' + (selectedIndex + 1) + ' 張圖片還沒有可編輯的內容');
     return;
   }
   var mount = document.getElementById('imp-mount-' + idx);
   if (!mount) return;
   var group = mount.querySelector('.bn-imggroup[data-field-key="' + fieldKey + '"]');
-  var imgEl = group ? group.querySelector('img.bn-imggroup-img') : null;
-  if (!imgEl || !imgEl.src) { alert('這個欄位還沒有圖片，先按「🔄 換圖」上傳一張再編輯'); return; }
-
-  var col = currentImportColumns[idx];
-  var parts = splitImageList(col.data[fieldKey] || '');
-  if (!parts.length) parts = [''];
-
-  var oldUrl = parts[0];
-
+  var renderedIndex = 0;
+  for (var pi = 0; pi < selectedIndex; pi++) {
+    if (isUsableImageValue(parts[pi])) renderedIndex++;
+  }
+  var renderedImgs = group ? group.querySelectorAll('img.bn-imggroup-img') : [];
+  var imgEl = renderedImgs[renderedIndex] || null;
+  if (!imgEl || !imgEl.src) { alert('這個欄位的第 ' + (selectedIndex + 1) + ' 張圖片目前還沒有渲染完成'); return; }
+  var oldUrl = parts[selectedIndex];
   /* 監看這張<img>的src有沒有被外掛編輯器改掉 */
   var mo = new MutationObserver(function (mutations) {
     mutations.forEach(function (m) {
@@ -7181,26 +7194,13 @@ function openImportFieldImageEditor(idx, fieldKey) {
       var newUrl = imgEl.src;
       if (!newUrl || newUrl === oldUrl) return;
       mo.disconnect();
-      parts[0] = newUrl;
+      parts[selectedIndex] = newUrl;
       col.data[fieldKey] = parts.join(',');
 
-      /* 同一張圖如果別的地方也在用，問一下要不要一起換成編輯後的結果
-         （去背／影子…等），要就一起連動，不要就只改這一格。 */
-      var others = findImageUsages(oldUrl, { idx: idx, key: fieldKey });
-      var linked = 0;
-      if (others.length &&
-          confirm('這張圖還有 ' + others.length + ' 個地方也在用。\n\n' +
-                  '要一起套用這次的編輯結果（去背／裁切／影子…）嗎？\n' +
-                  '按「確定」＝一起換；按「取消」＝只改這一格。')) {
-        replaceImageInUsages(others, oldUrl, newUrl);
-        linked = others.length;
-        /* 素材清單裡那一張也更新，之後換圖／自動比對用到的都是編輯後的版本 */
-        uploadedImages.forEach(function (img) {
-          if (img.url !== oldUrl) return;
-          img.baseUrl = img.baseUrl || oldUrl;
-          img.url = newUrl;
-        });
-      }
+      /* 同檔名／同網址的圖片，編輯結果自動同步到所有版位與圖片欄位。 */
+      var others = findImageUsages(oldUrl);
+      var linked = replaceImageInUsages(others, oldUrl, newUrl);
+      syncImageAssetsByName(oldUrl, newUrl);
 
       saveImportState();
       renderImportColumns(currentImportColumns); /* 左邊縮圖＋右邊畫布一起更新 */
@@ -7217,7 +7217,41 @@ function openImportFieldImageEditor(idx, fieldKey) {
     window.openEraseEditor(imgEl);
   }
 }
+function imageAssetNamesForUrl(url) {
+  var names = [];
+  if (!url) return names;
+  (uploadedImages || []).forEach(function (img) {
+    if (!img || (img.url !== url && img.baseUrl !== url)) return;
+    var name = String(img.name || '').trim().toLowerCase();
+    if (name && names.indexOf(name) === -1) names.push(name);
+  });
+  return names;
+}
+function sameImageAsset(a, b) {
+  var left = String(a || '').trim();
+  var right = String(b || '').trim();
+  if (!left || !right) return false;
+  if (left === right) return true;
+  var names = imageAssetNamesForUrl(left);
+  if (!names.length) return false;
+  return (uploadedImages || []).some(function (img) {
+    var name = String(img && img.name || '').trim().toLowerCase();
+    return names.indexOf(name) !== -1 && img &&
+      (img.url === right || img.baseUrl === right);
+  });
 
+}
+function syncImageAssetsByName(oldUrl, newUrl) {
+  var names = imageAssetNamesForUrl(oldUrl);
+  (uploadedImages || []).forEach(function (img) {
+    if (!img) return;
+    var name = String(img.name || '').trim().toLowerCase();
+    var sameName = name && names.indexOf(name) !== -1;
+    if (img.url !== oldUrl && img.baseUrl !== oldUrl && !sameName) return;
+    img.baseUrl = img.baseUrl || oldUrl;
+    img.url = newUrl;
+  });
+}
 /* 找出「還有哪些欄位也在用同一張圖」（exclude＝要排除的那一格，通常是正在編輯的那格）。
    同一個欄位可能是逗號分隔的多張圖，所以是逐張比對。 */
 function findImageUsages(url, exclude) {
@@ -7226,7 +7260,7 @@ function findImageUsages(url, exclude) {
   currentImportColumns.forEach(function (col, ci) {
     Object.keys(col.data || {}).forEach(function (k) {
       if (exclude && exclude.idx === ci && exclude.key === k) return;
-      if (splitImageList(col.data[k]).indexOf(url) === -1) return;
+      if (!splitImageList(col.data[k]).some(function (p) { return sameImageAsset(p, url); })) return;
       out.push({ idx: ci, key: k });
     });
   });
@@ -7239,16 +7273,17 @@ function replaceImageInUsages(usages, oldUrl, newUrl) {
     var col = currentImportColumns[u.idx];
     if (!col) return;
     col.data[u.key] = splitImageList(col.data[u.key]).map(function (p) {
-      return p === oldUrl ? newUrl : p;
+      return sameImageAsset(p, oldUrl) ? newUrl : p;
     }).join(',');
   });
+  return usages.length;
 }
 
 /* 圖片欄位的「🔄 換圖」：選一張本機圖片換掉這一格的圖。
    換進來的圖同時也會加進圖片素材清單，之後同檔名的欄位可以自動比對到。 */
-var importFieldPickTarget = null; /* { idx, key } */
-function pickImportFieldImage(idx, key) {
-  importFieldPickTarget = { idx: idx, key: key };
+var importFieldPickTarget = null; /* { idx, key, imageIndex } */
+function pickImportFieldImage(idx, key, imageIndex) {
+  importFieldPickTarget = { idx: idx, key: key, imageIndex: imageIndex };
   var input = document.getElementById('imp-field-img-input');
   if (input) { input.value = ''; input.click(); }
 }
@@ -7289,7 +7324,7 @@ function canvasCtx(name) { return CANVAS_CTX[name] || CANVAS_CTX.import; }
 function setImportFieldImages(idx, key, urls, ctxName) {
   var ctx = canvasCtx(ctxName);
   var col = ctx.columns()[idx];
-  if (!col || !key || !urls || !urls.length) return;
+  if (!col || !key || !Array.isArray(urls)) return;
   /* 多張圖用逗號接起來：渲染器會等高並排、整組置中、超寬自動縮小 */
   col.data[key] = urls.join(',');
   ctx.afterChange();
@@ -7328,7 +7363,17 @@ function applyPickedImportFieldImage(file) {
   importFieldPickTarget = null;
   if (!target || !file) return;
   readImageFilesAsUrls([file], function (urls) {
-    if (urls.length) setImportFieldImages(target.idx, target.key, urls);
+    if (!urls.length) return;
+    var imageIndex = Number(target.imageIndex);
+    if (!isFinite(imageIndex) || imageIndex < 0) imageIndex = 0;
+    imageIndex = Math.floor(imageIndex);
+    var ctx = canvasCtx(target.ctxName);
+    var col = ctx.columns()[target.idx];
+    if (!col) return;
+    var parts = splitImageList(col.data[target.key] || '');
+    if (imageIndex >= parts.length) parts.push(urls[0]);
+    else parts[imageIndex] = urls[0];
+    setImportFieldImages(target.idx, target.key, parts, target.ctxName);
   });
 }
 
@@ -8014,25 +8059,30 @@ function renderImportColumns(columns, skipPreviewRerender) {
 
       if (f.type === 'image') {
         var shortLabel = String(f.label || f.key).replace(/圖片網址|網址/g, '').trim() || '圖片';
-        var hasImg = isUsableImageValue(val);
-        var thumbHtml = hasImg
-          ? '<img src="' + esc(splitImageList(val)[0] || '') + '" alt="">' +
-            (splitImageList(val).length > 1 ? '<span class="if-count">×' + splitImageList(val).length + '</span>' : '')
-          : '<span class="if-empty">🖼<br>未上傳</span>';
+        var imageParts = splitImageList(val);
+        if (!imageParts.length) imageParts = [''];
+        var imageRows = imageParts.map(function (part, imageIndex) {
+          var usable = /^(data:|https?:|blob:)/i.test(String(part || '').trim());
+          var indexLabel = imageParts.length > 1 ? '<span class="if-index">圖' + (imageIndex + 1) + '</span>' : '';
+          var thumbHtml = usable
+            ? '<img src="' + esc(part) + '" alt="">'
+            : '<span class="if-empty">🖼<br>' + (part ? '待載入' : '未上傳') + '</span>';
+          return '<div class="if-row" data-image-index="' + imageIndex + '">' +
+            '<div class="if-thumb' + (usable ? '' : ' is-empty') + '">' + indexLabel + thumbHtml + '</div>' +
+            '<div class="if-acts">' +
+              '<button type="button" class="if-btn" data-act="edit" data-image-index="' + imageIndex + '"' + (usable ? '' : ' disabled') +
+                ' title="裁切／去背／擦除／影子">✏️ 編輯</button>' +
+              '<button type="button" class="if-btn" data-act="swap" data-image-index="' + imageIndex + '" title="更換這張圖片">🔄 換圖</button>' +
+              '<button type="button" class="if-btn danger" data-act="del" data-image-index="' + imageIndex + '"' + (part ? '' : ' disabled') +
+                ' title="刪除這張圖片">✕ 刪除</button>' +
+            '</div>' +
+          '</div>';
+        }).join('');
         return '<div class="field img-field" data-key="' + f.key + '">' +
           '<label>' + esc(shortLabel) + limitHint + '</label>' +
-          '<div class="if-row">' +
-            '<div class="if-thumb' + (hasImg ? '' : ' is-empty') + '">' + thumbHtml + '</div>' +
-            '<div class="if-acts">' +
-              '<button type="button" class="if-btn" data-act="edit"' + (hasImg ? '' : ' disabled') +
-                ' title="裁切／去背／擦除／影子">✏️ 編輯</button>' +
-              '<button type="button" class="if-btn" data-act="swap" title="新增或更換圖片">🔄 換圖</button>' +
-              '<button type="button" class="if-btn danger" data-act="del"' + (hasImg ? '' : ' disabled') +
-                ' title="刪除這個圖片內容">✕ 刪除</button>' +
-            '</div>' +
-          '</div></div>';
-      }
+          '<div class="if-list">' + imageRows + '</div></div>';
 
+      }
       if (f.type === 'color') {
         /* 空字串代表沒有覆寫，畫布會回退到圖層原色；工具列也必須顯示
            同一個實際色號，不能再顯示黑色或空白。 */
@@ -8103,11 +8153,15 @@ function renderImportColumns(columns, skipPreviewRerender) {
       fieldEl.querySelectorAll('.if-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var act = btn.getAttribute('data-act');
-          if (act === 'edit') openImportFieldImageEditor(idx, key);
-          else if (act === 'swap') pickImportFieldImage(idx, key);
+          var imageIndex = Number(btn.getAttribute('data-image-index'));
+          if (act === 'edit') openImportFieldImageEditor(idx, key, imageIndex);
+          else if (act === 'swap') pickImportFieldImage(idx, key, imageIndex);
           else if (act === 'del') {
-            updateAndRerender(key, '');
-            renderImportFieldsForCurrentColumns(); /* 縮圖換成「未上傳」，可再新增 */
+            var imageParts = splitImageList(col.data[key] || '');
+            if (isFinite(imageIndex) && imageIndex >= 0 && imageIndex < imageParts.length) {
+              imageParts.splice(Math.floor(imageIndex), 1);
+              setImportFieldImages(idx, key, imageParts, 'import');
+            }
           }
         });
       });

@@ -177,6 +177,64 @@
     }
     return null;
   }
+  function applyLogoBackgroundColor(group) {
+    var target = group;
+    while (target && target.nodeType === 1 && !target.hasAttribute('data-logo-bg-sample')) target = target.parentElement;
+    if (!target) return;
+    var imgs = getImgs(group), img = null;
+    if (imgs.length > 1) return; /* 多顆 Logo 不共用單一吸色結果 */
+    for (var i = 0; i < imgs.length; i++) {
+      if (imgs[i].complete && imgs[i].naturalWidth && imgs[i].naturalHeight) { img = imgs[i]; break; }
+    }
+    if (!img) return;
+    var spec = String(target.getAttribute('data-logo-bg-sample') || 'adaptive');
+    var positions = [];
+    var maxX = Math.max(0, img.naturalWidth - 2);
+    var maxY = Math.max(0, img.naturalHeight - 2);
+    function addPosition(insetX, insetY) {
+      positions.push({
+        x: Math.max(0, Math.min(maxX, Math.round(insetX))),
+        y: Math.max(0, Math.min(maxY, Math.round(insetY)))
+      });
+    }
+    if (spec.toLowerCase() === 'adaptive') {
+      [2, 5, 8, 12].forEach(function (inset) { addPosition(inset, inset); });
+    } else {
+      var parts = spec.split(',');
+      var x = Number(parts[0]), y = Number(parts[1]);
+      addPosition(isFinite(x) ? x : 2, isFinite(y) ? y : 2);
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 2;
+    try {
+      var ctx = canvas.getContext('2d');
+      var bins = {};
+      positions.forEach(function (pos) {
+        ctx.clearRect(0, 0, 2, 2);
+        ctx.drawImage(img, pos.x, pos.y, 2, 2, 0, 0, 2, 2);
+        var d = ctx.getImageData(0, 0, 2, 2).data;
+        for (var i = 0; i < d.length; i += 4) {
+          if (d[i + 3] < 32) continue;
+          var r = d[i], g = d[i + 1], b = d[i + 2];
+          var key = Math.round(r / 16) + ',' + Math.round(g / 16) + ',' + Math.round(b / 16);
+          var bin = bins[key] || (bins[key] = { count: 0, r: 0, g: 0, b: 0 });
+          bin.count++;
+          bin.r += r; bin.g += g; bin.b += b;
+        }
+      });
+      var best = null;
+      Object.keys(bins).forEach(function (key) {
+        if (!best || bins[key].count > best.count) best = bins[key];
+      });
+      if (!best) return;
+      var color = 'rgb(' + Math.round(best.r / best.count) + ',' +
+        Math.round(best.g / best.count) + ',' + Math.round(best.b / best.count) + ')';
+      target.style.backgroundColor = color;
+      target.setAttribute('data-logo-bg-sampled', color);
+    } catch (e) {
+      /* 外部圖片未提供 CORS 時無法讀取像素，保留原本底色。 */
+    }
+  }
 
   function applyAspectSwitch(scope, sourceField) {
     if (!scope || !sourceField) return;
@@ -237,6 +295,7 @@
       applyLayout(group);
       /* product 圖此刻已有 naturalWidth / naturalHeight，才能正確切換整組範圍。 */
       applyAspectSwitches(group);
+      applyLogoBackgroundColor(group);
     }
     var pending = imgs.filter(function (img) { return !(img.complete && img.naturalWidth); });
     if (!pending.length) { finish(); return; }

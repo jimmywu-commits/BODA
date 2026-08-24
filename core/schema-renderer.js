@@ -139,6 +139,15 @@
   function hasRenderableImageValue(v) {
     return splitImageList(v).some(isRenderableImageUrl);
   }
+  /* 圓角 logo 的底色由原圖左上角多個內縮區域自動取樣。 */
+  function shouldSampleLogoBackground(layer, imageCount) {
+    if (!layer || layer.type !== 'image') return false;
+    if (imageCount != null && imageCount > 1) return false;
+    if (layer.sampleTopLeftBackground != null) return !!layer.sampleTopLeftBackground;
+    if (!/^logoImg\d*$/i.test(String(layer.field || ''))) return false;
+    if (!layer.keepBgWithImage || !layer.clipImage) return false;
+    return !!layer.borderRadius;
+  }
 
   /* 尚未上傳圖片時的佔位卡：柔和的底色＋淡淡的虛線框＋小圖示，
      空間夠大才連檔名一起顯示，小範圍只放圖示，不會擠成一團。 */
@@ -666,7 +675,9 @@
       if (layer.topExact == null) top -= textPadV;
     }
 
-    var style = ['position:absolute', 'left:' + px(left), 'top:' + px(top)];
+    var warnNudge = opts && opts._subareaWarnNudge &&
+      layer.type === 'text' && /^warn\d*$/i.test(String(layer.field || '')) ? 2 : 0;
+    var style = ['position:absolute', 'left:' + px(left), 'top:' + px(top + warnNudge)];
     if (textPadV > 0) {
       style.push('padding-top:' + px(textPadV));
       style.push('padding-bottom:' + px(textPadV));
@@ -910,6 +921,7 @@
     if (layer.type === 'image' && fieldKey && !layer.fixedImage) {
       attrs += ' data-img-field="' + esc(fieldKey) + '"' +
         ' data-img-label="' + esc(layer.fieldLabel || '圖片') + '"';
+      if (shouldSampleLogoBackground(layer, urls.length)) attrs += ' data-logo-bg-sample="adaptive"';
 
       /* aspectSource + aspectBoxes：同一組曝品／贈品範圍會依曝品原圖方向一起切換。
          預設 block.json 的 left/top/width/height 就是 wide 版；圖片載入後，
@@ -1031,6 +1043,14 @@
       var renderOpts = {};
       Object.keys(opts || {}).forEach(function (k) { renderOpts[k] = opts[k]; });
       renderOpts._schemaId = schema.id;
+      var layerFields = (schema.layers || []).map(function (l) {
+        return String(l.field || '');
+      });
+      var nameValue = data && data.name != null ? String(data.name).trim() : '';
+      var warnValue = data && data.warn != null ? String(data.warn).trim() : '';
+      renderOpts._subareaWarnNudge = /^subarea_/i.test(String(schema.id || '')) &&
+        !!nameValue && !!warnValue &&
+        layerFields.indexOf('name') !== -1 && layerFields.indexOf('warn') !== -1;
 
       /* 外層容器本身是「整個版位的畫布邊界」，不是卡片，不需要圓角，維持直角矩形；
          真正看起來像卡片的圓角，是靠版位自己的「背景」「促標底」這些圖層各自的border-radius做出來的 */
