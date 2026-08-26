@@ -199,14 +199,17 @@
      rect(id=promoBg*, field=promoColor*)，所以這個以顏色判斷的特例不需要了。
      （留著反而危險：真的有一張 LOGO 圖底色剛好是這個藍綠色時會被誤判成促標底。） */
 
-  function themeRoleOf(layer) {
+  function themeRoleOf(layer, schemaId) {
     /* 少數圖層的欄位 key 是沿用舊命名，但視覺語意不同。
        例如 MSBN B-1-4 的「文案」仍使用 field=promo，若只看欄位名，
        會誤套全域的「促標字色」（常見預設為白色）。
        block.json 可用 themeRole 明確指定它應歸類到哪一種顏色角色。 */
     if (layer && layer.themeRole) return String(layer.themeRole);
-    var id = String(layer.id || '').replace(/[0-9]+$/, '');
-    var fld = String(layer.field || '').replace(/[0-9]+$/, '').toLowerCase();
+    var rawId = String(layer.id || '');
+    var rawIdLower = rawId.toLowerCase();
+    var rawField = String(layer.field || '').toLowerCase();
+    var id = rawId.replace(/[0-9]+$/, '');
+    var fld = rawField.replace(/[0-9]+$/, '');
     /* 三角形跟著 CTA 的「字色」走，不是底色（不然改底色時三角形會跟底色融成一塊看不見） */
     if (isCtaTriangle(layer)) return 'ctaText';
     if (layer.type === 'text') {
@@ -224,7 +227,13 @@
       return null;   /* 其他圖片沒有顏色角色（促標色帶已經改成 rect，走下面那條） */
     }
     if (layer.type === 'rect' || layer.type === 'circle') {
-      if (id === 'bg' || fld === 'bgcolor') return 'bg';
+      /* MSBN A-2-3 的左右兩張卡片是唯一需要獨立背景色的例外；
+         其他版位仍沿用單一 cardBg 角色。 */
+      if (/^msbn_A_2_3$/i.test(String(schemaId || ''))) {
+        if (rawIdLower === 'bg' || rawField === 'bgcolor') return 'cardBgA23Left';
+        if (rawIdLower === 'bg2' || rawField === 'bgcolor2') return 'cardBgA23Right';
+      }
+      if (id === 'bg' || fld === 'bgcolor') return 'cardBg';
       if (id === 'promoBg' || id === 'promoBar' || fld === 'promocolor') return 'promoBg';
       if (id === 'badgeBg' || fld === 'badgecolor') return 'badgeBg';
       if (id === 'ctaBg' || fld === 'ctacolor') return 'ctaBg';
@@ -342,15 +351,24 @@
   function themeColorOf(layer, opts) {
     var theme = opts && opts.theme;
     if (!theme) return null;
-    var role = themeRoleOf(layer);
+    var role = themeRoleOf(layer, opts && opts._schemaId);
     if (!role) return null;
 
-    /* 匯入工單的「背景顏色」同時控制整張畫布與 MSBN D 卡片背景；
-       但副區及其他 MSBN 的卡片背景要保留版位自己的色。
-       theme.bgScope='msbn-d' 時，只允許 msbn_D_* 的 bg 圖層吃 theme.bg。 */
+    /* bg 維持舊有畫布／背景圖角色；一般 cardBg 只開放給 MSBN C／D。
+       副區與 MSBN A／B 的卡片背景固定白色；A-2-3 另有左右獨立角色。 */
     if (role === 'bg' && theme.bgScope === 'msbn-d') {
       var schemaId = String((opts && opts._schemaId) || '');
       if (!/^msbn_D_/i.test(schemaId)) return null;
+    }
+
+    if (role === 'cardBgA23Left' || role === 'cardBgA23Right') {
+      var a23SchemaId = String((opts && opts._schemaId) || '');
+      if (!/^msbn_A_2_3$/i.test(a23SchemaId)) return '#ffffff';
+    }
+
+    if (role === 'cardBg') {
+      var cardSchemaId = String((opts && opts._schemaId) || '');
+      if (!/^msbn_[CD]_/i.test(cardSchemaId)) return '#ffffff';
     }
 
     var v = theme[role];
@@ -482,8 +500,12 @@
     if (!cfg) return null;
     var source = null;
     var themeRole = cfg.fromThemeRole;
-    if (themeRole && opts && opts.theme && opts.theme[themeRole] && String(opts.theme[themeRole]).trim()) {
-      source = String(opts.theme[themeRole]).trim();
+    if (themeRole && opts && opts.theme) {
+      /* 舊版 D 系列設定用 fromThemeRole=bg；現在卡片背景有獨立的 cardBg
+         統一色，優先使用它，讓衍生深色區塊也跟著卡片背景同步。 */
+      var themeValue = themeRole === 'bg' && opts.theme.cardBg
+        ? opts.theme.cardBg : opts.theme[themeRole];
+      if (themeValue && String(themeValue).trim()) source = String(themeValue).trim();
     }
     if (!source && cfg.fromField) {
       var sourceKey = resolveFieldKey({ field: cfg.fromField, globalField: !!cfg.globalField }, fieldPrefix);
@@ -1036,6 +1058,97 @@
     return copy;
   }
 
+  function dynamicRowLayoutOf(schema, data, opts) {
+    var cfg = schema && schema.dynamicRowLayout;
+    if (!cfg || !Array.isArray(cfg.rows) || !cfg.rows.length) return null;
+    var layers = schema.layers || [];
+    var byField = {};
+    var forcedRows = [];
+    (Array.isArray(opts && opts.dynamicRowRows) ? opts.dynamicRowRows : []).forEach(function (value) {
+      var rowIndex = Number(value);
+      if (isFinite(rowIndex) && rowIndex >= 0 && rowIndex < cfg.rows.length && forcedRows.indexOf(rowIndex) === -1) {
+        forcedRows.push(rowIndex);
+      }
+    });
+    layers.forEach(function (layer) {
+      if (layer.field && !byField[layer.field]) byField[layer.field] = layer;
+    });
+    var activeRows = [];
+    var fieldRows = {};
+    cfg.rows.forEach(function (fields, rowIndex) {
+      (fields || []).forEach(function (key) { fieldRows[key] = rowIndex; });
+      var active = (fields || []).some(function (key) {
+        var value = data && data[key];
+        if (value == null || String(value).trim() === '') return false;
+        var layer = byField[key];
+        var def = layer && layer.default;
+        return def == null || String(value).trim() !== String(def).trim();
+      });
+      if (active) activeRows.push(rowIndex);
+    });
+    forcedRows.forEach(function (rowIndex) {
+      if (activeRows.indexOf(rowIndex) === -1) activeRows.push(rowIndex);
+    });
+    activeRows.sort(function (a, b) { return a - b; });
+    var originalHeight = Number(cfg.height) / cfg.rows.length;
+    var shadeLayers = layers.filter(function (layer) {
+      return layer.type === 'rect' && layer.opacity != null &&
+        layer.width != null && Math.abs(Number(layer.width) - (Number(schema.width) - 40)) < 0.5 &&
+        layer.height != null && Math.abs(Number(layer.height) - originalHeight) < 2;
+    });
+    return {
+      cfg: cfg,
+      fieldRows: fieldRows,
+      activeRows: activeRows,
+      forcedRows: forcedRows,
+      activeCount: activeRows.length,
+      originalHeight: originalHeight,
+      rowHeight: Number(cfg.height) / Math.max(1, activeRows.length),
+      shadeLayers: shadeLayers
+    };
+  }
+
+  function dynamicRowSignatureOf(schema, data) {
+    var layout = dynamicRowLayoutOf(schema, data);
+    return layout ? layout.activeRows.join(',') : null;
+  }
+
+  function dynamicRowLayerOf(layer, layout) {
+    if (!layout) return layer;
+    var cfg = layout.cfg;
+    var rowIndex = layout.fieldRows[layer.field];
+    if (layer.type === 'text' && rowIndex != null) {
+      var activeIndex = layout.activeRows.indexOf(rowIndex);
+      if (activeIndex === -1) return null;
+      var rowTop = Number(cfg.top) + activeIndex * layout.rowHeight;
+      var originalTop = Number(cfg.top) + rowIndex * layout.originalHeight;
+      var delta = rowTop - originalTop + (layout.rowHeight - layout.originalHeight) / 2;
+      var copy = {};
+      Object.keys(layer).forEach(function (key) { copy[key] = layer[key]; });
+      copy.top = Number(layer.top) + delta;
+      if (layer.topExact != null) copy.topExact = Number(layer.topExact) + delta;
+      return copy;
+    }
+
+    var shadeIndex = layout.shadeLayers.indexOf(layer);
+    if (shadeIndex !== -1) {
+      var shadeRow = Number(cfg.shadeStart || 0) + shadeIndex * 2;
+      if (shadeRow >= layout.activeCount) return null;
+      var shade = {};
+      Object.keys(layer).forEach(function (key) { shade[key] = layer[key]; });
+      shade.top = Number(cfg.top) + shadeRow * layout.rowHeight;
+      shade.height = layout.rowHeight;
+      var topRadius = shadeRow === 0 ? Number(cfg.topRadius || 0) : 0;
+      var bottomRadius = shadeRow === layout.activeCount - 1 ? Number(cfg.bottomRadius || 0) : 0;
+      if (topRadius && bottomRadius) shade.borderRadius = topRadius + 'px';
+      else if (topRadius) shade.borderRadius = topRadius + 'px ' + topRadius + 'px 0px 0px';
+      else if (bottomRadius) shade.borderRadius = '0px 0px ' + bottomRadius + 'px ' + bottomRadius + 'px';
+      else if (shade.borderRadius) shade.borderRadius = '0px';
+      return shade;
+    }
+    return layer;
+  }
+
   function buildRender(schema) {
     return function (data, opts) {
       /* 每次渲染都把目前 schema id 帶進 opts，讓顏色覆寫能判斷「這是不是 MSBN D」。
@@ -1066,7 +1179,10 @@
 
       /* 沒填的代言人／贈品空間讓給商品圖（範圍變大，被讓出來的圖層不畫） */
       var absorb = computeAbsorb(schema, data, renderOpts);
+      var dynamicRows = dynamicRowLayoutOf(schema, data, renderOpts);
       (schema.layers || []).forEach(function (layer) {
+        var dynamicLayer = dynamicRowLayerOf(layer, dynamicRows);
+        if (!dynamicLayer) return;
         if (absorb.skip.indexOf(layer) !== -1) return;
         var ti = absorb.targets.indexOf(layer);
         if (ti !== -1) {
@@ -1074,7 +1190,7 @@
           html += renderLayer(grown, grown.left, grown.top, data, null, renderOpts);
           return;
         }
-        html += renderLayer(layer, layer.left, layer.top, data, null, renderOpts);
+        html += renderLayer(dynamicLayer, dynamicLayer.left, dynamicLayer.top, data, null, renderOpts);
       });
 
       (schema.repeats || []).forEach(function (repeat) {
@@ -1194,7 +1310,7 @@
       return 2;
     }
     layers.forEach(function (l) {
-      var role = themeRoleOf(l);
+      var role = themeRoleOf(l, schema && schema.id);
       if (!role) return;
       var p = priorityOf(l, role);
       if (out[role] && pri[role] >= p) return;
@@ -1256,6 +1372,8 @@
     registerFromSchema: registerFromSchema,
     setConfig: setConfig,
     themeRoleOf: themeRoleOf,
-    roleColorsOf: roleColorsOf
+    roleColorsOf: roleColorsOf,
+    dynamicRowLayoutOf: dynamicRowLayoutOf,
+    dynamicRowSignatureOf: dynamicRowSignatureOf
   };
 })(window);

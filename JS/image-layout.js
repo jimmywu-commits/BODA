@@ -40,6 +40,8 @@
      當識別碼，只要那個祖先容器的id沒變(例如 imp-mount-0)，
      重新渲染後還是能對回同一張圖之前調整過的權重。 */
   var weightStore = {};
+  /* 同檔名 LOGO 共用縮放權重；不同版位重新渲染時也能套用同一個縮放結果。 */
+  var linkedWeightStore = {};
   /* 每張圖被拖曳過的位移，跟權重一樣用同一組識別碼記住：{ groupKey: { index: {x,y} } } */
   var offsetStore = {};
 
@@ -68,14 +70,58 @@
     return Array.prototype.slice.call(group.querySelectorAll('img.bn-imggroup-img'));
   }
 
-  function getWeight(groupKey, index) {
+  function imageSyncKey(img) {
+    if (!img) return '';
+    var group = img;
+    while (group && group.nodeType === 1 && !(group.classList && group.classList.contains('bn-imggroup'))) group = group.parentElement;
+    var field = group ? group.getAttribute('data-field-key') : '';
+    if (!/^logoImg\d*$/i.test(String(field || ''))) return '';
+    var src = img.getAttribute('src') || img.src || '';
+    var assets = window.uploadedImages;
+    if (Array.isArray(assets)) {
+      for (var i = 0; i < assets.length; i++) {
+        var asset = assets[i];
+        if (!asset || (asset.url !== src && asset.baseUrl !== src)) continue;
+        var name = String(asset.name || '').trim().toLowerCase();
+        if (name) return 'name:' + name;
+      }
+    }
+    return src ? 'url:' + src : '';
+  }
+
+  function getWeight(groupKey, index, img) {
+    var syncKey = imageSyncKey(img);
+    if (syncKey && linkedWeightStore[syncKey] != null) return linkedWeightStore[syncKey];
     var arr = weightStore[groupKey];
     return (arr && arr[index] != null) ? arr[index] : 1;
   }
 
-  function setWeight(groupKey, index, value) {
+  function setWeight(groupKey, index, value, img) {
     if (!weightStore[groupKey]) weightStore[groupKey] = {};
     weightStore[groupKey][index] = value;
+    var syncKey = imageSyncKey(img);
+    if (syncKey) {
+      linkedWeightStore[syncKey] = value;
+      syncWeightForImage(syncKey);
+    }
+  }
+
+  function syncWeightForImage(syncKey) {
+    if (!syncKey || typeof document === 'undefined') return;
+    var groups = document.querySelectorAll('.bn-imggroup');
+    for (var gi = 0; gi < groups.length; gi++) {
+      var group = groups[gi];
+      var imgs = getImgs(group);
+      var groupKey = getGroupKey(group);
+      var changed = false;
+      for (var i = 0; i < imgs.length; i++) {
+        if (imageSyncKey(imgs[i]) !== syncKey) continue;
+        if (!weightStore[groupKey]) weightStore[groupKey] = {};
+        weightStore[groupKey][i] = linkedWeightStore[syncKey];
+        changed = true;
+      }
+      if (changed) applyLayout(group);
+    }
   }
 
   function getOffset(groupKey, index) {
@@ -127,7 +173,7 @@
 
     group.style.gap = GAP + 'px';
     imgs.forEach(function (img, i) {
-      var finalWidth = baseWidths[i] * fitScale * getWeight(groupKey, i);
+      var finalWidth = baseWidths[i] * fitScale * getWeight(groupKey, i, img);
       img.style.width = finalWidth + 'px';
       img.style.height = 'auto';
       img.style.maxWidth = 'none';   /* 不讓任何外部樣式把放大後的圖片又壓回範圍內 */
@@ -316,10 +362,10 @@
         e.preventDefault();
         e.stopPropagation();
         var groupKey = getGroupKey(group);
-        var w = getWeight(groupKey, i);
+        var w = getWeight(groupKey, i, img);
         w += (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
         w = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, w));
-        setWeight(groupKey, i, w);
+        setWeight(groupKey, i, w, img);
         applyLayout(group);
       }, { passive: false });
 
@@ -360,7 +406,7 @@
         e.preventDefault();
         e.stopPropagation();
         var groupKey = getGroupKey(group);
-        setWeight(groupKey, i, 1);
+        setWeight(groupKey, i, 1, img);
         setOffset(groupKey, i, 0, 0);
         applyLayout(group);
       });

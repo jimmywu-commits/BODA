@@ -6,7 +6,9 @@
     src = src.replace(/^\.?\/*/, '');
     src = src.replace(/^bgimgn\//i, '');
     src = src.replace(/^bgimg\//i, '');
-    return IMG_BASE_URL.replace(/\/?$/, '/') + src;
+    var cfg = window.BN_BG_LIBRARY_CONFIG || {};
+    var base = cfg.imgBaseUrl || 'bgimg/';
+    return base.replace(/\/?$/, '/') + src;
   }
 
 /* BN Background Library Plugin
@@ -60,50 +62,449 @@
   }
 
 
-  function sampleTopLeftColor(src){
+  /* 背景圖配色不是只看左上角一個 pixel：
+     - left：保留文字區實際明暗，決定字要提亮或壓暗。
+     - right：取右側大範圍的主色，決定主標的色相，讓左右畫面互相呼應。
+     影像先縮小到低解析度再取樣，等同看「大範圍氣氛」，不會被單一商品細節牽著走。 */
+  function averageRegionColor(ctx, x0, y0, x1, y1){
+    var sx = Math.max(0, Math.floor(x0));
+    var sy = Math.max(0, Math.floor(y0));
+    var sw = Math.max(1, Math.min(ctx.canvas.width - sx, Math.ceil(x1 - x0)));
+    var sh = Math.max(1, Math.min(ctx.canvas.height - sy, Math.ceil(y1 - y0)));
+    var data = ctx.getImageData(sx, sy, sw, sh).data;
+    var r = 0, g = 0, b = 0, weight = 0;
+    for(var i = 0; i < data.length; i += 4){
+      var a = data[i + 3] / 255;
+      if(a <= 0.02) continue;
+      r += data[i] * a;
+      g += data[i + 1] * a;
+      b += data[i + 2] * a;
+      weight += a;
+    }
+    if(!weight) return null;
+    return { r:Math.round(r / weight), g:Math.round(g / weight), b:Math.round(b / weight) };
+  }
+
+  function dominantRegionColor(ctx, x0, y0, x1, y1){
+    var sx = Math.max(0, Math.floor(x0));
+    var sy = Math.max(0, Math.floor(y0));
+    var sw = Math.max(1, Math.min(ctx.canvas.width - sx, Math.ceil(x1 - x0)));
+    var sh = Math.max(1, Math.min(ctx.canvas.height - sy, Math.ceil(y1 - y0)));
+    var data = ctx.getImageData(sx, sy, sw, sh).data;
+    var bins = {};
+    var fallback = { r:0, g:0, b:0, weight:0 };
+
+    for(var i = 0; i < data.length; i += 4){
+      var a = data[i + 3] / 255;
+      if(a <= 0.02) continue;
+      var r = data[i], g = data[i + 1], b = data[i + 2];
+      var hsl = rgbToHsl(r, g, b);
+      var areaWeight = a;
+      fallback.r += r * areaWeight;
+      fallback.g += g * areaWeight;
+      fallback.b += b * areaWeight;
+      fallback.weight += areaWeight;
+
+      /* 24 級量化保留大片色塊；以面積為主、飽和度為次，
+         讓右側主背景勝過零星高飽和商品，但不會把整張圖平均成灰色。 */
+      var qr = Math.round(r / 24) * 24;
+      var qg = Math.round(g / 24) * 24;
+      var qb = Math.round(b / 24) * 24;
+      var key = qr + ',' + qg + ',' + qb;
+      if(!bins[key]) bins[key] = { r:0, g:0, b:0, count:0, score:0 };
+      var bin = bins[key];
+      var score = areaWeight * (0.76 + Math.min(1, hsl.s / 100) * 0.24);
+      bin.r += r * areaWeight;
+      bin.g += g * areaWeight;
+      bin.b += b * areaWeight;
+      bin.count += areaWeight;
+      bin.score += score;
+    }
+
+    if(!fallback.weight) return null;
+    var best = null;
+    Object.keys(bins).forEach(function(key){
+      if(!best || bins[key].score > best.score) best = bins[key];
+    });
+    var chosen = best && best.count ? best : fallback;
+    return {
+      r:Math.round(chosen.r / (chosen.count || chosen.weight)),
+      g:Math.round(chosen.g / (chosen.count || chosen.weight)),
+      b:Math.round(chosen.b / (chosen.count || chosen.weight))
+    };
+  }
+
+  function sampleBackgroundColors(src){
     return new Promise(function(resolve){
       if(!src) return resolve(null);
       var img = new Image();
-      if(!/^data:/i.test(src)) img.crossOrigin = 'anonymous';
+      if(!/^data:|^blob:/i.test(src)) img.crossOrigin = 'anonymous';
       img.onload = function(){
         try{
           var c = document.createElement('canvas');
-          c.width = 1;
-          c.height = 1;
+          c.width = 64;
+          c.height = 24;
           var ctx = c.getContext('2d', { willReadFrequently:true });
-          ctx.drawImage(img, 0, 0, 1, 1);
-          var d = ctx.getImageData(0, 0, 1, 1).data;
-          resolve(rgbToHex(d[0], d[1], d[2]));
+          ctx.drawImage(img, 0, 0, c.width, c.height);
+          var left = averageRegionColor(ctx, 0, 0, 32, 24);
+          var right = dominantRegionColor(ctx, 34, 0, 64, 24) || averageRegionColor(ctx, 32, 0, 64, 24);
+          if(!left && right) left = right;
+          if(!right && left) right = left;
+          if(!left || !right) return resolve(null);
+          resolve({
+            left: rgbToHex(left.r, left.g, left.b),
+            right: rgbToHex(right.r, right.g, right.b),
+            width: img.naturalWidth || img.width || 0,
+            height: img.naturalHeight || img.height || 0
+          });
         }catch(_){ resolve(null); }
       };
       img.onerror = function(){ resolve(null); };
       img.src = resolveBgImgUrl(src);
     });
   }
-
   function rgbToHex(r,g,b){
     function h(n){ n = Math.max(0, Math.min(255, n|0)); return n.toString(16).padStart(2,'0'); }
     return '#' + h(r) + h(g) + h(b);
   }
 
-  function applySampledCanvasBg(src){
-    return sampleTopLeftColor(src).then(function(hex){
-      if(!hex) return null;
-      if(typeof window._bnSetAuthoritativeCanvasBg === 'function'){
-        try{ window._bnSetAuthoritativeCanvasBg(hex); }catch(_){ }
+  function hexToRgb(hex){
+    var m = String(hex || '').match(/^#?([0-9a-f]{6})$/i);
+    if(!m) return null;
+    var n = parseInt(m[1], 16);
+    return { r:(n >> 16) & 255, g:(n >> 8) & 255, b:n & 255 };
+  }
+
+  function relativeLuminance(rgb){
+    function channel(v){
+      v = v / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+    return 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
+  }
+
+  /* 依「蝦導播_配色器邏輯_交接.md」：以 W3C 相對亮度作為
+     所有文字對比度判斷的唯一基準。 */
+  function getLuminance(hex){
+    var rgb = hexToRgb(hex);
+    return rgb ? relativeLuminance(rgb) : 0;
+  }
+
+  function contrastRatio(hex1, hex2){
+    var l1 = getLuminance(hex1);
+    var l2 = getLuminance(hex2);
+    var hi = Math.max(l1, l2);
+    var lo = Math.min(l1, l2);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  function rgbToHsl(r, g, b){
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
+    var max = Math.max(r, g, b);
+    var min = Math.min(r, g, b);
+    var h = 0;
+    var s = 0;
+    var l = (max + min) / 2;
+
+    if(max !== min){
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+      switch(max){
+        case r:
+          h = (g - b) / d + (g < b ? 6 : 0);
+          break;
+        case g:
+          h = (b - r) / d + 2;
+          break;
+        default:
+          h = (r - g) / d + 4;
+          break;
       }
-      if(window.colorState) window.colorState.canvasBg = hex;
-      var dot = document.getElementById('dot-canvasBg');
-      if(dot) dot.style.background = hex;
+      h /= 6;
+    }
+
+    return { h: h * 360, s: s * 100, l: l * 100 };
+  }
+
+  function hslToHex(h, s, l){
+    h = ((Number(h) || 0) % 360 + 360) % 360 / 360;
+    s = Math.max(0, Math.min(100, Number(s) || 0)) / 100;
+    l = Math.max(0, Math.min(100, Number(l) || 0)) / 100;
+
+    var r;
+    var g;
+    var b;
+
+    if(s === 0){
+      r = g = b = l;
+    }else{
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+
+      function hueToRgb(t){
+        if(t < 0) t += 1;
+        if(t > 1) t -= 1;
+        if(t < 1 / 6) return p + (q - p) * 6 * t;
+        if(t < 1 / 2) return q;
+        if(t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      }
+
+      r = hueToRgb(h + 1 / 3);
+      g = hueToRgb(h);
+      b = hueToRgb(h - 1 / 3);
+    }
+
+    return rgbToHex(
+      Math.round(r * 255),
+      Math.round(g * 255),
+      Math.round(b * 255)
+    );
+  }
+
+  /* 對比不足時沿同一色相調整明度；飽和度至少保留 42%，避免變灰。 */
+  function ensureContrast(textHex, bgHex, minRatio){
+    if(contrastRatio(textHex, bgHex) >= minRatio) return textHex;
+
+    var darken = getLuminance(bgHex) > 0.22;
+    var rgb = hexToRgb(textHex);
+    if(!rgb) return darken ? '#1a1a1a' : '#e5e5e5';
+
+    var hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+    var saturation = Math.max(hsl.s, 42);
+
+    for(var i = 0; i < 28; i++){
+      hsl.l = darken
+        ? Math.max(hsl.l - 3, 12)
+        : Math.min(hsl.l + 3, 88);
+
+      var candidate = hslToHex(hsl.h, saturation, hsl.l);
+      if(contrastRatio(candidate, bgHex) >= minRatio) return candidate;
+    }
+
+    return hslToHex(hsl.h, saturation, darken ? 12 : 88);
+  }
+
+  /* CTA 底色會使用副標色；CTA 文字／三角標則取黑白中對比度較高者。
+     這裡用最大對比方向，而不是 RGB 直接反相，避免反相後仍然吃色。 */
+  function getContrastingCtaText(bgHex){
+    var white = '#ffffff';
+    var black = '#000000';
+    return contrastRatio(white, bgHex) >= contrastRatio(black, bgHex) ? white : black;
+  }
+  function buildTextPaletteFromSamples(canvasHex, visualHex){
+    var canvasBg = hexToRgb(canvasHex);
+
+  function clampNumber(v, min, max){
+    return Math.max(min, Math.min(max, Number(v)));
+  }
+
+  function normalizeHue(h){
+    return ((Number(h) || 0) % 360 + 360) % 360;
+  }
+
+  function textHueFromVisual(hsl, isLight){
+    if(!hsl || hsl.s < 15) return 220;
+    var hue = normalizeHue(hsl.h);
+    /* 黃底使用略偏橘的鄰近色，保留一致性又增加主標辨識度。 */
+    if(isLight && hue >= 38 && hue <= 78) hue = normalizeHue(hue - 12);
+    return hue;
+  }
+    if(!canvasBg) return null;
+    var visualBg = hexToRgb(visualHex) || canvasBg;
+
+    var canvasHsl = rgbToHsl(canvasBg.r, canvasBg.g, canvasBg.b);
+    var visualHsl = rgbToHsl(visualBg.r, visualBg.g, visualBg.b);
+    var lum = getLuminance(canvasHex);
+    var isDark = lum < 0.22;
+    var isLight = lum > 0.55;
+    var isMidTone = !isDark && !isLight;
+    var hue = textHueFromVisual(visualHsl, isLight);
+    var visualSat = visualHsl.s < 15 ? canvasHsl.s : visualHsl.s;
+    var saturatedBase = clampNumber(visualSat + 18, 48, 82);
+    var softSat = clampNumber(visualSat * 0.55 + 12, 14, 52);
+
+    var mainText;
+    var subText;
+    var dateText;
+
+    if(isDark){
+      /* 深色背景：右側主色只決定色相，文字明度整體往上拉。 */
+      mainText = ensureContrast(
+        hslToHex(hue, clampNumber(saturatedBase - 8, 24, 68), 80),
+        canvasHex,
+        4.5
+      );
+      subText = ensureContrast(
+        hslToHex(hue, clampNumber(softSat, 14, 44), 92),
+        canvasHex,
+        4.5
+      );
+      dateText = ensureContrast(
+        hslToHex(hue, clampNumber(saturatedBase - 12, 22, 58), 70),
+        canvasHex,
+        3.0
+      );
+    }else if(isLight){
+      /* 亮色背景：沿背景／右側主色系降低明度，避免純黑破壞一致性。 */
+      mainText = ensureContrast(
+        hslToHex(hue, clampNumber(saturatedBase, 54, 88), 32),
+        canvasHex,
+        4.5
+      );
+      subText = ensureContrast(
+        hslToHex(hue, clampNumber(saturatedBase - 8, 42, 78), 40),
+        canvasHex,
+        4.5
+      );
+      dateText = ensureContrast(
+        hslToHex(hue, clampNumber(softSat + 12, 28, 66), 48),
+        canvasHex,
+        3.0
+      );
+    }else{
+      /* 中間色調：先試同一色相的深／淺兩個方向，選對比較高者。 */
+      var darkText = ensureContrast(
+        hslToHex(hue, clampNumber(saturatedBase, 42, 84), 25),
+        canvasHex,
+        3.0
+      );
+      var lightText = ensureContrast(
+        hslToHex(hue, clampNumber(softSat, 16, 60), 84),
+        canvasHex,
+        3.0
+      );
+      var useLight = contrastRatio(lightText, canvasHex) >= contrastRatio(darkText, canvasHex);
+      if(useLight){
+        mainText = ensureContrast(hslToHex(hue, clampNumber(saturatedBase - 10, 24, 68), 78), canvasHex, 3.0);
+        subText = lightText;
+        dateText = ensureContrast(hslToHex(hue, clampNumber(softSat, 14, 48), 70), canvasHex, 3.0);
+      }else{
+        mainText = darkText;
+        subText = ensureContrast(hslToHex(hue, clampNumber(saturatedBase - 10, 36, 76), 36), canvasHex, 3.0);
+        dateText = ensureContrast(hslToHex(hue, clampNumber(softSat + 8, 20, 58), 48), canvasHex, 3.0);
+      }
+    }
+
+    var ctaBg = subText;
+    var ctaText = getContrastingCtaText(ctaBg);
+
+    return {
+      mainText: mainText,
+      subText: subText,
+      dateText: dateText,
+      brandText: mainText,
+      ctaBg: ctaBg,
+      ctaText: ctaText,
+      searchImageCtaBg: ctaBg,
+      _isDark: isDark,
+      _isLight: isLight,
+      _isMidTone: isMidTone,
+      _canvasBg: canvasHex,
+      _visualBg: visualHex || canvasHex
+    };
+  }
+
+  function buildTextPaletteFromBg(hex){
+    return buildTextPaletteFromSamples(hex, hex);
+  }
+
+  function applyAutoTextPalette(canvasHex, visualHex){
+    if(!window.colorState) return null;
+    var palette = buildTextPaletteFromSamples(canvasHex, visualHex || canvasHex);
+    if(!palette) return null;
+
+    /* 主標、日期各自保有層級；品牌名仍跟主標保持一致。 */
+    ['mainText','subText','dateText','brandText'].forEach(function(key){
+      window.colorState[key] = palette[key];
+      var dot = document.getElementById('dot-' + key);
+      if(dot) dot.style.background = palette[key];
+    });
+
+    /* CTA 底色跟副標；CTA 文字與三角標跟 CTA 底色取最大反差。 */
+    ['ctaBg','ctaText','searchImageCtaBg'].forEach(function(key){
+      window.colorState[key] = palette[key];
+      var dot = document.getElementById('dot-' + key);
+      if(dot) dot.style.background = palette[key];
+    });
+
+    var iconDot = document.getElementById('dot-iconTextMirror');
+    if(iconDot) iconDot.style.background = palette.mainText;
+    if(window.cpActiveKey && palette[window.cpActiveKey]){
       var hexInp = document.getElementById('cp-hex-input');
-      if(window.cpActiveKey === 'canvasBg' && hexInp) hexInp.value = hex;
+      var native = document.getElementById('cp-native');
+      if(hexInp) hexInp.value = palette[window.cpActiveKey];
+      if(native) native.value = palette[window.cpActiveKey];
+    }
+
+    try{ window._bnLastUserColorState = JSON.parse(JSON.stringify(window.colorState)); }
+    catch(_){ window._bnLastUserColorState = Object.assign({}, window.colorState); }
+    return palette;
+  }
+
+  /* 手動背景色與跨頁同步也要走同一套文字配色，不能只有背景圖庫取樣才生效。 */
+  function installTextColorHooks(){
+    if(window.__BN_BG_TEXT_COLOR_HOOKS__) return;
+    window.__BN_BG_TEXT_COLOR_HOOKS__ = true;
+
+    var nativeApplyColor = window.applyColor;
+    if(typeof nativeApplyColor === 'function' && !nativeApplyColor.__bnTextPaletteWrapped){
+      var wrappedApplyColor = function(color){
+        if(window.cpActiveKey === 'canvasBg' && hexToRgb(color)){
+          applyAutoTextPalette(color, (window._bnLastSampledCanvasBg && String(window._bnLastSampledCanvasBg).toLowerCase() === String(color).toLowerCase() && Date.now() - (Number(window._bnLastSampledAt) || 0) < 3000) ? (window._bnLastSampledVisualBg || color) : color);
+        }
+        return nativeApplyColor.apply(this, arguments);
+      };
+      wrappedApplyColor.__bnTextPaletteWrapped = true;
+      window.applyColor = wrappedApplyColor;
+    }
+
+    var nativeApplySharedBg = window._bnApplySharedCanvasBg;
+    if(typeof nativeApplySharedBg === 'function' && !nativeApplySharedBg.__bnTextPaletteWrapped){
+      var wrappedApplySharedBg = function(color){
+        var ret = nativeApplySharedBg.apply(this, arguments);
+        if(hexToRgb(color)){
+          applyAutoTextPalette(color);
+          if(typeof window.broadcastColors === 'function'){
+            try{ window.broadcastColors(); }catch(_){ }
+          }
+        }
+        return ret;
+      };
+      wrappedApplySharedBg.__bnTextPaletteWrapped = true;
+      window._bnApplySharedCanvasBg = wrappedApplySharedBg;
+    }
+  }
+  function applySampledCanvasBg(src){
+    return sampleBackgroundColors(src).then(function(samples){
+      if(!samples) return null;
+      var canvasHex = samples.left || samples.right;
+      var visualHex = samples.right || canvasHex;
+      if(!canvasHex) return null;
+      window._bnLastSampledCanvasBg = canvasHex;
+      window._bnLastSampledVisualBg = visualHex;
+      window._bnLastSampledAt = Date.now();
+      if(typeof window._bnSetAuthoritativeCanvasBg === 'function'){
+        try{ window._bnSetAuthoritativeCanvasBg(canvasHex); }catch(_){ }
+      }
+      if(window.colorState) window.colorState.canvasBg = canvasHex;
+      var dot = document.getElementById('dot-canvasBg');
+      if(dot) dot.style.background = canvasHex;
+      var hexInp = document.getElementById('cp-hex-input');
+      if(window.cpActiveKey === 'canvasBg' && hexInp) hexInp.value = canvasHex;
+      applyAutoTextPalette(canvasHex, visualHex);
       if(typeof window.broadcastColors === 'function'){
         try{ window.broadcastColors(); }catch(_){ }
       }
       try{ document.dispatchEvent(new CustomEvent('bn-state-dirty')); }catch(_){ }
-      return hex;
+      return canvasHex;
     });
   }
+  window._bnApplySampledCanvasBg = applySampledCanvasBg;
 
   function pickSampleSourceFromStates(states){
     if(!states) return null;
@@ -642,6 +1043,7 @@
   }
 
   installBgColorSamplingHooks();
+  installTextColorHooks();
 
   window.BNBgLibrary = {
     open: openModal,

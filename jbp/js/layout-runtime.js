@@ -517,12 +517,28 @@
       ac('主標',c.mainText); ac('副標',c.subText); ac('日期',c.dateText); ac('品牌名',c.brandText);
       /* Search_Image：副標案型七字內 顏色跟著副標文字色連動 */
       document.querySelectorAll('.副標案型七字內').forEach(function(el){ if(c.subText) el.style.setProperty('color', c.subText, 'important'); });
-      document.querySelectorAll('.cta-text').forEach(function(el){ if(c.ctaText) el.style.color=c.ctaText; });
-      document.querySelectorAll('.cta-arrow').forEach(function(el){ if(c.ctaText) el.style.borderLeftColor=c.ctaText; });
-      /* CTA 底色：.逛逛去按鈕 / .cta底 / .逛逛去底 */
-      document.querySelectorAll('.逛逛去按鈕,.cta底,.逛逛去底').forEach(function(el){ if(c.ctaBg) el.style.backgroundColor=c.ctaBg; });
-      /* Search Image CTA 底色：只影響 Search_Image 版型的圓形 CTA */
-      document.querySelectorAll('.cta圓底').forEach(function(el){ if(c.searchImageCtaBg) el.style.setProperty('background-color', c.searchImageCtaBg, 'important'); });
+      var _bnCtaBg = c.subText || c.ctaBg;
+      var _bnCtaText = c.ctaText;
+      function _bnCtaContrastText(bgHex){
+        var m = String(bgHex || '').match(/^#?([0-9a-f]{6})$/i);
+        if(!m) return _bnCtaText || '#ffffff';
+        var n = parseInt(m[1], 16);
+        var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+        function ch(v){
+          v = v / 255;
+          return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        }
+        var lum = 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+        var whiteRatio = (1.05) / (lum + 0.05);
+        var blackRatio = (lum + 0.05) / 0.05;
+        return whiteRatio >= blackRatio ? '#ffffff' : '#000000';
+      }
+      if(_bnCtaBg) _bnCtaText = _bnCtaContrastText(_bnCtaBg);
+      document.querySelectorAll('.cta-text').forEach(function(el){ if(_bnCtaText) el.style.color=_bnCtaText; });
+      /* CTA 底色跟副標色：.逛逛去按鈕 / .cta底 / .逛逛去底 */
+      document.querySelectorAll('.逛逛去按鈕,.cta底,.逛逛去底').forEach(function(el){ if(_bnCtaBg) el.style.backgroundColor=_bnCtaBg; });
+      /* Search Image CTA 圓底也跟副標色 */
+      document.querySelectorAll('.cta圓底').forEach(function(el){ if(_bnCtaBg) el.style.setProperty('background-color', _bnCtaBg, 'important'); });
       if(c.tagColor){
         if(typeof window._bnSetTagColor === 'function') window._bnSetTagColor(c.tagColor);
         else {
@@ -531,10 +547,10 @@
         }
       }
       /* CTA 文字色：.放心買_安心退 / .逛逛去 */
-      document.querySelectorAll('.放心買_安心退,.逛逛去').forEach(function(el){ if(c.ctaText) el.style.color=c.ctaText; });
+      document.querySelectorAll('.放心買_安心退,.逛逛去').forEach(function(el){ if(_bnCtaText) el.style.color=_bnCtaText; });
       /* CTA 三角色：.cta三角標 / .逛逛去三角標 */
-      document.querySelectorAll('.cta三角標').forEach(function(el){ if(c.ctaText) el.style.borderLeftColor=c.ctaText; });
-      document.querySelectorAll('.逛逛去三角標').forEach(function(el){ if(c.ctaText) el.style.borderLeftColor=c.ctaText; });
+      document.querySelectorAll('.cta三角標,.cta三角箭頭').forEach(function(el){ if(_bnCtaText) el.style.borderLeftColor=_bnCtaText; });
+      document.querySelectorAll('.逛逛去三角標').forEach(function(el){ if(_bnCtaText) el.style.borderLeftColor=_bnCtaText; });
     }
 
     if (e.data.type === 'bn-logo' || e.data.type === 'bn-logos') {

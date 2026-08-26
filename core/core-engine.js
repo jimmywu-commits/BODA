@@ -87,7 +87,16 @@
    積木清單載入：讀取 /blocks/index.js（BN_BLOCKS 陣列）
    再依序動態載入每個 /blocks/{id}/block.js
 ════════════════════════════════════════ */
-function bnLoadAllBlocks(onDone, basePath) {
+function bnLoadAllBlocks(onDone, basePath, onProgress) {
+  function report(loaded, total, succeeded) {
+    if (typeof onProgress === 'function') onProgress({
+      loaded: loaded, total: total, succeeded: succeeded
+    });
+  }
+  function done(result) {
+    if (onDone) onDone(result);
+  }
+  report(0, 0, 0);
   basePath = basePath || '../blocks/'; /* core.html / canvas.html 放在 /core/ 下，往上一層找 blocks/；
                                            若頁面本身就在根目錄（如 index.html），呼叫時傳 'blocks/' */
   fetch(basePath + 'index.js?t=' + Date.now())
@@ -98,10 +107,16 @@ function bnLoadAllBlocks(onDone, basePath) {
       var ids = null;
       window._bn_blocks_manifest_cb = function (arr) { ids = arr; };
       (0, eval)(text);
-      if (!Array.isArray(ids)) { console.error('[BNCore] blocks/index.js 應輸出陣列'); onDone && onDone(); return; }
+      if (!Array.isArray(ids)) {
+        console.error('[BNCore] blocks/index.js 應輸出陣列');
+        done({ total: 0, succeeded: 0 });
+        return;
+      }
 
       var remain = ids.length;
-      if (!remain) { onDone && onDone(); return; }
+      if (!remain) { done({ total: 0, succeeded: 0 }); return; }
+      var loaded = 0, succeeded = 0;
+      report(0, ids.length, 0);
       ids.forEach(function (id) {
         fetch(basePath + id + '/block.json?t=' + Date.now())
           .then(function (r) {
@@ -110,15 +125,20 @@ function bnLoadAllBlocks(onDone, basePath) {
           })
           .then(function (schema) {
             window.BNSchemaRenderer.registerFromSchema(schema);
+            succeeded++;
           })
           .catch(function (err) {
             console.error('[BNCore] 載入積木失敗：' + id, err);
           })
-          .then(function () { if (--remain <= 0) onDone && onDone(); });
+          .then(function () {
+            loaded++;
+            report(loaded, ids.length, succeeded);
+            if (--remain <= 0) done({ total: ids.length, succeeded: succeeded });
+          });
       });
     })
     .catch(function (err) {
       console.error('[BNCore] blocks/index.js 讀取失敗', err);
-      onDone && onDone();
+      done({ total: 0, succeeded: 0 });
     });
 }

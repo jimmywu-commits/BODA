@@ -176,7 +176,7 @@
       "width": 1160.0,
       "height": 385.0,
       "backgroundColor": "rgb(246, 208, 149)",
-      "borderRadius": "15px",
+      "borderRadius": "15px 15px 0px 0px",
       "field": "bgColor",
       "fieldLabel": "卡片背景色"
     }
