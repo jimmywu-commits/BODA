@@ -43,7 +43,8 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 /* ══════════════ 首頁 ══════════════ */
 #view-home.active{display:flex;align-items:center;justify-content:center;}
 #home-wrap{text-align:center;max-width:760px;padding:20px;}
-#home-head h1{font-size:24px;font-weight:800;letter-spacing:.3px;}
+#home-head h1{display:flex;align-items:center;justify-content:center;gap:9px;font-size:24px;font-weight:800;letter-spacing:.3px;}
+#home-head h1 .home-title-icon{width:29px;height:29px;display:block;flex:none;fill:none;stroke:var(--teal);stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}
 #home-head p{color:var(--ink2);font-size:13px;margin-top:8px;margin-bottom:36px;}
 #home-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
 .home-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;
@@ -723,7 +724,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     <div id="view-home" class="view">
       <div id="home-wrap">
         <div id="home-head">
-          <h1>🧱 副區版位工具</h1>
+          <h1><svg class="home-title-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 20 7.4v9.2L12 21.2 4 16.6V7.4Z"/><path d="m4 7.4 8 4.6 8-4.6M12 12v9.2"/></svg>副區版位工具</h1>
           <p>選一個入口開始</p>
         </div>
         <div id="home-cards">
@@ -5402,12 +5403,16 @@ var FIELD_LABEL_TEXT = { '商品': '商品 (多圖用逗號分開)' };
 function fieldValueText(f) {
   var t = f.type;
   if (FIELD_VALUE_TEXT[t]) return FIELD_VALUE_TEXT[t];
+  var limit = extractFieldCharLimit(f);
+  var rawLimit = f.limit != null ? f.limit : f.maxLength;
+  var rawLimitText = rawLimit == null ? '' : String(rawLimit).trim();
+  var displayLimit = limit == null ? rawLimitText : limit;
   if (t === 'CTA') {
     if (f.note === 'icon-only') return '(icon圖，無文字)';
-    return '限' + f.limit + '個字';
+    return displayLimit == null || displayLimit === '' ? '' : '限' + displayLimit + '個字';
   }
-  if (f.limit == null) return '';
-  return '限' + f.limit + '個字';
+  if (displayLimit == null || displayLimit === '') return '';
+  return '限' + displayLimit + '個字';
 }
 
 /* slots 不給就用副區那一排；MSBN 第一格的「副區版配」會傳自己的 slots 進來 */
@@ -5775,6 +5780,22 @@ function extractCharLimit(hintText) {
   var m = /([0-9]+)/.exec(hintText);
   return m ? parseInt(m[1], 10) : null;
 }
+/* 欄位限制可能來自副區的 limit／maxLength，或 MSBN 的 hint；
+   匯出試算表時統一從欄位物件讀取，避免狀態欄因提示文字格式不同而退回「待填」。 */
+function extractFieldCharLimit(fieldOrHint) {
+  if (fieldOrHint && typeof fieldOrHint === 'object') {
+    var rawLimit = fieldOrHint.limit != null ? fieldOrHint.limit : fieldOrHint.maxLength;
+    if (rawLimit != null && String(rawLimit).trim() !== '') {
+      var rawLimitText = String(rawLimit).trim();
+      if (/^\d+$/.test(rawLimitText)) {
+        var directLimit = parseInt(rawLimitText, 10);
+        if (isFinite(directLimit) && directLimit > 0) return directLimit;
+      }
+    }
+    return extractCharLimit(fieldOrHint.hint || '');
+  }
+  return extractCharLimit(fieldOrHint);
+}
 
 function exportWorkOrderXlsx(exportOptions) {
   appLoadingUpdate(12, 'LOADING · 輸出試算表', '正在建立工作表與欄位…');
@@ -5907,8 +5928,8 @@ function exportWorkOrderXlsx(exportOptions) {
     if (v && typeof v === 'object' && v.result != null) return String(v.result);
     return v == null ? '' : String(v);
   }
-  function applyCharLimitGuard(ws, inputCell, hintText, checkCell) {
-    var limit = extractCharLimit(hintText);
+  function applyCharLimitGuard(ws, inputCell, fieldOrHint, checkCell) {
+    var limit = extractFieldCharLimit(fieldOrHint);
     var addr = inputCell.address;
     if (limit != null) {
       inputCell.dataValidation = {
@@ -5945,7 +5966,7 @@ function exportWorkOrderXlsx(exportOptions) {
     return null;
   }
   function applyWorkbookTextGuard(ws, inputCell, field, checkCell, ruleRange) {
-    var limit = applyCharLimitGuard(ws, inputCell, field.hint, checkCell);
+    var limit = applyCharLimitGuard(ws, inputCell, field, checkCell);
     var addr = inputCell.address;
     var dateLike = importFieldRuleRole(field, field.metaLabel || field.type) === 'date';
     if (!dateLike) inputCell.numFmt = '$#,##0';
