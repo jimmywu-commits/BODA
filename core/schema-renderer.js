@@ -699,7 +699,11 @@
 
     var warnNudge = opts && opts._subareaWarnNudge &&
       layer.type === 'text' && /^warn\d*$/i.test(String(layer.field || '')) ? 2 : 0;
-    var style = ['position:absolute', 'left:' + px(left), 'top:' + px(top + warnNudge)];
+    /* C-series promo and ticket copy keep the original box center, but no longer use the fixed width as a clipping box. */
+    var autoWidthText = layer.type === 'text' && layer.autoWidth === true &&
+      isFinite(Number(layer.width));
+    var renderLeft = autoWidthText ? Number(left) + Number(layer.width) / 2 : left;
+    var style = ['position:absolute', 'left:' + px(renderLeft), 'top:' + px(top + warnNudge)];
     if (textPadV > 0) {
       style.push('padding-top:' + px(textPadV));
       style.push('padding-bottom:' + px(textPadV));
@@ -714,6 +718,11 @@
        其他圖層仍直接使用原本的 zIndex。 */
     if (layer.type !== 'image' && layer.zIndex != null) style.push('z-index:' + layer.zIndex);
     if (badgeWidthOverride != null) style.push('width:' + px(badgeWidthOverride));
+    else if (autoWidthText) {
+      style.push('width:max-content');
+      style.push('min-width:0');
+      style.push('max-width:none');
+    }
     else if (layer.width != null) style.push('width:' + px(layer.width));
     if (isCenteredCtaText) style.push('height:' + px(layer._ctaBoxHeight));
     else if (layer.height != null) style.push('height:' + px(layer.height));
@@ -901,10 +910,16 @@
       /* 有字 CTA 永遠是單行；中文字瀏覽器預設可在任意字之間斷行，
          因此即使只差 1px 也會把第三個字折到下一行。 */
       style.push('white-space:' + (isCenteredCtaText ? 'nowrap' : (layer.whiteSpace || 'nowrap')));
-      if (layer.transform) style.push('transform:matrix(' + layer.transform.join(',') + ')');
+      if (layer.transform) {
+        var layerTransform = 'matrix(' + layer.transform.join(',') + ')';
+        if (autoWidthText) layerTransform += ' translateX(-50%)';
+        style.push('transform:' + layerTransform);
+      } else if (autoWidthText) {
+        style.push('transform:translateX(-50%)');
+      }
       /* 一般文字仍裁在自己的框內；CTA 的框是定位參考，文字必須保持單行，
          所以允許極小的字型量測差異溢出，不會因此換行。 */
-      style.push('overflow:' + (isCenteredCtaText ? 'visible' : 'hidden'));
+      style.push('overflow:' + (isCenteredCtaText || autoWidthText ? 'visible' : 'hidden'));
       if (isCenteredCtaText) {
         /* 高度與 CTA 底色塊完全相同；align-items:center 讓文字行框中心
            永遠落在底色塊中心，不再依賴不同電腦的字型 top/baseline。 */

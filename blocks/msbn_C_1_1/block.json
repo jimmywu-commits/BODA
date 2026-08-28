@@ -46,6 +46,7 @@
       "fontWeight": "bold",
       "field": "promo",
       "fieldLabel": "促標文字",
+      "autoWidth": true,
       "default": "促標最多$7字內",
       "id": "promo",
       "maxLength": 7,
@@ -133,6 +134,7 @@
       "fontWeight": "500",
       "field": "copy2",
       "fieldLabel": "券文案（左）",
+      "autoWidth": true,
       "default": "一排最多$6字\n一排最多$6字",
       "designText": "一排最多6字\n一排最多6字"
     },
@@ -209,6 +211,7 @@
       "fontWeight": "500",
       "field": "copy",
       "fieldLabel": "券文案（右）",
+      "autoWidth": true,
       "default": "一排最多$6字\n一排最多$6字",
       "designText": "一排最多6字\n一排最多6字"
     },
