@@ -617,6 +617,9 @@
        只把 CTA 文字往上提，底色塊與三角形仍維持幾何中心不動。 */
     var isCenteredCtaText = layer.type === 'text' && layer.ctaVerticalCenter &&
       layer._ctaBoxTop != null && layer._ctaBoxHeight != null;
+    var isDynamicRowCentered = layer.type === 'text' && layer._dynamicRowCentered &&
+      layer._dynamicRowTop != null && layer._dynamicRowHeight != null;
+    if (isDynamicRowCentered) top = Number(layer._dynamicRowTop);
     if (isCenteredCtaText) {
       var ctaOpticalY = Number(CONFIG.textVerticalCorrection.ctaText);
       if (!isFinite(ctaOpticalY)) ctaOpticalY = 0;
@@ -641,7 +644,8 @@
 
        這裡只對「沒有縮放，或縮放接近1（可視為沒縮放）」的文字套用；
        像 msbn3p 那種有明顯縮放 transform 的文字，是另一套已經驗證過的座標系統，不能套用。 */
-    if (layer.type === 'text' && layer.fontSize && !layer.verticalCenter && !isCenteredCtaText) {
+    if (layer.type === 'text' && layer.fontSize && !layer.verticalCenter &&
+        !isCenteredCtaText && !isDynamicRowCentered) {
       if (layer.topExact != null) {
         /* topExact ＝已經算好的「文字內容區上緣」，直接用，不再做任何推算。
            （實際套用在下面「扣掉上下 padding」之後，因為那一段對 topExact 不適用，
@@ -688,7 +692,7 @@
        補回同樣的量。字的位置完全不變（padding 只影響裁切範圍，不影響行框中心），
        左右也還是照原本的框裁，所以橫向不會壓到隔壁。 */
     var textPadV = 0;
-    if (layer.type === 'text' && layer.fontSize && !isCenteredCtaText) {
+    if (layer.type === 'text' && layer.fontSize && !isCenteredCtaText && !isDynamicRowCentered) {
       var lineBox = lineHeightMultiplier(layer) * layer.fontSize;
       textPadV = Math.max(0, (FONT_CONTENT_EM * layer.fontSize - lineBox) / 2);
       /* 上面那串估算算出來的是「行框上緣」，要再往上退半個 padding 才是內容區上緣；
@@ -716,6 +720,7 @@
     if (badgeWidthOverride != null) style.push('width:' + px(badgeWidthOverride));
     else if (layer.width != null) style.push('width:' + px(layer.width));
     if (isCenteredCtaText) style.push('height:' + px(layer._ctaBoxHeight));
+    else if (isDynamicRowCentered) style.push('height:' + px(layer._dynamicRowHeight));
     else if (layer.height != null) style.push('height:' + px(layer.height));
     if (layer.boxShadow) style.push('box-shadow:' + layer.boxShadow);
     if (layer.clipPath) style.push('clip-path:' + layer.clipPath);
@@ -900,7 +905,8 @@
       if (layer.textDecoration) style.push('text-decoration:' + layer.textDecoration);
       /* 有字 CTA 永遠是單行；中文字瀏覽器預設可在任意字之間斷行，
          因此即使只差 1px 也會把第三個字折到下一行。 */
-      style.push('white-space:' + (isCenteredCtaText ? 'nowrap' : (layer.whiteSpace || 'nowrap')));
+      var dynamicWhiteSpace = isDynamicRowCentered ? 'pre-line' : (layer.whiteSpace || 'nowrap');
+      style.push('white-space:' + (isCenteredCtaText ? 'nowrap' : dynamicWhiteSpace));
       if (layer.transform) style.push('transform:matrix(' + layer.transform.join(',') + ')');
       /* 一般文字仍裁在自己的框內；CTA 的框是定位參考，文字必須保持單行，
          所以允許極小的字型量測差異溢出，不會因此換行。 */
@@ -910,6 +916,15 @@
            永遠落在底色塊中心，不再依賴不同電腦的字型 top/baseline。 */
         style.push('display:flex');
         style.push('align-items:center');
+        style.push('box-sizing:border-box');
+      }
+      if (isDynamicRowCentered) {
+        /* D 系列可增減列：每個文字層使用目前列高作為容器，
+           讓單行與多行文案都在該列內水平、垂直置中。 */
+        style.push('display:flex');
+        style.push('flex-direction:column');
+        style.push('align-items:center');
+        style.push('justify-content:center');
         style.push('box-sizing:border-box');
       }
       if (layer.verticalCenter) {
@@ -1164,6 +1179,12 @@
       Object.keys(layer).forEach(function (key) { copy[key] = layer[key]; });
       copy.top = Number(layer.top) + delta;
       if (layer.topExact != null) copy.topExact = Number(layer.topExact) + delta;
+      if (cfg.centerText) {
+        copy._dynamicRowCentered = true;
+        copy._dynamicRowTop = rowTop;
+        copy._dynamicRowHeight = layout.rowHeight;
+        copy.top = rowTop;
+      }
       return copy;
     }
 

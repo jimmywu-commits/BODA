@@ -7,6 +7,7 @@
   "dynamicRowLayout": {
     "top": 0,
     "height": 400,
+    "centerText": true,
     "rows": [
       ["itemText", "content6", "content"],
       ["itemText2", "content7", "content2"],

@@ -306,6 +306,10 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-color-head .btn{margin-left:auto;padding:4px 9px;font-size:10.5px;font-weight:700;}
 #import-color-note{font-size:10.5px;color:var(--ink3);line-height:1.6;margin-bottom:9px;}
 #import-color-list{display:flex;flex-direction:column;gap:8px;}
+#import-demo-bar{margin:0 16px 16px;padding:12px 0 0;border-top:1px solid var(--border);}
+#import-demo-bar .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;}
+#import-demo-bar .demo-hint{font-size:10px;color:var(--ink3);line-height:1.5;text-align:center;margin-top:6px;}
+#import-demo-bar .btn:disabled{opacity:.6;cursor:wait;}
 .ic-color-row{display:flex;align-items:center;gap:6px;}
 .ic-color-row .icc-label{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--ink2);}
 .ic-color-row .icc-label .icc-auto{display:block;font-size:9.5px;font-weight:600;color:var(--teal-dark);margin-top:1px;}
@@ -796,6 +800,8 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
             <button class="btn" id="btn-json">⬇ 下載排版暫存檔</button>
             <button class="btn" id="btn-sample">⬇ 下載範例圖</button>
             <button class="btn" id="btn-xlsx">⬇ 下載工單</button>
+            <button class="btn" id="btn-upload-generator-snapshot" type="button">⬆ 上傳暫存檔</button>
+            <input type="file" id="generator-snapshot-input" accept=".json,application/json" hidden>
             <button class="btn primary" id="btn-all">⬇ 下載全部</button>
           </div>
           <div id="canvas-info"></div>
@@ -870,6 +876,14 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
             <div id="import-color-note">改一個顏色，畫布上<b>所有版位一起變</b>。沒改過的欄位會顯示版位目前實際的色號。
               背景色跟「曝光資源」<b>雙向連動</b>，兩邊改都會同步。</div>
             <div id="import-color-list"></div>
+          </div>
+
+          <div id="import-demo-bar">
+            <button class="btn ghost" id="btn-import-demo" type="button" title="讀取同層「測試工單與圖片」資料夾中的 demo 工單與圖片">
+              <svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 5.5V3.8h8v1.7M8 10h8M8 14h5"/><path d="m16 15.5 2 2 3-3"/></svg>
+              匯入demo工單
+            </button>
+            <div class="demo-hint">從同層「測試工單與圖片」資料夾載入示範內容</div>
           </div>
 
         </div>
@@ -5235,7 +5249,9 @@ var APP_LOADING = {
     'btn-xlsx': true,
     'btn-all': true,
     'maint-download-all-xlsx': true,
-    'btn-dl-image': true
+    'btn-dl-image': true,
+    'btn-import-demo': true,
+    'btn-upload-generator-snapshot': true
   }
 };
 function appLoadingRefs() {
@@ -5433,6 +5449,7 @@ function buildWorkOrderGrid(slots) {
 
   var columns = cols.map(function (c, i) {
     return {
+      slotIndex: c.idx,
       header: familyLabel(c.item.family) + '（' + c.item.family + '-' + c.item.variant + '-' + c.item.combo + '）',
       item: c.item,
       /* 這顆自己實際有的欄位，依序列出、不管其他顆有沒有同一個欄位，
@@ -5458,7 +5475,7 @@ function exportWorkOrderJSON() {
     group: state.group,
     exportedAt: new Date().toISOString(),
     columns: grid.columns.map(function (c) {
-      return { family: c.item.family, file: c.item.file, variant: c.item.variant, combo: c.item.combo, label: c.item.label };
+      return { slotIndex: c.slotIndex, family: c.item.family, file: c.item.file, variant: c.item.variant, combo: c.item.combo, label: c.item.label };
     }),
     rows: grid.rows.map(function (r) {
       return { key: r.key, cells: r.cells.map(function (c) { return c ? { label: c.label, value: c.value } : null; }) };
@@ -5482,6 +5499,137 @@ function exportWorkOrderJSON() {
    下載範例圖：把副區那一排＋MSBN 區的圖片
    照畫布目前的排法接成一張 JPG（原始尺寸 1:1）
 ════════════════════════════════════════ */
+function generatorSnapshotItem(raw) {
+  if (!raw || !raw.file) return null;
+  var family = String(raw.family || '').trim();
+  if (!family || !GROUPS[groupOf(family)]) return null;
+  return {
+    family: family,
+    file: String(raw.file),
+    variant: raw.variant,
+    combo: raw.combo,
+    label: raw.label || raw.file
+  };
+}
+
+function generatorSnapshotSubRow(raw) {
+  if (!raw || !Array.isArray(raw.slots)) return null;
+  var group = raw.group && GROUPS[raw.group] ? raw.group : null;
+  if (!group) {
+    var firstRaw = raw.slots.filter(Boolean)[0];
+    var firstItem = generatorSnapshotItem(firstRaw);
+    group = firstItem ? groupOf(firstItem.family) : null;
+  }
+  if (!group || !GROUPS[group]) return null;
+  var slots = new Array(groupMaxPerRow(group)).fill(null);
+  raw.slots.forEach(function (slot, index) {
+    if (index >= slots.length) return;
+    var item = generatorSnapshotItem(slot);
+    if (item && groupOf(item.family) === group) slots[index] = item;
+  });
+  if (!slots.some(function (slot) { return !!slot; })) return null;
+  return { kind: 'sub', group: group, slots: slots };
+}
+
+function restoreGeneratorSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') throw new Error('暫存檔不是有效的 JSON');
+  if (snapshot.type === 'wo_import_snapshot') {
+    throw new Error('這是「匯入工單」編輯暫存檔，請在匯入工單頁簽上傳；生成器請使用「下載排版暫存檔」產生的 JSON');
+  }
+  var rawColumns = Array.isArray(snapshot.columns) ? snapshot.columns : [];
+  var group = snapshot.group == null || snapshot.group === '' ? null : String(snapshot.group);
+  if (group && !GROUPS[group]) throw new Error('暫存檔的副區群組無法辨識：' + group);
+
+  var previewItems = rawColumns.map(generatorSnapshotItem).filter(function (item) { return !!item; });
+  if (!group && previewItems.length) group = groupOf(previewItems[0].family);
+  if (group && !GROUPS[group]) throw new Error('暫存檔的副區群組無法辨識');
+
+  var slotCount = group ? groupMaxPerRow(group) : 4;
+  var slots = new Array(slotCount).fill(null);
+  var nextSlot = 0;
+  rawColumns.forEach(function (raw) {
+    var item = generatorSnapshotItem(raw);
+    if (!item || (group && groupOf(item.family) !== group)) return;
+    var requestedIndex = Number(raw.slotIndex);
+    var index = isFinite(requestedIndex) && Math.floor(requestedIndex) === requestedIndex
+      ? requestedIndex
+      : nextSlot;
+    while (index < slots.length && slots[index]) index++;
+    if (index < 0 || index >= slots.length) return;
+    slots[index] = item;
+    nextSlot = index + 1;
+  });
+
+  var msbn = [];
+  (Array.isArray(snapshot.msbn) ? snapshot.msbn : []).forEach(function (raw) {
+    if (!raw) return;
+    if (raw.kind === 'sub') {
+      var subRow = generatorSnapshotSubRow(raw);
+      if (subRow) msbn.push(subRow);
+      return;
+    }
+    if (raw.file) msbn.push({
+      file: String(raw.file),
+      cat: raw.cat,
+      label: raw.label || raw.file
+    });
+  });
+
+  if (!slots.some(function (slot) { return !!slot; }) && !msbn.length) {
+    throw new Error('暫存檔沒有可呈現的副區或 MSBN 版位');
+  }
+
+  state.group = group;
+  state.slots = slots;
+  state.msbn = msbn;
+  selectedThumb = null;
+  saveState();
+  renderPalette();
+  renderCanvas();
+  return {
+    slots: slots.filter(function (slot) { return !!slot; }).length,
+    msbn: msbn.length
+  };
+}
+
+function handleGeneratorSnapshotFile(file) {
+  if (!file) return;
+  var button = document.getElementById('btn-upload-generator-snapshot');
+  var input = document.getElementById('generator-snapshot-input');
+  var originalHtml = button ? button.innerHTML : '';
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = '⏳ 讀取暫存檔…';
+  }
+  appLoadingStart('LOADING · 上傳暫存檔', 8, '正在讀取 ' + (file.name || '暫存檔') + '…');
+  var reader = new FileReader();
+  reader.onload = function () {
+    appLoadingUpdate(58, 'LOADING · 上傳暫存檔', '檔案讀取完成，正在還原畫布…');
+    try {
+      var result = restoreGeneratorSnapshot(JSON.parse(reader.result));
+      appLoadingFinish('暫存檔已載入到畫布（副區 ' + result.slots + ' 格、MSBN ' + result.msbn + ' 顆）');
+    } catch (err) {
+      appLoadingFail('暫存檔載入失敗');
+      alert('暫存檔載入失敗：' + (err && err.message ? err.message : String(err || '未知錯誤')));
+    }
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = originalHtml;
+    }
+    if (input) input.value = '';
+  };
+  reader.onerror = function () {
+    appLoadingFail('暫存檔讀取失敗');
+    alert('暫存檔讀取失敗');
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = originalHtml;
+    }
+    if (input) input.value = '';
+  };
+  reader.readAsText(file);
+}
+
 function loadImageForCanvas(src, timeoutMs) {
   return new Promise(function (resolve, reject) {
     var img = new Image();
@@ -7640,6 +7788,43 @@ function detectCombo(fam, entries) {
 /* ════════════════════════════════════════
    圖片素材：可以一次上傳多張，供 LOGO/商品 這類圖片欄位選用
 ════════════════════════════════════════ */
+var DEMO_IMPORT_FOLDER = '測試工單與圖片';
+var DEMO_IMPORT_WORKORDER_FILE = 'BODA工單_brand_star_mega_zj_1787896948520.xlsx';
+/* 瀏覽器無法直接列出靜態資料夾內容，因此這裡明確列出 demo 資料夾內的圖片；
+   之後若替換 demo 素材，保留檔名或同步更新這份清單即可。 */
+var DEMO_IMPORT_IMAGE_FILES = [
+  '1-(4)-(1).jpg',
+  '1.png',
+  '2-(4)-Photoroom.png',
+  '2-(4).jpg',
+  '2.png',
+  '2023 NATGEO LOGO_640x360.jpg',
+  '2026-05-19 11 49 59-Photoroom.png',
+  '2026-05-19 11 49 59.png',
+  '2026-05-19 11 50 16-Photoroom.png',
+  '2026-05-19 11 50 16.png',
+  '3.png',
+  '代言人照片.png',
+  '範例圖_AB_1787881078770.jpg',
+  '簽名檔.png',
+  'apple.png',
+  'Copy of SF_logo_596x596.png',
+  'Dyson_Logo480x360去背版.png',
+  'GIGASTONE_LOGO.png',
+  'iphone17.png',
+  'iPhone19 PLUS.png',
+  'iPhone20 PRO.png',
+  'KI60415GG-1.JPG',
+  'Logitech G.png',
+  'Logo.jpg',
+  'Plainme_YOBI 連帽外套 _1-Photoroom.png',
+  'Plainme_YOBI 連帽外套 _1.jpg',
+  'POLYWELL logo new.png',
+  'SAMPO 640X360-Photoroom.png',
+  'vivo 标志（RGB).jpg',
+  'WB_MATIN KIM.png'
+];
+
 var uploadedImages = []; /* { name, url }，url 一律是 dataURL */
 
 /* 把「逗號分隔的多張圖」欄位值拆成陣列。
@@ -10309,9 +10494,12 @@ function afterImportParsed(rawColumns, options) {
     currentImportColumns = columns;
     autoMatchImagesToColumns();
     renderImportColumns(columns);
-    importLog.innerHTML = currentImportSource === 'generator'
-      ? '<span class="ok">' + lineIcon('done') + ' 已從工單生成器載入 ' + columns.length + ' 格，可直接編輯</span>'
-      : '<span class="ok">' + lineIcon('done') + ' 已畫出 ' + columns.length + ' 格</span>';
+    var importDoneMessage = currentImportSource === 'generator'
+      ? '已從工單生成器載入 ' + columns.length + ' 格，可直接編輯'
+      : currentImportSource === 'demo'
+        ? '已匯入 demo 工單：' + columns.length + ' 格，圖片素材 ' + (options.demoImageCount || 0) + ' 張'
+        : '已畫出 ' + columns.length + ' 格';
+    importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' ' + importDoneMessage + '</span>';
     if (initialTextRuleResult.changed) {
       importLog.innerHTML += '<br><span class="ok">' + lineIcon('done') +
         ' 已自動整理金額格式（$／千分位）</span>';
@@ -10339,6 +10527,86 @@ function afterImportParsed(rawColumns, options) {
       if (loadedLog) loadedLog.innerHTML += '<br><span class="ok">' + lineIcon('done') +
         ' 已套用禁用語檢查與完整金額格式</span>';
     });
+  });
+}
+
+function encodeDemoAssetPath(fileName) {
+  return String(DEMO_IMPORT_FOLDER + '/' + fileName).split('/').map(function (part) {
+    return encodeURIComponent(part);
+  }).join('/');
+}
+
+function fetchDemoImage(fileName, index, total, onError) {
+  return fetch(encodeDemoAssetPath(fileName), { cache: 'no-store' })
+    .then(function (response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.blob();
+    })
+    .then(function (blob) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () {
+          appLoadingUpdate(8 + Math.round(((index + 1) / total) * 40),
+            'LOADING · 匯入 demo 工單', '已讀取圖片 ' + (index + 1) + '/' + total);
+          resolve({ name: fileName, url: reader.result });
+        };
+        reader.onerror = function () { reject(new Error('圖片轉換失敗')); };
+        reader.readAsDataURL(blob);
+      });
+    })
+    .catch(function (err) {
+      if (typeof onError === 'function') onError(fileName, err);
+      return null;
+    });
+}
+
+function loadDemoImport() {
+  var button = document.getElementById('btn-import-demo');
+  var importLog = document.getElementById('import-log');
+  if (!button || button.disabled) return;
+  var originalHtml = button.innerHTML;
+  var missingImages = [];
+  button.disabled = true;
+  button.innerHTML = lineIcon('loading') + ' 載入demo工單中…';
+  importLog.innerHTML = '<span class="ok">正在讀取「測試工單與圖片」中的工單與圖片…</span>';
+  appLoadingStart('LOADING · 匯入 demo 工單', 5, '正在讀取 demo 工單與圖片…');
+
+  var imageJobs = DEMO_IMPORT_IMAGE_FILES.map(function (fileName, index) {
+    return fetchDemoImage(fileName, index, DEMO_IMPORT_IMAGE_FILES.length, function (name) {
+      missingImages.push(name);
+    });
+  });
+
+  Promise.all([
+    fetch(encodeDemoAssetPath(DEMO_IMPORT_WORKORDER_FILE), { cache: 'no-store' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('找不到工單檔：' + DEMO_IMPORT_WORKORDER_FILE);
+        return response.arrayBuffer();
+      }),
+    Promise.all(imageJobs)
+  ]).then(function (result) {
+    var workOrderBuffer = result[0];
+    var images = result[1].filter(function (item) { return item && item.url; });
+    uploadedImages = images;
+    renderImageGallery();
+    rememberBottomWorkOrder(DEMO_IMPORT_WORKORDER_FILE, workOrderBuffer);
+    appLoadingUpdate(54, 'LOADING · 匯入 demo 工單', '圖片素材已載入，正在解析工單…');
+    return parseImportXlsx(workOrderBuffer).then(function (rawColumns) {
+      afterImportParsed(rawColumns, {
+        source: 'demo',
+        hasBottomWorkOrder: true,
+        demoImageCount: images.length
+      });
+      if (missingImages.length) {
+        importLog.innerHTML += '<br><span class="err">有 ' + missingImages.length + ' 張 demo 圖片讀取失敗</span>';
+      }
+    });
+  }).catch(function (err) {
+    importLog.innerHTML = '<span class="err">demo 工單匯入失敗：' + esc(err.message || err) + '</span>';
+    appLoadingFinish('demo 工單匯入失敗');
+  }).then(function () {
+    button.disabled = false;
+    button.innerHTML = originalHtml;
   });
 }
 
@@ -12069,6 +12337,12 @@ function applyCanvasZoom(el) {
 
 document.getElementById('btn-clear').addEventListener('click', clearCanvas);
 document.getElementById('btn-json').addEventListener('click', exportWorkOrderJSON);
+document.getElementById('btn-upload-generator-snapshot').addEventListener('click', function () {
+  document.getElementById('generator-snapshot-input').click();
+});
+document.getElementById('generator-snapshot-input').addEventListener('change', function (e) {
+  if (e.target.files && e.target.files[0]) handleGeneratorSnapshotFile(e.target.files[0]);
+});
 document.getElementById('btn-sample').addEventListener('click', function () {
   exportSampleImage().then(function () { appLoadingFinish('範例圖已下載'); });
 });
@@ -12598,6 +12872,9 @@ importDrop.addEventListener('drop', function (e) {
 document.getElementById('import-generator-load').addEventListener('click', function () {
   var changed = loadGeneratorSelectionIntoImport({ auto: false, fromGeneratorView: false });
   if (!changed) appLoadingFinish('沒有需要同步的版位');
+});
+document.getElementById('btn-import-demo').addEventListener('click', function () {
+  loadDemoImport();
 });
 
 var importImgDrop = document.getElementById('import-img-drop');
