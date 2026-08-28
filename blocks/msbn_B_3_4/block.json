@@ -250,6 +250,45 @@
       "borderRadius": "15px",
       "field": "bgColor3",
       "fieldLabel": "卡片背景色3"
+    },
+    {
+      "zIndex": 1104,
+      "type": "rect",
+      "id": "contentBg",
+      "left": 805.0,
+      "top": 265.0,
+      "width": 374.0,
+      "height": 120.0,
+      "backgroundColor": "rgb(169, 197, 255)",
+      "borderRadius": "0px 0px 15px 15px",
+      "field": "bgColor",
+      "fieldLabel": "卡片背景色"
+    },
+    {
+      "zIndex": 1103,
+      "type": "rect",
+      "id": "contentBg2",
+      "left": 413.0,
+      "top": 265.0,
+      "width": 374.0,
+      "height": 120.0,
+      "backgroundColor": "rgb(169, 197, 255)",
+      "borderRadius": "0px 0px 15px 15px",
+      "field": "bgColor2",
+      "fieldLabel": "卡片背景色2"
+    },
+    {
+      "zIndex": 1102,
+      "type": "rect",
+      "id": "contentBg3",
+      "left": 20.0,
+      "top": 265.0,
+      "width": 374.0,
+      "height": 120.0,
+      "backgroundColor": "rgb(169, 197, 255)",
+      "borderRadius": "0px 0px 15px 15px",
+      "field": "bgColor3",
+      "fieldLabel": "卡片背景色3"
     }
   ]
 }

@@ -12,7 +12,11 @@
   var pending = {};
 
   function isEmbedded() {
-    return document.documentElement.classList.contains("embed-generator") && window.parent !== window;
+    var embed = new URLSearchParams(location.search).get("embed");
+    return (embed === "generator" || embed === "import-preview") && window.parent !== window;
+  }
+  function isImportPreview() {
+    return new URLSearchParams(location.search).get("embed") === "import-preview";
   }
 
   function post(message) {
@@ -45,6 +49,18 @@
     else p.resolve(result);
   }
 
+  function sendPreviewImage(sourceMessage) {
+    if (!isImportPreview() || !window.ExportBatch || !window.Selectors || !window.store) return;
+    var view = window.Selectors.viewState(window.store.getState());
+    window.ExportBatch.exportView(view).then(function (results) {
+      var index = Math.max(0, Math.min(results.length - 1, Number(view.activeSlotIndex) || 0));
+      var result = results[index] || results[0];
+      if (!result || !result.dataUrl) throw new Error("吸底成品沒有可輸出的圖片");
+      post({ type: "PREVIEW_IMAGE", workOrderVersion: Number(sourceMessage && sourceMessage.workOrderVersion) || 0, dataUrl: result.dataUrl, width: window.LAYOUT.canvasWidth, height: window.LAYOUT.canvasHeight });
+    }).catch(function (err) {
+      post({ type: "PREVIEW_IMAGE_ERROR", workOrderVersion: Number(sourceMessage && sourceMessage.workOrderVersion) || 0, message: err && err.message ? err.message : String(err) });
+    });
+  }
   function importFromParent(msg) {
     if (!panelApi || !msg.buffer) {
       finishRequest(msg.requestId, null, new Error("吸底工具尚未完成載入"));
@@ -53,6 +69,7 @@
     var file = makeFile(msg.buffer, msg.name);
     panelApi.importWorkOrder(file, function (err) {
       if (!err && window.StartupDialog && window.StartupDialog.close) window.StartupDialog.close();
+      if (!err) sendPreviewImage(msg);
       post({
         type: "IMPORT_RESULT",
         requestId: msg.requestId || "",

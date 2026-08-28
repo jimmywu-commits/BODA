@@ -756,6 +756,7 @@
     }
 
     var content = '';
+    var editableTextInner = null;
     /* fixedImage：版型內建且不允許替換的圖（例如 C 系列蝦皮購物 LOGO、
        C-1-4 中間的 3C 家電圖）。這種圖不建立欄位、不接受拖放，也不提供
        滾輪縮放或滑鼠拖曳；永遠只畫 block.json 的 defaultSrc。 */
@@ -781,6 +782,15 @@
          未設定新欄位的舊版位會完整沿用 layer.zIndex，不改變既有結果。 */
       var stateZIndex = url ? layer.imageZIndex : layer.placeholderZIndex;
       if (stateZIndex == null) stateZIndex = layer.zIndex;
+      /* imageOrder 是匯入工單每一格自己的圖片欄位順序。
+         這裡把排序後的欄位對應到原 schema 的圖片 z-index 槽位，
+         所以商品圖與人物圖可以互換上下層，而文字／背景仍維持原本層級。 */
+      if (opts && Array.isArray(opts.imageOrder) && Array.isArray(opts._imageZSlots) && fieldKey) {
+        var orderedImageIndex = opts.imageOrder.indexOf(fieldKey);
+        if (orderedImageIndex >= 0 && orderedImageIndex < opts._imageZSlots.length) {
+          stateZIndex = opts._imageZSlots[orderedImageIndex];
+        }
+      }
       if (stateZIndex != null) style.push('z-index:' + stateZIndex);
       /* LOGO 圖是內縮70%，周圍留白要看得到白色底色，所以底色要一直鋪著（keepBgWithImage:true）；
          商品圖是滿版contain顯示，一旦有圖片，原本的灰色佔位底色就該完全消失，不能透出來。
@@ -923,10 +933,34 @@
     var attrs = '';
     if (opts && opts.editable && layer.type === 'text' && fieldKey) {
       /* 可以直接在畫布上點擊編輯：contenteditable + 記住對應的欄位key，
-         外部（例如匯入工單頁面）監聽 input/blur 事件時可以用 data-field 取值寫回資料 */
+         外部（例如匯入工單頁面）監聽 input/blur 事件時可以用 data-field 取值寫回資料。
+
+         圓標文字另外處理：它的外層為了把一行／兩行文字置中，會使用 flex。
+         某些瀏覽器對「contenteditable 本身就是 flex 容器」的游標命中不穩定，
+         點得到但沒有焦點，表面上就像圓標文字不能編輯。把可編輯元素移到
+         內層，外層只負責排版，既保留置中也讓文字本身回到一般 block 游標模型。 */
       style.push('outline:none');
       style.push('cursor:text');
-      attrs = ' contenteditable="true" spellcheck="false" data-field="' + esc(fieldKey) + '"';
+      if (layer.verticalCenter) {
+        editableTextInner = {
+          attrs: ' contenteditable="true" spellcheck="false" data-field="' + esc(fieldKey) + '"',
+          style: [
+            'display:block',
+            'width:100%',
+            'box-sizing:border-box',
+            'text-align:center',
+            'outline:none',
+            'cursor:text',
+            'pointer-events:auto'
+          ]
+        };
+        /* 外層不接收滑鼠，避免點擊空白處時把焦點落在不可編輯的容器上；
+           內層寬度覆蓋整個文字框，實際字面仍由它接收輸入。 */
+        style.push('pointer-events:none');
+        attrs = '';
+      } else {
+        attrs = ' contenteditable="true" spellcheck="false" data-field="' + esc(fieldKey) + '"';
+      }
     }
     if (directColorEditable) {
       attrs += ' data-color-field="' + esc(fieldKey) + '"' +
@@ -961,6 +995,9 @@
       }
     }
 
+    if (editableTextInner) {
+      content = '<span' + editableTextInner.attrs + ' style="' + editableTextInner.style.join(';') + ';">' + content + '</span>';
+    }
     return "<div" + attrs + " style='" + style.join(';') + ";'>" + content + '</div>';
   }
 
@@ -1159,6 +1196,16 @@
       var layerFields = (schema.layers || []).map(function (l) {
         return String(l.field || '');
       });
+      var imageZSlots = [];
+      var seenImageLayerFields = {};
+      (schema.layers || []).forEach(function (layer) {
+        if (layer.type !== 'image' || layer.fixedImage || !layer.field) return;
+        if (seenImageLayerFields[layer.field]) return;
+        seenImageLayerFields[layer.field] = true;
+        imageZSlots.push(layer.zIndex != null ? Number(layer.zIndex) : 0);
+      });
+      imageZSlots.sort(function (a, b) { return b - a; });
+      renderOpts._imageZSlots = imageZSlots;
       var nameValue = data && data.name != null ? String(data.name).trim() : '';
       var warnValue = data && data.warn != null ? String(data.warn).trim() : '';
       renderOpts._subareaWarnNudge = /^subarea_/i.test(String(schema.id || '')) &&

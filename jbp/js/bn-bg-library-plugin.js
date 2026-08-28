@@ -882,6 +882,7 @@
   function shouldInterceptClick(el){
     if(!el || allowNativeUploadOnce) return false;
     if(el.closest && el.closest('#bnBgLibModal')) return false;
+    if(el.closest && el.closest('#bn-bg-modal')) return false;
     if(el.matches && el.matches('input[type="file"]')){
       var idn = ((el.id||'') + ' ' + (el.name||'') + ' ' + (el.className||'') + ' ' + (el.accept||'')).toLowerCase();
       return idn.indexOf('bg') !== -1 || idn.indexOf('背景') !== -1;

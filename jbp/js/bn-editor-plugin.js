@@ -1564,6 +1564,7 @@
           var inp = document.getElementById(slot === 'h' ? 'bn-bg-hinp' : 'bn-bg-vinp');
           if(!drop || !inp) return;
           inp.addEventListener('change', function(){ readTo(slot, this.files && this.files[0]); this.value=''; });
+          drop.addEventListener('click', function(e){ if(e.target !== inp) inp.click(); });
           drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('over'); });
           drop.addEventListener('dragleave', function(){ drop.classList.remove('over'); });
           drop.addEventListener('drop', function(e){
