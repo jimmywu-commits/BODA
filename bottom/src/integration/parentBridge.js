@@ -13,10 +13,13 @@
 
   function isEmbedded() {
     var embed = new URLSearchParams(location.search).get("embed");
-    return (embed === "generator" || embed === "import-preview") && window.parent !== window;
+    return (embed === "generator" || embed === "import-preview" || embed === "maint-preview") && window.parent !== window;
   }
   function isImportPreview() {
     return new URLSearchParams(location.search).get("embed") === "import-preview";
+  }
+  function isMaintenancePreview() {
+    return new URLSearchParams(location.search).get("embed") === "maint-preview";
   }
 
   function post(message) {
@@ -61,6 +64,38 @@
       post({ type: "PREVIEW_IMAGE_ERROR", workOrderVersion: Number(sourceMessage && sourceMessage.workOrderVersion) || 0, message: err && err.message ? err.message : String(err) });
     });
   }
+
+  function sendMaintenancePreview(msg) {
+    if (!isMaintenancePreview() || !window.ExportBatch || !window.Selectors || !window.store) return;
+    var banners = Array.isArray(msg && msg.banners) ? msg.banners : [];
+    if (!banners.length) {
+      post({ type: "PREVIEW_IMAGES_ERROR", previewVersion: Number(msg && msg.previewVersion) || 0, message: "沒有可預覽的吸底示意資料" });
+      return;
+    }
+
+    /* 維修頁的兩條示意資料只進這個隱藏 iframe，不會污染主吸底工具的使用者狀態。 */
+    window.store.dispatch(window.Actions.setSharpen(msg.sharpen !== false));
+    window.store.dispatch(window.Actions.setBanners(banners, 0));
+    var state = window.store.getState();
+    window.ExportBatch.exportAllBanners(window.store).then(function (groups) {
+      var images = groups.map(function (group, index) {
+        var banner = state.banners[group.bannerIndex] || {};
+        var resultIndex = Math.max(0, Math.min(group.results.length - 1, Number(banner.activeSlotIndex) || 0));
+        var result = group.results[resultIndex] || group.results[0];
+        var item = msg.items && msg.items[index] ? msg.items[index] : {};
+        return {
+          key: item.key || String(index),
+          label: item.label || window.Selectors.bannerLabel(index),
+          dataUrl: result && result.dataUrl,
+          width: window.LAYOUT.canvasWidth,
+          height: window.LAYOUT.canvasHeight
+        };
+      }).filter(function (item) { return !!item.dataUrl; });
+      post({ type: "PREVIEW_IMAGES", previewVersion: Number(msg.previewVersion) || 0, images: images });
+    }).catch(function (err) {
+      post({ type: "PREVIEW_IMAGES_ERROR", previewVersion: Number(msg.previewVersion) || 0, message: err && err.message ? err.message : String(err) });
+    });
+  }
   function importFromParent(msg) {
     if (!panelApi || !msg.buffer) {
       finishRequest(msg.requestId, null, new Error("吸底工具尚未完成載入"));
@@ -94,6 +129,8 @@
       document.documentElement.style.setProperty("--host-panel-width", width + "px");
     } else if (msg.type === "WORKORDER_FILE") {
       importFromParent(msg);
+    } else if (msg.type === "PREVIEW_STATE") {
+      sendMaintenancePreview(msg);
     } else if (msg.type === "NO_WORKORDER") {
       finishRequest(msg.requestId, {
         status: "empty",

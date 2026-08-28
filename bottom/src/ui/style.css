@@ -1373,12 +1373,23 @@ html.embed-generator .zoom-hint { color: #c7d2cf; border-left-color: rgba(255, 2
 /* ── BODA 匯入工單中的吸底最終結果預覽 ── */
 html.embed-import-preview,
 html.embed-import-preview body { height:100%; overflow:hidden; }
+html.embed-maint-preview,
+html.embed-maint-preview body { height:100%; overflow:hidden; }
 html.embed-import-preview #app { display:block; height:100%; min-height:0; }
+html.embed-maint-preview #app { display:block; height:100%; min-height:0; }
 html.embed-import-preview #tabbar,
 html.embed-import-preview #panel,
 html.embed-import-preview #zoom-bar { display:none !important; }
+html.embed-maint-preview #tabbar,
+html.embed-maint-preview #panel,
+html.embed-maint-preview #zoom-bar { display:none !important; }
 html.embed-import-preview #workspace { display:block; height:100%; min-height:0; }
+html.embed-maint-preview #workspace { display:block; height:100%; min-height:0; }
 html.embed-import-preview #stage-wrap {
+  width:100%; height:100%; min-width:0; min-height:0;
+  background:var(--canvas-backdrop);
+}
+html.embed-maint-preview #stage-wrap {
   width:100%; height:100%; min-width:0; min-height:0;
   background:var(--canvas-backdrop);
 }

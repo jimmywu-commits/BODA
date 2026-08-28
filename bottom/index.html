@@ -12,11 +12,13 @@
           document.documentElement.classList.add('embed-generator');
         } else if (embed === 'import-preview') {
           document.documentElement.classList.add('embed-import-preview');
+        } else if (embed === 'maint-preview') {
+          document.documentElement.classList.add('embed-maint-preview');
         }
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="src/ui/style.css?v=20260828-import-preview1" />
+  <link rel="stylesheet" href="src/ui/style.css?v=20260828-maint-preview1" />
   <script src="https://unpkg.com/konva@9/konva.min.js"></script>
   <script src="https://unpkg.com/jszip@3/dist/jszip.min.js"></script>
 </head>
