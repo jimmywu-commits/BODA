@@ -47,7 +47,6 @@
       "fontWeight": "bold",
       "field": "promo",
       "fieldLabel": "促標文字（右）",
-      "autoWidth": true,
       "default": "促標最多$6字\n促標最多$6字",
       "id": "promo",
       "designText": "促標最多6字\n促標最多6字"
@@ -68,7 +67,6 @@
       "fontWeight": "bold",
       "field": "promo2",
       "fieldLabel": "促標文字（中）",
-      "autoWidth": true,
       "default": "促標最多$6字\n促標最多$6字",
       "id": "promo",
       "designText": "促標最多6字\n促標最多6字"
@@ -146,7 +144,6 @@
       "fontWeight": "500",
       "field": "copy",
       "fieldLabel": "券文案（右）",
-      "autoWidth": true,
       "default": "一排$4字\n一排$4字",
       "designText": "一排4字\n一排4字"
     },
@@ -232,7 +229,6 @@
       "fontWeight": "500",
       "field": "copy2",
       "fieldLabel": "券文案（中）",
-      "autoWidth": true,
       "default": "一排$4字\n一排$4字",
       "designText": "一排4字\n一排4字"
     },

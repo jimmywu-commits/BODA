@@ -5785,8 +5785,8 @@ function exportWorkOrderXlsx(exportOptions) {
       });
       if (checkCell) {
         checkCell.value = {
-          formula: 'IF(' + addr + '="","",IF(LENB(' + addr + ')/2<=' + limit + ',"OK","超過"))',
-          result: ''
+          formula: 'IF(' + addr + '="","限' + limit + '字",IF(LENB(' + addr + ')/2<=' + limit + ',"OK","超過"))',
+          result: '限' + limit + '字'
         };
       }
       return limit;
@@ -5815,15 +5815,16 @@ function exportWorkOrderXlsx(exportOptions) {
       error: '內容含禁用語，或超過欄位字數限制；請修改後再繼續。',
       showInputMessage: true,
       promptTitle: 'BODA 文字規則',
-      prompt: '純數字會以 $ 與千分位顯示；混合文案匯入 BODA 後會自動整理，禁用語會被阻擋或修正。'
+      prompt: 'Excel 內純數字可用儲存格格式顯示 $ 與千分位；像「滿200送20」這種混合文案，匯回 BODA 時會自動整理為「滿$200送$20」，並套用禁用語規則。'
     };
     var validFormula = limit != null
       ? 'IF(LENB(' + addr + ')/2<=' + limit + ',"OK","超過")'
       : '"OK"';
+    var emptyCheckText = limit != null ? '限' + limit + '字' : '待填';
     checkCell.value = {
-      formula: 'IF(' + addr + '="","待填",IF(SUMPRODUCT(--ISNUMBER(SEARCH(' +
+      formula: 'IF(' + addr + '="","' + emptyCheckText + '",IF(SUMPRODUCT(--ISNUMBER(SEARCH(' +
         ruleRange + ',' + addr + ')))>0,"禁用語",' + validFormula + '))',
-      result: ''
+      result: emptyCheckText
     };
     return limit;
   }
@@ -5835,10 +5836,14 @@ function exportWorkOrderXlsx(exportOptions) {
       result: '待填'
     };
   }
-  function setInputStyle(cell, locked) {
+  function setInputStyle(cell, locked, opts) {
+    opts = opts || {};
+    var fitText = !!opts.fitText;
     cell.font = { name: 'Arial', size: 10, color: { argb: locked ? COLORS.staticText : COLORS.inputText } };
     cell.fill = solid(locked ? COLORS.gray : COLORS.input);
-    cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+    /* C 系列票券文案每排仍受字數規則保護，但英數字寬度交給 Excel 自動縮放，
+       不讓固定的合併儲存格把一排文案折行或截掉。 */
+    cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: !fitText, shrinkToFit: fitText };
     cell.protection = { locked: !!locked };
   }
   function setStaticStyle(cell, opts) {
@@ -6268,6 +6273,21 @@ function exportWorkOrderXlsx(exportOptions) {
       function isImageFilenameField(field) {
         return ['商品', '商品圖', '情境圖', '信用卡圖', '贈品圖'].indexOf(String(field.type || '')) !== -1;
       }
+      function isCSeriesTicketCopyField(field) {
+        var file = item.kind === 'msbn' ? (item.msbnFile || item.file) : '';
+        return /^MSBN-C-/i.test(String(file || '')) && String(field.type || '') === '文案';
+      }
+
+      function normalizeWorkOrderExportText(field) {
+        if (!field || field.locked || isImageFilenameField(field)) return field ? field.value : '';
+        var raw = field.value == null ? '' : String(field.value);
+        var role = importFieldRuleRole(field, field.metaLabel || field.label || field.type);
+        if (IMPORT_TEXT_RULES_STATE.status === 'ready' && window.banwordEngine &&
+            typeof window.banwordEngine.transformText === 'function') {
+          return window.banwordEngine.transformText(raw, role, {}).text;
+        }
+        return importFallbackNumericFormat(raw, role);
+      }
 
       function renderLayoutField(field, rowNo, fieldRange, labelText, showLabel) {
         var labelColumn = fieldRange.label != null ? fieldRange.label : posRange.label;
@@ -6282,9 +6302,13 @@ function exportWorkOrderXlsx(exportOptions) {
           labelCell.value = labelText;
           setStaticStyle(labelCell, { bold: true, fill: COLORS.gray2, size: 9.5 });
         }
-        inputCell.value = field.value;
-        inputCell.note = field.hint ? ('填寫規則：' + field.hint) : '請填入工單內容';
-        setInputStyle(inputCell, field.locked);
+        inputCell.value = normalizeWorkOrderExportText(field);
+        var inputNote = field.hint ? ('填寫規則：' + field.hint) : '請填入工單內容';
+        if (!field.locked && !isImageFilenameField(field)) {
+          inputNote += '\n匯回 BODA 時會自動補上 $ 與千分位，並套用禁用語規則；Excel 內直接輸入不會即時改寫。';
+        }
+        inputCell.note = inputNote;
+        setInputStyle(inputCell, field.locked, { fitText: isCSeriesTicketCopyField(field) });
         setProtection(layoutWs, rowNo, fieldRange.inputStart, rowNo, fieldRange.inputEnd, field.locked);
         setStaticStyle(checkCell, {
           fill: field.locked ? COLORS.gray : COLORS.white, horizontal: 'center', size: 9
@@ -7839,12 +7863,59 @@ function importFallbackNumericFormat(value, role) {
   return out;
 }
 
-function transformImportTextValue(value, fieldDef, key) {
+function cloneImportDollarExemptByKey(source) {
+  var out = {};
+  if (!source || typeof source !== 'object') return out;
+  Object.keys(source).forEach(function (key) {
+    var list = Array.isArray(source[key]) ? source[key] : [];
+    var safe = [];
+    list.forEach(function (value) {
+      var digits = String(value == null ? '' : value).replace(/[$,]/g, '').trim();
+      if (/^\d+$/.test(digits) && safe.indexOf(digits) === -1) safe.push(digits);
+    });
+    if (safe.length) out[String(key)] = safe;
+  });
+  return out;
+}
+
+function importDollarExemptList(col, key) {
+  if (!col) return [];
+  if (!col._dollarExemptByKey || typeof col._dollarExemptByKey !== 'object' ||
+      Array.isArray(col._dollarExemptByKey)) {
+    col._dollarExemptByKey = cloneImportDollarExemptByKey(col._dollarExemptByKey);
+  }
+  var fieldKey = String(key || '');
+  return Array.isArray(col._dollarExemptByKey[fieldKey])
+    ? col._dollarExemptByKey[fieldKey]
+    : [];
+}
+
+function setImportDollarExemptList(col, key, list) {
+  if (!col) return;
+  var safe = [];
+  (Array.isArray(list) ? list : []).forEach(function (value) {
+    var digits = String(value == null ? '' : value).replace(/[$,]/g, '').trim();
+    if (/^\d+$/.test(digits) && safe.indexOf(digits) === -1) safe.push(digits);
+  });
+  if (!col._dollarExemptByKey || typeof col._dollarExemptByKey !== 'object' ||
+      Array.isArray(col._dollarExemptByKey)) {
+    col._dollarExemptByKey = {};
+  }
+  var fieldKey = String(key || '');
+  if (safe.length) col._dollarExemptByKey[fieldKey] = safe;
+  else delete col._dollarExemptByKey[fieldKey];
+}
+
+function transformImportTextValue(value, fieldDef, key, options) {
+  options = options || {};
   var before = String(value == null ? '' : value);
   var role = importFieldRuleRole(fieldDef, key);
+  var transformOptions = {
+    dollarExempt: Array.isArray(options.dollarExempt) ? options.dollarExempt : []
+  };
   if (IMPORT_TEXT_RULES_STATE.status === 'ready' && window.banwordEngine &&
       typeof window.banwordEngine.transformText === 'function') {
-    return window.banwordEngine.transformText(before, role, {});
+    return window.banwordEngine.transformText(before, role, transformOptions);
   }
   var fallback = importFallbackNumericFormat(before, role);
   return {
@@ -7865,7 +7936,9 @@ function normalizeImportColumnTexts(columns) {
       if (field.type !== 'text') return;
       var key = field.key;
       var before = col.data[key] == null ? '' : String(col.data[key]);
-      var transformed = transformImportTextValue(before, field, key);
+      var transformed = transformImportTextValue(before, field, key, {
+        dollarExempt: importDollarExemptList(col, key)
+      });
       if (transformed.text !== before) {
         col.data[key] = transformed.text;
         result.changed++;
@@ -7882,7 +7955,225 @@ function normalizeImportColumnTexts(columns) {
 function normalizeImportFieldText(col, key, value) {
   var def = BNCore.getBlock(col && col.blockId);
   var field = def && (def.fields || []).find(function (item) { return item.key === key; });
-  return transformImportTextValue(value, field || { type: 'text', label: key }, key);
+  return transformImportTextValue(
+    value,
+    field || { type: 'text', label: key },
+    key,
+    { dollarExempt: importDollarExemptList(col, key) }
+  );
+}
+
+function importTextSelectionOf(target) {
+  if (!target) return null;
+  if (typeof target.selectionStart === 'number' &&
+      typeof target.selectionEnd === 'number') {
+    var start = Math.max(0, Number(target.selectionStart));
+    var end = Math.max(start, Number(target.selectionEnd));
+    if (start === end) return null;
+    var value = String(target.value == null ? '' : target.value);
+    return {
+      kind: 'input',
+      text: value.slice(start, end),
+      start: start,
+      end: end
+    };
+  }
+
+  if (!target.isContentEditable) return null;
+  var selection = window.getSelection && window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
+  var range = selection.getRangeAt(0);
+  if (!target.contains(range.startContainer) || !target.contains(range.endContainer)) return null;
+  var selectedText = String(selection.toString() || '');
+  if (!selectedText) return null;
+  return {
+    kind: 'contenteditable',
+    text: selectedText,
+    range: range.cloneRange()
+  };
+}
+
+function importCleanNumberText(value) {
+  return String(value == null ? '' : value).replace(/[$,]/g, '').trim();
+}
+
+function importAddThousands(value) {
+  return String(value || '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function importFormatDollar(value) {
+  var digits = importCleanNumberText(value);
+  if (!/^\d+$/.test(digits)) return String(value || '');
+  digits = digits.replace(/^0+(?=\d)/, '') || '0';
+  return '$' + (digits.length >= 4 ? importAddThousands(digits) : digits);
+}
+
+function importSideTextInput(ctx, idx, key) {
+  if (!ctx || !ctx.sideRoot) return null;
+  var root = document.querySelector(ctx.sideRoot);
+  if (!root) return null;
+  var card = Array.prototype.find.call(root.querySelectorAll('.imp-col[data-col]'), function (item) {
+    return String(item.getAttribute('data-col')) === String(idx);
+  });
+  if (!card) return null;
+  var field = Array.prototype.find.call(card.querySelectorAll('.field[data-key]'), function (item) {
+    return String(item.getAttribute('data-key')) === String(key);
+  });
+  return field ? field.querySelector('input.fv') : null;
+}
+
+function importReplaceContentSelection(target, selection, replacement) {
+  var savedRange = selection && selection.range ? selection.range.cloneRange() : null;
+  if (!target || !savedRange) return '';
+  var inserted = false;
+  try {
+    target.focus();
+    var liveSelection = window.getSelection();
+    liveSelection.removeAllRanges();
+    liveSelection.addRange(savedRange);
+    inserted = !!document.execCommand('insertText', false, replacement);
+  } catch (e) {}
+  if (!inserted) {
+    try {
+      savedRange.deleteContents();
+      var node = document.createTextNode(replacement);
+      savedRange.insertNode(node);
+      var after = document.createRange();
+      after.setStart(node, node.length);
+      after.collapse(true);
+      var liveAfter = window.getSelection();
+      liveAfter.removeAllRanges();
+      liveAfter.addRange(after);
+    } catch (e2) {}
+  }
+  return readEditableText(target);
+}
+
+function commitImportTextSelection(target, col, idx, ctxName, key, selection, replacement, exemptList) {
+  if (!target || !col || !selection) return;
+  setImportDollarExemptList(col, key, exemptList);
+  var nextText = '';
+  if (selection.kind === 'input') {
+    var source = String(target.value == null ? '' : target.value);
+    nextText = source.slice(0, selection.start) + replacement + source.slice(selection.end);
+    target.value = nextText;
+  } else {
+    nextText = importReplaceContentSelection(target, selection, replacement);
+  }
+  col.data[key] = nextText;
+
+  var ctx = canvasCtx(ctxName);
+  if (ctxName === 'import') saveImportState();
+  var sideInput = importSideTextInput(ctx, idx, key);
+  if (sideInput && sideInput !== target) sideInput.value = nextText;
+
+  var mount = document.getElementById(ctx.mountId(idx));
+  if (mount) {
+    mount.innerHTML = BNCore.renderInstance(
+      col.blockId,
+      col.data,
+      importRenderOpts(true, ctxName, col)
+    );
+    bindCanvasInteractions(mount, col, idx, ctxName);
+  }
+
+  if (ctxName === 'import') {
+    var ruleLog = document.getElementById('import-log');
+    if (ruleLog) ruleLog.innerHTML = '<span class="ok">' + lineIcon('done') +
+      ' 已更新文字格式；目前選取的數字暫不加 $ 與千分位</span>';
+  }
+}
+
+function showImportTextContextMenu(e, target, col, idx, ctxName, key) {
+  var selection = importTextSelectionOf(target);
+  if (!selection) return false;
+  var selectedText = String(selection.text || '');
+  var numberParts = selectedText.match(/\d[\d,]*/g) || [];
+  if (!selectedText || !numberParts.length) return false;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  var existing = document.getElementById('_boda_import_text_ctx');
+  if (existing) existing.remove();
+
+  var cleanSelected = importCleanNumberText(selectedText);
+  var isPureNumber = /^\d+$/.test(cleanSelected) && cleanSelected.length > 0;
+  var hasDollar = selectedText.indexOf('$') !== -1;
+  var exemptList = importDollarExemptList(col, key).slice();
+  var alreadyExempt = isPureNumber && exemptList.indexOf(cleanSelected) !== -1;
+
+  var menu = document.createElement('div');
+  menu.id = '_boda_import_text_ctx';
+  menu.style.cssText = [
+    'position:fixed;z-index:999999;',
+    'background:#1a1d2a;border:1px solid #2e3347;',
+    'border-radius:10px;padding:6px 0;',
+    'box-shadow:0 8px 24px rgba(0,0,0,.5);',
+    'min-width:245px;font-size:13px;'
+  ].join('');
+
+  var outsideHandler;
+  function closeMenu() {
+    if (menu.parentNode) menu.parentNode.removeChild(menu);
+    if (outsideHandler) document.removeEventListener('mousedown', outsideHandler);
+  }
+  function menuButton(label, handler) {
+    var button = document.createElement('div');
+    button.textContent = label;
+    button.style.cssText = 'padding:8px 16px;cursor:pointer;color:#dde3f0;white-space:nowrap;';
+    button.addEventListener('mouseenter', function () { button.style.background = '#2b2f42'; });
+    button.addEventListener('mouseleave', function () { button.style.background = ''; });
+    button.addEventListener('mousedown', function (event) {
+      event.preventDefault();
+      closeMenu();
+      handler();
+    });
+    menu.appendChild(button);
+  }
+
+  if (isPureNumber) {
+    if (alreadyExempt || !hasDollar) {
+      menuButton('恢復 $' + importAddThousands(cleanSelected) + ' 的千分位格式', function () {
+        var nextList = exemptList.filter(function (value) { return value !== cleanSelected; });
+        commitImportTextSelection(
+          target, col, idx, ctxName, key, selection,
+          importFormatDollar(cleanSelected), nextList
+        );
+      });
+    } else {
+      menuButton('暫時不加$和千分位符號', function () {
+        if (exemptList.indexOf(cleanSelected) === -1) exemptList.push(cleanSelected);
+        commitImportTextSelection(
+          target, col, idx, ctxName, key, selection,
+          cleanSelected, exemptList
+        );
+      });
+    }
+  } else {
+    menuButton('暫時不加$和千分位符號（整段）', function () {
+      var nextList = exemptList.slice();
+      numberParts.forEach(function (part) {
+        var digits = importCleanNumberText(part);
+        if (/^\d+$/.test(digits) && nextList.indexOf(digits) === -1) nextList.push(digits);
+      });
+      var cleaned = selectedText.replace(/\$/g, '').replace(/(\d),(\d{3})(?!\d)/g, '$1$2');
+      commitImportTextSelection(
+        target, col, idx, ctxName, key, selection, cleaned, nextList
+      );
+    });
+  }
+
+  var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 800;
+  var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 600;
+  menu.style.left = Math.max(8, Math.min(Number(e.clientX) || 8, viewportWidth - 270)) + 'px';
+  menu.style.top = Math.max(8, Math.min(Number(e.clientY) || 8, viewportHeight - 80)) + 'px';
+  document.body.appendChild(menu);
+  outsideHandler = function (event) {
+    if (!menu.contains(event.target)) closeMenu();
+  };
+  document.addEventListener('mousedown', outsideHandler);
+  return true;
 }
 
 function importImageFieldKeys(col) {
@@ -7978,7 +8269,8 @@ function saveImportState() {
           header: c.header,
           band: c.band,
           sourceKey: c.sourceKey || '',
-          imageOrder: Array.isArray(c._imageOrder) ? c._imageOrder.slice() : []
+          imageOrder: Array.isArray(c._imageOrder) ? c._imageOrder.slice() : [],
+          dollarExemptByKey: cloneImportDollarExemptByKey(c._dollarExemptByKey)
         };
       })
     };
@@ -9395,8 +9687,12 @@ function renderImportColumns(columns, skipPreviewRerender) {
               ' 已移除或修正禁用語內容</span>';
           }
         });
+        textInput.addEventListener('contextmenu', function (event) {
+          showImportTextContextMenu(event, textInput, col, idx, 'import', key);
+        });
         var clearBtn = fieldEl.querySelector('.text-clear');
         if (clearBtn) clearBtn.addEventListener('click', function () {
+          setImportDollarExemptList(col, key, []);
           textInput.value = '';
           updateAndRerender(key, '');
         });
@@ -9834,7 +10130,7 @@ function applyImportCanvasTextRules(el, col, idx, ctxName, key) {
   }
 
   saveImportState();
-  var sideInput = document.querySelector('#import-fields-scroll .field[data-key="' + key + '"] input.fv');
+  var sideInput = importSideTextInput(canvasCtx(ctxName), idx, key);
   if (sideInput) sideInput.value = transformed.text;
   if (rowsChanged) {
     rerenderDynamicCanvasRow(col, idx, ctxName, key);
@@ -9882,6 +10178,9 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
     });
     el.addEventListener('blur', function () {
       setTimeout(function () { applyImportCanvasTextRules(el, col, idx, ctxName, key); }, 0);
+    });
+    el.addEventListener('contextmenu', function (event) {
+      showImportTextContextMenu(event, el, col, idx, ctxName, key);
     });
   });
 }
@@ -9997,7 +10296,10 @@ function afterImportParsed(rawColumns, options) {
         header: c.header,
         band: c.band,
         sourceKey: c.sourceKey || '',
-        _imageOrder: oldCol && Array.isArray(oldCol._imageOrder) ? oldCol._imageOrder.slice() : []
+        _imageOrder: oldCol && Array.isArray(oldCol._imageOrder) ? oldCol._imageOrder.slice() : [],
+        _dollarExemptByKey: oldCol
+          ? cloneImportDollarExemptByKey(oldCol._dollarExemptByKey)
+          : {}
       };
     });
 
@@ -10127,6 +10429,7 @@ function buildImportSnapshot() {
         band: col.band,
         sourceKey: col.sourceKey || '',
         imageOrder: Array.isArray(col._imageOrder) ? col._imageOrder.slice() : [],
+        dollarExemptByKey: cloneImportDollarExemptByKey(col._dollarExemptByKey),
         data: dataCopy
       };
     });
@@ -10242,6 +10545,7 @@ function restoreImportSnapshot(snap) {
         band: c.band,
         sourceKey: c.sourceKey || '',
         _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
+        _dollarExemptByKey: cloneImportDollarExemptByKey(c.dollarExemptByKey || c._dollarExemptByKey),
         data: c.data || {}
       };
     });
