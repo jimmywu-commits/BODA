@@ -520,7 +520,10 @@
         cp.style.top = state.panels.colorPicker.top || cp.style.top;
         cp.classList.toggle('open', !!state.panels.colorPicker.open);
       }
-      if(state.panels.colorPicker.activeKey !== undefined) global.cpActiveKey = state.panels.colorPicker.activeKey;
+      if(state.panels.colorPicker.activeKey !== undefined){
+        global.cpActiveKey = state.panels.colorPicker.activeKey;
+        if(typeof global.updateColorPanelForKey === 'function') global.updateColorPanelForKey(global.cpActiveKey);
+      }
     }
     if(state.previewMax !== undefined) global.PREVIEW_MAX = state.previewMax;
   }
@@ -598,6 +601,7 @@
       }
       nextColors = applyLockedCanvasBg(nextColors);
       Object.assign(global.colorState,nextColors);
+      if(typeof global._bnNormalizeColorStateRules === 'function') global._bnNormalizeColorStateRules();
       global._bnLastUserColorState = clone(global.colorState);
       if(typeof global.renderColorPickers==='function') global.renderColorPickers();
       if(typeof global.broadcastColors==='function') global.broadcastColors();
@@ -885,8 +889,8 @@
         /* 3. 顏色還原預設 */
         if(global.colorState){
           Object.assign(global.colorState, {
-            mainText:'#2b79c4', subText:'#2540b5', dateText:'#ffffff',
-            brandText:'#ffffff', canvasBg:'#6bc0ec', ctaText:'#6bc0ec', ctaBg:'#ffffff'
+            mainText:'#2b79c4', subText:'#2540b5', dateText:'#2540b5',
+            brandText:'#2b79c4', canvasBg:'#6bc0ec', ctaText:'#ffffff', ctaBg:'#2540b5'
           });
           if(typeof global.renderColorPickers==='function') global.renderColorPickers();
           if(typeof global.broadcastColors==='function') global.broadcastColors();

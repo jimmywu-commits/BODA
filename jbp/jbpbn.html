@@ -306,6 +306,22 @@ html, body { height: 100%; background: var(--bg0); color: var(--text);
 }
 .cp-swatch:hover { transform: scale(1.18); }
 .cp-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.18); }
+.cp-swatch { position:relative; }
+.cp-swatch.forbidden { opacity:.42; cursor:not-allowed; transform:none !important; }
+.cp-swatch.forbidden:hover { transform:none !important; }
+.cp-swatch.forbidden::after {
+  content:'×'; position:absolute; inset:-3px; color:#ff6b6b;
+  font-size:19px; line-height:22px; text-align:center;
+  font-weight:700; pointer-events:none; text-shadow:0 1px 2px rgba(0,0,0,.8);
+}
+.cp-swatch-group { margin-bottom:4px; }
+#cp-restriction-hint {
+  display:none; margin-top:9px; padding-top:7px;
+  border-top:1px solid #2e3347; color:#aeb9d4;
+  font-size:10px; line-height:1.45;
+}
+#cp-restriction-hint.show { display:block; }
+
 </style>
 
 <style>
@@ -501,6 +517,7 @@ box-shadow:0 3px 12px rgba(0,0,0,.24);}
   </div>
   <div id="cp-swatches"></div>
   <div id="cp-swatch-groups" style="margin-top:8px;border-top:1px solid #2e3347;padding-top:8px"></div>
+  <div id="cp-restriction-hint" aria-live="polite"></div>
 </div>
 
 <script>
@@ -1222,6 +1239,7 @@ function broadcastColors() {
 }
 
 function getColorData() {
+  normalizeColorStateRules();
   var lockedCanvasBg = getCanvasBgHardLock();
   var data = {
     mainText:  colorState.mainText,
@@ -1238,6 +1256,14 @@ function getColorData() {
   /* ZIP 匯出期間或剛匯出後，以最後一次使用者實際色票為準，避免舊暫存預設藍回灌。 */
   if (window._bnFrozenColorData) data = Object.assign(data, cloneColorDataSafe(window._bnFrozenColorData));
   else if (isColorGuardActive() && window._bnLastUserColorState) data = Object.assign(data, cloneColorDataSafe(window._bnLastUserColorState));
+  /* 舊暫存可能含已取消的黑／白／灰設定，廣播前再次清理，避免畫布短暫吃到禁色。 */
+  BASIC_TEXT_COLOR_KEYS.forEach(function(key){
+    if(!isColorAllowedForKey(key, data[key])) data[key] = getTextColorFallback(key);
+  });
+  if(!isColorAllowedForKey('ctaBg', data.ctaBg)) data.ctaBg = getAllowedCtaBg(data.subText || data.mainText);
+  if(!isColorAllowedForKey('searchImageCtaBg', data.searchImageCtaBg)) data.searchImageCtaBg = getAllowedCtaBg(data.ctaBg);
+  var broadcastCtaText = normalizePickerHex(data.ctaText);
+  data.ctaText = broadcastCtaText || getCtaContrastColor(data.ctaBg || data.subText || data.canvasBg);
   /* 掛標顏色必須以目前工具列狀態為準，不讓色彩 guard 的舊暫存值覆蓋，避免畫布先閃一下又跳回紅色。 */
   data.tagColor = (colorState && colorState.tagColor === 'white') ? 'white' : 'red';
   /* 蝦皮LOGO顏色同理，以目前工具列狀態為準，不被舊暫存值回灌。 */
@@ -1348,15 +1374,87 @@ var SWATCHES = [
 var colorState = {
   mainText:  '#2b79c4',
   subText:   '#2540b5',
-  dateText:  '#ffffff',
-  brandText: '#ffffff',
+  dateText:  '#2540b5',
+  brandText: '#2b79c4',
   canvasBg:  '#6bc0ec',
-  ctaText:   '#6bc0ec',
-  ctaBg:     '#ffffff',
+  ctaText:   '#ffffff',
+  ctaBg:     '#2540b5',
   searchImageCtaBg: '#d0021b',
   tagColor: 'red',
   logoColor: 'white'
 };
+
+/* 色彩規則：CTA 文字可選任意有效色碼；CTA 底色禁黑／白／灰；
+   品牌、主標、副標、日期文字禁黑／白。所有入口（色票、色碼、原生選色器、暫存檔）共用這套規則。 */
+var BASIC_TEXT_COLOR_KEYS = ['brandText','mainText','subText','dateText'];
+
+
+function normalizePickerHex(value){
+  var v = String(value == null ? '' : value).trim();
+  if(v.charAt(0) !== '#') v = '#' + v;
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : '';
+}
+function isNeutralPickerColor(value){
+  var c = normalizePickerHex(value);
+  if(!c) return false;
+  var n = parseInt(c.slice(1), 16);
+  var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return Math.max(r,g,b) - Math.min(r,g,b) <= 8;
+}
+function getCtaContrastColor(bgHex){
+  var c = normalizePickerHex(bgHex);
+  if(!c) return '#ffffff';
+  var n = parseInt(c.slice(1), 16);
+  var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  function channel(v){
+    v = v / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  }
+  var lum = 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+  var whiteRatio = 1.05 / (lum + 0.05);
+  var blackRatio = (lum + 0.05) / 0.05;
+  return whiteRatio >= blackRatio ? '#ffffff' : '#000000';
+}
+function isColorAllowedForKey(key, value){
+  var c = normalizePickerHex(value);
+  if(!c) return false;
+  if(key === 'ctaText') return true;
+  if(BASIC_TEXT_COLOR_KEYS.indexOf(key) !== -1){
+    return c !== '#000000' && c !== '#ffffff';
+  }
+  if(key === 'ctaBg' || key === 'searchImageCtaBg') return !isNeutralPickerColor(c);
+  return true;
+}
+function colorRestrictionText(key){
+  if(key === 'ctaText') return 'CTA 文字可選任意有效色碼；系統預設多以黑／白提高對比，箭頭會同步套用。';
+  if(key === 'ctaBg' || key === 'searchImageCtaBg') return 'CTA 底色不可使用黑色、白色或灰色。';
+  if(BASIC_TEXT_COLOR_KEYS.indexOf(key) !== -1) return '品牌、主標、副標、日期文字不可使用黑色或白色。';
+  return '';
+}
+function getAllowedCtaBg(preferred){
+  var candidates = [preferred, colorState.subText, colorState.mainText, '#2b79c4', '#0f7db6', '#ee4d2d'];
+  for(var i=0;i<candidates.length;i++){
+    var c = normalizePickerHex(candidates[i]);
+    if(c && isColorAllowedForKey('ctaBg', c)) return c;
+  }
+  return '#2b79c4';
+}
+function getTextColorFallback(key){
+  return (key === 'subText' || key === 'dateText') ? '#2540b5' : '#2b79c4';
+}
+function normalizeColorStateRules(){
+  if(!colorState) return;
+  BASIC_TEXT_COLOR_KEYS.forEach(function(key){
+    if(!isColorAllowedForKey(key, colorState[key])) colorState[key] = getTextColorFallback(key);
+  });
+  if(!isColorAllowedForKey('ctaBg', colorState.ctaBg)) colorState.ctaBg = getAllowedCtaBg(colorState.subText);
+  if(!isColorAllowedForKey('searchImageCtaBg', colorState.searchImageCtaBg)) colorState.searchImageCtaBg = getAllowedCtaBg(colorState.ctaBg);
+  var ctaText = normalizePickerHex(colorState.ctaText);
+  colorState.ctaText = ctaText || getCtaContrastColor(colorState.ctaBg || colorState.subText || colorState.canvasBg);
+  return colorState;
+}
+window._bnNormalizeColorStateRules = normalizeColorStateRules;
+normalizeColorStateRules();
 
 /* 使用者目前設定的背景色唯一權威來源。
    多圖 ZIP 匯出、iframe ready、舊暫存回灌時，都不得用預設藍覆蓋它。 */
@@ -1437,9 +1535,9 @@ function rememberCurrentColorState(){
 
 var COLOR_FIELDS = [
   { key: 'canvasBg',  label: '背景色' },
-  { key: 'ctaText',   label: 'CTA 文字色' },
-  { key: 'ctaBg',     label: 'CTA 底色' },
-  { key: 'searchImageCtaBg', label: 'Search Image CTA 底色' }
+  { key: 'ctaText',   label: 'CTA 文字色（可自選）' },
+  { key: 'ctaBg',     label: 'CTA 底色（禁黑白灰）' },
+  { key: 'searchImageCtaBg', label: 'Search Image CTA底（禁黑白灰）' }
 ];
 
 function applyTagColor(mode) {
@@ -1583,7 +1681,7 @@ function renderTagColorRow(afterRow) {
 }
 
 /* 文字色 dot（inline，和輸入框同行） */
-var TEXT_COLOR_KEYS = ['brandText','mainText','subText','dateText'];
+var TEXT_COLOR_KEYS = BASIC_TEXT_COLOR_KEYS;
 
 /* 目前開啟面板對應的 key */
 var cpActiveKey = null;
@@ -1591,6 +1689,7 @@ var cpActiveKey = null;
 function renderColorPickers() {
   var wrap = document.getElementById('color-rows');
   if (!wrap) return;
+  normalizeColorStateRules();
   wrap.innerHTML = '';
   COLOR_FIELDS.forEach(function(f) {
     var row = document.createElement('div');
@@ -1646,7 +1745,14 @@ function renderColorPickers() {
     s.className = 'cp-swatch';
     s.style.background = c;
     s.title = c;
-    s.addEventListener('click', function(){ applyColor(c); });
+    s.dataset.color = c;
+    s.addEventListener('click', function(){
+      if(!isColorAllowedForKey(cpActiveKey, c)){
+        showColorRestrictionHint(colorRestrictionText(cpActiveKey));
+        return;
+      }
+      applyColor(c);
+    });
     sw.appendChild(s);
   });
 
@@ -1655,10 +1761,12 @@ function renderColorPickers() {
   if(sg){
     sg.innerHTML = '';
     SWATCH_GROUPS.forEach(function(group){
+      var groupWrap = document.createElement('div');
+      groupWrap.className = 'cp-swatch-group';
       var lbl = document.createElement('div');
       lbl.style.cssText = 'font-size:9px;color:#687090;margin-bottom:4px;margin-top:4px';
       lbl.textContent = group.label;
-      sg.appendChild(lbl);
+      groupWrap.appendChild(lbl);
       var row = document.createElement('div');
       row.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px';
       group.colors.forEach(function(c){
@@ -1666,10 +1774,18 @@ function renderColorPickers() {
         s.className = 'cp-swatch';
         s.style.background = c;
         s.title = c;
-        s.addEventListener('click', function(){ applyColor(c); });
+        s.dataset.color = c;
+        s.addEventListener('click', function(){
+          if(!isColorAllowedForKey(cpActiveKey, c)){
+            showColorRestrictionHint(colorRestrictionText(cpActiveKey));
+            return;
+          }
+          applyColor(c);
+        });
         row.appendChild(s);
       });
-      sg.appendChild(row);
+      groupWrap.appendChild(row);
+      sg.appendChild(groupWrap);
     });
   }
 
@@ -1697,20 +1813,54 @@ function renderColorPickers() {
       applyColor(this.value);
     });
   }
+  if(cpActiveKey) updateColorPanelForKey(cpActiveKey);
+}
+
+function showColorRestrictionHint(message){
+  var hint = document.getElementById('cp-restriction-hint');
+  if(!hint) return;
+  hint.textContent = message || '';
+  hint.classList.toggle('show', !!message);
+}
+function updateColorPanelForKey(key){
+  var panel = document.getElementById('cp-panel');
+  if(!panel) return;
+  panel.classList.toggle('cta-text-mode', key === 'ctaText');
+  showColorRestrictionHint(colorRestrictionText(key));
+  document.querySelectorAll('.cp-swatch').forEach(function(s){
+    var c = normalizePickerHex(s.dataset.color || s.title);
+    var allowed = isColorAllowedForKey(key, c);
+    var ctaTextMode = key === 'ctaText';
+    s.classList.toggle('forbidden', !allowed);
+    s.setAttribute('aria-disabled', allowed ? 'false' : 'true');
+    s.tabIndex = allowed ? 0 : -1;
+    /* CTA 文字允許任意有效色碼，因此不會出現禁用叉號；其他欄位依規則提示。 */
+    s.style.display = ctaTextMode && !allowed ? 'none' : '';
+  });
+  document.querySelectorAll('.cp-swatch-group').forEach(function(group){
+    var visible = false;
+    group.querySelectorAll('.cp-swatch').forEach(function(s){
+      if(s.style.display !== 'none') visible = true;
+    });
+    group.style.display = visible ? '' : 'none';
+  });
 }
 
 function openPanel(key, e) {
   e.stopPropagation(); /* 先擋掉，避免被 document.click 立刻關閉 */
+  normalizeColorStateRules();
   cpActiveKey = key;
   var panel  = document.getElementById('cp-panel');
-  var cur    = colorState[key];
+  var cur    = normalizePickerHex(colorState[key]) || getTextColorFallback(key);
   var native = document.getElementById('cp-native');
 
   document.getElementById('cp-hex-input').value = cur;
-  if (native) native.value = /^#[0-9a-fA-F]{6}$/.test(cur) ? cur : '#000000';
+  if (native) native.value = cur;
   document.querySelectorAll('.cp-swatch').forEach(function(s) {
-    s.classList.toggle('active', s.title.toLowerCase() === cur.toLowerCase());
+    var swatchColor = normalizePickerHex(s.dataset.color || s.title);
+    s.classList.toggle('active', swatchColor === cur);
   });
+  updateColorPanelForKey(key);
 
   /* 定位：點擊右側，防超出視窗 */
   var x = e.clientX + 14;
@@ -1724,6 +1874,16 @@ function openPanel(key, e) {
 
 function applyColor(color) {
   if (!cpActiveKey) return;
+  var normalized = normalizePickerHex(color);
+  if(!normalized){
+    showColorRestrictionHint('請輸入 6 碼 HEX 色碼，例如 #2b79c4。');
+    return;
+  }
+  if(!isColorAllowedForKey(cpActiveKey, normalized)){
+    showColorRestrictionHint(colorRestrictionText(cpActiveKey));
+    return;
+  }
+  color = normalized;
   colorState[cpActiveKey] = color;
   if (cpActiveKey === 'canvasBg' && /^#[0-9a-fA-F]{6}$/.test(color || '')) {
     setAuthoritativeCanvasBg(color);
@@ -1744,14 +1904,15 @@ function applyColor(color) {
   var hexInp = document.getElementById('cp-hex-input');
   var native  = document.getElementById('cp-native');
   if (hexInp) hexInp.value = color;
-  if (native) native.value = /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#000000';
+  if (native) native.value = color;
 
   /* 更新色票 active 狀態 */
   document.querySelectorAll('.cp-swatch').forEach(function(s) {
-    s.classList.toggle('active', s.title.toLowerCase() === color.toLowerCase());
+    var swatchColor = normalizePickerHex(s.dataset.color || s.title);
+    s.classList.toggle('active', swatchColor === color);
   });
 
-  /* 同步到所有 iframe */
+  /* 同步到所有 iframe；CTA 箭頭由 iframe 內的 CTA 文字色同步套用 */
   broadcastColors();
 
   /* 顏色變更也要寫入本機暫存。

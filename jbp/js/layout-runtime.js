@@ -521,7 +521,7 @@
       var _bnCtaText = c.ctaText;
       function _bnCtaContrastText(bgHex){
         var m = String(bgHex || '').match(/^#?([0-9a-f]{6})$/i);
-        if(!m) return _bnCtaText || '#ffffff';
+        if(!m) return '#ffffff';
         var n = parseInt(m[1], 16);
         var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
         function ch(v){
@@ -533,7 +533,11 @@
         var blackRatio = (lum + 0.05) / 0.05;
         return whiteRatio >= blackRatio ? '#ffffff' : '#000000';
       }
-      if(_bnCtaBg) _bnCtaText = _bnCtaContrastText(_bnCtaBg);
+      /* CTA 文字可手動選任意有效色碼；只有舊資料或無效值才回退到黑／白對比色。 */
+      var _bnCtaTextValue = String(_bnCtaText || '').trim().toLowerCase();
+      _bnCtaText = /^#[0-9a-f]{6}$/.test(_bnCtaTextValue)
+        ? _bnCtaTextValue
+        : _bnCtaContrastText(_bnCtaBg);
       document.querySelectorAll('.cta-text').forEach(function(el){ if(_bnCtaText) el.style.color=_bnCtaText; });
       /* CTA 底色跟副標色：.逛逛去按鈕 / .cta底 / .逛逛去底 */
       document.querySelectorAll('.逛逛去按鈕,.cta底,.逛逛去底').forEach(function(el){ if(_bnCtaBg) el.style.backgroundColor=_bnCtaBg; });
