@@ -11,13 +11,13 @@
         - 如果全部圖片排起來的總寬超過範圍寬度，整組等比例一起縮小
    2.5 按住滑鼠左鍵拖曳，可以單獨移動某一張圖的位置（每張圖各自記住自己的位移，
       跟縮放權重一樣「跨重新渲染」記住，也會存進暫存檔）。
-      超出圖片範圍的部分會被裁掉（範圍本身就是 overflow:hidden）。
+      匯入工單與維修畫布中，圖片可超出原本範圍放大；超出部分會在圖片區裁切。商品／贈品／代言人／簽名檔若屬同一編號區域，仍以這些區域的聯集作為共同可移動範圍。
    2. 滑鼠滾輪縮放，而且是「針對單一張圖」個別縮放：
         - 滑鼠移到某一張圖上滾動滾輪，只調整那一張的大小(權重)，不影響其他張
-        - 放大可以超出原本的圖片範圍，不會被範圍壓回來、也不會被裁掉
+        - 匯入工單與維修畫布中，放大後可超出範圍，超出部分會裁切在單一或同區域的圖片區內
       實作方式：每張圖有自己的「權重」(預設1)。先用權重1算出「剛好排進範圍裡」
       的原始大小(整組太寬就一起等比縮小)，再各自乘上自己的權重──
-      權重不參與「壓回範圍內」的計算，所以放大時才能超出範圍。
+      匯入工單與維修畫布會將權重與位移限制在單一或同區域聯集範圍內；其他頁面維持原本行為。
 
    使用方式：這個檔案完全獨立運作，只要在 index.html 裡用
    <script src="image-layout.js"></script> 載入（放在 schema-renderer.js
@@ -96,13 +96,13 @@
     return (arr && arr[index] != null) ? arr[index] : 1;
   }
 
-  function setWeight(groupKey, index, value, img) {
+  function setWeight(groupKey, index, value, img, suppressSync) {
     if (!weightStore[groupKey]) weightStore[groupKey] = {};
     weightStore[groupKey][index] = value;
     var syncKey = imageSyncKey(img);
     if (syncKey) {
       linkedWeightStore[syncKey] = value;
-      syncWeightForImage(syncKey);
+      if (!suppressSync) syncWeightForImage(syncKey);
     }
   }
 
@@ -141,13 +141,143 @@
     img.style.transform = (o.x || o.y) ? ('translate(' + o.x + 'px,' + o.y + 'px)') : '';
   }
 
+  /* ── 匯入工單圖片邊界 ──────────────────────────────────────
+     一般圖片使用自己的 data-img-field 圖片框；商品／贈品／代言人／簽名檔
+     在同一個編號（或同一個 repeat 實例）時，使用所有相關圖片框的聯集。
+     這樣同一區域的多張素材可以在共同空間內重新排版，但不會跑出版位；副區與 MSBN 皆適用。 */
+  function workOrderMountOf(el) {
+    while (el && el.nodeType === 1) {
+      /* 匯入工單與維修畫布的副區、MSBN 都包在各自的 mount／stage；
+         不依賴 blockId，所以副區、MSBN 及 MSBN 內副區排都會套用。 */
+      if ((el.id && /^(imp|mnt)-mount-/i.test(el.id)) ||
+          (el.classList && (el.classList.contains('imp-slot') || el.classList.contains('imp-mount') || el.classList.contains('mt-stage')))) {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function isBoundedWorkOrderGroup(group) {
+    return !!workOrderMountOf(group);
+  }
+
+  function closestImageZone(group) {
+    var el = group;
+    while (el && el.nodeType === 1) {
+      if (el.hasAttribute && el.hasAttribute('data-img-field')) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function schemaRootOf(el) {
+    while (el && el.nodeType === 1) {
+      if (el.getAttribute && el.getAttribute('data-bn-schema-id')) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function imageBoundaryFamily(field) {
+    var value = String(field || '');
+    var m = /^(.*?)(productImg|giftImg|endorserImg|signImg)([0-9]*)$/i.exec(value);
+    if (m) return 'shared:' + m[1].toLowerCase() + ':' + m[3];
+    return 'single:' + value.toLowerCase();
+  }
+
+  function imageBoundaryOfGroup(group) {
+    var zone = closestImageZone(group);
+    if (!zone) return null;
+    var field = zone.getAttribute('data-img-field') || '';
+    var family = imageBoundaryFamily(field);
+    var scope = schemaRootOf(zone);
+    var zones = scope ? scope.querySelectorAll('[data-img-field]') : [zone];
+    var union = null;
+    for (var i = 0; i < zones.length; i++) {
+      var candidate = zones[i];
+      if (imageBoundaryFamily(candidate.getAttribute('data-img-field') || '') !== family) continue;
+      var rect = candidate.getBoundingClientRect();
+      if (!rect.width || !rect.height) continue;
+      if (!union) {
+        union = { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+      } else {
+        union.left = Math.min(union.left, rect.left);
+        union.top = Math.min(union.top, rect.top);
+        union.right = Math.max(union.right, rect.right);
+        union.bottom = Math.max(union.bottom, rect.bottom);
+      }
+    }
+    if (!union) {
+      var own = zone.getBoundingClientRect();
+      if (!own.width || !own.height) return null;
+      union = { left: own.left, top: own.top, right: own.right, bottom: own.bottom };
+    }
+    union.width = union.right - union.left;
+    union.height = union.bottom - union.top;
+    return union;
+  }
+
+  function elementScale(el, rect) {
+    var sx = el.offsetWidth ? rect.width / el.offsetWidth : 1;
+    var sy = el.offsetHeight ? rect.height / el.offsetHeight : sx;
+    if (!isFinite(sx) || sx <= 0) sx = 1;
+    if (!isFinite(sy) || sy <= 0) sy = sx;
+    return { x: sx, y: sy };
+  }
+
+  function clampImageOffset(img, groupKey, index, bounds) {
+    if (!bounds || !img || !img.offsetWidth || !img.offsetHeight) return;
+    var offset = getOffset(groupKey, index);
+    var rect = img.getBoundingClientRect();
+    var scale = elementScale(img, rect);
+    var baseLeft = rect.left - offset.x * scale.x;
+    var baseTop = rect.top - offset.y * scale.y;
+    /* 圖片小於可用區時仍完整留在區內；放大後則允許大於區域，
+       只限制它持續覆蓋圖片區，讓使用者可自由平移取景，超出部分由容器裁切。 */
+    var imageW = rect.width, imageH = rect.height;
+    var minX, maxX, minY, maxY;
+    if (imageW >= bounds.width) {
+      minX = (bounds.right - imageW - baseLeft) / scale.x;
+      maxX = (bounds.left - baseLeft) / scale.x;
+    } else {
+      minX = (bounds.left - baseLeft) / scale.x;
+      maxX = (bounds.right - imageW - baseLeft) / scale.x;
+    }
+    if (imageH >= bounds.height) {
+      minY = (bounds.bottom - imageH - baseTop) / scale.y;
+      maxY = (bounds.top - baseTop) / scale.y;
+    } else {
+      minY = (bounds.top - baseTop) / scale.y;
+      maxY = (bounds.bottom - imageH - baseTop) / scale.y;
+    }
+    var x = Math.min(maxX, Math.max(minX, offset.x));
+    var y = Math.min(maxY, Math.max(minY, offset.y));
+    if (!isFinite(x)) x = 0;
+    if (!isFinite(y)) y = 0;
+    if (Math.abs(x - offset.x) > 0.01 || Math.abs(y - offset.y) > 0.01) {
+      setOffset(groupKey, index, x, y);
+      applyOffset(img, groupKey, index);
+    }
+  }
+
+  function maxWeightWithinBounds(img, baseWidth, baseHeight, fitScale, bounds) {
+    if (!bounds || !img || !img.offsetWidth) return Infinity;
+    var scale = elementScale(img, img.getBoundingClientRect());
+    var availableW = bounds.width / scale.x;
+    var availableH = bounds.height / scale.y;
+    var widthAtWeightOne = baseWidth * fitScale;
+    var heightAtWeightOne = baseHeight * fitScale;
+    if (!widthAtWeightOne || !heightAtWeightOne) return Infinity;
+    return Math.max(0.02, Math.min(availableW / widthAtWeightOne, availableH / heightAtWeightOne));
+  }
   /* 量測並套用排版：
      1. 先算「原始大小」(權重都當 1)：每張圖高度＝範圍高、依原始比例算寬度，
         整組加起來太寬就一起乘上同一個縮放比例壓回剛好放得下
         ──這一步只決定「還沒動過手」時的預設樣子，跟以前一樣。
      2. 再把每張圖自己的縮放權重乘上去。權重不參與上面那個「壓回範圍內」的計算，
-        所以滾輪放大時可以超出原本的範圍、不會被壓回來，也不會被裁掉
-        （範圍只是預設的擺放位置，overflow 已經改成不裁切）。 */
+        所以匯入工單時會依單一或同區域聯集範圍夾制縮放與位移
+        （其他頁面維持原本的自由縮放行為）。 */
   function applyLayout(group) {
     var imgs = getImgs(group);
     if (!imgs.length) return;
@@ -157,6 +287,8 @@
     if (!containerH || !containerW) return;
 
     var groupKey = getGroupKey(group);
+    var bounded = isBoundedWorkOrderGroup(group);
+    var bounds = bounded ? imageBoundaryOfGroup(group) : null;
     var n = imgs.length;
     var totalGap = GAP * (n - 1);
 
@@ -173,12 +305,15 @@
 
     group.style.gap = GAP + 'px';
     imgs.forEach(function (img, i) {
-      var finalWidth = baseWidths[i] * fitScale * getWeight(groupKey, i, img);
+      var weight = getWeight(groupKey, i, img);
+
+      var finalWidth = baseWidths[i] * fitScale * weight;
       img.style.width = finalWidth + 'px';
       img.style.height = 'auto';
-      img.style.maxWidth = 'none';   /* 不讓任何外部樣式把放大後的圖片又壓回範圍內 */
+      img.style.maxWidth = 'none';
       img.style.maxHeight = 'none';
-      applyOffset(img, groupKey, i); /* 重新排版後，之前拖過的位移要留著 */
+      applyOffset(img, groupKey, i);
+      if (bounds) clampImageOffset(img, groupKey, i, bounds);
     });
   }
 
@@ -387,10 +522,13 @@
         img.style.cursor = 'grabbing';
 
         function onMove(ev) {
-          setOffset(groupKey, i,
-            start.x + (ev.clientX - startX) / scale,
-            start.y + (ev.clientY - startY) / scale);
+          var nextX = start.x + (ev.clientX - startX) / scale;
+          var nextY = start.y + (ev.clientY - startY) / scale;
+          setOffset(groupKey, i, nextX, nextY);
           applyOffset(img, groupKey, i);
+          if (isBoundedWorkOrderGroup(group)) {
+            clampImageOffset(img, groupKey, i, imageBoundaryOfGroup(group));
+          }
         }
         function onUp() {
           document.removeEventListener('mousemove', onMove);
@@ -412,7 +550,7 @@
       });
 
       img.style.cursor = 'grab';
-      img.title = '滾輪縮放這張圖、按住左鍵可拖曳移動位置、連按兩下復原（可以超出原本的範圍，不會被裁掉）';
+      img.title = '滾輪縮放這張圖、按住左鍵可拖曳移動位置、連按兩下復原（匯入工單與維修畫布時不能超出圖片範圍）';
     });
   }
 

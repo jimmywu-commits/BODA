@@ -1,0 +1,15 @@
+/* AR LOGO 圖版.config.css：AR 以 LOGO 圖呈現，不建立文字圖層 */
+:root{
+  --canvas-w:100px;
+  --canvas-h:100px;
+  --canvas-bg:#6bc0ec;
+  --bg-img:;
+  --ar-bg:#6bc0ec;
+  --layers:"bg|,logo範圍|";
+}
+*{transform-origin:0 0;}
+.bg{position:absolute;left:0;top:0;width:100px;height:100px;background:var(--ar-bg,#6bc0ec);z-index:2;}
+/* LOGO 圖版本：LOGO 與曝品共用原始 AR 安全範圍；畫布不顯示範圍虛線 */
+.logo範圍{position:absolute;left:13px;top:13px;width:74px;height:74px;background:transparent;opacity:1;overflow:hidden;}
+.logo範圍{z-index:20;}
+

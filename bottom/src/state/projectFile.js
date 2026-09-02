@@ -34,11 +34,10 @@
     };
   }
 
-  function serialize(state) {
+  function serializePayload(state, includeSavedAt) {
     var payload = {
       format: FORMAT,
       version: VERSION,
-      savedAt: new Date().toISOString(),
       activeBannerIndex: state.activeBannerIndex,
       // 銳化會改變匯出的像素，所以它是存檔的一部分——不然載回來的圖跟當初交出去的不一樣
       sharpen: !!state.sharpen,
@@ -48,7 +47,18 @@
         return icon.custom;
       }),
     };
-    return JSON.stringify(payload, null, 2);
+    if (includeSavedAt) payload.savedAt = new Date().toISOString();
+    return payload;
+  }
+
+  function serialize(state) {
+    return JSON.stringify(serializePayload(state, true), null, 2);
+  }
+
+  /* iframe 雙向同步只比較真正的編輯內容；不能含 savedAt，
+     否則每次序列化都會變成新 state，兩個入口就會無限互相重繪。 */
+  function serializeForSync(state) {
+    return JSON.stringify(serializePayload(state, false), null, 2);
   }
 
   function parse(text) {
@@ -198,6 +208,7 @@
     FILENAME: FILENAME,
     VERSION: VERSION,
     serialize: serialize,
+    serializeForSync: serializeForSync,
     parse: parse,
     applyToStore: applyToStore,
     readFile: readFile,

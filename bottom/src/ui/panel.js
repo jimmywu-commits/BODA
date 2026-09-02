@@ -599,15 +599,27 @@
       var reader = new FileReader();
 
       reader.onload = function (ev) {
-        // 沒有 type 欄位：型別由確認表單上按了哪一顆按鈕當場決定，不需要預設值
-        ui.pendingUpload = {
-          slotIndex: index,
-          displayName: baseName,
-          svg: isSvg ? ev.target.result : null,
-          src: isSvg ? null : ev.target.result,
-        };
-        ui.uploadMessage = "";
-        rerender();
+        var originalSrc = ev.target.result;
+        function stage(src) {
+          // 沒有 type 欄位：型別由確認表單上按了哪一顆按鈕當場決定，不需要預設值
+          ui.pendingUpload = {
+            slotIndex: index,
+            displayName: baseName,
+            svg: isSvg ? originalSrc : null,
+            src: isSvg ? null : src,
+          };
+          ui.uploadMessage = "";
+          rerender();
+        }
+
+        /* 點陣圖先裁掉外圍透明／白邊；彩色底圖由裁切器判定為非白底，會完整保留。 */
+        if (!isSvg && window.ImageEditor && typeof window.ImageEditor.trimWhiteBorder === "function") {
+          window.ImageEditor.trimWhiteBorder(originalSrc)
+            .then(function (result) { stage(result && result.src ? result.src : originalSrc); })
+            .catch(function () { stage(originalSrc); });
+        } else {
+          stage(originalSrc);
+        }
       };
       reader.onerror = function () {
         ui.uploadMessage = "讀取檔案失敗。";
@@ -923,7 +935,13 @@
       buildBannerTabs(state, store, Actions, tabbar);
 
       scrollArea.innerHTML = "";
-      scrollArea.appendChild(buildImportSection(store, Actions, ui, renderAll));
+      var isGeneratorEmbed = window.BottomParentBridge &&
+        window.BottomParentBridge.isEmbedded &&
+        window.BottomParentBridge.isEmbedded() &&
+        new URLSearchParams(location.search).get("embed") === "generator";
+      if (!isGeneratorEmbed) {
+        scrollArea.appendChild(buildImportSection(store, Actions, ui, renderAll));
+      }
       scrollArea.appendChild(buildAccentColorSection(banner, store, Actions));
       scrollArea.appendChild(buildSlotCountSection(banner, store, Actions));
       scrollArea.appendChild(buildSharpenSection(state, store, Actions));

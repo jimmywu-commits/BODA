@@ -289,12 +289,24 @@
     return hslToHex(hsl.h, saturation, darken ? 12 : 88);
   }
 
-  /* CTA 底色會使用副標色；CTA 文字／三角標則取黑白中對比度較高者。
-     這裡用最大對比方向，而不是 RGB 直接反相，避免反相後仍然吃色。 */
+  /* 同色系調整仍不足以看清楚時，以非純黑／白的安全色作最後保底。
+     這特別用於「沒有背景圖、只有一整片高彩度底色」：不能讓暗紅／暗橘字
+     繼續貼在紅／橘底上。深藍黑可保留品牌感，同時也符合 CTA 底色禁黑灰的規則。 */
+  function guaranteeReadableText(textHex, bgHex, minRatio){
+    var adjusted = ensureContrast(textHex, bgHex, minRatio);
+    if(contrastRatio(adjusted, bgHex) >= minRatio) return adjusted;
+    var deepNavy = '#00004f';
+    var warmWhite = '#fffefa';
+    return contrastRatio(deepNavy, bgHex) >= contrastRatio(warmWhite, bgHex)
+      ? deepNavy : warmWhite;
+  }
+
+  /* CTA 底色會使用副標色；CTA 文字／三角標預設白色。
+     只有真的偏淡的 CTA 底色才改用黑色，避免中深色 CTA 被黑字吃掉。 */
   function getContrastingCtaText(bgHex){
     var white = '#ffffff';
     var black = '#000000';
-    return contrastRatio(white, bgHex) >= contrastRatio(black, bgHex) ? white : black;
+    return getLuminance(bgHex) >= 0.72 ? black : white;
   }
   function buildTextPaletteFromSamples(canvasHex, visualHex){
     var canvasBg = hexToRgb(canvasHex);
@@ -390,6 +402,12 @@
       }
     }
 
+    /* 純色背景也要和背景圖取樣一樣做可讀性保護：
+       主／副／日期都至少 4.5:1；同色系不夠清楚時改用安全深藍黑或暖白。 */
+    mainText = guaranteeReadableText(mainText, canvasHex, 4.5);
+    subText = guaranteeReadableText(subText, canvasHex, 4.5);
+    dateText = guaranteeReadableText(dateText, canvasHex, 4.5);
+
     var ctaBg = subText;
     var ctaText = getContrastingCtaText(ctaBg);
 
@@ -443,9 +461,60 @@
 
     try{ window._bnLastUserColorState = JSON.parse(JSON.stringify(window.colorState)); }
     catch(_){ window._bnLastUserColorState = Object.assign({}, window.colorState); }
+    scheduleTextContrastAudit();
     return palette;
   }
 
+  /* 文字可讀性驗收：用 W3C 對比值檢查文字區背景。背景圖存在時，
+     以「文字區取樣色 + 目前背景色 38% 疊色」作為實際畫面的近似底色。 */
+  var _bnContrastAuditTimer = null;
+function hasActiveBackgroundImage(){
+    if(window._bgDataUrl) return true;
+    try{
+      var states = typeof window._bnGetBgStates === 'function' ? window._bnGetBgStates() : null;
+      return !!(states && Object.keys(states).some(function(id){ return states[id] && states[id].src; }));
+    }catch(_){ return false; }
+  }
+  function renderTextContrastAudit(){
+    var wrap = document.getElementById('color-rows');
+    var state = window.colorState;
+    if(!wrap || !state) return;
+    var old = document.getElementById('bn-text-contrast-audit');
+    if(old) old.remove();
+    var canvasBg = String(state.canvasBg || '').toLowerCase();
+    if(!hexToRgb(canvasBg)) return;
+    var refs = [{ name:'背景色', color:canvasBg }];
+    var sampled = String(window._bnLastSampledCanvasBg || '').toLowerCase();
+    if(hasActiveBackgroundImage() && hexToRgb(sampled)){
+      refs.push({ name:'背景圖文字區', color:sampled });
+    }
+    var fields = [
+      { key:'brandText', label:'品牌' },
+      { key:'mainText', label:'主標' },
+      { key:'subText', label:'副標' },
+      { key:'dateText', label:'日期' }
+    ];
+    var results = fields.map(function(field){
+      var color = String(state[field.key] || '').toLowerCase();
+      if(!hexToRgb(color)) return { label:field.label, ratio:0, pass:false };
+      var ratio = Math.min.apply(null, refs.map(function(ref){ return contrastRatio(color, ref.color); }));
+      return { label:field.label, ratio:ratio, pass:ratio >= 4.5 };
+    });
+    var failed = results.filter(function(item){ return !item.pass; });
+    var panel = document.createElement('div');
+    panel.id = 'bn-text-contrast-audit';
+    panel.setAttribute('aria-live','polite');
+    panel.style.cssText = 'margin-top:10px;padding:8px 9px;border:1px solid ' + (failed.length ? '#d98a80' : '#73bfae') + ';border-radius:6px;background:' + (failed.length ? 'rgba(139,39,33,.14)' : 'rgba(30,118,95,.14)') + ';color:' + (failed.length ? '#ffd0c8' : '#bcebdc') + ';font-size:10px;line-height:1.55;';
+    var details = results.map(function(item){ return item.label + ' ' + (item.pass ? '✓' : '⚠') + ' ' + item.ratio.toFixed(1) + ':1'; }).join('　');
+    panel.textContent = failed.length
+      ? '文字可讀性提醒：' + failed.map(function(item){ return item.label; }).join('、') + ' 可能吃色（目標至少 4.5:1）。' + details
+      : '文字可讀性檢查通過（至少 4.5:1）。' + details;
+    wrap.appendChild(panel);
+  }
+  function scheduleTextContrastAudit(){
+    if(_bnContrastAuditTimer) clearTimeout(_bnContrastAuditTimer);
+    _bnContrastAuditTimer = setTimeout(renderTextContrastAudit, 0);
+  }
   /* 手動背景色與跨頁同步也要走同一套文字配色，不能只有背景圖庫取樣才生效。 */
   function installTextColorHooks(){
     if(window.__BN_BG_TEXT_COLOR_HOOKS__) return;
@@ -455,9 +524,13 @@
     if(typeof nativeApplyColor === 'function' && !nativeApplyColor.__bnTextPaletteWrapped){
       var wrappedApplyColor = function(color){
         if(window.cpActiveKey === 'canvasBg' && hexToRgb(color)){
+          /* 手動選色優先於同一張背景圖的延遲／重播取樣。 */
+          window._bnManualCanvasBgAt = Date.now();
           applyAutoTextPalette(color, (window._bnLastSampledCanvasBg && String(window._bnLastSampledCanvasBg).toLowerCase() === String(color).toLowerCase() && Date.now() - (Number(window._bnLastSampledAt) || 0) < 3000) ? (window._bnLastSampledVisualBg || color) : color);
         }
-        return nativeApplyColor.apply(this, arguments);
+        var result = nativeApplyColor.apply(this, arguments);
+        scheduleTextContrastAudit();
+        return result;
       };
       wrappedApplyColor.__bnTextPaletteWrapped = true;
       window.applyColor = wrappedApplyColor;
@@ -468,6 +541,8 @@
       var wrappedApplySharedBg = function(color){
         var ret = nativeApplySharedBg.apply(this, arguments);
         if(hexToRgb(color)){
+          /* 從匯入工單等其他頁面同步過來的色碼，同樣屬於使用者選色。 */
+          window._bnManualCanvasBgAt = Date.now();
           applyAutoTextPalette(color);
           if(typeof window.broadcastColors === 'function'){
             try{ window.broadcastColors(); }catch(_){ }
@@ -480,11 +555,19 @@
     }
   }
   function applySampledCanvasBg(src){
+    var sourceKey = String(src || '');
+    /* 同一張背景圖在 iframe ready／畫布重繪時會被重播；不可把晚於取樣的手動背景色洗掉。
+       換成另一張圖時 sourceKey 會改變，仍會重新取樣並建立新的配色。 */
+    if(sourceKey && sourceKey === String(window._bnLastSampledSource || '') &&
+      Number(window._bnManualCanvasBgAt || 0) > Number(window._bnLastSampledAt || 0)){
+      return Promise.resolve((window.colorState && window.colorState.canvasBg) || window._bnAuthoritativeCanvasBg || null);
+    }
     return sampleBackgroundColors(src).then(function(samples){
       if(!samples) return null;
       var canvasHex = samples.left || samples.right;
       var visualHex = samples.right || canvasHex;
       if(!canvasHex) return null;
+      window._bnLastSampledSource = sourceKey;
       window._bnLastSampledCanvasBg = canvasHex;
       window._bnLastSampledVisualBg = visualHex;
       window._bnLastSampledAt = Date.now();
@@ -729,7 +812,7 @@
       hbnList.forEach(function(file){
         if(!isImageFile(file)) return;
         var num = extractNum(file);
-        var dd = findPairByNum(ddList, num);
+        var dd = findPairByNum(ddList, num, file);
         out.push({
           name: cleanFileName(file),
           fileName: file,
@@ -756,14 +839,36 @@
     return out;
   }
 
-  function findPairByNum(list, num){
-    if(!Array.isArray(list) || num === null) return null;
-    for(var i=0;i<list.length;i++){
-      if(extractNum(list[i]) === num) return list[i];
-    }
-    return null;
+  /* 型號配對不能只看最後一個數字：EL-12 與 EL-Mockup-12 是兩個不同系列。
+     先移除 HBN／DDCARD 方向尾碼與檔案重複尾碼，再用完整系列 key 配對。 */
+  function backgroundModelKey(filename){
+    var base=String(filename||'').replace(/[?#].*$/,'').replace(/\.[^.]+$/,'').toLowerCase();
+    base=base.replace(/(?:[-_]?)(?:hbn|ddcard)\d*(?:[-_]\d+)?$/i,'');
+    return base.replace(/[\s_]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
   }
 
+  function findPairByNum(list, num, sourceFile){
+    if(!Array.isArray(list) || num === null) return null;
+    var sourceKey=backgroundModelKey(sourceFile);
+    if(sourceKey){
+      var sameModel=list.filter(function(item){ return backgroundModelKey(item) === sourceKey; });
+      if(sameModel.length){
+        /* 同型號若同時存在 JPG／PNG，優先沿用 HBN 原檔副檔名，
+           讓清單順序不會左右直式背景的實際選圖。 */
+        var extMatch=String(sourceFile||'').match(/\.([^.?#]+)(?:[?#].*)?$/);
+        var sourceExt=extMatch?extMatch[1].toLowerCase():'';
+        var sameExt=sourceExt ? sameModel.filter(function(item){
+          var m=String(item||'').match(/\.([^.?#]+)(?:[?#].*)?$/);
+          return m && m[1].toLowerCase()===sourceExt;
+        }) : [];
+        return sameExt.length ? sameExt[0] : sameModel[0];
+      }
+    }
+    /* 舊資料或特殊命名沒有完整型號時才回退編號；若同編號有多個系列，
+       寧可不自動配錯，也不隨意拿第一張。 */
+    var sameNum=list.filter(function(item){ return extractNum(item) === num; });
+    return sameNum.length === 1 ? sameNum[0] : null;
+  }
   function addGenericItem(out, item, cat){
     if(!item) return;
     if(typeof item === 'string'){
@@ -966,6 +1071,17 @@
     return { fit: getDefaultBgFitForLibraryLayout(info), scale:100, x:50, y:50 };
   }
 
+  function isBackgroundImageLockedLayout(info, iframeEl){
+    var src = iframeEl && iframeEl.getAttribute ? iframeEl.getAttribute('src') : '';
+    if(/SearchICON/i.test(src) || /(?:^|[\/\\])AR(?:_|\.html(?:\?|$)|$)/i.test(src) || /^AR(?:_|$)/i.test(src)) return true;
+    try{
+      var layouts = typeof window.loadLayouts === 'function' ? (window.loadLayouts() || []) : [];
+      var item = layouts.find(function(l){ return String(l.id) === String(info && info.id); });
+      var name = item && String(item.file || item.name || '');
+      return /SearchICON/i.test(name) || /(?:^|[\/\\])AR(?:_|\.html(?:\?|$)|$)/i.test(name) || /^AR(?:_|$)/i.test(name);
+    }catch(_){ return false; }
+  }
+
   function applyPreset(img){
     if(!img) return;
     closeModal();
@@ -979,6 +1095,7 @@
         var states = {};
         iframes.forEach(function(iframe){
           var info = getLayoutInfoForIframe(iframe);
+          if(isBackgroundImageLockedLayout(info, iframe)) return;
           var src = chooseSrcForLayout(info, img, dataH, dataV);
           if(!src) return;
           var params = getBgParamsForLibraryLayout(info, iframe);
@@ -1045,6 +1162,8 @@
 
   installBgColorSamplingHooks();
   installTextColorHooks();
+  scheduleTextContrastAudit();
+  setTimeout(scheduleTextContrastAudit, 350);
 
   window.BNBgLibrary = {
     open: openModal,

@@ -1,0 +1,14 @@
+/* 首頁LOGO牆.config.css：依「10-今日旗艦店 LOGO image.json」建立 */
+:root{
+  --canvas-w:402px;
+  --canvas-h:483px;
+  --canvas-bg:#fff;
+  --bg-img:;
+  --layers:"bg|,矩形_3186|,logo範圍|";
+}
+*{transform-origin:0 0;}
+.bg{position:absolute;left:0;top:0;width:402px;height:483px;background:#fff;z-index:1;}
+/* JSON 的「矩形 3186」：商品／人物範圍。參考圖以淡藍紫色顯示編輯區，放入圖片後由共用 runtime 透出圖片。 */
+.矩形_3186{position:absolute;left:39px;top:7px;width:322px;height:273px;background:#939fdb;z-index:10;overflow:hidden;}
+/* JSON 的「曝品或人物的範圍」：LOGO 圖範圍。 */
+.logo範圍{position:absolute;left:40px;top:279px;width:320px;height:111px;background:#fff;border-radius:56px;box-shadow:0 2px 7px rgba(0,0,0,.14);z-index:20;overflow:hidden;}

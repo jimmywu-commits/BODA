@@ -86,6 +86,72 @@
     });
   }
 
+  /*
+   * 匯入時自動裁除透明／白色外框。
+   *
+   * 只在四角是透明或近白色時啟用白底判斷，避免把有色底的 Logo、照片背景
+   * 誤當成留白裁掉；四角透明的 PNG 則直接依 alpha 外接矩形裁切。
+   */
+  function trimWhiteBorder(dataUrl) {
+    return loadImageData(dataUrl).then(function (r) {
+      /* 大圖先縮到 2400px 以內做邊界判斷，避免匯入手機原圖時佔用過多記憶體。 */
+      var sourceCanvas = r.canvas;
+      var maxDimension = 2400;
+      var sourceMax = Math.max(sourceCanvas.width, sourceCanvas.height);
+      if (sourceMax > maxDimension) {
+        var resize = maxDimension / sourceMax;
+        var resized = document.createElement("canvas");
+        resized.width = Math.max(1, Math.round(sourceCanvas.width * resize));
+        resized.height = Math.max(1, Math.round(sourceCanvas.height * resize));
+        resized.getContext("2d").drawImage(sourceCanvas, 0, 0, resized.width, resized.height);
+        sourceCanvas = resized;
+      }
+      var sourceCtx = sourceCanvas.getContext("2d", { willReadFrequently: true });
+      var d = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height).data;
+      var w = sourceCanvas.width;
+      var h = sourceCanvas.height;
+      var corners = [0, w - 1, (h - 1) * w, h * w - 1].map(function (pixel) {
+        var i = pixel * 4;
+        return { r: d[i], g: d[i + 1], b: d[i + 2], a: d[i + 3] };
+      });
+      var whiteCorners = corners.every(function (p) {
+        return p.a <= 12 || (p.a >= 235 && p.r >= 238 && p.g >= 238 && p.b >= 238);
+      });
+      if (!whiteCorners) return { src: dataUrl, changed: false };
+
+      var x0 = w, y0 = h, x1 = -1, y1 = -1;
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          var i = (y * w + x) * 4;
+          var alpha = d[i + 3];
+          var isTransparent = alpha <= 12;
+          var isWhiteBorder = alpha >= 235 && d[i] >= 238 && d[i + 1] >= 238 && d[i + 2] >= 238;
+          if (!isTransparent && !isWhiteBorder) {
+            if (x < x0) x0 = x;
+            if (y < y0) y0 = y;
+            if (x > x1) x1 = x;
+            if (y > y1) y1 = y;
+          }
+        }
+      }
+      if (x1 < 0 || (x0 === 0 && y0 === 0 && x1 === w - 1 && y1 === h - 1)) {
+        return { src: dataUrl, changed: false };
+      }
+
+      /* 留 1px 抗鋸齒安全邊，避免把圖形邊緣切掉，但不保留可見白框。 */
+      x0 = Math.max(0, x0 - 1);
+      y0 = Math.max(0, y0 - 1);
+      x1 = Math.min(w - 1, x1 + 1);
+      y1 = Math.min(h - 1, y1 + 1);
+      var cw = x1 - x0 + 1;
+      var ch = y1 - y0 + 1;
+      var out = document.createElement("canvas");
+      out.width = cw;
+      out.height = ch;
+      out.getContext("2d").drawImage(sourceCanvas, x0, y0, cw, ch, 0, 0, cw, ch);
+      return { src: out.toDataURL("image/png"), changed: true, width: cw, height: ch };
+    });
+  }
   function destroyCropper() {
     try { if (activeCropper) activeCropper.destroy(); } catch (e) { /* 已銷毀就忽略 */ }
     activeCropper = null;
@@ -450,5 +516,5 @@
     return !!session;
   }
 
-  window.ImageEditor = { open: open, isOpen: isOpen };
+  window.ImageEditor = { open: open, isOpen: isOpen, trimWhiteBorder: trimWhiteBorder };
 })();

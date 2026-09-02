@@ -228,6 +228,11 @@ html, body { height: 100%; background: var(--bg0); color: var(--text);
   border-radius: 8px; overflow: visible; /* 不裁切畫版 */
   flex-shrink: 0;
 }
+/* AR 與 AR_LOGO 都是 100×100px，但標題列文字長度不同會讓外框寬度不一致。
+   兩者在預覽區使用同一組寬度，避免看起來像不同尺寸的格子。 */
+.preview-block.ar-preview-block { width: 216px; }
+/* SearchICON 三個 120×120px 版位同樣統一預覽外框寬度。 */
+.preview-block.searchicon-preview-block { width: 284px; }
 .preview-block-head {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; background: var(--bg2); border-bottom: 1px solid var(--border);
@@ -411,7 +416,7 @@ border-radius:50%;border:none;background:#fff;font-size:20px;cursor:pointer;}
         <div class="s-field-inline">
           <label>日期</label>
           <div class="s-field-row">
-            <input type="text" id="txt-date" data-limit="14" placeholder="日期文字" value="5/18 12:00 - 5/25 11:59 期間限定" oninput="broadcastText()">
+            <input type="text" id="txt-date" data-limit="14" placeholder="日期文字" value="5/18 - 5/25 期間限定" oninput="broadcastText()">
             <span class="char-count-badge" id="badge-日期"></span><div class="color-dot" id="dot-dateText" title="日期文字色"></div>
           </div>
         </div>
@@ -872,7 +877,11 @@ function renderPreviews() {
 
   layouts.forEach(function(l) {
     var block = document.createElement('div');
-    block.className = 'preview-block';
+    var isArPreview = /^AR(?:_LOGO)?\.html$/i.test(l.file || '');
+    var isSearchIconPreview = /^SearchICON_(?:LOGO|PRODUCT|TEXT)\.html$/i.test(l.file || '');
+    block.className = 'preview-block' +
+      (isArPreview ? ' ar-preview-block' : '') +
+      (isSearchIconPreview ? ' searchicon-preview-block' : '');
     block.dataset.id = l.id;
 
     /* 先用佔位尺寸建立結構，onload 後再正確設定 */
@@ -1505,6 +1514,13 @@ function applyColor(color) {
     setAuthoritativeCanvasBg(color);
   }
   rememberCurrentColorState();
+
+  /* 讓主頁的匯入工單能即時取得曝光資源副標色作為促標底色預設。 */
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'wo-exposure-color', key: cpActiveKey, color: color }, '*');
+    }
+  } catch (e) {}
 
   /* 更新圓點（sidebar 和 inline 共用同一個 id） */
   var dot = document.getElementById('dot-' + cpActiveKey);

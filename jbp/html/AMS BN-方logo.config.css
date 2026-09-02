@@ -1,0 +1,23 @@
+/* AMS BN 方logo.config.css：系統設定與 PS JSON 座標 */
+:root{
+  --canvas-w:1077px;
+  --canvas-h:264px;
+  --canvas-bg:#4DB5EC;
+  --bg-img:;
+  --layers:"bg|,logo範圍|,商品範圍|,主標|主標$1023起,副標|副標$1023起,日期|5/18 - 5/25 期間限定,cta圓底|,cta白線|,cta三角箭頭|";
+}
+*{transform-origin:0 0;}
+.bg{position:absolute;left:0;top:0;width:1077px;height:264px;background:var(--canvas-bg,#4DB5EC);z-index:2;}
+.logo範圍{position:absolute;left:38px;top:58px;width:99px;height:100px;background:rgba(235,104,119,.4);opacity:1;z-index:20;overflow:hidden;}
+.商品範圍{position:absolute;left:536px;top:11px;width:426px;height:205px;background:rgba(235,104,119,.4);opacity:1;z-index:20;overflow:visible;}
+.主標{position:absolute;left:147px;top:54px;font-size:39.311px;font-family:"NotoSansCJKtc-Medium","ShopeeNotoSans (content)",sans-serif;font-weight:500;color:rgb(37,112,190);line-height:1.2;white-space:nowrap;transform:matrix(.9246,0,0,.9232,0,0);z-index:50;}
+.副標{position:absolute;left:146px;top:98px;font-size:75.3226px;font-family:"NotoSansCJKtc-Bold","ShopeeNotoSans (content)",sans-serif;font-weight:700;color:rgb(37,64,181);line-height:1.2;white-space:nowrap;transform:matrix(.7238,0,0,.7227,0,0);z-index:50;}
+.日期{position:absolute;left:147px;top:161px;font-size:35.8561px;font-family:"ShopeeFontRounded-Regular","ShopeeNotoSans (content)",sans-serif;font-weight:400;color:#fff;line-height:1.2;white-space:nowrap;transform:matrix(.7602,0,0,.7591,0,0);z-index:50;}
+/* CTA 幾何依 AMS PSD 圖層校正：底圓 83px、白圈 77px，兩者同心且保留 3px 邊距。 */
+.cta圓底{border-radius:50%;background:#2540B5;position:absolute;left:962px;top:90px;width:83px;height:83px;z-index:9000;}
+
+/* 白圈對應「橢圓 1 拷貝」：x=965、y=93、77x77、6px 線寬。 */
+.cta白線{position:absolute;left:965px;top:93px;width:77px;height:77px;z-index:9001;border:6px solid #fff!important;border-radius:50%!important;background:transparent!important;overflow:visible;}
+
+/* 三角標依 PSD「多邊形 867」的實際路徑座標。 */
+.cta三角箭頭{background:transparent;width:0;height:0;border-top:12.5574px solid transparent;border-bottom:12.5574px solid transparent;border-left:21.75px solid #fff;position:absolute;left:993.7437px;top:119.8006px;box-sizing:content-box;z-index:9008;}

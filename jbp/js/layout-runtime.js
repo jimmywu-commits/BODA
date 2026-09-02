@@ -13,7 +13,23 @@
      人物圖完全不顯示——不管人物圖數量或商品可見度規則怎麼變，都要蓋掉。
      統一在這裡（layout-runtime.js）判斷，不用各版位自己攔截商品/人物相關
      訊息，行為才會一致、也才不會漏掉哪個訊息類型沒攔到。 */
-  var _bnSingleProductOnlyTemplate = /searchicon_product/i.test(fname || '');
+  var _bnSingleProductOnlyTemplate = /searchicon_product|^AR/i.test(fname || '');
+  var _bnHomeLogoWallTemplate = /^首頁LOGO牆/i.test(fname || '');
+  var _bnSearchIconTemplate = /SearchICON/i.test(fname);
+  var _bnArTemplate = /(?:^|[\/\\])AR(?:_|\.html(?:\?|$)|$)/i.test(fname || '') || /^AR(?:_|$)/i.test(fname || '');
+  var _bnAmsTemplate = /^AMS\s*BN(?:-|$)/i.test(fname || '');
+  var _bnLpbnTemplate = /^LPBN_(APP|PC)/i.test(fname || '');
+  var _bnRightHalfTemplate = _bnAmsTemplate || /^Coin_pageBN/i.test(fname || '');
+  /* 背景圖一律保留原始色彩；背景色由各版型既有的保護色塊、漸層或純色底處理。 */
+  function _bnRenderTintedBackground(bgEl){
+    if(!bgEl) return;
+    var src = bgEl.dataset.bnTintBgSrc || '';
+    if(!src) return;
+    bgEl.style.backgroundImage = 'url(' + JSON.stringify(src) + ')';
+    bgEl.style.backgroundSize = bgEl.dataset.bnBgSize || 'cover';
+    bgEl.style.backgroundPosition = bgEl.dataset.bnBgPosition || '50% 50%';
+    bgEl.style.backgroundRepeat = 'no-repeat';
+  }
 
   function loadCSS(href, cb) {
     var l = document.createElement('link');
@@ -61,7 +77,7 @@
     canvas.style.height = H + 'px';
 
     var bgRaw = root.getPropertyValue('--bg-img').trim();
-    if (bgRaw && bgRaw !== 'none' && bgRaw !== '') {
+    if (!_bnSearchIconTemplate && !_bnArTemplate && bgRaw && bgRaw !== 'none' && bgRaw !== '') {
       var bsrc = bgRaw.replace(/^url\(["']?/,'').replace(/["']?\)$/,'').trim();
       var bimg = document.getElementById('底圖');
       if (bimg) { bimg.src = bsrc; bimg.style.display = 'block'; }
@@ -131,11 +147,31 @@
       var _bgEl = canvas.querySelector('.背景色') || canvas.querySelector('.bg') || canvas.querySelector('.底色');
       if (_bgEl) {
         _bgEl.style.backgroundColor = canvasBgRaw;
+        if (/^AR/i.test(fname)) _bgEl.style.setProperty('--ar-bg', canvasBgRaw);
       } else {
         canvas.style.background = canvasBgRaw;
       }
     }
 
+    if (_bnSearchIconTemplate) {
+      var _siCanvas = document.getElementById('canvas');
+      var _siBg = document.querySelector('.背景色') || document.querySelector('.bg') || document.querySelector('.底色');
+      /* SearchICON：畫布外底固定白色，但圓圈本身保留 --canvas-bg 的顏色，
+         之後也會由父層 bn-color 持續同步。這裡只隔離背景圖，不要把圓圈洗成白色。 */
+      if (_siBg) { _siBg.style.backgroundImage = 'none'; }
+      var _siImg = document.getElementById('底圖');
+      if (_siImg) { _siImg.src = ''; _siImg.style.display = 'none'; _siImg.style.backgroundImage = 'none'; }
+      if (_siCanvas) { _siCanvas.style.background = '#ffffff'; _siCanvas.style.backgroundImage = 'none'; }
+    }
+    if (_bnArTemplate) {
+      /* AR／AR_LOGO 只吃背景色，不吃背景圖片；保留 .背景色 的色彩連動。 */
+      var _arCanvas = document.getElementById('canvas');
+      var _arBg = document.querySelector('.背景色') || document.querySelector('.bg') || document.querySelector('.底色');
+      if (_arBg) _arBg.style.backgroundImage = 'none';
+      var _arImg = document.getElementById('底圖');
+      if (_arImg) { _arImg.src = ''; _arImg.style.display = 'none'; _arImg.style.backgroundImage = 'none'; }
+      if (_arCanvas) _arCanvas.style.backgroundImage = 'none';
+    }
     function fit() {
       if (window.parent !== window) {
         canvas.style.transform = 'none';
@@ -203,8 +239,9 @@
       // 這樣通常第 1～2 次就能找到圖，不會浪費一堆請求去試不存在的檔名組合。
       var aliases = [];
       if(/coin/i.test(norm)) aliases.push('Coinpage','coinpage','Coin_pageBN_APP','Coin_pageBN');
+      if(/^ar/i.test(norm)) aliases.push('AR','ar','AR coin page circle');
       if(/ddcard/i.test(norm)) aliases.push('ddcard','DDCard','DD Card');
-      if(/hbn/i.test(norm)) aliases.push('HBN','hbn');
+      if(/hbn/i.test(norm) || /^活動總覽/i.test(norm)) aliases.push('HBN','hbn');
       if(/fbpost|facebook|^fb/i.test(norm)) aliases.push('fbpost','FB_POST','FB','facebook');
       if(/ig|instagram/i.test(norm)) aliases.push('IG','ig','instagram');
       if(/lpbnapp/i.test(norm)) aliases.push('LPBN_APP','lpbn_app');
@@ -431,7 +468,7 @@
 
     if (e.data.type === 'bn-text') {
       var d = e.data.data||{};
-      ['品牌名','主標','副標','日期'].forEach(function(cls) {
+      ['品牌名','主標','副標','日期','六字內'].forEach(function(cls) {
         if (d[cls]===undefined) return;
         document.querySelectorAll('.'+cls).forEach(function(el) {
           var ct = el.querySelector('.cta-text');
@@ -482,9 +519,31 @@
     if (e.data.type === 'bn-color') {
       var c = e.data.data||{}, cv = document.getElementById('canvas');
       if (c.canvasBg) {
+        /* 首頁 LOGO 牆固定白底：背景色工具仍可同步其他文字／色塊，但不能改變本版位底色。 */
+        var _bnCanvasBg = c.canvasBg;
+        if (_bnHomeLogoWallTemplate) {
+          _bnCanvasBg = '#ffffff';
+          var homeBgLock = cv.querySelector('.背景色') || cv.querySelector('.bg') || cv.querySelector('.底色');
+          if (homeBgLock) { homeBgLock.style.backgroundColor = '#ffffff'; homeBgLock.style.backgroundImage = 'none'; }
+          if (cv) cv.style.background = '#ffffff';
+        } else if (_bnSearchIconTemplate) {
+          /* SearchICON 三版位的白色是圓圈外的畫布底；圓圈仍要吃背景色。 */
+          if (cv) { cv.style.background = '#ffffff'; cv.style.backgroundImage = 'none'; }
+        } else if (_bnArTemplate) {
+          /* AR／AR_LOGO 只清除背景圖，畫布與 .背景色 都保留目前背景色。 */
+          if (cv) cv.style.backgroundImage = 'none';
+        }
         /* 支援 .背景色 和 .bg 兩種 class 名稱 */
         var bg = cv.querySelector('.背景色') || cv.querySelector('.bg') || cv.querySelector('.底色');
-        if(bg) bg.style.backgroundColor = c.canvasBg; else cv.style.background = c.canvasBg;
+        if(bg){
+          bg.style.backgroundColor = _bnCanvasBg;
+          if(bg.dataset.bnTintBgSrc) {
+            bg.dataset.bnCanvasBg = _bnCanvasBg;
+            _bnRenderTintedBackground(bg);
+          }
+          if(_bnArTemplate) bg.style.backgroundImage = 'none';
+          if(/^AR/i.test(fname)) bg.style.setProperty('--ar-bg', _bnCanvasBg);
+        } else cv.style.background = _bnCanvasBg;
         /* 漸層顏色跟著背景色同步（讀 CSS --grad-dir 變數）*/
         /* 漸層顏色同步：transparent → rgba(r,g,b,0) 避免截圖變黑 */
         function _toRgba0rt(color){
@@ -501,23 +560,28 @@
           if(!gel) return;
           var dir = _dirsRt[cls] || window.getComputedStyle(gel).getPropertyValue('--grad-dir').trim();
           if(dir){
-            gel.style.background = 'linear-gradient(' + dir + ', ' + c.canvasBg + ' 0%, ' + _toRgba0rt(c.canvasBg) + ' 100%)';
+            gel.style.background = 'linear-gradient(' + dir + ', ' + _bnCanvasBg + ' 0%, ' + _toRgba0rt(_bnCanvasBg) + ' 100%)';
           }
         });
         /* 所有保護色塊跟著背景色同步 */
         ['.文案保護','.右側保護','.左側保護','.上方保護','.下方保護','.上保護','.下保護','.底色'].forEach(function(sel){
           var el = cv.querySelector(sel);
-          if(el) el.style.background = c.canvasBg;
+          if(el) el.style.background = _bnCanvasBg;
         });
         /* .bg 純色塊也同步（Coin 等版位） */
         var bgEl2 = cv.querySelector('.bg');
-        if(bgEl2 && !cv.querySelector('.背景色')) bgEl2.style.backgroundColor = c.canvasBg;
+        if(bgEl2 && !cv.querySelector('.背景色')) bgEl2.style.backgroundColor = _bnCanvasBg;
       }
       function ac(cls,col){ if(!col)return; document.querySelectorAll('.'+cls).forEach(function(el){ if(!el.querySelector('.cta-text')) el.style.color=col; }); }
-      ac('主標',c.mainText); ac('副標',c.subText); ac('日期',c.dateText); ac('品牌名',c.brandText);
+      ac('主標',c.mainText); ac('副標',c.subText); ac('日期',c.dateText); ac('品牌名',c.brandText); ac('六字內',c.subText);
+      /* SearchICON_TEXT 的圓形文案顏色跟著副標文字色同步。 */
+      if (_bnSearchIconTemplate && /SearchICON_TEXT/i.test(fname || '')) ac('ICON獨立文案',c.subText);
       /* Search_Image：副標案型七字內 顏色跟著副標文字色連動 */
       document.querySelectorAll('.副標案型七字內').forEach(function(el){ if(c.subText) el.style.setProperty('color', c.subText, 'important'); });
-      var _bnCtaBg = c.subText || c.ctaBg;
+      /* CTA 底色要以使用者選的 CTA 色為主，不能再被副標色蓋回去。
+         Search Image 有自己的 CTA 底色欄位，優先使用該欄位。 */
+      var _bnIsSearchImage = /search_image/i.test(fname || '');
+      var _bnCtaBg = (_bnIsSearchImage ? (c.searchImageCtaBg || c.ctaBg) : c.ctaBg) || c.subText;
       var _bnCtaText = c.ctaText;
       function _bnCtaContrastText(bgHex){
         var m = String(bgHex || '').match(/^#?([0-9a-f]{6})$/i);
@@ -529,9 +593,8 @@
           return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
         }
         var lum = 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
-        var whiteRatio = (1.05) / (lum + 0.05);
-        var blackRatio = (lum + 0.05) / 0.05;
-        return whiteRatio >= blackRatio ? '#ffffff' : '#000000';
+        /* CTA 預設優先白字；只有真正偏淡的底色才改黑字。 */
+        return lum >= 0.72 ? '#000000' : '#ffffff';
       }
       /* CTA 文字可手動選任意有效色碼；只有舊資料或無效值才回退到黑／白對比色。 */
       var _bnCtaTextValue = String(_bnCtaText || '').trim().toLowerCase();
@@ -540,7 +603,7 @@
         : _bnCtaContrastText(_bnCtaBg);
       document.querySelectorAll('.cta-text').forEach(function(el){ if(_bnCtaText) el.style.color=_bnCtaText; });
       /* CTA 底色跟副標色：.逛逛去按鈕 / .cta底 / .逛逛去底 */
-      document.querySelectorAll('.逛逛去按鈕,.cta底,.逛逛去底').forEach(function(el){ if(_bnCtaBg) el.style.backgroundColor=_bnCtaBg; });
+      document.querySelectorAll('.逛逛去按鈕,.cta底,.逛逛去底').forEach(function(el){ if(_bnCtaBg) el.style.setProperty('background-color', _bnCtaBg, el.classList.contains('cta底') ? 'important' : ''); });
       /* Search Image CTA 圓底也跟副標色 */
       document.querySelectorAll('.cta圓底').forEach(function(el){ if(_bnCtaBg) el.style.setProperty('background-color', _bnCtaBg, 'important'); });
       if(c.tagColor){
@@ -557,6 +620,11 @@
       document.querySelectorAll('.逛逛去三角標').forEach(function(el){ if(_bnCtaText) el.style.borderLeftColor=_bnCtaText; });
     }
 
+    if (e.data.type === 'bn-logo-layout-apply') {
+      /* LPBN Logo 位置固定，忽略舊版或外部送入的移動／尺寸資料。 */
+      if (/^LPBN_(APP|PC)/i.test(fname)) return;
+      return;
+    }
     if (e.data.type === 'bn-logo' || e.data.type === 'bn-logos') {
       var zone = null;
       /* Search_Image2：依 logo index 分左右 zone */
@@ -600,7 +668,9 @@
         (parseFloat(window.getComputedStyle(_logoZone).width) >
          parseFloat(window.getComputedStyle(_logoZone).height) * 1.5);
       /* HBN：檔名含 hbn，或已知左對齊版位 → 左對齊 absolute 並排 */
-      var _leftAlignNames = ['hbn','coin','fb_post','lpbn'];
+      /* AMS BN 橫版的 Logo 範圍左界與主標／副標／日期一致，
+         內容要從範圍左側開始，不能使用一般橫版的水平置中。 */
+      var _leftAlignNames = ['hbn','活動總覽','coin','fb_post','lpbn','ams'];
       var _isLeftAlign = _leftAlignNames.some(function(n){ return fnLow.indexOf(n) !== -1; });
       var isHBN = _isLeftAlign;
       /* 多張置中：logo範圍是橫條 且 不是左對齊版位 → flex 置中並排（ddcard橫、IG橫等）*/
@@ -619,7 +689,408 @@
       if (e.data.type === 'bn-logos') logos = e.data.logos || [];
       else if (e.data.dataUrl) logos = [{id:'single', src:e.data.dataUrl}];
 
-      if (!logos.length) { zone.style.opacity=''; zone.style.background=''; return; }
+      var isARLogoTemplate = /^AR_LOGO/i.test(fn);
+      var isHomeLogoWall = /^首頁LOGO牆/i.test(fn);
+      var isLPBNTemplate = /^LPBN_(APP|PC)/i.test(fn);
+      if(isARLogoTemplate || isHomeLogoWall || isLPBNTemplate) Array.from(zone.querySelectorAll('.bn-ar-logo-box,.bn-logo-box')).forEach(function(oldBox){ oldBox.remove(); });
+
+      if(isARLogoTemplate || isHomeLogoWall){
+        var arLogo = logos[0];
+        if(!arLogo) { zone.style.opacity=''; zone.style.background=''; return; }
+        zone.style.background=isHomeLogoWall ? '#ffffff' : 'transparent';
+        zone.style.opacity='1';
+        /* AR_LOGO 預設仍以 logo範圍為安全區，但放大時允許延伸到完整 100×100 畫布。 */
+        zone.style.overflow=isARLogoTemplate ? 'visible' : 'hidden';
+        var box=document.createElement('div');
+        box.className=isHomeLogoWall?'bn-logo-box':'bn-ar-logo-box';
+        box.dataset.id=arLogo.id||'single';
+        box.dataset.ratio=Number(arLogo.ratio)>0?Number(arLogo.ratio):1;
+        box.style.cssText='position:absolute;left:0;top:0;width:1px;height:1px;cursor:move;box-sizing:border-box;outline:2px solid transparent;z-index:5;';
+        var img=document.createElement('img');
+        img.className='bn-logo-img';
+        img.src=arLogo.src||'';
+        img.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;display:block;';
+        box.appendChild(img);
+        ['nw','ne','sw','se'].forEach(function(c){
+          var h=document.createElement('div');
+          h.dataset.corner=c;
+          h.style.cssText='position:absolute;width:14px;height:14px;border-radius:50%;background:#4a90e2;border:2px solid #fff;z-index:5;'+
+            (c==='nw'?'left:-7px;top:-7px;cursor:nwse-resize;':'')+
+            (c==='ne'?'right:-7px;top:-7px;cursor:nesw-resize;':'')+
+            (c==='sw'?'left:-7px;bottom:-7px;cursor:nesw-resize;':'')+
+            (c==='se'?'right:-7px;bottom:-7px;cursor:nwse-resize;':'');
+          box.appendChild(h);
+        });
+        zone.appendChild(box);
+        var arLogoBnId=getCurrentBnId();
+        var arLogoSaved=arLogo.layouts&&arLogo.layouts[arLogoBnId]?arLogo.layouts[arLogoBnId]:(arLogo.layout||null);
+        function arLogoZoneSize(){
+          var cs=window.getComputedStyle(zone);
+          return {w:parseFloat(cs.width)||zone.offsetWidth||74,h:parseFloat(cs.height)||zone.offsetHeight||74};
+        }
+        /* AR_LOGO 的預設安全區是 74×74，但編輯邊界改用整個 100×100 畫布；
+           位置仍以 logo範圍為座標原點，才能兼容既有已儲存的百分比位置。 */
+        function arLogoEditBounds(){
+          var z=arLogoZoneSize();
+          if(!isARLogoTemplate){
+            /* 首頁 LOGO 牆只用 logo範圍 做遮色，不限制 Logo 的位置或縮放方向。 */
+            if(isHomeLogoWall) return {left:-Infinity,top:-Infinity,right:Infinity,bottom:Infinity,w:Infinity,h:Infinity};
+            return {left:0,top:0,right:z.w,bottom:z.h,w:z.w,h:z.h};
+          }
+          var zcs=window.getComputedStyle(zone);
+          var zl=parseFloat(zcs.left),zt=parseFloat(zcs.top);
+          if(!isFinite(zl)) zl=zone.offsetLeft||0;
+          if(!isFinite(zt)) zt=zone.offsetTop||0;
+          var ccs=window.getComputedStyle(canvas);
+          var cw=parseFloat(ccs.width)||W,ch=parseFloat(ccs.height)||H;
+          return {left:-zl,top:-zt,right:cw-zl,bottom:ch-zt,w:cw,h:ch};
+        }
+        function applyArLogoLayout(layout){
+          if(!layout)return false;
+          var z=arLogoZoneSize();
+          var b=arLogoEditBounds();
+          var l=layout.leftPct!==undefined?layout.leftPct*z.w:layout.left;
+          var t=layout.topPct!==undefined?layout.topPct*z.h:layout.top;
+          var w=layout.widthPct!==undefined?layout.widthPct*z.w:layout.width;
+          var h=layout.heightPct!==undefined?layout.heightPct*z.h:layout.height;
+          if(![l,t,w,h].every(function(v){return isFinite(v);})||w<=0||h<=0)return false;
+          if(isARLogoTemplate){w=Math.max(12,Math.min(b.w,w));h=Math.max(12,Math.min(b.h,h));}else{w=Math.max(12,w);h=Math.max(12,h);}
+          l=Math.max(b.left,Math.min(b.right-w,l));t=Math.max(b.top,Math.min(b.bottom-h,t));
+          box.style.left=l+'px';box.style.top=t+'px';box.style.width=w+'px';box.style.height=h+'px';
+          box.dataset.manualLayout='1';
+          return true;
+        }
+        function applyArLogoDefault(){
+          var z=arLogoZoneSize();
+          var ratio=(img.naturalWidth&&img.naturalHeight)?img.naturalWidth/img.naturalHeight:(Number(arLogo.ratio)>0?Number(arLogo.ratio):1);
+          box.dataset.ratio=ratio;
+          var target=Math.floor(Math.min(z.w,z.h)*.9),w,h;
+          if(ratio>=1){w=target;h=Math.max(12,Math.round(target/ratio));}
+          else{h=target;w=Math.max(12,Math.round(target*ratio));}
+          box.style.left=Math.round((z.w-w)/2)+'px';box.style.top=Math.round((z.h-h)/2)+'px';
+          box.style.width=w+'px';box.style.height=h+'px';
+        }
+        function postArLogoLayout(){
+          try{
+            var z=arLogoZoneSize(),l=parseFloat(box.style.left)||0,t=parseFloat(box.style.top)||0,w=parseFloat(box.style.width)||0,h=parseFloat(box.style.height)||0;
+            window.parent&&window.parent.postMessage({type:'bn-logo-layout-update',bnid:arLogoBnId,id:box.dataset.id,layout:{left:l,top:t,width:w,height:h,leftPct:l/z.w,topPct:t/z.h,widthPct:w/z.w,heightPct:h/z.h}},'*');
+          }catch(_){}
+        }
+        var arDrag=null;
+        function arEndDrag(){if(arDrag){postArLogoLayout();arDrag=null;}box.style.outline='2px solid transparent';}
+        box.addEventListener('pointerdown',function(e){
+          if(e.target.dataset.corner)return;
+          e.stopPropagation();
+          arDrag={type:'move',sx:e.clientX,sy:e.clientY,l:parseFloat(box.style.left)||0,t:parseFloat(box.style.top)||0};
+          box.setPointerCapture(e.pointerId);box.style.outline='2px solid #4a90e2';
+        });
+        box.addEventListener('pointermove',function(e){
+          if(!arDrag||arDrag.type!=='move')return;
+          var b=arLogoEditBounds(),w=parseFloat(box.style.width)||1,h=parseFloat(box.style.height)||1;
+          box.dataset.manualLayout='1';
+          box.style.left=Math.max(b.left,Math.min(b.right-w,arDrag.l+e.clientX-arDrag.sx))+'px';
+          box.style.top=Math.max(b.top,Math.min(b.bottom-h,arDrag.t+e.clientY-arDrag.sy))+'px';
+        });
+        box.addEventListener('pointerup',arEndDrag);
+        box.addEventListener('pointercancel',arEndDrag);
+        box.addEventListener('lostpointercapture',arEndDrag);
+        box.querySelectorAll('[data-corner]').forEach(function(h){
+          h.addEventListener('pointerdown',function(e){
+            e.stopPropagation();e.preventDefault();
+            var b=arLogoEditBounds();
+            arDrag={type:'resize',corner:h.dataset.corner,sx:e.clientX,sy:e.clientY,l:parseFloat(box.style.left)||0,t:parseFloat(box.style.top)||0,w:parseFloat(box.style.width)||1,h:parseFloat(box.style.height)||1,minL:b.left,maxR:b.right,minT:b.top,maxB:b.bottom,maxW:isARLogoTemplate?b.w:Infinity,maxH:isARLogoTemplate?b.h:Infinity,ratio:parseFloat(box.dataset.ratio)||1};
+            h.setPointerCapture(e.pointerId);box.style.outline='2px solid #4a90e2';
+          });
+          h.addEventListener('pointermove',function(e){
+            if(!arDrag||arDrag.type!=='resize')return;
+            var dx=e.clientX-arDrag.sx,dy=e.clientY-arDrag.sy,c=arDrag.corner,r=arDrag.ratio,sx=c.indexOf('w')!==-1?-1:1,sy=c.indexOf('n')!==-1?-1:1;
+            var delta=Math.abs(dx)>Math.abs(dy)?dx*sx:dy*sy*r,w=Math.max(12,arDrag.w+delta),hh=Math.max(12,w/r),l=arDrag.l,t=arDrag.t;
+            if(c.indexOf('w')!==-1)l=arDrag.l+(arDrag.w-w);
+            if(c.indexOf('n')!==-1)t=arDrag.t+(arDrag.h-hh);
+            if(w>arDrag.maxW){w=arDrag.maxW;hh=w/r;}
+            if(hh>arDrag.maxH){hh=arDrag.maxH;w=hh*r;}
+            l=Math.max(arDrag.minL,Math.min(arDrag.maxR-w,l));t=Math.max(arDrag.minT,Math.min(arDrag.maxB-hh,t));
+            box.dataset.manualLayout='1';box.style.left=l+'px';box.style.top=t+'px';box.style.width=w+'px';box.style.height=hh+'px';
+          });
+          h.addEventListener('pointerup',arEndDrag);
+          h.addEventListener('pointercancel',arEndDrag);
+          h.addEventListener('lostpointercapture',arEndDrag);
+        });
+        /* 首頁 LOGO 牆：滑鼠滾輪可持續放大／縮小，不設最大尺寸；.logo範圍 的 overflow:hidden 只負責裁切可視畫面。 */
+        if(isHomeLogoWall){
+          box.addEventListener('wheel',function(e){
+            e.preventDefault();
+            var br=box.getBoundingClientRect(),sc=e.deltaY<0?1.08:.93,r=parseFloat(box.dataset.ratio)||1;
+            var w=Math.max(12,br.width*sc),hh=Math.max(12,w/r);
+            var l=parseFloat(box.style.left)||0,t=parseFloat(box.style.top)||0;
+            var cx=l+br.width/2,cy=t+br.height/2;
+            var b=arLogoEditBounds();
+            l=Math.max(b.left,Math.min(b.right-w,cx-w/2));
+            t=Math.max(b.top,Math.min(b.bottom-hh,cy-hh/2));
+            box.dataset.manualLayout='1';
+            box.style.left=l+'px';box.style.top=t+'px';box.style.width=w+'px';box.style.height=hh+'px';
+            postArLogoLayout();
+          },{passive:false});
+        }
+        /* AR_LOGO：除了四角控制點，也允許用滑鼠滾輪縮放；以目前中心點
+           為基準，放大可填滿完整 100×100 畫布，但不超出畫布邊界。 */
+        if(isARLogoTemplate){
+          box.addEventListener('wheel',function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            var oldW=parseFloat(box.style.width)||12;
+            var oldH=parseFloat(box.style.height)||Math.max(12,oldW/(parseFloat(box.dataset.ratio)||1));
+            var l=parseFloat(box.style.left)||0,t=parseFloat(box.style.top)||0;
+            var r=parseFloat(box.dataset.ratio)||1;
+            var sc=e.deltaY<0?1.08:.93;
+            var w=Math.max(12,oldW*sc),h=Math.max(12,w/r);
+            var b=arLogoEditBounds();
+            if(w>b.w){w=b.w;h=Math.max(12,w/r);}
+            if(h>b.h){h=b.h;w=Math.max(12,h*r);}
+            var cx=l+oldW/2,cy=t+oldH/2;
+            l=Math.max(b.left,Math.min(b.right-w,cx-w/2));
+            t=Math.max(b.top,Math.min(b.bottom-h,cy-h/2));
+            box.dataset.manualLayout='1';
+            box.style.left=l+'px';box.style.top=t+'px';
+            box.style.width=w+'px';box.style.height=h+'px';
+            postArLogoLayout();
+          },{passive:false});
+        }
+        if(!applyArLogoLayout(arLogoSaved))applyArLogoDefault();
+        img.onload=function(){if(!arLogoSaved)applyArLogoDefault();};
+        return;
+      }
+
+      /* LPBN：方 LOGO 與橫／多 LOGO 共用同一個 logo範圍起點，
+         並讓 APP／PC 使用同一張 Logo 的拖曳、縮放與位置資料。 */
+      if (isLPBNTemplate) {
+        if (!logos.length) { zone.style.opacity=''; zone.style.background=''; return; }
+        zone.style.background = 'transparent';
+        zone.style.opacity = '1';
+        zone.style.position = 'relative';
+        zone.style.overflow = 'visible';
+        var lpbnBnId = getCurrentBnId();
+
+        function lpbnSavedLayout(lg){
+          if(!lg) return null;
+          return (lg.layouts && lg.layouts[lpbnBnId]) || lg.layout || null;
+        }
+        function lpbnDisplayScale(){
+          var dw=zone.offsetWidth||1, rw=zone.getBoundingClientRect().width||dw;
+          return rw/dw || 1;
+        }
+        function lpbnPostLayout(box){
+          try{
+            var zw=parseFloat(window.getComputedStyle(zone).width)||zone.offsetWidth||1;
+            var zh=parseFloat(window.getComputedStyle(zone).height)||zone.offsetHeight||1;
+            var l=parseFloat(box.style.left)||0,t=parseFloat(box.style.top)||0;
+            var w=parseFloat(box.style.width)||0,h=parseFloat(box.style.height)||0;
+            window.parent&&window.parent.postMessage({
+              type:'bn-logo-layout-update',bnid:lpbnBnId,id:box.dataset.id||'single',
+              layout:{left:l,top:t,width:w,height:h,leftPct:l/zw,topPct:t/zh,widthPct:w/zw,heightPct:h/zh}
+            },'*');
+          }catch(_){ }
+        }
+        /* LPBN Logo 專用規格：Logo 不是曝品／人物，不使用自由縮放。
+           橫 Logo 依 logo範圍高度等比例放置；方 Logo 固定 120×120。 */
+        function lpbnSpecLayout(box, zone, layout, widthHint, heightHint, leftHint){
+          if(!box || !zone) return;
+          var zw=parseFloat(window.getComputedStyle(zone).width)||zone.offsetWidth||1;
+          var zh=parseFloat(window.getComputedStyle(zone).height)||zone.offsetHeight||52;
+          var ratio=parseFloat(box.dataset.ratio)||1;
+          var mode=box.dataset.lpbnMode||'horizontal';
+          var l=0;
+          var t=0;
+          var w,h;
+          if(mode==='square'){
+            w=120; h=120;
+            /* 方 Logo 從橫 Logo 範圍左下角起算，向上長成 120×120。 */
+            l=0; t=zh-h;
+          }else{
+            h=isFinite(Number(heightHint)) && Number(heightHint)>0 ? Number(heightHint) : zh;
+            h=Math.min(zh,Math.max(1,h));
+            w=isFinite(Number(widthHint)) && Number(widthHint)>0 ? Number(widthHint) : Math.round(h*ratio);
+            w=Math.min(zw,Math.max(1,w));
+            t=0;
+            l=isFinite(Number(leftHint)) ? Number(leftHint) : 0;
+            l=Math.max(0,Math.min(zw-w,l));
+          }
+          box.style.left=l+'px'; box.style.top=t+'px';
+          box.style.width=w+'px'; box.style.height=h+'px';
+          box.dataset.lpbnFixedSize='1';
+        }
+        function lpbnClampPosition(box, zone){
+          if(!box || !zone) return;
+          var zw=parseFloat(window.getComputedStyle(zone).width)||zone.offsetWidth||1;
+          var zh=parseFloat(window.getComputedStyle(zone).height)||zone.offsetHeight||52;
+          var w=parseFloat(box.style.width)||1;
+          var l=parseFloat(box.style.left)||0;
+          var t=parseFloat(box.style.top)||0;
+          l=Math.max(0,Math.min(zw-w,l));
+          if((box.dataset.lpbnMode||'horizontal')==='square') t=zh-(parseFloat(box.style.height)||120);
+          else t=0;
+          box.style.left=l+'px'; box.style.top=t+'px';
+        }
+        function lpbnSetupEditor(box){
+          /* LPBN 的 Logo 尺寸與位置由版位規格決定，不提供畫布上的
+             拖曳、縮放或編輯互動。保留這個函式是為了相容舊程式呼叫，
+             但固定版位不得再掛任何 pointer／wheel 事件。 */
+          if(box && box.dataset.lpbnFixedSize==='1') return;
+          var drag=null;
+          function end(){
+            if(drag){lpbnPostLayout(box);drag=null;}
+            box.style.outline='2px solid transparent';
+          }
+          box.addEventListener('pointerdown',function(e){
+            if(e.target.dataset.corner) return;
+            e.preventDefault(); e.stopPropagation();
+            var sc=lpbnDisplayScale();
+            drag={type:'move',sx:e.clientX,sy:e.clientY,l:parseFloat(box.style.left)||0,t:parseFloat(box.style.top)||0,sc:sc};
+            box.dataset.manualLayout='1';
+            box.setPointerCapture(e.pointerId); box.style.outline='2px solid #4a90e2';
+          });
+          box.addEventListener('pointermove',function(e){
+            if(!drag||drag.type!=='move') return;
+            var dx=(e.clientX-drag.sx)/drag.sc,dy=(e.clientY-drag.sy)/drag.sc;
+            box.style.left=(drag.l+dx)+'px'; box.style.top=(drag.t+dy)+'px';
+            lpbnClampPosition(box, zone);
+          });
+          box.addEventListener('pointerup',end);
+          box.addEventListener('pointercancel',end);
+          box.addEventListener('lostpointercapture',end);
+          box.querySelectorAll('[data-corner]').forEach(function(handle){
+            handle.addEventListener('pointerdown',function(e){
+              if(box.dataset.lpbnFixedSize==='1'){ e.preventDefault(); e.stopPropagation(); return; }
+              e.preventDefault(); e.stopPropagation();
+              var sc=lpbnDisplayScale(),r=parseFloat(box.dataset.ratio)||1;
+              drag={type:'resize',corner:handle.dataset.corner,sx:e.clientX,sy:e.clientY,
+                l:parseFloat(box.style.left)||0,t:parseFloat(box.style.top)||0,
+                w:parseFloat(box.style.width)||1,h:parseFloat(box.style.height)||1,ratio:r,sc:sc};
+              box.dataset.manualLayout='1';
+              handle.setPointerCapture(e.pointerId); box.style.outline='2px solid #4a90e2';
+            });
+            handle.addEventListener('pointermove',function(e){
+              if(!drag||drag.type!=='resize') return;
+              var dx=(e.clientX-drag.sx)/drag.sc,dy=(e.clientY-drag.sy)/drag.sc;
+              var c=drag.corner,sx=c.indexOf('w')!==-1?-1:1,sy=c.indexOf('n')!==-1?-1:1;
+              var delta=Math.abs(dx)>Math.abs(dy)?dx*sx:dy*sy*drag.ratio;
+              var w=Math.max(12,drag.w+delta),h=Math.max(12,w/drag.ratio),l=drag.l,t=drag.t;
+              if(c.indexOf('w')!==-1) l=drag.l+(drag.w-w);
+              if(c.indexOf('n')!==-1) t=drag.t+(drag.h-h);
+              box.style.left=l+'px'; box.style.top=t+'px';
+              box.style.width=w+'px'; box.style.height=h+'px';
+              lpbnClampPosition(box, zone);
+            });
+            handle.addEventListener('pointerup',end);
+            handle.addEventListener('pointercancel',end);
+            handle.addEventListener('lostpointercapture',end);
+          });
+          box.addEventListener('wheel',function(e){
+            e.preventDefault(); e.stopPropagation();
+            if(box.dataset.lpbnFixedSize==='1') return;
+            var sc=e.deltaY<0?1.08:.93,r=parseFloat(box.dataset.ratio)||1;
+            var w=Math.max(12,(parseFloat(box.style.width)||12)*sc),h=Math.max(12,w/r);
+            var l=parseFloat(box.style.left)||0,t=parseFloat(box.style.top)||0;
+            var cx=l+(parseFloat(box.style.width)||w)/2,cy=t+(parseFloat(box.style.height)||h)/2;
+            box.dataset.manualLayout='1';
+            box.style.left=(cx-w/2)+'px'; box.style.top=(cy-h/2)+'px';
+            box.style.width=w+'px'; box.style.height=h+'px';
+            lpbnPostLayout(box);
+          },{passive:false});
+        }
+        function lpbnBuildBox(lg,index){
+          var box=document.createElement('div');
+          box.className='bn-logo-box';
+          box.dataset.id=lg.id||('logo-'+index);
+          box.dataset.ratio=Number(lg.ratio)>0?Number(lg.ratio):1;
+          /* LPBN Logo 是固定規格素材：不顯示選取框，也不接收畫布滑鼠事件。 */
+          box.style.cssText='position:absolute;left:0;top:0;width:1px;height:1px;box-sizing:border-box;cursor:default;pointer-events:none;user-select:none;outline:2px solid transparent;z-index:5;';
+          var img=new Image(); img.className='bn-logo-img';
+          img.style.cssText='width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;display:block;';
+          if(lg.round) img.style.borderRadius='10px';
+          img.src=lg.src||'';
+          box.appendChild(img);
+          ['nw','ne','sw','se'].forEach(function(c){
+            var h=document.createElement('div'); h.dataset.corner=c;
+            h.style.cssText='position:absolute;width:14px;height:14px;border-radius:50%;background:#4a90e2;border:2px solid #fff;z-index:5;'+
+              (c==='nw'?'left:-7px;top:-7px;cursor:nwse-resize;':'')+
+              (c==='ne'?'right:-7px;top:-7px;cursor:nesw-resize;':'')+
+              (c==='sw'?'left:-7px;bottom:-7px;cursor:nesw-resize;':'')+
+              (c==='se'?'right:-7px;bottom:-7px;cursor:nwse-resize;':'');
+            h.style.display='none';
+            box.appendChild(h);
+          });
+          box.dataset.lpbnFixedSize='1';
+          return {box:box,img:img,logo:lg};
+        }
+        function lpbnDefaultSquare(item){
+          var ratio=(item.img.naturalWidth&&item.img.naturalHeight)?item.img.naturalWidth/item.img.naturalHeight:(Number(item.logo.ratio)>0?Number(item.logo.ratio):1);
+          item.box.dataset.ratio=ratio;
+          item.box.dataset.lpbnMode='square';
+          lpbnSpecLayout(item.box,zone,null,120,120);
+        }
+        function placeLpbnSquareLogo(lg,index){
+          Array.from(zone.querySelectorAll('img.bn-logo-img,.bn-logo-box')).forEach(function(old){old.remove();});
+          var item=lpbnBuildBox(lg,index);
+          item.box.dataset.lpbnMode='square';
+          zone.appendChild(item.box);
+          var saved=lpbnSavedLayout(lg);
+          /* 方 Logo 尺寸與起點依規格固定，不套用舊的自由縮放尺寸。 */
+          lpbnDefaultSquare(item);
+          item.img.onload=function(){
+            item.box.dataset.ratio=item.img.naturalWidth&&item.img.naturalHeight?item.img.naturalWidth/item.img.naturalHeight:item.box.dataset.ratio;
+            if(!saved) lpbnDefaultSquare(item);
+          };
+        }
+        function placeLpbnHorizontalLogos(){
+          Array.from(zone.querySelectorAll('.bn-logo-box,.bn-logo-img')).forEach(function(old){old.remove();});
+          var gap=15,zoneW=parseFloat(window.getComputedStyle(zone).width)||490,zoneH=parseFloat(window.getComputedStyle(zone).height)||52;
+          var maxTotal=Math.min(490,zoneW),items=[];
+          function relayout(){
+            var widths=items.map(function(item){
+              var ratio=item.img.naturalWidth&&item.img.naturalHeight?item.img.naturalWidth/item.img.naturalHeight:(Number(item.logo.ratio)>0?Number(item.logo.ratio):1);
+              item.box.dataset.ratio=ratio;
+              return Math.min(zoneW,Math.max(1,Math.round(zoneH*ratio)));
+            });
+            var raw=widths.reduce(function(a,b){return a+b;},0),total=raw+gap*Math.max(0,widths.length-1);
+            var scale=total>maxTotal?(maxTotal-gap*Math.max(0,widths.length-1))/Math.max(1,raw):1;
+            if(scale<0) scale=maxTotal/Math.max(1,total);
+            widths=widths.map(function(w){return Math.max(1,Math.floor(w*Math.min(1,scale)));});
+            var x=0;
+            items.forEach(function(item,i){
+              /* 不套用舊的自由拖曳位置，永遠依 LPBN 規格從左到右排列。 */
+              lpbnSpecLayout(item.box,zone,null,widths[i],zoneH,Math.round(x));
+              x+=widths[i]+gap;
+            });
+          }
+          logos.forEach(function(lg,i){
+            var item=lpbnBuildBox(lg,i); item.box.dataset.lpbnMode='horizontal'; item.img.onload=relayout; zone.appendChild(item.box); items.push(item);
+          });
+          relayout();
+        }
+        if (logos.length !== 1) {
+          placeLpbnHorizontalLogos();
+        } else {
+          var lpbnLogo = logos[0];
+          var lpbnRatio = Number(lpbnLogo.ratio);
+          if (isFinite(lpbnRatio) && lpbnRatio > 0) {
+            if (lpbnRatio <= 1.25) placeLpbnSquareLogo(lpbnLogo);
+            else placeLpbnHorizontalLogos();
+          } else {
+            /* 舊暫存資料可能沒有 ratio，等圖片載入後用原始比例判斷。 */
+            var probe = new Image();
+            probe.onload = function () {
+              var ratio = probe.naturalWidth && probe.naturalHeight ? probe.naturalWidth / probe.naturalHeight : 1;
+              if (ratio <= 1.25) placeLpbnSquareLogo(lpbnLogo);
+              else placeLpbnHorizontalLogos();
+            };
+            probe.onerror = placeLpbnHorizontalLogos;
+            probe.src = lpbnLogo.src || '';
+          }
+        }
+        return;
+      }
+      /* IG方 / 方 Logo 系列：只取第一張，避免方版 logo 區多張擠壓或裁切。 */      if (!logos.length) { zone.style.opacity=''; zone.style.background=''; return; }
 
       /* IG方 / 方 Logo 系列：只取第一張，避免方版 logo 區多張擠壓或裁切。 */
       if (isIGSquare || isSquareLogoLayout) logos = logos.slice(0, 1);
@@ -757,10 +1228,11 @@
     /* 商品新增 */
     if (e.data.type === 'bn-product-add') {
       var pzone = getProductZone(); if(!pzone) return;
+      if(_bnHomeLogoWallTemplate){ pzone.style.overflow='hidden'; pzone.style.position='relative'; }
       var oldBox = pzone.querySelector('.bn-prod-box[data-id="'+e.data.id+'"]');
       if(oldBox) oldBox.remove();
       pzone.style.background = 'transparent'; pzone.style.opacity = '1';
-      pzone.style.overflow = 'visible'; pzone.style.position = 'relative';
+      pzone.style.overflow = _bnHomeLogoWallTemplate ? 'hidden' : 'visible'; pzone.style.position = 'relative';
       var box = document.createElement('div');
       box.className = 'bn-prod-box'; box.dataset.id = e.data.id; box.dataset.ratio = e.data.ratio||1;
       box.dataset.sizeScale = e.data.sizeScale||1;
@@ -773,7 +1245,19 @@
           box.dataset.manualLayout = '1';
         }
       }
-      var pimg = document.createElement('img'); pimg.src = e.data.src;
+      var pimg = document.createElement('img');
+      pimg.onload = function(){
+        var actualRatio = pimg.naturalWidth && pimg.naturalHeight ? pimg.naturalWidth / pimg.naturalHeight : 0;
+        var declaredRatio = Number(box.dataset.ratio) || 0;
+        /* 舊暫存可能已換成裁切後圖片，但仍保留原始 ratio；以實際圖片尺寸補正控制框。 */
+        if(actualRatio > 0 && (!declaredRatio || Math.abs(actualRatio - declaredRatio) > 0.01)){
+          box.dataset.ratio = actualRatio;
+          if(box.dataset.manualLayout === '1') syncBoxToImageRatio(box, pzone, actualRatio);
+          else layoutProducts(pzone);
+          setTimeout(function(){ postProductLayout(box); }, 0);
+        }
+      };
+      pimg.src = e.data.src;
       pimg.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;display:block;';
       box.appendChild(pimg);
       ['nw','ne','sw','se'].forEach(function(c){
@@ -805,7 +1289,7 @@
       applySingleProductOnlyIfNeeded(pzone);
     }
 
-    /* 只換圖片內容（去背/裁切/擦除/影子外掛編輯器完成後用），完全不動商品目前的
+    /* 只換圖片內容（去背/裁切/擦除/影子外掛編輯器完成後用），保留商品目前的
        位置/大小/上下層——跟 bn-character-update-image 是同一套邏輯，避免像
        bn-product-remove+bn-product-add 那樣整個重建造成畫面閃跳、跳回預設位置。
        ★ 這是修補「編輯去背/影子後，畫面沒有變、下載卻是對的」這個問題的關鍵：
@@ -816,9 +1300,21 @@
       var pzoneU = getProductZone(); if(!pzoneU) return;
       var boxU = pzoneU.querySelector('.bn-prod-box[data-id="'+e.data.id+'"]');
       if(boxU){
-        if(e.data.ratio) boxU.dataset.ratio = e.data.ratio;
+        var applyProductRatio = function(ratio){
+          ratio = Number(ratio);
+          if(!isFinite(ratio) || ratio <= 0) return;
+          boxU.dataset.ratio = ratio;
+          if(syncBoxToImageRatio(boxU, pzoneU, ratio)) setTimeout(function(){ postProductLayout(boxU); }, 0);
+        };
+        if(e.data.ratio) applyProductRatio(e.data.ratio);
         var imgU = boxU.querySelector('img');
-        if(imgU && e.data.src) imgU.src = e.data.src;
+        if(imgU && e.data.src){
+          imgU.onload = function(){
+            var actualRatio = imgU.naturalWidth && imgU.naturalHeight ? imgU.naturalWidth / imgU.naturalHeight : 0;
+            if(actualRatio > 0 && (!e.data.ratio || Math.abs(actualRatio - Number(e.data.ratio)) > 0.01)) applyProductRatio(actualRatio);
+          };
+          imgU.src = e.data.src;
+        }
       }
     }
 
@@ -851,6 +1347,7 @@
     if (e.data.type === 'bn-character-add') {
       if(_bnSingleProductOnlyTemplate) return; /* 這個版位固定只顯示商品，完全不顯示人物圖 */
       var czone = getProductZone(); if(!czone) return;
+      if(_bnHomeLogoWallTemplate){ czone.style.overflow='hidden'; czone.style.position='relative'; }
       var slotKey = e.data.slot;
       if(slotKey !== '_bnCharacter' && slotKey !== '_bnCharacter2') return;
       czone.style.background = 'transparent'; czone.style.opacity = '1';
@@ -867,6 +1364,7 @@
       setupCharDrag(cbox, czone);
       applyCharacterZ();
       setTimeout(function(){ postCharacterLayout(cbox); }, 0);
+      applyHomeLogoWallOnly(czone);
       return;
     }
 
@@ -874,6 +1372,7 @@
       var czone2 = getProductZone(); if(!czone2) return;
       var existing2 = czone2.querySelector('.bn-char-box[data-slot="'+e.data.slot+'"]');
       if(existing2) existing2.remove();
+      applyHomeLogoWallOnly(czone2);
       if(!czone2.querySelector('.bn-char-box') && !czone2.querySelector('.bn-prod-box')){
         czone2.style.background=''; czone2.style.opacity='';
       }
@@ -881,14 +1380,26 @@
       return;
     }
 
-    /* 只換圖片內容（去背/裁切/擦除/影子編輯完成後），完全不動人物圖目前的位置/大小。 */
+    /* 只換圖片內容（去背/裁切/擦除/影子編輯完成後），保留目前位置並依新比例更新控制框。 */
     if (e.data.type === 'bn-character-update-image') {
       var czone3 = getProductZone(); if(!czone3) return;
       var box3 = czone3.querySelector('.bn-char-box[data-slot="'+e.data.slot+'"]');
       if(box3){
-        if(e.data.ratio) box3.dataset.ratio = e.data.ratio;
+        var applyCharacterRatio = function(ratio){
+          ratio = Number(ratio);
+          if(!isFinite(ratio) || ratio <= 0) return;
+          box3.dataset.ratio = ratio;
+          if(syncBoxToImageRatio(box3, czone3, ratio)) setTimeout(function(){ postCharacterLayout(box3); }, 0);
+        };
+        if(e.data.ratio) applyCharacterRatio(e.data.ratio);
         var img3 = box3.querySelector('img');
-        if(img3 && e.data.src) img3.src = e.data.src;
+        if(img3 && e.data.src){
+          img3.onload = function(){
+            var actualRatio = img3.naturalWidth && img3.naturalHeight ? img3.naturalWidth / img3.naturalHeight : 0;
+            if(actualRatio > 0 && (!e.data.ratio || Math.abs(actualRatio - Number(e.data.ratio)) > 0.01)) applyCharacterRatio(actualRatio);
+          };
+          img3.src = e.data.src;
+        }
       }
       return;
     }
@@ -899,6 +1410,7 @@
        固定套用自己的「只留最上層 1 張商品、人物圖完全不顯示」規則。 */
     if (e.data.type === 'bn-character-visibility') {
       var czone4 = getProductZone(); if(!czone4) return;
+      if(_bnHomeLogoWallTemplate){ applyHomeLogoWallOnly(czone4); return; }
       if(_bnSingleProductOnlyTemplate){ applySingleProductOnlyIfNeeded(czone4); return; }
       var visibleIds = e.data.visibleIds;
       var hasChar = !!e.data.hasChar;
@@ -938,8 +1450,27 @@
       var bgContainer = document.querySelector('.背景色') || document.querySelector('.bg');
       var bimg2 = document.getElementById('底圖');
       var bgSrc   = e.data.src   || null;
-      var bgFit   = e.data.fit   || 'cover';
+      /* AMS BN 背景圖固定依寬度等比例呈現，避免 cover 為了填滿畫布而
+         裁掉右側內容；舊暫存即使仍帶 cover，也在 iframe 端做最後防線。 */
+      var bgFit   = e.data.fit   || (_bnAmsTemplate ? 'width100' : 'cover');
+      if(_bnAmsTemplate && bgFit === 'cover') bgFit = 'width100';
       var bgScale = e.data.scale !== undefined ? e.data.scale : 100;
+
+      if (_bnHomeLogoWallTemplate || _bnSearchIconTemplate || _bnArTemplate) {
+        if (bgContainer) {
+          /* SearchICON 只鎖圓圈外畫布白底；圓圈內要保留目前已同步的背景色。 */
+          if (_bnHomeLogoWallTemplate) bgContainer.style.backgroundColor = '#ffffff';
+          else if (_bnSearchIconTemplate && !bgContainer.style.backgroundColor) bgContainer.style.backgroundColor = getComputedStyle(bgContainer).backgroundColor || '#ffffff';
+          bgContainer.style.backgroundImage = 'none';
+        }
+        if (bimg2) { bimg2.src = ''; bimg2.style.display = 'none'; bimg2.style.backgroundImage = 'none'; bimg2.style.transform = ''; }
+        var cv = document.getElementById('canvas');
+        if (cv) {
+          if (_bnHomeLogoWallTemplate || _bnSearchIconTemplate) cv.style.background = '#ffffff';
+          else cv.style.backgroundImage = 'none';
+        }
+        return;
+      }
       var bgX     = e.data.x     !== undefined ? e.data.x     : 50;
       var bgY     = e.data.y     !== undefined ? e.data.y     : 50;
 
@@ -977,10 +1508,10 @@
 
       if(bgSrc){
         if(bgContainer){
-          bgContainer.style.backgroundImage    = 'url(' + bgSrc + ')';
-          bgContainer.style.backgroundSize     = bgSize;
-          bgContainer.style.backgroundPosition = bgPos;
-          bgContainer.style.backgroundRepeat   = 'no-repeat';
+          bgContainer.dataset.bnTintBgSrc = bgSrc;
+          bgContainer.dataset.bnBgSize = bgSize;
+          bgContainer.dataset.bnBgPosition = bgPos;
+          _bnRenderTintedBackground(bgContainer);
         } else {
           if(bimg2){
             bimg2.src = bgSrc;
@@ -991,7 +1522,15 @@
           }
         }
       } else {
-        if(bgContainer) bgContainer.style.backgroundImage = '';
+        if(bgContainer) {
+          delete bgContainer.dataset.bnTintBgSrc;
+          delete bgContainer.dataset.bnBgSize;
+          delete bgContainer.dataset.bnBgPosition;
+          bgContainer.style.backgroundImage = '';
+          bgContainer.style.backgroundSize = '';
+          bgContainer.style.backgroundPosition = '';
+          bgContainer.style.backgroundRepeat = '';
+        }
         if(bimg2){ bimg2.src=''; bimg2.style.display='none'; bimg2.style.transform=''; }
       }
       return;
@@ -1024,6 +1563,11 @@
       return;
     }
 
+    if (e.data.type === 'bn-layout-snapshot-request') {
+      postLayoutSnapshot(e.data.requestId);
+      return;
+    }
+
     if (e.data.type === 'bn-product-layout-request') {
       postAllProductLayouts();
     }
@@ -1045,6 +1589,8 @@
           h = Math.max(1, Math.min(h, zhApply));
           l = Math.max(0, Math.min(zwApply - w, l));
           t = Math.max(0, Math.min(zhApply - h, t));
+          var __amsAppliedProduct = constrainAmsBoxLayout(pzoneApply,{left:l,top:t,width:w,height:h,ratio:parseFloat(boxApply.dataset.ratio)||w/Math.max(1,h)});
+          l=__amsAppliedProduct.left; t=__amsAppliedProduct.top; w=__amsAppliedProduct.width; h=__amsAppliedProduct.height;
           boxApply.dataset.manualLayout = '1';
           boxApply.style.left = l + 'px';
           boxApply.style.top = t + 'px';
@@ -1070,6 +1616,14 @@
       }
 
       /* 隱藏所有編輯用控制元素（縮放點等），截完再還原 */
+      var _previewOnlyEls = [];
+      if(_cv){
+        _cv.querySelectorAll('.bn-preview-only').forEach(function(el){
+          _previewOnlyEls.push({el:el, disp:el.style.display});
+          el.style.display = 'none';
+        });
+      }
+
       var _editEls = [];
       if(_cv){
         _cv.querySelectorAll('[data-corner]').forEach(function(h){
@@ -1208,6 +1762,7 @@
 
       captureCanvas(function(dataUrl){
         _editEls.forEach(function(o){ o.el.style.display = o.disp; });
+        _previewOnlyEls.forEach(function(o){ o.el.style.display = o.disp; });
         _captureAdjustEls.forEach(function(o){ o.el.style.setProperty('top', o.top, o.priority || ''); });
         _emptyZoneEls.forEach(function(o){ o.el.style.background = o.bg; o.el.style.opacity = o.op; });
         _objectFitAdjustEls.forEach(function(o){
@@ -1226,6 +1781,45 @@
     catch(_){ return ''; }
   }
 
+  /* LPBN_APP／LPBN_PC 共用的 Logo 編輯座標套用。兩個版位的 Logo 起點一致，
+     優先使用絕對設計座標，舊資料才退回百分比座標。 */
+  function applyLpbnLogoBoxLayout(box, zone, layout){
+    if(!box || !zone || !layout) return false;
+    var zw=parseFloat(window.getComputedStyle(zone).width)||zone.offsetWidth||1;
+    var zh=parseFloat(window.getComputedStyle(zone).height)||zone.offsetHeight||1;
+    /* LPBN 的 Logo 尺寸由版位規格決定，不能把跨版位同步資料當成
+       曝品／人物的自由尺寸直接套回來。 */
+    if(box.dataset.lpbnMode){
+      var ratio=parseFloat(box.dataset.ratio)||1;
+      var mode=box.dataset.lpbnMode;
+      var fixedW,fixedH,fixedL,fixedT;
+      if(mode==='square'){
+        fixedW=120; fixedH=120; fixedL=0; fixedT=zh-fixedH;
+      }else{
+        fixedH=zh;
+        fixedW=Math.min(zw,Math.max(1,Math.round(fixedH*ratio)));
+        fixedL=isFinite(Number(layout.left))?Number(layout.left):0;
+        fixedL=Math.max(0,Math.min(zw-fixedW,fixedL));
+        fixedT=0;
+      }
+      box.style.left=fixedL+'px'; box.style.top=fixedT+'px';
+      box.style.width=fixedW+'px'; box.style.height=fixedH+'px';
+      box.dataset.lpbnFixedSize='1';
+      return true;
+    }
+    var l=Number(layout.left), t=Number(layout.top), w=Number(layout.width), h=Number(layout.height);
+    if(![l,t,w,h].every(function(v){return isFinite(v);}) || w<=0 || h<=0){
+      l=layout.leftPct!==undefined?Number(layout.leftPct)*zw:NaN;
+      t=layout.topPct!==undefined?Number(layout.topPct)*zh:NaN;
+      w=layout.widthPct!==undefined?Number(layout.widthPct)*zw:NaN;
+      h=layout.heightPct!==undefined?Number(layout.heightPct)*zh:NaN;
+    }
+    if(![l,t,w,h].every(function(v){return isFinite(v);}) || w<=0 || h<=0) return false;
+    box.style.left=l+'px'; box.style.top=t+'px';
+    box.style.width=w+'px'; box.style.height=h+'px';
+    box.dataset.manualLayout='1';
+    return true;
+  }
   function postProductLayout(box){
     try{
       var zone = getProductZone(); if(!zone || !box) return;
@@ -1259,6 +1853,26 @@
     }catch(_){ }
   }
 
+  function layoutSnapshotForBox(box, zone){
+    if(!box || !zone) return null;
+    var zr=zone.getBoundingClientRect(), br=box.getBoundingClientRect();
+    var zw=zr.width || zone.offsetWidth || 1, zh=zr.height || zone.offsetHeight || 1;
+    return {left:br.left-zr.left,top:br.top-zr.top,width:br.width,height:br.height,
+      leftPct:(br.left-zr.left)/zw,topPct:(br.top-zr.top)/zh,widthPct:br.width/zw,heightPct:br.height/zh};
+  }
+  function postLayoutSnapshot(requestId){
+    try{
+      var pzone=getProductZone(), lzone=document.querySelector('.logo範圍') || document.querySelector('.LOGO範圍'), out={products:[],characters:[],logos:[]};
+      if(pzone){
+        Array.from(pzone.querySelectorAll('.bn-prod-box')).forEach(function(box){var lay=layoutSnapshotForBox(box,pzone);if(lay)out.products.push({id:box.dataset.id,layout:lay});});
+        Array.from(pzone.querySelectorAll('.bn-char-box')).forEach(function(box){var lay=layoutSnapshotForBox(box,pzone);if(lay)out.characters.push({id:box.dataset.id,slot:box.dataset.slot,layout:lay});});
+      }
+      if(lzone){
+        Array.from(lzone.querySelectorAll('.bn-logo-box,.bn-ar-logo-box')).forEach(function(box){var lay=layoutSnapshotForBox(box,lzone);if(lay)out.logos.push({id:box.dataset.id || 'single',layout:lay});});
+      }
+      window.parent.postMessage({type:'bn-layout-snapshot',requestId:requestId||null,bnid:getCurrentBnId(),data:out},'*');
+    }catch(_){ window.parent.postMessage({type:'bn-layout-snapshot',requestId:requestId||null,bnid:getCurrentBnId(),data:{products:[],characters:[],logos:[]}},'*'); }
+  }
   /* 正三角排品（仿 freelyapp 邏輯）
      主品（第0張）居中最大，左配品（第1張）次之，右配品（第2張）最小
      底部對齊，所有尺寸以商品範圍 px 為單位，不超出邊界 */
@@ -1292,7 +1906,7 @@
 
     /* 主品最大高度：預設 88%，若版位有 .cta底 則不超過 CTA 頂部 */
     var maxH0 = Math.floor(zh * 0.88);
-    var ctaEl = document.querySelector('.cta底');
+    var ctaEl = document.querySelector('.cta底') || document.querySelector('.cta圓底');
     if(ctaEl){
       var ctaTop    = parseFloat(window.getComputedStyle(ctaEl).top)   || 0;
       var pzoneTop  = parseFloat(window.getComputedStyle(pzone).top)   || 0;
@@ -1390,6 +2004,9 @@
           p.box.dataset.manualLayout = '1';
         }
       }
+      var __amsProductLayout = constrainAmsBoxLayout(pzone,{left:p.x,top:p.y,width:p.w,height:p.h,ratio:parseFloat(p.box.dataset.ratio)||1});
+      p.x=__amsProductLayout.left; p.y=__amsProductLayout.top;
+      p.w=__amsProductLayout.width; p.h=__amsProductLayout.height;
       p.box.style.cssText = [
         'position:absolute;',
         'left:'+p.x+'px;top:'+p.y+'px;',
@@ -1402,8 +2019,68 @@
     setTimeout(postAllProductLayouts, 0);
   }
 
+  /* AMS BN／Coin_pageBN 的曝品／人物只能落在畫布右半部；此函式使用畫布座標
+     計算 zone 內可用邊界，並兼容商品範圍左界不在正好 50% 的情況。 */
+  function constrainAmsBoxLayout(zone, layout){
+    if(!layout || !_bnRightHalfTemplate || !zone) return layout;
+    var zcs=window.getComputedStyle(zone);
+    var zw=parseFloat(zcs.width)||zone.offsetWidth||1;
+    var zh=parseFloat(zcs.height)||zone.offsetHeight||1;
+    var canvas=document.getElementById('canvas');
+    var ccs=canvas?window.getComputedStyle(canvas):null;
+    var cw=ccs?(parseFloat(ccs.width)||canvas.offsetWidth):0;
+    if(!cw) cw=parseFloat(document.body.dataset.fw)||zone.offsetLeft+zw;
+    var zoneLeft=parseFloat(zcs.left);
+    if(!isFinite(zoneLeft)) zoneLeft=zone.offsetLeft||0;
+    /* 若 zone 有 transform，改用畫布與 zone 的實際矩形換算設計座標。 */
+    try{
+      if(canvas){
+        var cr=canvas.getBoundingClientRect(),zr=zone.getBoundingClientRect();
+        var scaleX=(cr.width&&cw)?cr.width/cw:1;
+        if(scaleX) zoneLeft=(zr.left-cr.left)/scaleX;
+      }
+    }catch(_){ }
+    var halfStart=Math.max(0,cw/2-zoneLeft);
+    var rightEdge=Math.min(zw,cw-zoneLeft);
+    var ratio=Number(layout.ratio)||((Number(layout.width)>0&&Number(layout.height)>0)?Number(layout.width)/Number(layout.height):1);
+    var w=Math.max(1,Number(layout.width)||1),h=Math.max(1,Number(layout.height)||1);
+    var maxW=Math.max(1,rightEdge-halfStart);
+    if(w>maxW){ w=maxW; h=ratio>0?w/ratio:Math.min(h,zh); }
+    if(h>zh){ h=zh; w=ratio>0?h*ratio:w; if(w>maxW){w=maxW;h=ratio>0?w/ratio:Math.min(h,zh);} }
+    var l=Number(layout.left)||0,t=Number(layout.top)||0;
+    l=Math.max(halfStart,Math.min(rightEdge-w,l));
+    t=Math.max(0,Math.min(zh-h,t));
+    return {left:l,top:t,width:w,height:h,ratio:ratio};
+  }
+
+  /* 裁切後圖片的實際比例變更時，讓圖片外框與四個控制點同步變更。
+     以目前外框中心為基準、保留目前寬度重算高度，避免圖片突然跳到別的位置。 */
+  function syncBoxToImageRatio(box, zone, ratio){
+    ratio = Number(ratio);
+    if(!box || !zone || !isFinite(ratio) || ratio <= 0) return false;
+    var w = parseFloat(box.style.width) || box.offsetWidth || 0;
+    var h = parseFloat(box.style.height) || box.offsetHeight || 0;
+    if(!(w > 0 && h > 0)) return false;
+    var l = parseFloat(box.style.left);
+    if(!isFinite(l)) l = box.offsetLeft || 0;
+    var t = parseFloat(box.style.top);
+    if(!isFinite(t)) t = box.offsetTop || 0;
+    var nextH = w / ratio;
+    var next = constrainAmsBoxLayout(zone, {
+      left: l,
+      top: t + (h - nextH) / 2,
+      width: w,
+      height: nextH,
+      ratio: ratio
+    });
+    box.style.left = next.left + 'px';
+    box.style.top = next.top + 'px';
+    box.style.width = next.width + 'px';
+    box.style.height = next.height + 'px';
+    return true;
+  }
   function getProductZone(){
-    var names=['商品範圍','商品圖範圍'];
+    var names=['商品範圍','商品圖範圍','曝品、人物範圍','矩形_3186'];
     for(var i=0;i<names.length;i++){ var z=document.querySelector('.'+names[i]); if(z)return z; }
     return null;
   }
@@ -1443,7 +2120,8 @@
         var l=drag.l,t=drag.t;
         if(c.includes('w')) l=drag.l+(drag.w-w);
         if(c.includes('n')) t=drag.t+(drag.h-bh);
-        l=Math.max(0,Math.min(drag.zw-w,l)); t=Math.max(0,Math.min(drag.zh-bh,t));
+        var __amsResize = constrainAmsBoxLayout(zone,{left:l,top:t,width:w,height:bh,ratio:r});
+        l=__amsResize.left; t=__amsResize.top; w=__amsResize.width; bh=__amsResize.height;
         box.dataset.manualLayout = '1';
         box.style.left=l+'px'; box.style.top=t+'px'; box.style.width=w+'px'; box.style.height=bh+'px';
         scheduleProductLayoutPost(box);
@@ -1455,8 +2133,9 @@
     box.addEventListener('pointermove',function(e){
       if(!drag||drag.type!=='move') return;
       box.dataset.manualLayout = '1';
-      box.style.left=Math.max(0,Math.min(drag.zw-drag.w,drag.l+e.clientX-drag.sx))+'px';
-      box.style.top =Math.max(0,Math.min(drag.zh-drag.h,drag.t+e.clientY-drag.sy))+'px';
+      var __amsMove = constrainAmsBoxLayout(zone,{left:drag.l+e.clientX-drag.sx,top:drag.t+e.clientY-drag.sy,width:drag.w,height:drag.h,ratio:drag.w/Math.max(1,drag.h)});
+      box.style.left=__amsMove.left+'px';
+      box.style.top =__amsMove.top+'px';
       scheduleProductLayoutPost(box);
     });
     box.addEventListener('pointerup',function(){ postProductLayout(box); drag=null; box.style.outline='2px solid transparent'; });
@@ -1470,9 +2149,10 @@
       if(bh<30){bh=30;w=bh*r;} if(bh>zr.height*.95){bh=zr.height*.95;w=bh*r;}
       var cx=(br.left-zr.left)+br.width/2,cy=(br.top-zr.top)+br.height/2;
       box.dataset.manualLayout = '1';
-      box.style.left=Math.max(0,Math.min(cx-w/2,zr.width-w))+'px';
-      box.style.top =Math.max(0,Math.min(cy-bh/2,zr.height-bh))+'px';
-      box.style.width=w+'px'; box.style.height=bh+'px';
+      var __amsWheel = constrainAmsBoxLayout(zone,{left:cx-w/2,top:cy-bh/2,width:w,height:bh,ratio:r});
+      box.style.left=__amsWheel.left+'px';
+      box.style.top =__amsWheel.top+'px';
+      box.style.width=__amsWheel.width+'px'; box.style.height=__amsWheel.height+'px';
       postProductLayout(box);
     },{passive:false});
   }
@@ -1523,10 +2203,11 @@
     var w, h;
     if(ratio >= 1){ w = target; h = Math.round(target / ratio); }
     else { h = target; w = Math.round(target * ratio); }
-    box.style.left = Math.round((zw - w) / 2) + 'px';
-    box.style.top  = Math.round((zh - h) / 2) + 'px';
-    box.style.width  = w + 'px';
-    box.style.height = h + 'px';
+    var __amsDefaultChar = constrainAmsBoxLayout(zone,{left:Math.round((zw-w)/2),top:Math.round((zh-h)/2),width:w,height:h,ratio:ratio});
+    box.style.left = __amsDefaultChar.left + 'px';
+    box.style.top  = __amsDefaultChar.top + 'px';
+    box.style.width  = __amsDefaultChar.width + 'px';
+    box.style.height = __amsDefaultChar.height + 'px';
   }
 
   /* 套用已存的位置/大小（暫存還原、方橫配對同步）。刻意不做邊界 clamp——
@@ -1541,8 +2222,9 @@
     var w = layout.widthPct  !== undefined ? layout.widthPct  * zw : layout.width;
     var h = layout.heightPct !== undefined ? layout.heightPct * zh : layout.height;
     if(!isFinite(l) || !isFinite(t) || !isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) return false;
-    box.style.left = l + 'px'; box.style.top = t + 'px';
-    box.style.width = w + 'px'; box.style.height = h + 'px';
+    var __amsSavedChar = constrainAmsBoxLayout(zone,{left:l,top:t,width:w,height:h,ratio:parseFloat(box.dataset.ratio)||w/Math.max(1,h)});
+    box.style.left = __amsSavedChar.left + 'px'; box.style.top = __amsSavedChar.top + 'px';
+    box.style.width = __amsSavedChar.width + 'px'; box.style.height = __amsSavedChar.height + 'px';
     return true;
   }
 
@@ -1609,8 +2291,10 @@
         var l = drag.l, t = drag.t;
         if(c.indexOf('w') !== -1) l = drag.l + (drag.w - w);
         if(c.indexOf('n') !== -1) t = drag.t + (drag.h - bh);
+        var __amsCharResize = constrainAmsBoxLayout(zone,{left:l,top:t,width:w,height:bh,ratio:r});
         box.dataset.manualLayout = '1';
-        box.style.left=l+'px'; box.style.top=t+'px'; box.style.width=w+'px'; box.style.height=bh+'px';
+        box.style.left=__amsCharResize.left+'px'; box.style.top=__amsCharResize.top+'px';
+        box.style.width=__amsCharResize.width+'px'; box.style.height=__amsCharResize.height+'px';
         scheduleCharLayoutPost(box);
       });
       h.addEventListener('pointerup', function(){ postCharacterLayout(box); drag=null; });
@@ -1620,8 +2304,9 @@
     box.addEventListener('pointermove', function(e){
       if(!drag || drag.type !== 'move') return;
       box.dataset.manualLayout = '1';
-      box.style.left = (drag.l + e.clientX - drag.sx) + 'px';
-      box.style.top  = (drag.t + e.clientY - drag.sy) + 'px';
+      var __amsCharMove = constrainAmsBoxLayout(zone,{left:drag.l+e.clientX-drag.sx,top:drag.t+e.clientY-drag.sy,width:drag.w,height:drag.h,ratio:drag.w/Math.max(1,drag.h)});
+      box.style.left = __amsCharMove.left + 'px';
+      box.style.top  = __amsCharMove.top + 'px';
       scheduleCharLayoutPost(box);
     });
     box.addEventListener('pointerup', function(){ postCharacterLayout(box); drag=null; box.style.outline='2px solid transparent'; });
@@ -1635,8 +2320,9 @@
       if(bh < 24){ bh = 24; w = bh*r; }
       var cx = box.offsetLeft + br.width/2, cy = box.offsetTop + br.height/2;
       box.dataset.manualLayout = '1';
-      box.style.left = (cx - w/2) + 'px'; box.style.top = (cy - bh/2) + 'px';
-      box.style.width = w + 'px'; box.style.height = bh + 'px';
+      var __amsCharWheel = constrainAmsBoxLayout(zone,{left:cx-w/2,top:cy-bh/2,width:w,height:bh,ratio:r});
+      box.style.left = __amsCharWheel.left + 'px'; box.style.top = __amsCharWheel.top + 'px';
+      box.style.width = __amsCharWheel.width + 'px'; box.style.height = __amsCharWheel.height + 'px';
       postCharacterLayout(box);
     }, {passive:false});
   }
@@ -1684,7 +2370,20 @@
      或重新上傳，隱藏的商品可以立刻恢復，不會憑空消失。
      如果目前根本沒有主品（例如只上傳了左配品/右配品，或主品被移除），
      這個版位就固定不顯示任何商品，不會拿配品頂替。 */
+  /* 首頁 LOGO 牆只允許一個可見素材：有人物時人物優先、商品全部隱藏；沒有
+     人物時只顯示主商品。人物與商品都在矩形 3186 內，overflow:hidden 會把
+     人物超過下緣的部分裁掉，讓下緣線成為真正的遮色邊界。 */
+  function applyHomeLogoWallOnly(zone){
+    if(!_bnHomeLogoWallTemplate || !zone) return;
+    zone.style.overflow='hidden';
+    var chars=Array.prototype.slice.call(zone.querySelectorAll('.bn-char-box'));
+    var prods=Array.prototype.slice.call(zone.querySelectorAll('.bn-prod-box'));
+    var char=chars[0]||null;
+    chars.forEach(function(b,i){ b.style.display=(b===char)?'':'none'; });
+    prods.forEach(function(b,i){ b.style.display=char?'none':(i===0?'':'none'); });
+  }
   function applySingleProductOnlyIfNeeded(zone){
+    if(_bnHomeLogoWallTemplate){ applyHomeLogoWallOnly(zone); return; }
     if(!_bnSingleProductOnlyTemplate || !zone) return;
     zone.querySelectorAll('.bn-char-box').forEach(function(b){ b.style.display = 'none'; });
     var boxes = Array.prototype.slice.call(zone.querySelectorAll('.bn-prod-box'));
@@ -1694,17 +2393,18 @@
   }
 
   /* ── 畫布文字直接點擊編輯 ── */
-  var EDITABLE_CLASSES = ['主標','副標','副標案型七字內','日期','品牌名','ICON獨立文案'];
+  var EDITABLE_CLASSES = ['主標','副標','副標案型七字內','日期','品牌名','ICON獨立文案','六字內'];
   var _dollarExemptSet = {};   /* {className: true} */
 
   /* ── 字數計算（中文1字，英數0.5字） ── */
-  var CHAR_LIMITS = { '品牌名':9, '主標':8, '副標':7, '日期':14, 'ICON獨立文案':2 };
+  var CHAR_LIMITS = { '品牌名':9, '主標':8, '副標':7, '日期':14, 'ICON獨立文案':2, '六字內':6 };
 
   function calcUnits(text){
     var units = 0;
     for(var i=0; i<text.length; i++){
       var c = text.charCodeAt(i);
       /* 中文、全形等 CJK 算 1，其餘算 0.5 */
+      if(c === 10 || c === 13) continue;
       units += (c > 0x2E7F) ? 1 : 0.5;
     }
     return Math.round(units * 10) / 10;
@@ -1746,7 +2446,7 @@
     text = String(text || '');
     for(var i=0; i<text.length; i++){
       var c = text.charCodeAt(i);
-      var w = (c > 0x2E7F) ? 1 : 0.5;
+      var w = (c === 10 || c === 13) ? 0 : ((c > 0x2E7F) ? 1 : 0.5);
       if(sum + w > limit) break;
       out += text[i];
       sum += w;
@@ -1916,7 +2616,29 @@
     });
 
     el.addEventListener('keydown', function(e){
-      if(e.key === 'Enter'){ e.preventDefault(); commitEdit(); }
+      if(e.key === 'Enter'){
+        if(cls === '六字內'){
+          e.preventDefault();
+          e.stopPropagation();
+          var sel = window.getSelection();
+          if(sel && sel.rangeCount){
+            var range = sel.getRangeAt(0);
+            if(el.contains(range.commonAncestorContainer)){
+              range.deleteContents();
+              var br = document.createTextNode('\n');
+              range.insertNode(br);
+              range.setStartAfter(br);
+              range.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(range);
+              el.dispatchEvent(new Event('input', {bubbles:true}));
+            }
+          }
+          return;
+        }
+        e.preventDefault();
+        commitEdit();
+      }
       if(e.key === 'Escape'){
         _editing = false;
         el.contentEditable = 'false';
@@ -1979,7 +2701,7 @@
   }
 
   function _sendUpdate(el, cls){
-    var text = el.textContent.trim();
+    var text = String(el.textContent || '').replace(/\r\n?/g, '\n').replace(/^[ \\t]+|[ \\t]+$/g, '');
     /* 把豁免清單一起送出，父層用這個清單跳過對應數字的 $ 格式化 */
     var exemptList = _getExempt(el);
     if(window.parent !== window){

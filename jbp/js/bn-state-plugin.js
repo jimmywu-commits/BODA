@@ -85,12 +85,14 @@
   function stripHeavyStateForLocalStorage(state){
     var light = clone(state || {});
     light._heavyStripped = true;
-    if(light.background && light.background.states){
-      Object.keys(light.background.states).forEach(function(id){
-        if(light.background.states[id]) light.background.states[id].src = light.background.states[id].src ? '__BN_IDB__' : null;
+    if(light.background){
+      ['states','statesById','statesByFile'].forEach(function(bucket){
+        if(!light.background[bucket]) return;
+        Object.keys(light.background[bucket]).forEach(function(id){ if(light.background[bucket][id]) light.background[bucket][id].src = light.background[bucket][id].src ? '__BN_IDB__' : null; });
       });
-      if(light.background.legacySrc) light.background.legacySrc = '__BN_IDB__';
+      if(light.background.legacySrc) light.background.legacySrc='__BN_IDB__';
     }
+    if(light.layoutsByFile){ Object.keys(light.layoutsByFile).forEach(function(file){ if(light.layoutsByFile[file] && light.layoutsByFile[file].background && light.layoutsByFile[file].background.src) light.layoutsByFile[file].background.src='__BN_IDB__'; }); }
     if(light.products){ light.products.forEach(function(p){ if(p && p.src) p.src='__BN_IDB__'; }); }
     if(light.logos){ light.logos.forEach(function(l){ if(l && l.src) l.src='__BN_IDB__'; }); }
     if(light.character && light.character.src){ light.character.src='__BN_IDB__'; }
@@ -124,7 +126,7 @@
     if((light.ts || 0) <= (full.ts || 0)) return full;
     var merged = clone(full);
     merged.ts = light.ts || merged.ts;
-    ['texts','colors','inputMeta','toolbar','layouts','bgCheckers','checked'].forEach(function(k){
+    ['texts','colors','inputMeta','toolbar','layouts','layoutManifest','layoutsByFile','checkedByFile','bgCheckers','checked'].forEach(function(k){
       if(light[k] !== undefined) merged[k] = clone(light[k]);
     });
 
@@ -157,6 +159,14 @@
           var ms = merged.background.states[id] || {};
           Object.keys(ls).forEach(function(k){ if(k !== 'src' && ls[k] !== undefined) ms[k] = clone(ls[k]); });
           merged.background.states[id] = ms;
+        });
+      }
+      if(light.background.statesByFile && merged.background.statesByFile){
+        Object.keys(light.background.statesByFile).forEach(function(file){
+          var ls = light.background.statesByFile[file] || {};
+          var ms = merged.background.statesByFile[file] || {};
+          Object.keys(ls).forEach(function(k){ if(k !== 'src' && ls[k] !== undefined) ms[k] = clone(ls[k]); });
+          merged.background.statesByFile[file] = ms;
         });
       }
     }
@@ -421,7 +431,9 @@
     return null;
   }
 
-  function applyLockedCanvasBg(colors){
+  function applyLockedCanvasBg(colors, options){
+    /* 明確上傳暫存檔時，暫存內的顏色優先，不得被目前頁面的 frozen color 蓋回去。 */
+    if(options && options.overrideFrozenColors) return colors || {};
     var locked = getLockedCanvasBg();
     if(locked){
       colors = colors || {};
@@ -433,6 +445,96 @@
     }
     return colors;
   }
+
+  function layoutFileKey(file){
+    return String(file || '').replace(/^.*[\\/]/,'').replace(/\.html$/i,'').trim().toLowerCase();
+  }
+  function layoutNameKey(name){ return layoutFileKey(name).replace(/[ _-]/g,''); }
+  function getLayoutManifest(){
+    var ls = typeof global.loadLayouts === 'function' ? (global.loadLayouts() || []) : [];
+    return ls.map(function(l){ return {id:String(l.id),name:String(l.name || l.file || ''),file:String(l.file || ''),w:l.w || 0,h:l.h || 0,enabled:l.enabled !== false}; });
+  }
+  function isSearchIconRecord(rec){ return !!rec && /searchicon/i.test(String(rec.file || rec.name || '')); }
+  function findManifestMatch(sourceRec,currentManifest){
+    if(!sourceRec) return null;
+    var sf=layoutFileKey(sourceRec.file), sn=layoutNameKey(sourceRec.name || sourceRec.file);
+    var hit=(currentManifest||[]).find(function(r){return sf && layoutFileKey(r.file)===sf;});
+    if(!hit) hit=(currentManifest||[]).find(function(r){return sn && layoutNameKey(r.name || r.file)===sn;});
+    if(!hit) hit=(currentManifest||[]).find(function(r){return String(r.id)===String(sourceRec.id);});
+    return hit || null;
+  }
+  function buildSourceIdMap(state,currentManifest){
+    var map={}, source=Array.isArray(state && state.layoutManifest)?state.layoutManifest:[];
+    if(source.length) source.forEach(function(sr){var hit=findManifestMatch(sr,currentManifest);if(hit)map[String(sr.id)]=String(hit.id);});
+    else (currentManifest||[]).forEach(function(r){map[String(r.id)]=String(r.id);});
+    return map;
+  }
+  function mapLayoutDictionary(dict,idMap){
+    var out={}; if(!dict || typeof dict!=='object') return out;
+    Object.keys(dict).forEach(function(sourceId){out[idMap[String(sourceId)] || String(sourceId)]=clone(dict[sourceId]);});
+    return out;
+  }
+  function applyPortableMaps(input){
+    var state=clone(input||{}), current=getLayoutManifest();
+    if(!current.length) return {state:state,pending:true};
+    var idMap=buildSourceIdMap(state,current), sourceManifest=Array.isArray(state.layoutManifest)?state.layoutManifest:[];
+    var sourceByFile={}, currentByFile={};
+    sourceManifest.forEach(function(r){sourceByFile[layoutFileKey(r.file)]=r;});
+    current.forEach(function(r){currentByFile[layoutFileKey(r.file)]=r;});
+    if(state.layouts && typeof state.layouts==='object') state.layouts=mapLayoutDictionary(state.layouts,idMap);
+    if(state.checked && typeof state.checked==='object') state.checked=mapLayoutDictionary(state.checked,idMap);
+    if(state.checkedByFile && typeof state.checkedByFile==='object'){
+      state.checked=state.checked||{};
+      Object.keys(state.checkedByFile).forEach(function(file){var target=currentByFile[layoutFileKey(file)];if(target)state.checked[target.id]=!!state.checkedByFile[file];});
+    }
+    function mapNested(items){(Array.isArray(items)?items:[]).forEach(function(item){if(item&&item.layouts)item.layouts=mapLayoutDictionary(item.layouts,idMap);if(item&&item.layoutById)item.layoutById=mapLayoutDictionary(item.layoutById,idMap);});}
+    mapNested(state.products); mapNested(state.logos);
+    ['character','character2'].forEach(function(k){if(state[k]&&state[k].layouts)state[k].layouts=mapLayoutDictionary(state[k].layouts,idMap);});
+    var byFile=state.layoutsByFile&&typeof state.layoutsByFile==='object'?state.layoutsByFile:{};
+    Object.keys(byFile).forEach(function(file){
+      var target=currentByFile[layoutFileKey(file)]; if(!target||isSearchIconRecord(target))return;
+      var entry=byFile[file]||{}, tid=String(target.id);
+      if(entry.layout!==undefined){state.layouts=state.layouts||{};state.layouts[tid]=clone(entry.layout);}
+      if(entry.checked!==undefined){state.checked=state.checked||{};state.checked[tid]=!!entry.checked;}
+      if(entry.products){state.products=state.products||[];Object.keys(entry.products).forEach(function(pid){var p=state.products.find(function(x){return x&&String(x.id)===String(pid);});if(p){p.layouts=p.layouts||{};p.layouts[tid]=clone(entry.products[pid]);}});}
+      if(entry.characters){['character','character2'].forEach(function(k){var c=state[k];if(c&&entry.characters[c.id]){c.layouts=c.layouts||{};c.layouts[tid]=clone(entry.characters[c.id]);}});}
+      if(entry.logos){(state.logos||[]).forEach(function(l){if(l&&entry.logos[l.id]){l.layouts=l.layouts||{};l.layouts[tid]=clone(entry.logos[l.id]);}});}
+    });
+    if(state.background){
+      var bg=state.background, sourceStates=bg.states||{}, mapped={};
+      current.forEach(function(target){
+        if(isSearchIconRecord(target))return;
+        var sourceId=Object.keys(idMap).find(function(k){return String(idMap[k])===String(target.id);});
+        var sourceRec=sourceId&&sourceManifest.find(function(r){return String(r.id)===String(sourceId);});
+        var st=sourceRec&&bg.statesByFile?bg.statesByFile[layoutFileKey(sourceRec.file)]:null;
+        if(!st&&sourceId&&sourceStates[sourceId]!==undefined)st=sourceStates[sourceId];
+        if(!st&&bg.statesByFile)st=bg.statesByFile[layoutFileKey(target.file)];
+        if(st)mapped[String(target.id)]=clone(st);
+      });
+      bg.states=mapped; bg.statesById=clone(mapped); bg.statesByFile={};
+      current.forEach(function(target){if(!isSearchIconRecord(target)&&mapped[target.id])bg.statesByFile[layoutFileKey(target.file)]=clone(mapped[target.id]);});
+      if(bg.activeId!==undefined){bg.activeId=idMap[String(bg.activeId)]||String(bg.activeId);if(isSearchIconRecord(current.find(function(r){return String(r.id)===String(bg.activeId);})))bg.activeId=null;}
+    }
+    state._portableMapped=true; return {state:state,pending:false};
+  }
+  function buildPortableMaps(base){
+    var manifest=getLayoutManifest(),checked=base.checked||{},layouts=base.layouts||{},bg=base.background||{},byFile={},checkedByFile={},statesByFile={};
+    manifest.forEach(function(r){
+      var key=layoutFileKey(r.file); if(isSearchIconRecord(r)){if(checked[r.id]!==undefined)checkedByFile[key]=!!checked[r.id];return;}
+      var entry={id:String(r.id),name:r.name,file:r.file};
+      if(layouts[r.id]!==undefined)entry.layout=clone(layouts[r.id]);
+      if(checked[r.id]!==undefined)entry.checked=!!checked[r.id];
+      entry.products={};entry.characters={};entry.logos={};
+      (base.products||[]).forEach(function(p){if(p&&p.layouts&&p.layouts[r.id]!==undefined)entry.products[p.id]=clone(p.layouts[r.id]);});
+      [base.character,base.character2].forEach(function(c){if(c&&c.layouts&&c.layouts[r.id]!==undefined)entry.characters[c.id]=clone(c.layouts[r.id]);});
+      (base.logos||[]).forEach(function(l){if(l&&l.layouts&&l.layouts[r.id]!==undefined)entry.logos[l.id]=clone(l.layouts[r.id]);});
+      if(bg.states&&bg.states[r.id]){entry.background=clone(bg.states[r.id]);statesByFile[key]=clone(bg.states[r.id]);}
+      byFile[key]=entry;if(checked[r.id]!==undefined)checkedByFile[key]=!!checked[r.id];
+    });
+    return {layoutManifest:manifest,layoutsByFile:byFile,checkedByFile:checkedByFile,backgroundStatesByFile:statesByFile};
+  }
+  var pendingPortableState=null;
+  global._bnReconcilePortableState=function(){if(pendingPortableState&&getLayoutManifest().length){var p=pendingPortableState;pendingPortableState=null;applyState(p);}};
 
   function markDirty(){
     try{ document.dispatchEvent(new CustomEvent('bn-state-dirty')); }catch(_){ }
@@ -481,7 +583,9 @@
       var v;
       if(el.type === 'checkbox' || el.type === 'radio') v = !!el.checked;
       else v = el.value;
-      state.controls[key] = { tag:el.tagName, type:el.type || '', value:v };
+      var controlState = { tag:el.tagName, type:el.type || '', value:v };
+      if(key === 'txt-ar') controlState.userTouched = el.dataset.userTouched === '1';
+      state.controls[key] = controlState;
     });
 
     var cp = document.getElementById('cp-panel');
@@ -505,8 +609,17 @@
       if(!el || el.type === 'file') return;
       if(key === 'cp-hex-input' || key === 'cp-native') return;
       var item = controls[key] || {};
-      if(el.type === 'checkbox' || el.type === 'radio') el.checked = !!item.value;
-      else if(item.value !== undefined) el.value = item.value;
+      var nextValue = item.value;
+      /* 舊版 AR 會把未手動編輯的值自動鏡射成副標；新規則改成獨立預設。
+         新版若有 userTouched=1，則保留使用者刻意填寫的內容。 */
+      if(key === 'txt-ar' && item.userTouched !== true){
+        var savedSub = controls['txt-sub'] && controls['txt-sub'].value;
+        if(savedSub !== undefined && String(nextValue == null ? '' : nextValue) === String(savedSub == null ? '' : savedSub) && String(nextValue || '') !== '最多六個字內'){
+          nextValue = '最多六個字內';
+        }
+      }
+      if(el.type === 'checkbox' || el.type === 'radio') el.checked = !!nextValue;
+      else if(nextValue !== undefined) el.value = nextValue;
       try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){ }
     });
     if(state.scrollTop !== undefined){
@@ -532,8 +645,9 @@
      2. 本機暫存
   ══════════════════════════════════════ */
   function collectState(){
-    return {
+    var state = {
       version: 1,
+      portableVersion: 2,
       ts: Date.now(),
       texts:{
         brand:(document.getElementById('txt-brand')||{}).value||'',
@@ -565,6 +679,21 @@
       bgCheckers: typeof global.getBgCheckerState==='function' ? clone(global.getBgCheckerState()) : [],
       checked: global.loadChecked ? global.loadChecked() : {},
     };
+    var portable = buildPortableMaps(state);
+    state.layoutManifest = portable.layoutManifest;
+    state.layoutsByFile = portable.layoutsByFile;
+    state.checkedByFile = portable.checkedByFile;
+    if(state.background && state.background.states){
+      (portable.layoutManifest || []).forEach(function(rec){
+        if(isSearchIconRecord(rec)) delete state.background.states[String(rec.id)];
+      });
+      if(isSearchIconRecord((portable.layoutManifest || []).find(function(rec){ return String(rec.id) === String(state.background.activeId); }))) state.background.activeId = null;
+    }
+    if(state.background){
+      state.background.statesById = clone(state.background.states || {});
+      state.background.statesByFile = portable.backgroundStatesByFile;
+    }
+    return state;
   }
 
   function hasRealDataUrl(v){
@@ -578,12 +707,26 @@
     if(state.character2 && state.character2.src === '__BN_IDB__') return true;
     var bg = state.background || {};
     if(bg.legacySrc === '__BN_IDB__') return true;
-    var st = bg.states || {};
-    return Object.keys(st).some(function(id){ return st[id] && st[id].src === '__BN_IDB__'; });
+    var st = bg.states || {}, byFile = bg.statesByFile || {};
+    if(Object.keys(st).some(function(id){ return st[id] && st[id].src === '__BN_IDB__'; })) return true;
+    return Object.keys(byFile).some(function(file){ return byFile[file] && byFile[file].src === '__BN_IDB__'; });
   }
 
-  function applyState(state){
+  /* 新舊暫存都可讀；若素材本身是 data URL，載入後補做一次白邊裁切。 */
+  function normalizeRestoredAsset(asset, kind, onChanged){
+    if(!asset || typeof global._bnTrimImportedAsset !== 'function') return;
+    var originalSrc = asset.src;
+    global._bnTrimImportedAsset(asset, kind).then(function(next){
+      if(!next || asset.src !== originalSrc || next.src === originalSrc) return;
+      Object.keys(next).forEach(function(key){ asset[key] = next[key]; });
+      if(typeof onChanged === 'function') onChanged();
+    });
+  }
+  function applyState(state, options){
     if(!state||state.version!==1) return;
+    var portableResult = applyPortableMaps(state);
+    if(portableResult.pending){ pendingPortableState = state; state = portableResult.state; }
+    else state = portableResult.state;
     global._bnStateApplying = true;
     var heavyStripped = stateHasHeavyPlaceholders(state);
     if(state.texts){
@@ -595,16 +738,21 @@
     if(state.colors&&global.colorState){
       var nextColors = clone(state.colors);
       /* ZIP 匯出或剛匯出後，若舊暫存帶預設藍進來，不可覆蓋使用者目前吸色後的背景色。 */
-      var guardActive = global._bnFrozenColorData || (global._bnBgColorExportGuardUntil && Date.now() < global._bnBgColorExportGuardUntil);
+      var guardActive = !(options && options.overrideFrozenColors) && (global._bnFrozenColorData || (global._bnBgColorExportGuardUntil && Date.now() < global._bnBgColorExportGuardUntil));
       if(guardActive && global._bnLastUserColorState){
         nextColors = Object.assign(nextColors, clone(global._bnLastUserColorState));
       }
-      nextColors = applyLockedCanvasBg(nextColors);
+      nextColors = applyLockedCanvasBg(nextColors, options);
       Object.assign(global.colorState,nextColors);
       if(typeof global._bnNormalizeColorStateRules === 'function') global._bnNormalizeColorStateRules();
       global._bnLastUserColorState = clone(global.colorState);
       if(typeof global.renderColorPickers==='function') global.renderColorPickers();
       if(typeof global.broadcastColors==='function') global.broadcastColors();
+    }
+    if(options && options.overrideFrozenColors){
+      delete global._bnFrozenColorData;
+      global._bnBgColorExportGuardUntil = 0;
+      if(state.colors && state.colors.canvasBg){ global._bnCanvasBgHardLock=state.colors.canvasBg; global._bnPersistentCanvasBg=state.colors.canvasBg; global._bnUserCanvasBgLocked=true; }
     }
     applyInputMeta(state.inputMeta);
     if(state.logos&&Array.isArray(state.logos)){
@@ -613,6 +761,13 @@
         global._bnLogoDataUrl=global._bnLogos.length?global._bnLogos[0].src:null;
         if(typeof global._bnRenderLogoList==='function') global._bnRenderLogoList();
         if(typeof global._bnBroadcastLogos==='function') global._bnBroadcastLogos();
+        global._bnLogos.forEach(function(logo){
+          normalizeRestoredAsset(logo, 'logo', function(){
+            global._bnLogoDataUrl=global._bnLogos.length?global._bnLogos[0].src:null;
+            if(typeof global._bnRenderLogoList==='function') global._bnRenderLogoList();
+            if(typeof global._bnBroadcastLogos==='function') global._bnBroadcastLogos();
+          });
+        });
       }
     }
     if(state.products&&Array.isArray(state.products)){
@@ -620,6 +775,12 @@
         global._bnProducts=state.products.filter(function(p){ return !p || p.src !== '__BN_IDB__'; });
         if(typeof global._bnRenderProdList==='function') global._bnRenderProdList();
         if(typeof global._bnRebroadcastProducts==='function') global._bnRebroadcastProducts();
+        global._bnProducts.forEach(function(product){
+          normalizeRestoredAsset(product, 'product', function(){
+            if(typeof global._bnRenderProdList==='function') global._bnRenderProdList();
+            if(typeof global._bnRebroadcastProducts==='function') global._bnRebroadcastProducts();
+          });
+        });
         if(typeof global._bnRequestProductLayouts==='function'){
           [500, 1200, 2200].forEach(function(delay){ setTimeout(global._bnRequestProductLayouts, delay); });
         }
@@ -631,11 +792,23 @@
          人物1、人物2 各自獨立判斷，其中一個是佔位符不影響另一個正常還原。 */
       if('character' in state){
         var charPlaceholder = state.character && state.character.src === '__BN_IDB__';
-        if(!charPlaceholder) global._bnCharacter = state.character ? clone(state.character) : null;
+        if(!charPlaceholder) {
+          global._bnCharacter = state.character ? clone(state.character) : null;
+          normalizeRestoredAsset(global._bnCharacter, 'character', function(){
+            if(typeof global._bnRenderCharacter==='function') global._bnRenderCharacter();
+            if(typeof global._bnBroadcastCharacter==='function') global._bnBroadcastCharacter();
+          });
+        }
       }
       if('character2' in state){
         var char2Placeholder = state.character2 && state.character2.src === '__BN_IDB__';
-        if(!char2Placeholder) global._bnCharacter2 = state.character2 ? clone(state.character2) : null;
+        if(!char2Placeholder) {
+          global._bnCharacter2 = state.character2 ? clone(state.character2) : null;
+          normalizeRestoredAsset(global._bnCharacter2, 'character', function(){
+            if(typeof global._bnRenderCharacter==='function') global._bnRenderCharacter();
+            if(typeof global._bnBroadcastCharacter==='function') global._bnBroadcastCharacter();
+          });
+        }
       }
       if('charPairFirst' in state && state.charPairFirst){
         global._bnCharPairFirst = state.charPairFirst;
@@ -645,6 +818,9 @@
     }
     if(state.layouts && typeof global.setLayoutState==='function'){
       global.setLayoutState(state.layouts);
+    }
+    if(state.checked){
+      if(typeof global._bnSetRestoredChecked === 'function') global._bnSetRestoredChecked(state.checked);
     }
     if(state.checked&&typeof global.saveChecked==='function'){
       global.saveChecked(state.checked);
@@ -735,6 +911,10 @@
     });
   }
 
+  document.addEventListener('bn-layouts-ready', function(){
+    setTimeout(function(){ if(typeof global._bnReconcilePortableState === 'function') global._bnReconcilePortableState(); }, 0);
+  });
+
   function startAutoSave(){
     setInterval(autoSave,30000);
     window.addEventListener('beforeunload',autoSave);
@@ -771,31 +951,32 @@
     dlBtn.type='button';
     dlBtn.textContent='⬇ 下載暫存'; dlBtn.style.cssText=bs;
     function downloadStateJson(ev){
-      if(ev){
-        ev.preventDefault();
-        ev.stopPropagation();
-        if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-      }
-      /*
-       * 下載暫存只能「讀取目前狀態並產出 JSON」。
-       * 這裡不能再發 bn-product-layout-request、不能 applyState、不能 renderPreviews，
-       * 因為那些流程會重建 iframe / 商品 DOM，使用者會看到畫布被清空。
-       * 商品座標改由 layout-runtime 在拖曳/縮放當下即時回寫到 _bnProducts。
-       */
+      if(ev){ ev.preventDefault(); ev.stopPropagation(); if(ev.stopImmediatePropagation) ev.stopImmediatePropagation(); }
+      /* 暫存下載是唯一會主動向 iframe 要最新座標的下載路徑。 */
       global._bnStateDownloading = true;
-      var snapshot = collectState();
-      /* 下載 JSON 不做任何全域重建/還原/刷新，也不寫 localStorage。
-         這個函式只能讀 state 並產出檔案；任何 postMessage / _bnSetBgStates 都可能清掉畫布。 */
-      var blob = new Blob([JSON.stringify(snapshot,null,2)], {type:'application/json'});
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'bn-state-' + new Date().toISOString().slice(0,16).replace('T','_') + '.json';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function(){ URL.revokeObjectURL(url); if(a.parentNode) a.parentNode.removeChild(a); global._bnStateDownloading = false; }, 1000);
-      showToast('暫存已下載','ok');
+      global._bnExportLock = true;
+      global._bnSuppressProductLayoutWrite = true;
+      var released = false;
+      function release(){
+        if(released) return; released=true;
+        global._bnExportLock = false;
+        global._bnSuppressProductLayoutWrite = false;
+        global._bnStateDownloading = false;
+      }
+      function writeSnapshot(){
+        try{
+          var snapshot = collectState();
+          var blob = new Blob([JSON.stringify(snapshot,null,2)], {type:'application/json'});
+          var url = URL.createObjectURL(blob), a = document.createElement('a');
+          a.href=url; a.download='bn-state-' + new Date().toISOString().slice(0,16).replace('T','_') + '.json';
+          a.style.display='none'; document.body.appendChild(a); a.click();
+          setTimeout(function(){ URL.revokeObjectURL(url); if(a.parentNode) a.parentNode.removeChild(a); },1000);
+          showToast('暫存已下載','ok');
+        }catch(err){ showToast('暫存下載失敗：'+err.message,'err'); }
+        release();
+      }
+      if(typeof global._bnRequestIframePositionSnapshot === 'function') global._bnRequestIframePositionSnapshot(writeSnapshot);
+      else writeSnapshot();
       return false;
     }
     dlBtn.addEventListener('mousedown', function(ev){ ev.stopPropagation(); }, true);
@@ -812,7 +993,7 @@
       reader.onload=function(e){
         try{
           var uploadedState = JSON.parse(e.target.result);
-          applyState(uploadedState);
+          applyState(uploadedState, {overrideFrozenColors:true});
           /* applyState 會重建/推送 iframe，等它穩定後再寫本機暫存；
              避免剛套用一半的輕量狀態把完整背景/商品覆蓋掉。 */
           setTimeout(autoSave, 2300);
@@ -879,7 +1060,8 @@
           'txt-brand': '品牌名不放圖9字內',
           'txt-main':  '滿$200享9折',
           'txt-sub':   '副標$500起',
-          'txt-date':  '5/18 12:00 - 5/25 11:59 期間限定'
+          'txt-ar':    '最多六個字內',
+          'txt-date':  '5/18 - 5/25 期間限定'
         };
         Object.keys(defaults).forEach(function(id){
           var el = document.getElementById(id);
@@ -924,6 +1106,7 @@
       if(document.getElementById('sidebar')){
         insertSaveLoadBar();
         setTimeout(autoLoad, 800);
+        setTimeout(function(){ if(typeof global._bnReconcilePortableState === 'function') global._bnReconcilePortableState(); }, 1400);
         startAutoSave();
       } else { setTimeout(tryInsert,300); }
     }

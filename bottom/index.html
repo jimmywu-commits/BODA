@@ -12,13 +12,15 @@
           document.documentElement.classList.add('embed-generator');
         } else if (embed === 'import-preview') {
           document.documentElement.classList.add('embed-import-preview');
+        } else if (embed === 'standalone') {
+          document.documentElement.classList.add('embed-standalone');
         } else if (embed === 'maint-preview') {
           document.documentElement.classList.add('embed-maint-preview');
         }
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="src/ui/style.css?v=20260828-maint-preview1" />
+  <link rel="stylesheet" href="src/ui/style.css?v=20260901-shared-standalone1" />
   <script src="https://unpkg.com/konva@9/konva.min.js"></script>
   <script src="https://unpkg.com/jszip@3/dist/jszip.min.js"></script>
 </head>
@@ -55,7 +57,8 @@
   <script src="src/state/store.js"></script>
   <script src="src/templates/templates.js"></script>
   <script src="src/icons/manifest.js"></script>
-  <script src="src/state/projectFile.js"></script>
+  <script src="src/integration/levelPreset.js?v=20260902-1"></script>
+  <script src="src/state/projectFile.js?v=20260901-bottomsync2"></script>
   <script src="src/render/colorTheme.js"></script>
   <script src="src/render/bgRemove.js"></script>
   <script src="src/render/fontLoader.js"></script>
@@ -69,7 +72,7 @@
   <script src="src/ui/iconPicker.js"></script>
   <script src="src/ui/panel.js"></script>
   <!-- 主工具橋接沿用 PanelUI 的同一套匯入入口，不另寫第二套解析邏輯。 -->
-  <script src="src/integration/parentBridge.js"></script>
+  <script src="src/integration/parentBridge.js?v=20260902-levelpreset1"></script>
   <!-- 開場對話框要用 PanelUI.mount() 交回來的匯入入口，所以排在 panel 之後 -->
   <script src="src/ui/startupDialog.js"></script>
   <script src="src/app.js"></script>

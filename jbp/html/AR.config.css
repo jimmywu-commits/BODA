@@ -1,0 +1,16 @@
+/* AR coin page circle.config.css：依 15-AR coin page circle_公版.json 建立 */
+:root{
+  --canvas-w:100px;
+  --canvas-h:100px;
+  --canvas-bg:#6bc0ec;
+  --bg-img:;
+  --ar-bg:#6bc0ec;
+  --layers:"bg|,六字內|文案放六字內";
+}
+*{transform-origin:0 0;}
+.bg{position:absolute;left:0;top:0;width:100px;height:100px;background:var(--ar-bg,#6bc0ec);z-index:2;}
+/* AR 文字版：只保留六字內文案，不建立 LOGO／商品圖圖層 */
+
+
+
+.六字內{position:absolute;left:8px;top:23px;width:84px;height:54px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:"NotoSansCJKtc-Medium","ShopeeNotoSans (content)",sans-serif;font-size:25px;font-weight:500;line-height:30px;white-space:pre-line;color:rgb(135,234,196);z-index:50;}

@@ -1,0 +1,14017 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>版位排版工具</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f4f6f5;--panel:#ffffff;--border:#dde3e1;--border-strong:#c3cdc9;
+  --teal:#4d9b95;--teal-dark:#357872;--teal-tint:#e6f2f0;
+  --ink:#1f2b29;--ink2:#5b6a67;--ink3:#93a19d;
+  --danger:#d4392e;--radius:10px;--radius-sm:6px;
+  --shadow:0 1px 3px rgba(20,40,35,.08);--shadow-md:0 6px 20px rgba(20,40,35,.12);
+}
+html,body{height:100%;background:var(--bg);color:var(--ink);
+  font-family:"PingFang TC","Microsoft JhengHei","Segoe UI",Arial,sans-serif;font-size:14px;}
+
+/* ══════════════ 外殼：左側導覽 rail + 右側內容切換 ══════════════ */
+#shell{display:flex;height:100vh;}
+#nav-rail{width:76px;flex-shrink:0;background:var(--ink);display:flex;flex-direction:column;
+  align-items:center;padding:16px 0;gap:6px;}
+#nav-rail .nav-logo{width:36px;height:36px;margin-bottom:10px;color:#e8efed;
+  display:grid;place-items:center;}
+#nav-rail .nav-logo svg{width:25px;height:25px;display:block;fill:none;stroke:currentColor;
+  stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item{width:60px;background:none;border:none;color:#aebbb7;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 2px;
+  border-radius:var(--radius-sm);transition:.12s;}
+.nav-item .ico{width:22px;height:22px;display:grid;place-items:center;}
+.nav-item .ico svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item .lbl{font-size:9.5px;line-height:1.2;text-align:center;}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}
+.nav-item.active{background:var(--teal);color:#fff;}
+.nav-item[data-view="maint"]{margin-top:auto;}
+
+#views{flex:1;position:relative;overflow:hidden;}
+.view{display:none;height:100%;overflow:auto;}
+.view.active{display:block;}
+#view-generator.active{display:flex;}
+#app{display:flex;height:100%;width:100%;position:relative;}
+
+/* ══════════════ 首頁 ══════════════ */
+#view-home.active{display:flex;align-items:center;justify-content:center;}
+#home-wrap{text-align:center;max-width:760px;padding:20px;}
+#home-head h1{display:flex;align-items:center;justify-content:center;gap:9px;font-size:24px;font-weight:800;letter-spacing:.3px;}
+#home-head h1 .home-title-icon{width:29px;height:29px;display:block;flex:none;fill:none;stroke:var(--teal);stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}
+#home-head p{color:var(--ink2);font-size:13px;margin-top:8px;margin-bottom:36px;}
+#home-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.home-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;
+  padding:36px 24px;cursor:pointer;transition:.15s;text-align:center;}
+.home-card:hover{border-color:var(--teal);box-shadow:var(--shadow-md);transform:translateY(-3px);}
+.home-card .hc-icon{width:54px;height:54px;margin:0 auto 14px;color:var(--teal);
+  display:grid;place-items:center;transition:color .15s,transform .15s;}
+.home-card .hc-icon svg{width:44px;height:44px;display:block;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.home-card:hover .hc-icon{color:var(--teal-dark);transform:translateY(-1px);}
+.home-card .hc-title{font-size:16px;font-weight:800;margin-bottom:6px;}
+.home-card .hc-desc{font-size:12px;color:var(--ink2);}
+
+/* 全站共用浮動 Loading：一般按鈕短暫顯示，讀檔／輸出等耗時流程會持續更新百分比。 */
+#app-loading{position:fixed;left:50%;top:16px;z-index:50000;width:min(360px,calc(100vw - 32px));
+  opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,-12px);
+  transition:opacity .16s,transform .16s,visibility .16s;}
+#app-loading.show{opacity:1;visibility:visible;transform:translate(-50%,0);}
+#app-loading-card{padding:10px 13px 11px;border:1px solid var(--border-strong);border-radius:9px;
+  background:rgba(255,255,255,.97);box-shadow:0 7px 24px rgba(20,40,35,.18);}
+#app-loading-head{display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:800;color:var(--ink2);}
+#app-loading-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#app-loading-percent{margin-left:auto;flex-shrink:0;color:var(--teal-dark);font:800 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+#app-loading-track{height:7px;margin-top:8px;border-radius:99px;overflow:hidden;background:#e8eeec;}
+#app-loading-fill{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--teal),#79c8bd);
+  transition:width .18s ease;}
+#app-loading-note{margin-top:6px;font-size:10px;line-height:1.35;color:var(--ink3);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;}
+
+/* ══════════════ 曝光資源（iframe 載入 jbp/jbpbn.html） ══════════════ */
+#view-exposure.active{display:block;}
+#exposure-wrap{position:relative;width:100%;height:100%;background:#0d1117;}
+#exposure-frame{width:100%;height:100%;border:none;display:block;background:#0d1117;}
+#exposure-fallback{position:absolute;inset:0;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;
+  background:var(--bg);color:var(--ink2);}
+#exposure-wrap.missing #exposure-fallback{display:flex;}
+#exposure-wrap.missing #exposure-frame{display:none;}
+#exposure-fallback .ef-icon{font-size:44px;}
+#exposure-fallback .ef-title{font-size:16px;font-weight:800;color:var(--ink);}
+#exposure-fallback .ef-desc{font-size:12.5px;line-height:1.8;}
+#exposure-fallback b{color:var(--teal-dark);}
+
+/* ══════════════ 匯入工單（佔位頁） ══════════════ */
+/* ══════════════ 匯入工單 ══════════════ */
+#view-import.active{display:flex;}
+/* ══════════════ 吸底（獨立工具頁） ══════════════ */
+#view-bottom.active{display:flex;}
+#bottom-standalone-wrap{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;background:var(--bg);}
+#bottom-standalone-head{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--panel);color:var(--ink2);font-size:12px;}
+#bottom-standalone-head b{color:var(--teal-dark);}
+#bottom-standalone-frame{flex:1;width:100%;height:100%;min-height:0;border:0;display:block;background:var(--bg);}
+#bottom-standalone-fallback{position:absolute;inset:48px 0 0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;background:var(--bg);color:var(--ink2);}
+#bottom-standalone-wrap.missing #bottom-standalone-fallback{display:flex;}
+#bottom-standalone-wrap.missing #bottom-standalone-frame{display:none;}
+#bottom-standalone-fallback .bsf-icon{font-size:44px;}
+#bottom-standalone-fallback .bsf-title{font-size:16px;font-weight:800;color:var(--ink);}
+#bottom-standalone-fallback .bsf-desc{font-size:12.5px;line-height:1.8;}
+#import-app{display:flex;width:100%;height:100%;}
+
+#import-side{width:340px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;}
+#import-side>*{flex-shrink:0;}
+#import-side::-webkit-scrollbar{width:10px;}
+#import-side::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px;border:3px solid var(--panel);}
+#import-dl-bar{background:var(--panel);border-top:1px solid var(--border);
+  padding:12px 0 0;margin-top:12px;}
+#import-dl-bar .btn{width:100%;}
+#import-dl-bar .dl-hint{font-size:10px;color:var(--ink3);text-align:center;margin-top:6px;line-height:1.5;}
+#import-side-head{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
+#import-side-head h1{font-size:15px;font-weight:800;}
+#view-import .line-icon{display:inline-block;width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.15em;flex:none;}
+#view-import .id-icon .line-icon{width:30px;height:30px;vertical-align:middle;}
+#view-import .ie-icon .line-icon{width:36px;height:36px;vertical-align:middle;}
+#view-import #import-side-head h1 .line-icon{width:18px;height:18px;margin-right:3px;vertical-align:-3px;}
+#view-import .btn .line-icon{width:15px;height:15px;margin-right:3px;vertical-align:-3px;}
+#view-import #import-img-head .line-icon{width:15px;height:15px;margin-right:3px;vertical-align:-3px;}
+#view-import #import-color-head > span{display:inline-flex;align-items:center;gap:4px;}
+#view-import #import-color-head .line-icon{width:15px;height:15px;vertical-align:middle;}
+#view-import .field-mini-btn .line-icon,#view-import .icc-reset .line-icon{width:13px;height:13px;vertical-align:-2px;}
+#view-import .if-btn .line-icon{width:13px;height:13px;vertical-align:-2px;}
+#view-import .if-empty .line-icon{width:22px;height:22px;vertical-align:middle;margin-bottom:4px;}
+#import-side-head p{font-size:11.5px;color:var(--ink2);margin-top:5px;line-height:1.6;}
+
+#import-drop{margin:14px 16px 10px;padding:26px 14px;border:2px dashed var(--border-strong);border-radius:var(--radius);
+  text-align:center;cursor:pointer;transition:.12s;flex-shrink:0;}
+#import-drop:hover,#import-drop.dragover{border-color:var(--teal);background:var(--teal-tint);}
+#import-drop .id-icon{font-size:28px;margin-bottom:8px;}
+#import-drop .id-text{font-size:12px;color:var(--ink2);}
+#import-drop .id-text b{color:var(--ink);}
+#import-generator-load{margin:0 16px 8px;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:6px;}
+#import-generator-load .igl-count{font-size:10px;font-weight:700;color:var(--teal-dark);background:var(--teal-tint);border-radius:999px;padding:1px 7px;}
+#import-generator-load:disabled .igl-count{color:var(--ink3);background:var(--bg);}
+#import-generator-hint{margin:0 16px 10px;font-size:10.5px;color:var(--ink3);line-height:1.55;text-align:center;}
+
+#import-log{margin:0 16px;font-size:11px;color:var(--ink3);line-height:1.6;}
+#import-log .err{color:var(--danger);}
+#import-log .ok{color:var(--teal-dark);}
+
+#import-fields-scroll{padding:4px 16px 28px;}
+#import-canvas-tools #import-fields-scroll{padding:4px 0 12px;}
+.imp-col{background:#fff;border:1px solid var(--border);border-radius:10px;
+  padding:0 12px 12px;margin-bottom:14px;box-shadow:var(--shadow);}
+.imp-col .ic-head{position:sticky;top:0;z-index:2;background:#fff;
+  margin:0 -12px 12px;padding:10px 12px 8px;border-bottom:1px solid var(--border);
+  border-radius:10px 10px 0 0;font-size:12px;font-weight:800;color:var(--teal-dark);
+  letter-spacing:.02em;}
+#import-fields-scroll .field{margin-bottom:12px;}
+#import-fields-scroll .field:last-child{margin-bottom:2px;}
+#import-fields-scroll .field label{display:flex;align-items:baseline;justify-content:space-between;
+  gap:8px;font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;line-height:1.4;}
+#import-side input.fv,#import-canvas-tools input.fv{width:100%;height:30px;padding:5px 8px;border:1px solid var(--border);
+  border-radius:6px;font-size:12px;color:var(--ink);background:#fff;
+  transition:border-color .12s,box-shadow .12s;}
+#import-side input.fv::placeholder,#import-canvas-tools input.fv::placeholder{color:var(--ink3);}
+#import-side input.fv:focus,#import-canvas-tools input.fv:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-tint);}
+#import-side .img-field-row input.fv,#import-canvas-tools .img-field-row input.fv{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;}
+.field-limit{flex-shrink:0;font-size:9.5px;font-weight:600;color:var(--ink3);
+  background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:1px 7px;margin-left:auto;}
+.color-field-row{display:flex;gap:6px;align-items:center;}
+.color-field-row input.fv-picker{flex-shrink:0;width:36px;height:30px;padding:2px;border:1px solid var(--border);border-radius:4px;cursor:pointer;}
+.color-field-row input.fv{flex:1;min-width:0;font-family:monospace;font-size:11.5px;}
+.text-field-row,.local-color-field-row{display:flex;align-items:center;gap:6px;}
+.text-field-row input.fv,.local-color-field-row input.fv{flex:1;min-width:0;}
+.local-color-field-row input.local-color-picker{flex-shrink:0;width:36px;height:30px;padding:2px;border:1px solid var(--border);border-radius:5px;background:#fff;cursor:pointer;}
+.field-mini-btn{flex-shrink:0;height:30px;min-width:30px;padding:0 7px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--ink3);font-size:11px;cursor:pointer;}
+.field-mini-btn:hover{border-color:var(--teal);color:var(--teal-dark);background:var(--teal-tint);}
+.field-mini-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:#fbeceb;}
+.local-field-note{font-size:9.5px;color:var(--ink3);line-height:1.45;margin-top:4px;}
+
+#import-canvas-area{flex:1;min-width:0;overflow:auto;padding:24px;position:relative;
+  display:flex;flex-direction:column;}
+/* 畫布上方的工具列：左邊標題、右邊縮放下拉（比照工單生成器的那個） */
+#import-toolbar{display:none;align-items:center;gap:10px;margin-bottom:14px;}
+#import-toolbar.show{display:flex;}
+#import-toolbar h2{font-size:15px;font-weight:800;margin-right:auto;}
+#import-canvas-layout{display:flex;align-items:stretch;gap:18px;flex:1;min-width:0;min-height:0;}
+#import-canvas-main{position:relative;flex:1;min-width:0;min-height:100%;}
+#import-canvas-tools{width:340px;flex:0 0 340px;height:100%;align-self:stretch;position:relative;
+  max-height:none;overflow-y:auto;overscroll-behavior:contain;padding:18px 16px 24px;background:var(--panel);
+  border-left:1px solid var(--border);border-right:0;border-top:0;border-bottom:0;border-radius:0;box-shadow:none;}
+#import-canvas-tools::-webkit-scrollbar{width:8px;}
+#import-canvas-tools::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px;border:2px solid var(--panel);}
+#import-canvas-tools-head{font-size:12px;font-weight:800;color:var(--teal-dark);padding:1px 2px 9px;
+  border-bottom:1px solid var(--border);margin-bottom:10px;}
+.import-tools-section-title{font-size:10.5px;font-weight:800;color:var(--ink2);padding:2px 2px 6px;
+  border-bottom:1px solid var(--border);margin-top:4px;}
+#import-block-tools{padding-top:10px;border-top:1px solid var(--border);}
+#import-block-tools{display:flex;flex-direction:column;gap:10px;}
+.import-block-tool{background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px;
+  box-shadow:0 1px 4px rgba(20,40,35,.05);}
+.import-block-tool.is-active{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-tint);}
+.import-block-tool-head{font-size:11px;font-weight:800;color:var(--teal-dark);line-height:1.45;
+  margin-bottom:8px;}
+.import-image-tool-group{border-top:1px solid var(--border);padding-top:7px;margin-top:7px;}
+.import-image-tool-group:first-child{border-top:0;padding-top:0;margin-top:0;}
+.import-image-tool-label{display:block;font-size:10.5px;font-weight:700;color:var(--ink2);margin-bottom:5px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.import-image-tool-group-head{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
+.import-image-tool-group-head .import-image-tool-label{flex:1;min-width:0;margin:0;}
+.import-image-tool-order{display:flex;gap:3px;flex-shrink:0;}
+.import-image-tool-row{display:flex;align-items:center;gap:5px;margin-top:5px;}
+.import-image-tool-row:first-child{margin-top:0;}
+.import-image-tool-row .import-image-tool-label{flex:1;min-width:0;margin:0;font-weight:600;color:var(--ink3);}
+.import-image-tool-actions{display:flex;gap:3px;flex-shrink:0;}
+#import-canvas-tools .if-btn{height:26px;padding:2px 5px;border:1px solid var(--border);border-radius:5px;
+  background:#fff;color:var(--ink2);font-size:10px;font-weight:600;cursor:pointer;line-height:1.2;}
+#import-canvas-tools .if-btn.if-icon-btn{width:24px;padding:2px;}
+#import-canvas-tools .if-btn:hover{border-color:var(--teal);color:var(--teal-dark);background:var(--teal-tint);}
+#import-canvas-tools .if-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:#fbeceb;}
+#import-image-tools-title,#import-block-tools{display:none;}
+#import-canvas-tools .if-btn:disabled{opacity:.4;cursor:not-allowed;}
+.import-block-tool-empty{font-size:10.5px;line-height:1.5;color:var(--ink3);}
+#import-empty2{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;text-align:center;color:var(--ink3);}
+#import-empty2 .ie-icon{font-size:36px;margin-bottom:10px;}
+#import-empty2 h2{font-size:14px;font-weight:800;color:var(--ink2);margin-bottom:6px;}
+#import-empty2 p{font-size:12px;}
+#import-preview-list{display:none;flex-direction:column;gap:18px;min-width:0;max-width:100%;}
+#import-preview-list.show{display:flex;}
+
+/* 匯入工單的吸底成品：直接接在最後一排 MSBN／副區下方，無外框、無間距。 */
+#import-bottom-preview-frame-wrap{position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;}
+#import-bottom-preview-frame{display:block;width:1px;height:1px;border:0;}
+.import-bottom-final-wrap{display:block;position:absolute;left:0;margin:0;padding:0;border:0;max-width:none;overflow:hidden;z-index:4;background:var(--bg);}
+.import-bottom-final{display:block;position:absolute;left:0;top:0;margin:0;padding:0;border:0;max-width:none;background:transparent;object-fit:fill;}
+.import-bottom-loading{display:flex;position:absolute;left:0;align-items:center;justify-content:center;box-sizing:border-box;margin:0;padding:0;background:#fff;color:var(--ink3);font-size:11px;}
+#import-strip-wrap{background:#000;border:0;border-radius:0;overflow:hidden;}
+#imp-strip{position:relative;transform-origin:top left;}
+.imp-slot{background:#000;}
+.imp-mount{width:100%;height:100%;}
+/* 動態列控制：只在畫布左側欄位滑入時顯示，避免成品預覽出現編輯按鈕。 */
+.bn-dynamic-row-action{position:absolute;left:0;width:24px;height:24px;z-index:5000;display:flex;align-items:center;justify-content:center;pointer-events:auto;}
+.bn-dynamic-row-btn{width:20px;height:20px;padding:0;border:1px solid var(--border-strong);border-radius:50%;background:rgba(255,255,255,.88);color:var(--ink2);font:700 14px/18px Arial,sans-serif;cursor:pointer;opacity:.56;box-shadow:0 1px 3px rgba(0,0,0,.18);transition:opacity .12s,transform .12s,background .12s,border-color .12s;}
+.bn-dynamic-row-action:hover .bn-dynamic-row-btn,.bn-dynamic-row-btn:focus-visible{opacity:1;outline:none;}
+.bn-dynamic-row-btn:hover{transform:scale(1.12);background:#fff;}
+.bn-dynamic-row-btn.is-delete{color:var(--danger);border-color:#e7b3aa;}
+.bn-dynamic-row-btn.is-delete:hover{background:#fbeceb;border-color:var(--danger);}
+.bn-dynamic-row-btn.is-insert{color:var(--teal-dark);border-color:#9bd8d2;}
+.bn-dynamic-row-btn.is-insert:hover{background:var(--teal-tint);border-color:var(--teal);}
+.bn-dynamic-row-action:hover{background:rgba(255,255,255,.18);border-radius:5px;}
+.bn-dynamic-row-action::after{content:attr(data-hint);position:absolute;left:28px;top:50%;z-index:6000;max-width:260px;padding:4px 7px;border:1px solid rgba(255,255,255,.36);border-radius:5px;background:rgba(20,40,35,.72);color:#fff;font-size:10px;font-weight:600;line-height:1.35;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.16);transform:translateY(-50%);opacity:0;pointer-events:none;transition:opacity .12s;}
+.bn-dynamic-row-action:hover::after,.bn-dynamic-row-action:focus-within::after{opacity:1;}
+#bn-dynamic-row-toast{position:fixed;left:50%;bottom:24px;z-index:10000;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 32px);padding:9px 12px;border:1px solid var(--border-strong);border-radius:8px;background:rgba(20,40,35,.94);color:#fff;font-size:12px;line-height:1.4;box-shadow:0 5px 18px rgba(0,0,0,.22);transform:translate(-50%,10px);opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;}
+#bn-dynamic-row-toast.show{transform:translate(-50%,0);opacity:1;pointer-events:auto;}
+#bn-dynamic-row-toast button{height:26px;padding:0 10px;border:1px solid rgba(255,255,255,.65);border-radius:5px;background:transparent;color:#fff;font-size:11px;font-weight:700;cursor:pointer;}
+#bn-dynamic-row-toast button:hover{background:rgba(255,255,255,.16);}
+
+/* 圖片素材上傳區 */
+#import-img-section{margin:0 16px 14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+#import-img-head{font-size:11.5px;font-weight:700;color:var(--ink2);margin-bottom:8px;}
+#import-img-drop{border:1.5px dashed var(--border-strong);border-radius:var(--radius-sm);
+  padding:26px 14px;text-align:center;cursor:pointer;transition:.12s;font-size:11px;color:var(--ink2);}
+#import-img-drop .id-icon{font-size:28px;margin-bottom:8px;}
+#import-img-drop:hover,#import-img-drop.dragover{border-color:var(--teal);background:var(--teal-tint);}
+#import-img-gallery{margin-top:9px;}
+#import-img-gallery .im-empty{font-size:10.5px;color:var(--ink3);line-height:1.6;}
+#import-img-gallery .im-empty b{color:var(--teal-dark);}
+/* 已上傳素材的縮圖：可以直接拖到右邊畫布的圖片框裡 */
+#import-img-gallery .im-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+#import-img-gallery .im-thumb{position:relative;width:52px;height:52px;border:1px solid var(--border);
+  border-radius:6px;background:#fbfcfc;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;cursor:grab;transition:.12s;}
+#import-img-gallery .im-thumb:hover{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-tint);}
+#import-img-gallery .im-thumb:active{cursor:grabbing;}
+#import-img-gallery .im-thumb img{max-width:100%;max-height:100%;width:auto;height:auto;
+  object-fit:contain;display:block;pointer-events:none;}
+#import-img-gallery .im-thumb.is-dragging{opacity:.45;}
+/* 畫布上的圖片框：拖曳圖片經過時亮起來。用 inset box-shadow 不會動到版面，
+   也不會蓋掉圖片框自己原本的底色。 */
+.imp-canvas-drop{box-shadow:inset 0 0 0 3px var(--teal),0 0 0 1px var(--teal) !important;
+  background-color:var(--teal-tint) !important;}
+/* 右側圖片操作工具列提供編輯／換圖／刪除與圖片層／單張圖片上下移。 */
+.imp-col .img-field .if-row{display:flex;align-items:stretch;}
+.imp-col .img-field .if-row{gap:6px;}
+.imp-col .img-field .if-actions{display:flex;flex:1;flex-wrap:wrap;align-content:center;gap:3px;min-width:0;}
+.imp-col .img-field .if-actions .if-btn{height:24px;min-width:24px;padding:2px 4px;line-height:1;}
+.imp-col .img-field .if-actions .if-btn:not(.if-icon-btn){font-size:9.5px;}
+.imp-col .img-field .if-actions .if-icon-btn{width:24px;}
+.imp-col .img-field-head{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.imp-col .img-field-head>label{flex:1;min-width:0;margin:0;}
+.imp-col .img-field-head .import-image-tool-order{display:flex;gap:3px;flex-shrink:0;}
+.imp-col .img-field .if-list{display:flex;flex-direction:column;gap:7px;}
+.imp-col .if-index{position:absolute;left:3px;top:2px;background:rgba(20,40,35,.72);color:#fff;
+  font-size:9px;padding:0 3px;border-radius:99px;line-height:1.35;}
+.imp-col .if-thumb{position:relative;flex-shrink:0;width:64px;height:64px;border:1px solid var(--border);
+  border-radius:7px;background:#fbfcfc;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.imp-col .if-thumb img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;}
+.imp-col .if-thumb.is-empty{border-style:dashed;border-color:var(--border-strong);}
+.imp-col .if-thumb .if-empty{font-size:9.5px;line-height:1.5;color:var(--ink3);text-align:center;}
+.imp-col .if-thumb .if-count{position:absolute;right:2px;bottom:2px;background:rgba(20,40,35,.72);color:#fff;
+  font-size:9px;padding:0 4px;border-radius:99px;}
+/* 捲動互相吸附時，標記目前對到的版位（左邊卡片、右邊畫布都框起來） */
+.imp-col.is-active{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-tint);}
+/* 畫布上對到的那一格：用跟左邊卡片一樣的樣式（實心綠框＋外圈淡綠），
+   畫成一層蓋在內容上面的框，不會把版面推位。
+   這一塊整體會被 CSS transform 縮放，所以框線寬度都除以縮放比例
+   （--impz＝目前的縮放比例），不管顯示 50% 還是 100% 看起來都一樣粗。 */
+.imp-slot.is-active{z-index:6;}
+.imp-slot.is-active::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:9;
+  box-shadow:inset 0 0 0 calc(2px / var(--impz,1)) var(--teal),
+             inset 0 0 0 calc(4px / var(--impz,1)) var(--teal-tint);}
+
+/* 全站統一顏色區（在圖片素材下面）：改一個顏色，畫布上所有版位一起變 */
+#import-color-section{margin:0 16px 14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+#import-color-head{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--ink2);margin-bottom:4px;}
+#import-color-head .btn{margin-left:auto;padding:4px 9px;font-size:10.5px;font-weight:700;}
+#import-color-note{font-size:10.5px;color:var(--ink3);line-height:1.6;margin-bottom:9px;}
+#import-color-list{display:flex;flex-direction:column;gap:8px;}
+#import-demo-bar{margin:0 16px 16px;padding:12px 0 0;border-top:1px solid var(--border);}
+#import-demo-bar .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;}
+#import-demo-bar .demo-hint{font-size:10px;color:var(--ink3);line-height:1.5;text-align:center;margin-top:6px;}
+#import-demo-bar .btn:disabled{opacity:.6;cursor:wait;}
+.ic-color-row{display:flex;align-items:center;gap:6px;}
+.ic-color-row .icc-label{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--ink2);}
+.ic-color-row .icc-label .icc-auto{display:block;font-size:9.5px;font-weight:600;color:var(--teal-dark);margin-top:1px;}
+.ic-color-row input.icc-picker{flex-shrink:0;width:34px;height:28px;padding:2px;border:1px solid var(--border);
+  border-radius:4px;cursor:pointer;background:#fff;}
+.ic-color-row input.icc-hex{flex-shrink:0;width:82px;height:28px;padding:4px 6px;border:1px solid var(--border);
+  border-radius:5px;font-family:monospace;font-size:11px;color:var(--ink);background:#fff;}
+.ic-color-row input.icc-hex:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-tint);}
+.ic-color-row .icc-reset{flex-shrink:0;width:24px;height:28px;border:1px solid var(--border);border-radius:5px;
+  background:#fff;color:var(--ink3);font-size:11px;cursor:pointer;padding:0;line-height:1;}
+.ic-color-row .icc-reset:hover{border-color:var(--danger);color:var(--danger);}
+.ic-color-row.is-off input.icc-hex{color:var(--ink3);}
+
+.img-field-row{display:flex;gap:6px;position:relative;flex-wrap:wrap;}
+.img-field-row select.img-pick{flex-shrink:0;max-width:110px;height:30px;font-size:11px;border:1px solid var(--border);
+  border-radius:6px;background:#fff;color:var(--ink2);padding:0 4px;}
+.img-field-row input.fv{flex:1;min-width:0;}
+.img-edit-btn{flex-shrink:0;width:30px;height:30px;border:1px solid var(--border);border-radius:6px;
+  background:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;
+  padding:0;line-height:1;}
+.img-edit-btn:hover{border-color:var(--teal);background:var(--teal-tint);}
+
+/* ══════════════ 左：素材庫 ══════════════ */
+#palette{width:340px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;}
+#palette-head{padding:18px 18px 14px;flex-shrink:0;}
+#palette-head h1{font-size:15px;font-weight:800;letter-spacing:.3px;}
+#palette-head p{font-size:11.5px;color:var(--ink2);margin-top:5px;line-height:1.6;}
+/* 等級下拉（素材庫標題/說明 與 頁簽 之間） */
+#palette-level{padding:0 18px 14px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+#palette-level label{font-size:11.5px;font-weight:800;color:var(--ink2);letter-spacing:.3px;}
+#palette-level select{width:100%;height:34px;padding:0 10px;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);background:#fff;color:var(--ink);font-size:12.5px;font-weight:700;cursor:pointer;}
+#palette-level select:hover{border-color:var(--teal);}
+#palette-level select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-tint);}
+#palette-level .lv-hint{font-size:11px;color:var(--ink2);line-height:1.6;}
+#palette-level .lv-hint b{color:var(--teal-dark);}
+#palette-tabs{display:flex;gap:3px;padding:8px 10px 0;background:var(--bg);
+  border-bottom:1px solid var(--border);align-items:flex-end;flex-shrink:0;}
+.ptab{flex:1;appearance:none;font-size:12.5px;font-weight:700;cursor:pointer;
+  padding:9px 4px;border-radius:10px 10px 0 0;position:relative;margin-bottom:-1px;
+  background:transparent;border:1px solid transparent;border-bottom:none;color:var(--ink3);
+  transition:background .12s,color .12s;}
+.ptab:hover{background:rgba(255,255,255,.65);color:var(--ink2);}
+.ptab.active{background:var(--panel);border-color:var(--border);color:var(--teal-dark);
+  box-shadow:0 -2px 6px rgba(20,40,35,.06);z-index:1;}
+.ptab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--panel);}
+.ptab-placeholder{margin:14px 0;padding:36px 16px;border:1.5px dashed var(--border-strong);
+  border-radius:var(--radius);text-align:center;color:var(--ink3);font-size:12px;line-height:1.8;}
+.ptab-placeholder .pp-icon{font-size:30px;display:block;margin-bottom:8px;}
+#palette-scroll{flex:1;overflow-y:auto;padding:10px 14px 24px;}
+body.tutorial-subarea #app{height:auto;min-height:100vh;}
+body.tutorial-subarea #views{height:auto;overflow:visible;}
+body.tutorial-subarea #view-generator.active{height:auto;min-height:100vh;overflow:visible;}
+body.tutorial-subarea #palette{height:auto;overflow:visible;}
+body.tutorial-subarea #palette-scroll{flex:none;height:auto;max-height:none;overflow:visible;}
+body.tutorial-subarea #palette{width:auto;flex:1;border-right:0;}
+body.tutorial-subarea #canvas-area{display:none;}
+body.tutorial-subarea #palette-head,
+body.tutorial-subarea #palette-level,
+body.tutorial-subarea #palette-scroll{padding-left:36px;padding-right:36px;}
+body.tutorial-subarea #palette-scroll .fam-grid{grid-template-columns:repeat(6,minmax(0,1fr));}
+body.tutorial-subarea #palette-footer{display:none;}
+body.tutorial-subarea #canvas-area{min-height:100vh;overflow:visible;}
+body.tutorial-msbn #app{height:auto;min-height:100vh;}
+body.tutorial-msbn #views{height:auto;overflow:visible;}
+body.tutorial-msbn #view-generator.active{height:auto;min-height:100vh;overflow:visible;}
+body.tutorial-msbn #palette{height:auto;overflow:visible;}
+body.tutorial-msbn #palette-scroll{flex:none;height:auto;max-height:none;overflow:visible;}
+body.tutorial-msbn #palette{width:auto;flex:1;border-right:0;}
+body.tutorial-msbn #canvas-area{display:none;}
+body.tutorial-msbn #palette-head,
+body.tutorial-msbn #palette-level,
+body.tutorial-msbn #palette-scroll{padding-left:36px;padding-right:36px;}
+body.tutorial-msbn #palette-scroll .fam-grid.msbn-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+body.tutorial-msbn #palette-footer{display:none;}
+body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
+#palette-footer{flex-shrink:0;padding:10px 14px;border-top:1px solid var(--border);background:var(--panel);}
+#palette-footer .btn{width:100%;font-size:11.5px;padding:9px 10px;}
+
+.fam-section{margin-bottom:0;}
+.fam-head{display:flex;align-items:center;gap:8px;padding:12px 4px;cursor:pointer;user-select:none;}
+.fam-head .fam-badge{width:26px;height:26px;border-radius:7px;background:var(--teal);color:#fff;
+  font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.fam-head .fam-meta{flex:1;min-width:0;}
+.fam-head .fam-meta .t1{font-weight:700;font-size:12.5px;}
+.fam-head .fam-meta .t2{font-size:10.5px;color:var(--ink3);margin-top:1px;}
+.fam-head .fam-caret{font-size:10px;color:var(--ink3);transition:transform .15s;}
+.fam-section.open .fam-caret{transform:rotate(90deg);}
+.group-block.disabled .fam-head{opacity:.4;}
+.group-block.disabled .fam-grid{opacity:.35;pointer-events:none;filter:grayscale(1);}
+.group-block.active .fam-badge{box-shadow:0 0 0 3px var(--teal-tint);}
+
+/* 可混搭群組的包裝視覺：把同組的系列框在一起，一眼看出誰跟誰是一夥的 */
+.group-block{border:1.5px solid var(--border);border-radius:10px;margin-bottom:14px;padding:4px 6px 2px;
+  transition:border-color .15s,background .15s;}
+.group-block.mixable{border-style:solid;background:linear-gradient(180deg,var(--teal-tint) 0,transparent 46px);}
+.group-block.solo{border-style:dashed;}
+.group-block.active.mixable{border-color:var(--teal);}
+.group-block .group-label{font-size:10px;font-weight:700;color:var(--teal-dark);padding:6px 8px 2px;
+  letter-spacing:.2px;}
+.group-block.solo .group-label{color:var(--ink3);}
+.group-block .fam-section{border-bottom:1px dashed var(--border);}
+.group-block .fam-section:last-child{border-bottom:none;}
+
+.fam-grid{display:none;grid-template-columns:1fr 1fr;gap:8px;padding:2px 4px 14px;}
+.fam-section.open .fam-grid{display:grid;}
+/* MSBN 素材：整寬橫幅，一欄一張，維持原始比例 */
+.fam-grid.msbn-grid{grid-template-columns:1fr;}
+.thumb.msbn img{aspect-ratio:auto;height:auto;}
+
+/* MSBN 頁簽底部的副區版配清單 */
+.msbn-subarea-palette{margin-top:16px;padding-top:14px;border-top:2px solid var(--border-strong);}
+.msbn-subarea-title{font-size:13px;font-weight:800;color:var(--ink1);padding:0 4px 3px;}
+.msbn-subarea-note{font-size:10.5px;color:var(--ink3);padding:0 4px 10px;line-height:1.5;}
+/* ══════════════ 畫布：MSBN 區（接在副區下方，合計最多10顆） ══════════════ */
+#msbn-area{margin-top:22px;}
+/* 即使第一張是較矮的 MSBN 細版，也至少保留約兩格的可捲動高度，
+   避免畫布底部不足讓 MSBN 頁簽被捲動同步誤判回副區。 */
+#msbn-area.msbn-enabled{min-height:930px;}
+.msbn-area-head{font-size:calc(12px * var(--zinv,1));font-weight:700;color:var(--ink2);margin-bottom:8px;}
+.msbn-area-head b{color:var(--teal-dark);}
+/* MSBN 區的紅字補充說明 */
+.msbn-first-note{color:var(--danger);font-weight:700;line-height:1.6;
+  font-size:calc(12px * var(--zinv,1));margin-bottom:8px;}
+#msbn-drop .red-note{color:var(--danger);font-weight:700;}
+#msbn-stack{width:1200px;}
+.msbn-row{position:relative;background:#fff;}
+.msbn-row img{width:1200px;height:auto;display:block;} /* height:auto＝用圖片原始高度，不強制拉到430 */
+.msbn-row:hover{outline:2px solid var(--teal);outline-offset:-2px;z-index:1;}
+.msbn-row .mtag{position:absolute;left:6px;top:6px;background:rgba(20,40,35,.72);color:#fff;
+  font-size:calc(10px * var(--zinv,1));padding:calc(2px * var(--zinv,1)) calc(7px * var(--zinv,1));
+  border-radius:4px;opacity:0;transition:.12s;pointer-events:none;}
+.msbn-row .mctl{position:absolute;right:6px;top:6px;display:flex;gap:4px;opacity:0;transition:.12s;}
+.msbn-row:hover .mtag,.msbn-row:hover .mctl{opacity:1;}
+.msbn-row .mctl button{width:calc(22px * var(--zinv,1));height:calc(22px * var(--zinv,1));
+  border-radius:50%;background:rgba(20,40,35,.72);
+  color:#fff;border:none;font-size:calc(11px * var(--zinv,1));cursor:pointer;display:flex;align-items:center;
+  justify-content:center;line-height:1;padding:0;}
+.msbn-row .mctl button:hover{background:var(--teal-dark);}
+.msbn-row .mctl button[data-act=rm]:hover{background:var(--danger);}
+#msbn-drop,#msbn-empty-slot-2{width:1200px;height:430px;border:2px dashed var(--border-strong);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  text-align:center;color:var(--ink3);font-size:calc(13px * var(--zinv,1));margin-top:10px;background:#fbfcfc;transition:.12s;}
+#msbn-drop b,#msbn-empty-slot-2 b{color:var(--ink2);}
+#msbn-drop .quota{font-size:calc(15px * var(--zinv,1));}
+#msbn-drop .quota b{color:var(--teal-dark);font-size:calc(22px * var(--zinv,1));}
+#msbn-drop.dragover-ok{border-color:var(--teal);background:var(--teal-tint);}
+#msbn-drop.dragover-bad{border-color:var(--danger);background:#fbeceb;}
+#msbn-drop.full{opacity:.55;}
+/* 畫布還沒有 MSBN 時，預設保留兩格視覺高度。第二格只作為空間預留，
+   不計入已選版位，也不會被匯出到工單。 */
+#msbn-empty-slot-2{opacity:.72;pointer-events:none;}
+#msbn-empty-slot-2 .slot-no{font-weight:800;color:var(--ink2);font-size:calc(14px * var(--zinv,1));}
+.msbn-row{cursor:grab;}
+.msbn-row.drag-target{outline:2px solid var(--teal);outline-offset:-2px;z-index:2;}
+
+/* MSBN 任一格改放「副區版配」時：整排 1200 寬，裡面是一格一格的副區格子 */
+.msbn-row.sub-row{display:flex;background:#fbfcfc;cursor:default;}
+.msbn-row.sub-row .sub-slot{position:relative;height:350px;flex-shrink:0;
+  border:2px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;
+  background:#fbfcfc;overflow:hidden;transition:border-color .12s,background .12s;}
+.msbn-row.sub-row .sub-slot.dragover-ok{border-color:var(--teal);background:var(--teal-tint);}
+.msbn-row.sub-row .sub-slot.dragover-bad{border-color:var(--danger);background:#fbeceb;}
+.msbn-row.sub-row .sub-slot img{width:100%;height:100%;object-fit:cover;display:block;}
+.msbn-row.sub-row .sub-slot .hint{font-size:calc(12px * var(--zinv,1));color:var(--ink3);
+  text-align:center;padding:0 10px;line-height:1.7;}
+.msbn-row.sub-row .sub-slot .hint .icon{font-size:calc(22px * var(--zinv,1));display:block;margin-bottom:6px;}
+.msbn-row.sub-row .sub-slot .tag{position:absolute;left:6px;top:6px;background:rgba(20,40,35,.72);color:#fff;
+  font-size:calc(10px * var(--zinv,1));padding:calc(2px * var(--zinv,1)) calc(7px * var(--zinv,1));border-radius:4px;}
+.msbn-row.sub-row .sub-slot .rm{position:absolute;right:6px;top:6px;
+  width:calc(22px * var(--zinv,1));height:calc(22px * var(--zinv,1));border-radius:50%;
+  background:rgba(20,40,35,.72);color:#fff;border:none;font-size:calc(13px * var(--zinv,1));cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1;padding:0;}
+.msbn-row.sub-row .sub-slot .rm:hover{background:var(--danger);}
+.msbn-row.sub-row > .mtag{left:6px;top:auto;bottom:6px;}
+
+/* 副區與第一顆 MSBN 之間固定夾的一張圖（img/three.jpg），下載範例圖時也會一起輸出 */
+#mid-banner{display:block;width:1200px;height:auto;margin:0;}
+#zoom-wrap,#import-zoom-wrap{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);font-weight:700;}
+#zoom-wrap select,#import-zoom-wrap select{height:34px;padding:0 8px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+  background:#fff;color:var(--ink);font-size:12.5px;font-weight:700;cursor:pointer;}
+#zoom-wrap select:hover,#import-zoom-wrap select:hover{border-color:var(--teal);}
+.thumb{border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;cursor:grab;
+  background:#fafcfb;transition:border-color .12s,box-shadow .12s;position:relative;}
+.thumb:hover{border-color:var(--teal);box-shadow:var(--shadow);}
+.thumb.selected{border-color:var(--teal-dark);box-shadow:0 0 0 2px var(--teal-tint);}
+.thumb img{width:100%;display:block;aspect-ratio:var(--ar,8/7);object-fit:cover;background:#eee;}
+.thumb .cap{font-size:9.5px;color:var(--ink2);padding:3px 5px;text-align:center;}
+
+/* ══════════════ 右：畫布 ══════════════ */
+#canvas-area{flex:1;overflow:auto;padding:28px 32px;display:flex;flex-direction:column;gap:16px;}
+/* 「吸底」頁簽使用同層 bottom/index.html，但不再把整套工具塞在右側畫布裡。
+   iframe 會覆蓋整個工單生成器；bottom 的嵌入模式把操作面板放到左欄、畫布放右欄。
+   父層素材庫的標題與頁簽保留在 iframe 上方，因此操作工具會真正出現在「吸底」頁簽下方。 */
+#canvas-area.bottom-tool-mode{overflow:hidden;background:var(--bg);}
+#canvas-area.bottom-tool-mode > *{visibility:hidden!important;pointer-events:none!important;}
+#bottom-tool-wrap{display:none;position:absolute;inset:0;z-index:40;min-width:0;min-height:0;background:var(--bg);}
+#bottom-tool-wrap.active{display:block;}
+#bottom-tool-frame{width:100%;height:100%;border:0;display:block;background:var(--bg);}
+#bottom-tool-fallback{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;background:var(--bg);color:var(--ink2);}
+#bottom-tool-wrap.missing #bottom-tool-fallback{display:flex;}
+#bottom-tool-wrap.missing #bottom-tool-frame{display:none;}
+#bottom-tool-fallback .btf-icon{font-size:42px;}
+#bottom-tool-fallback .btf-title{font-size:16px;font-weight:800;color:var(--ink);}
+#bottom-tool-fallback .btf-desc{font-size:12px;line-height:1.8;}
+#bottom-tool-fallback b{color:var(--teal-dark);}
+/* iframe 在最上層，但素材庫標題、等級、小字與三個頁簽固定維持原本位置與外觀。
+   只把頁簽下方的素材內容交給 bottom 面板，切換吸底時上方不再縮短或跳動。 */
+#palette.sticky-tool-mode{background:var(--panel);border-right-color:var(--border);}
+#palette.sticky-tool-mode #palette-head,
+#palette.sticky-tool-mode #palette-level,
+#palette.sticky-tool-mode #palette-tabs{position:relative;z-index:60;}
+#palette.sticky-tool-mode #palette-head,
+#palette.sticky-tool-mode #palette-level{display:flex;background:var(--panel);}
+#palette.sticky-tool-mode #palette-head{display:block;}
+#palette.sticky-tool-mode #palette-tabs{background:var(--bg);}
+#palette.sticky-tool-mode #palette-footer{display:none;}
+#palette.sticky-tool-mode #palette-scroll{visibility:hidden;pointer-events:none;padding:0;}
+
+#toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#toolbar h2{font-size:15px;font-weight:800;margin-right:auto;}
+.btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);
+  background:#fff;color:var(--ink);font-size:12.5px;font-weight:700;cursor:pointer;transition:.12s;}
+.btn:hover{border-color:var(--teal);color:var(--teal-dark);}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff;}
+.btn.primary:hover{background:var(--teal-dark);border-color:var(--teal-dark);}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2);}
+
+#canvas-info{font-size:12px;color:var(--ink2);display:flex;gap:18px;flex-wrap:wrap;}
+#canvas-info b{color:var(--ink);}
+
+#stage{background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:24px;width:fit-content;max-width:100%;overflow-x:auto;}
+#row{display:flex;gap:0;position:relative;}
+
+.slot{position:relative;height:350px;flex-shrink:0;border:2px dashed var(--border-strong);
+  display:flex;align-items:center;justify-content:center;background:#fbfcfc;
+  transition:border-color .12s,background .12s;overflow:hidden;}
+.slot + .slot{margin-left:0;}
+.slot.dragover-ok{border-color:var(--teal);background:var(--teal-tint);}
+.slot.dragover-bad{border-color:var(--danger);background:#fbeceb;}
+.slot .hint{font-size:calc(12px * var(--zinv,1));color:var(--ink3);text-align:center;padding:0 10px;line-height:1.7;}
+.slot .hint .icon{font-size:calc(22px * var(--zinv,1));display:block;margin-bottom:6px;}
+.slot img{width:100%;height:100%;object-fit:cover;display:block;}
+.slot .tag{position:absolute;left:6px;top:6px;background:rgba(20,40,35,.72);color:#fff;
+  font-size:calc(10px * var(--zinv,1));padding:calc(2px * var(--zinv,1)) calc(7px * var(--zinv,1));border-radius:4px;}
+.slot .rm{position:absolute;right:6px;top:6px;width:calc(22px * var(--zinv,1));height:calc(22px * var(--zinv,1));border-radius:50%;
+  background:rgba(20,40,35,.72);color:#fff;border:none;font-size:calc(13px * var(--zinv,1));cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1;}
+.slot .rm:hover{background:var(--danger);}
+
+#empty-drop{width:1200px;max-width:100%;height:350px;border:2px dashed var(--border-strong);
+  border-radius:var(--radius);display:flex;align-items:center;justify-content:center;
+  background:#fbfcfc;transition:.12s;}
+#empty-drop.dragover-ok{border-color:var(--teal);background:var(--teal-tint);}
+#empty-drop .hint{text-align:center;color:var(--ink3);font-size:calc(13px * var(--zinv,1));}
+#empty-drop .hint .icon{font-size:calc(36px * var(--zinv,1));display:block;margin-bottom:10px;}
+#empty-drop .hint b{color:var(--ink2);font-size:calc(13px * var(--zinv,1));display:block;margin-bottom:4px;}
+
+/* 畫布縮放時，文字維持 100% 大小：#stage-inner 的 zoom 會等比縮小所有東西，
+   所以文字類的 font-size 都乘上 --zinv（=1/zoom）抵銷掉，看起來就永遠是 100% 的字級。 */
+#stage-inner{--zinv:1;}
+
+#footnote{font-size:11px;color:var(--ink3);line-height:1.7;max-width:760px;}
+
+/* ══════════════ 編輯權限鎖 ══════════════ */
+#lock-fab{position:fixed;right:22px;bottom:22px;width:48px;height:48px;border-radius:50%;
+  border:none;background:var(--ink);color:#fff;font-size:19px;cursor:pointer;
+  box-shadow:var(--shadow-md);z-index:50;transition:transform .12s,background .12s;}
+#lock-fab:hover{transform:translateY(-2px);}
+#lock-fab.unlocked{background:var(--teal);}
+#lock-fab.pulse{animation:lockPulse .35s ease;}
+@keyframes lockPulse{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+
+#pin-overlay{display:none;position:fixed;inset:0;background:rgba(20,30,28,.45);
+  align-items:center;justify-content:center;z-index:60;}
+#pin-overlay.show{display:flex;}
+#pin-box{background:#fff;border-radius:var(--radius);padding:26px 28px;width:280px;
+  box-shadow:var(--shadow-md);text-align:center;}
+#pin-title{font-size:13px;font-weight:700;margin-bottom:14px;}
+#pin-input{width:100%;text-align:center;font-size:22px;letter-spacing:10px;padding:10px 0;
+  border:1px solid var(--border-strong);border-radius:var(--radius-sm);outline:none;}
+#pin-input:focus{border-color:var(--teal);}
+#pin-error{display:none;color:var(--danger);font-size:11.5px;margin-top:8px;}
+#pin-error.show{display:block;}
+#pin-actions{display:flex;gap:8px;margin-top:16px;}
+#pin-actions .btn{flex:1;}
+
+.t1.editable{cursor:text;}
+.t1.editable:hover{text-decoration:underline dotted;text-decoration-color:var(--ink3);}
+.fam-rename-input{font-size:12.5px;font-weight:700;border:1px solid var(--teal);border-radius:4px;
+  padding:2px 6px;width:100%;outline:none;}
+
+/* ══════════════ 維修頁 ══════════════ */
+#view-maint{overflow:auto;padding:0 0 60px;}
+#maint-bar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--border);
+  padding:12px 18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);}
+#maint-bar .mb-title{font-size:14px;font-weight:700;}
+#maint-download-all-xlsx{white-space:nowrap;}
+#maint-bar .mb-stat{font-size:11.5px;color:var(--ink3);}
+#maint-bar .mb-ctl,#maint-bar .mb-chk{font-size:11.5px;color:var(--ink2);display:flex;gap:5px;align-items:center;}
+#maint-bar select{font-size:11.5px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;}
+#maint-tools{margin:12px 18px 0;border:1px solid var(--border);border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+#maint-tools-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--border);}
+#maint-tools-head .mt-tools-title{font-size:11.5px;font-weight:800;color:var(--ink2);}
+#maint-tools-head .mt-tools-note{font-size:10.5px;color:var(--ink3);}
+#maint-tools-head .btn{margin-left:auto;padding:4px 9px;font-size:10.5px;}
+#maint-color-panel{padding:10px 12px 12px;}
+#maint-color-note{font-size:10.5px;color:var(--ink3);line-height:1.6;margin-bottom:9px;}
+#maint-color-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px 14px;}
+#maint-color-list .ic-color-row{min-width:0;}
+#maint-warn{margin:14px 18px 0;}
+#maint-warn .mw-box{border:1px solid #f0c987;background:#fff8ec;border-radius:8px;padding:11px 14px;
+  font-size:11.5px;line-height:1.75;color:#7a5312;}
+#maint-warn .mw-box b{color:#8a4b00;}
+#maint-warn .mw-ids{margin-top:5px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;
+  color:#8a5a1a;word-break:break-all;}
+#maint-list{padding:14px 18px 0;}
+#view-maint{overflow:hidden;padding:0;}
+#view-maint.active{display:flex;}
+#maint-layout{display:flex;width:100%;height:100%;}
+#maint-side{width:340px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;}
+#maint-side>*{flex-shrink:0;}
+#maint-side::-webkit-scrollbar{width:10px;}
+#maint-side::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px;border:3px solid var(--panel);}
+#maint-bar{position:static;border-bottom:1px solid var(--border);padding:18px 16px 14px;
+  display:flex;flex-direction:column;align-items:stretch;gap:10px;box-shadow:none;}
+#maint-bar .mb-title{font-size:15px;font-weight:800;}
+#maint-bar .mb-ctl{flex-direction:column;align-items:stretch;gap:5px;}
+#maint-bar .mb-chk{align-items:center;gap:7px;}
+#maint-bar select{width:100%;height:30px;}
+#maint-bar .btn{width:100%;}
+#maint-tools{margin:0 16px 14px;}
+#maint-tools-head{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+#maint-tools-head .mt-tools-title,#maint-tools-head .mt-tools-note{grid-column:1/-1;}
+#maint-tools-head .btn{margin-left:0;width:100%;}
+#maint-color-list{display:flex;flex-direction:column;gap:8px;}
+#maint-warn{margin:0 16px 14px;}
+#maint-canvas-area{flex:1;min-width:0;overflow:auto;padding:24px;}
+#maint-canvas-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+#maint-canvas-toolbar h2{font-size:15px;font-weight:800;margin-right:auto;}
+#maint-canvas-toolbar .mb-stat{font-size:11.5px;color:var(--ink3);}
+#maint-list{padding:0 0 60px;}
+.mt-group{font-size:13px;font-weight:700;margin:22px 0 10px;padding-bottom:6px;
+  border-bottom:2px solid var(--teal);color:var(--teal-dark);}
+.mt-item{margin-bottom:20px;}
+.mt-head{display:flex;gap:9px;align-items:baseline;margin-bottom:6px;flex-wrap:wrap;}
+.mt-head .mt-name{font-size:12.5px;font-weight:700;}
+.mt-head .mt-id{font-size:10.5px;color:var(--ink3);font-family:ui-monospace,Menlo,Consolas,monospace;}
+.mt-head .mt-size{font-size:10.5px;color:var(--ink3);}
+.mt-head .mt-badge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;
+  background:#fdecc8;color:#8a4b00;border:1px solid #f0c987;}
+.mt-stage{position:relative;overflow:hidden;background:#fff;border:1px solid var(--border);
+  border-radius:8px;transform-origin:top left;}
+.mt-stage-wrap{overflow:auto;}
+.maint-exposure-wrap{overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px;box-sizing:content-box;}
+.maint-exposure-frame{display:block;border:0;background:#1a1a1a;transform-origin:top left;}
+
+/* 顯示邊界：圖片框藍虛線、文字框橘虛線，方便看框有沒有對、字有沒有超出去 */
+#maint-list.show-box .mt-stage [data-img-field]{outline:1px dashed rgba(0,122,204,.85);outline-offset:-1px;}
+#maint-list.show-box .mt-stage [contenteditable="true"]{outline:1px dashed rgba(230,120,20,.85);outline-offset:-1px;}
+#maint-list .mt-item.is-unreg .mt-stage{border-color:#f0c987;box-shadow:0 0 0 2px #fdf1dc;}
+#maint-list.hide-unreg .mt-item.is-unreg{display:none;}
+
+#edit-banner{display:none;position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+  background:var(--ink);color:#fff;font-size:12px;padding:9px 16px;border-radius:999px;
+  box-shadow:var(--shadow-md);z-index:49;align-items:center;gap:12px;}
+#edit-banner.show{display:flex;}
+#edit-banner button{background:var(--teal);border:none;color:#fff;font-size:11.5px;
+  padding:5px 12px;border-radius:999px;cursor:pointer;font-weight:700;}
+#edit-banner button.relock{background:rgba(255,255,255,.15);}
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <nav id="nav-rail" aria-label="主要導覽">
+    <div class="nav-logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 2.8 20 7.4v9.2L12 21.2 4 16.6V7.4Z"/><path d="m4 7.4 8 4.6 8-4.6M12 12v9.2"/></svg>
+    </div>
+    <button class="nav-item" data-view="home" title="首頁">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3.5 10.7 8.5-7 8.5 7"/><path d="M5.5 9.4V21h13V9.4M9.2 21v-7.2h5.6V21"/></svg></span><span class="lbl">首頁</span>
+    </button>
+    <button class="nav-item" data-view="generator" title="工單生成器">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg></span><span class="lbl">工單生成器</span>
+    </button>
+    <button class="nav-item" data-view="exposure" title="曝光資源">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></span><span class="lbl">曝光資源</span>
+    </button>
+    <button class="nav-item" data-view="import" title="匯入工單">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></span><span class="lbl">匯入工單</span>
+    </button>
+    <button class="nav-item" data-view="bottom" title="吸底">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12v5H6z"/><path d="M4 12h16v8H4z"/><path d="M8 12V9M16 12V9"/><path d="M8 16h8"/></svg></span><span class="lbl">吸底</span>
+    </button>
+    <button class="nav-item" data-view="maint" title="維修">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.1a4.4 4.4 0 0 0-5.8 5.8L3.6 17.2a2.2 2.2 0 0 0 3.2 3.2l5.3-5.3a4.4 4.4 0 0 0 5.8-5.8l-3 3-3.2-.8-.8-3.2Z"/></svg></span><span class="lbl">維修</span>
+    </button>
+  </nav>
+
+  <div id="views">
+
+    <!-- ══════════════ 首頁：入口 ══════════════ -->
+    <div id="view-home" class="view">
+      <div id="home-wrap">
+        <div id="home-head">
+          <h1><svg class="home-title-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 20 7.4v9.2L12 21.2 4 16.6V7.4Z"/><path d="m4 7.4 8 4.6 8-4.6M12 12v9.2"/></svg>副區版位工具</h1>
+          <p>選一個入口開始</p>
+        </div>
+        <div id="home-cards">
+          <button class="home-card" data-goto="generator">
+            <div class="hc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg></div>
+            <div class="hc-title">工單生成器</div>
+            <div class="hc-desc">拖拉排版、產生工單試算表</div>
+          </button>
+          <button class="home-card" data-goto="exposure">
+            <div class="hc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></div>
+            <div class="hc-title">曝光資源</div>
+            <div class="hc-desc">BN／DDCARD／Search 等曝光版位編輯器</div>
+          </button>
+          <button class="home-card" data-goto="import">
+            <div class="hc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></div>
+            <div class="hc-title">匯入工單</div>
+            <div class="hc-desc">把填好的工單匯入，直接畫出成品</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 工單生成器（原本的畫布工具） ══════════════ -->
+    <div id="view-generator" class="view">
+      <div id="app">
+
+        <div id="palette">
+          <div id="palette-head">
+            <h1>🧩 素材庫</h1>
+            <p>把圖片拖到右邊畫布上排版。同一排只能放同一系列的圖，選了別的系列會自動反灰。</p>
+          </div>
+          <div id="palette-level">
+            <label for="level-select">等級</label>
+            <select id="level-select">
+              <option value="brand_star_mega">A Brand star (Mega)</option>
+              <option value="brand_star_mega_zj">A Brand star (Mega) 資交</option>
+              <option value="select_pkg">A 精選套裝</option>
+              <option value="mdd">A 品牌旗艦MDD</option>
+              <option value="mdd_zj">A 品牌旗艦MDD 資交</option>
+              <option value="bod_a">B+ BOD A</option>
+              <option value="bod_a_zj">B+ BOD A 資交</option>
+              <option value="bod_b_mega">B+ BOD B (Mega)</option>
+              <option value="basic">B+ 基礎套裝</option>
+              <option value="jbp_multi">B JBP多店</option>
+              <option value="gold_mega">B 金牌 (Mega)</option>
+            </select>
+            <div class="lv-hint" id="level-hint"></div>
+          </div>
+          <div id="palette-tabs">
+            <button class="ptab active" data-ptab="subarea">副區</button>
+            <button class="ptab" data-ptab="msbn">MSBN</button>
+            <button class="ptab" data-ptab="sticky">吸底</button>
+          </div>
+          <div id="palette-scroll"></div>
+          <div id="palette-footer">
+            <button class="btn ghost" id="btn-clear-cache" title="清掉這個工具存在瀏覽器裡的暫存（上次畫面、畫布內容、縮放等），重新整理回到全新狀態">🧹 清除本機暫存並重新整理</button>
+          </div>
+        </div>
+
+        <div id="canvas-area">
+          <div id="toolbar">
+            <h2>版位畫布</h2>
+            <label id="zoom-wrap">顯示
+              <select id="canvas-zoom">
+                <option value="0.5">50%</option>
+                <option value="0.6">60%</option>
+                <option value="0.7">70%</option>
+                <option value="0.8">80%</option>
+                <option value="0.9">90%</option>
+                <option value="1">100%</option>
+              </select>
+            </label>
+            <button class="btn ghost" id="btn-clear">🗑 清空畫布</button>
+            <button class="btn" id="btn-json">⬇ 下載排版暫存檔</button>
+            <button class="btn" id="btn-sample">⬇ 下載Demo圖</button>
+            <button class="btn" id="btn-xlsx">⬇ 下載工單</button>
+            <button class="btn" id="btn-upload-generator-snapshot" type="button">⬆ 上傳暫存檔</button>
+            <input type="file" id="generator-snapshot-input" accept=".json,application/json" hidden>
+            <button class="btn primary" id="btn-all">⬇ 下載全部</button>
+          </div>
+          <div id="canvas-info"></div>
+          <div id="stage"><div id="row"></div></div>
+          <div id="footnote">
+            本機暫存已開啟：排版內容會自動存在這台瀏覽器裡，重新整理頁面不會消失。「下載試算表／JSON」會依畫布上目前放的每一格圖片，帶出對應的欄位（促標／LOGO圖／商品／品名／警語／圓標／CTA）跟字數上限。
+          </div>
+        </div>
+
+        <div id="bottom-tool-wrap" aria-hidden="true">
+          <iframe id="bottom-tool-frame" title="吸底圖便捷編輯器" allow="clipboard-write; clipboard-read"></iframe>
+          <div id="bottom-tool-fallback">
+            <div class="btf-icon">📌</div>
+            <div class="btf-title">找不到吸底工具</div>
+            <div class="btf-desc">請確認 <b>bottom/index.html</b> 與整個 <b>bottom/</b> 資料夾，
+              都放在主程式 index.html 的同一層。</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════ 曝光資源（JBP 編輯器，放在同層的 jbp/ 資料夾，用 iframe 載入） ══════════════ -->
+    <div id="view-exposure" class="view">
+      <div id="exposure-wrap">
+        <iframe id="exposure-frame" title="曝光資源" allow="clipboard-write; clipboard-read"></iframe>
+        <div id="exposure-fallback">
+          <div class="ef-icon">🖼️</div>
+          <div class="ef-title">找不到「曝光資源」的程式檔</div>
+          <div class="ef-desc">請把整包 JBP 編輯器（jbpbn.html、js/、html/、bgimg/、fonts/、bn測底圖/、banwords.xlsx …）<br>
+            放到跟這個 index.html 同一層的 <b>jbp/</b> 資料夾裡，重新整理即可。</div>
+          <div class="ef-desc">目前找的路徑：<b>jbp/jbpbn.html</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 匯入工單 ══════════════ -->
+    <div id="view-import" class="view">
+      <div id="import-app">
+
+        <div id="import-side">
+          <div id="import-side-head">
+            <h1><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg> 匯入工單</h1>
+            <p>把填好的工單（.xlsx 或本工具下載的 .json）拖進來，或點擊選檔，會依內容自動畫出對應版位，並可以再編輯文字。</p>
+          </div>
+          <div id="import-drop">
+            <div class="id-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M9 12h6M9 16h6"/></svg></div>
+            <div class="id-text"><b>拖曳檔案到這裡</b>或點擊選擇</div>
+            <input type="file" id="import-file-input" accept=".xlsx,.json" hidden>
+          </div>
+          <button class="btn" id="import-generator-load" type="button"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg> 載入工單生成器版配 <span class="igl-count">0 格</span></button>
+          <div id="import-generator-hint">在工單生成器排好版後，請按上方按鈕才載入到匯入工單畫布；生成器編輯期間不會自動同步。</div>
+          <button class="btn ghost" id="btn-preview-all" style="margin:0 16px 12px;width:calc(100% - 32px);"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m7 15 3-3 2.2 2.2 2.8-3.2 3 3"/></svg> 直接預覽全部版位（不用匯入檔案）</button>
+          <div id="import-log"></div>
+
+          <div id="import-img-section">
+            <div id="import-img-head"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg> 圖片素材（可一次選多張）</div>
+            <div id="import-img-drop">
+              <div class="id-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></div>
+              <div class="id-text">拖曳圖片到這裡，或點擊選擇</div>
+              <input type="file" id="import-img-input" accept="image/*" multiple hidden>
+            </div>
+            <input type="file" id="imp-field-img-input" accept="image/*" hidden>
+            <div id="import-img-gallery"><div class="im-empty">還沒有上傳圖片</div></div>
+          </div>
+
+          <div id="import-color-section">
+            <div id="import-color-head">
+              <span><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="8.5" cy="10" r="1"/><circle cx="12" cy="7.8" r="1"/><circle cx="15.5" cy="10" r="1"/><path d="M16.5 16.5c-.8.8-1.8 1.2-3 1.2h-1.2"/></svg> 統一顏色</span>
+              <button class="btn ghost" id="btn-color-reset-all" title="全部改回每個版位原本的顏色"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8a8 8 0 1 1-.2 7.3"/><path d="M5 3.8v4.5h4.5"/></svg> 全部還原</button>
+            </div>
+            <div id="import-color-note">改一個顏色，畫布上<b>所有版位一起變</b>。沒改過的欄位會顯示版位目前實際的色號。
+              背景色跟「曝光資源」<b>雙向連動</b>，兩邊改都會同步。</div>
+            <div id="import-color-list"></div>
+          </div>
+
+          <div id="import-demo-bar">
+            <button class="btn ghost" id="btn-import-demo" type="button" title="讀取同層「測試工單與圖片」資料夾中的 demo 工單與圖片">
+              <svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 5.5V3.8h8v1.7M8 10h8M8 14h5"/><path d="m16 15.5 2 2 3-3"/></svg>
+              匯入demo工單
+            </button>
+            <div class="demo-hint">從同層「測試工單與圖片」資料夾載入示範內容</div>
+          </div>
+
+        </div>
+
+        <div id="import-canvas-area">
+          <div id="import-toolbar">
+            <h2>匯入預覽</h2>
+            <label id="import-zoom-wrap">顯示
+              <select id="import-canvas-zoom">
+                <option value="0.5">50%</option>
+                <option value="0.6">60%</option>
+                <option value="0.7">70%</option>
+                <option value="0.8">80%</option>
+                <option value="0.9">90%</option>
+                <option value="1">100%</option>
+              </select>
+            </label>
+          </div>
+          <div id="import-canvas-layout">
+            <div id="import-canvas-main">
+              <div id="import-empty2">
+                <div class="ie-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></div>
+                <h2>還沒有匯入任何工單</h2>
+                <p>左側拖曳或選擇檔案開始</p>
+              </div>
+              <div id="import-preview-list"></div>
+              <div id="import-bottom-preview-frame-wrap" aria-hidden="true"><iframe id="import-bottom-preview-frame" title="匯入工單吸底成品渲染器" tabindex="-1"></iframe></div>
+
+            </div>
+          </div>
+        </div>
+        <aside id="import-canvas-tools" aria-label="匯入工單操作工具列">
+          <div id="import-canvas-tools-head">版位編輯與操作</div>
+          <div class="import-tools-section-title">文字／欄位編輯</div>
+          <div id="import-fields-scroll"></div>
+          <div class="import-tools-section-title" id="import-image-tools-title">圖片操作</div>
+          <div id="import-block-tools"><div class="import-block-tool-empty">匯入工單後，這裡會顯示商品圖／人物圖的編輯、刪除與上下移工具。</div></div>
+          <div id="import-dl-bar">
+            <button class="btn primary" id="btn-dl-image"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 20h16"/></svg> 下載圖片＋編輯暫存檔</button>
+            <button class="btn" id="btn-upload-snapshot" style="width:100%;margin-top:8px;"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V10"/><path d="m7.8 13.8 4.2-4.2 4.2 4.2"/><path d="M4 4h16v5"/></svg> 上傳暫存檔還原編輯</button>
+            <input type="file" id="snapshot-file-input" accept=".json" hidden>
+            <div class="dl-hint">下載會同時給成品 PNG 與暫存 .json（含全部編輯結果）；之後用「上傳暫存檔」即可完整還原繼續編輯。</div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+
+    <!-- ══════════════ 吸底：從匯入工單取得工單資料後獨立編輯 ══════════════ -->
+    <div id="view-bottom" class="view">
+      <div id="bottom-standalone-wrap">
+        <div id="bottom-standalone-head"><span>📌 吸底編輯器</span><span>資料來源：請先在「匯入工單」上傳工單；匯出的吸底編輯會一併保留 <b>LOGO、ICON、文案與分頁設定</b>。</span></div>
+        <iframe id="bottom-standalone-frame" title="獨立吸底圖便捷編輯器" allow="clipboard-write; clipboard-read"></iframe>
+        <div id="bottom-standalone-fallback">
+          <div class="bsf-icon">📌</div>
+          <div class="bsf-title">找不到吸底工具</div>
+          <div class="bsf-desc">請確認 <b>bottom/index.html</b> 與整個 <b>bottom/</b> 資料夾，放在主程式 index.html 的同一層。</div>
+        </div>
+      </div>
+    </div>
+    <!-- ══════════════ 維修：把所有版位列出來測試 ══════════════ -->
+    <div id="view-maint" class="view">
+      <div id="maint-layout">
+        <div id="maint-side">
+          <div id="maint-bar">
+            <div class="mb-title">🔧 維修 — 全部版位</div>
+            <button class="btn primary" id="maint-download-all-xlsx" type="button" title="下載副區與 MSBN 全部版位，使用目前 MS Layout 的工單排版格式">⬇ 下載全版位試算表</button>
+            <label class="mb-ctl">分類
+              <select id="maint-filter">
+                <option value="all">全部</option>
+                <option value="exposure">曝光資源所有版位</option>
+                <option value="subarea">只看副區</option>
+                <option value="msbn">只看 MSBN</option>
+                <option value="unreg">只看未註冊</option>
+              </select>
+            </label>
+            <label class="mb-ctl">文字
+              <select id="maint-text">
+                <option value="design">設計稿文字</option>
+                <option value="limit">字數上限</option>
+                <option value="default">版位預設</option>
+                <option value="empty">留空</option>
+              </select>
+            </label>
+            <label class="mb-ctl">縮放
+              <select id="maint-zoom">
+                <option value="0.4">40%</option>
+                <option value="0.6">60%</option>
+                <option value="0.8">80%</option>
+                <option value="1" selected>100%</option>
+              </select>
+            </label>
+            <label class="mb-chk"><input type="checkbox" id="maint-show-box"> 顯示圖片框／文字框邊界</label>
+            <label class="mb-chk"><input type="checkbox" id="maint-hide-unreg" checked> 隱藏未註冊的版位</label>
+            <button class="btn ghost" id="maint-reload">↻ 重新載入</button>
+          </div>
+          <div id="maint-tools">
+            <div id="maint-tools-head">
+              <span class="mt-tools-title">🧪 模擬操作工具列</span>
+              <span class="mt-tools-note">只作用於維修區記憶體，重新載入或離開後還原，不會修改匯入工單暫存</span>
+              <button class="btn ghost" id="maint-reset-colors" type="button">↺ 還原測試顏色</button>
+              <button class="btn" id="maint-toggle-colors" type="button">🎨 收起統一顏色</button>
+            </div>
+            <div id="maint-color-panel">
+              <div id="maint-color-note">可直接模擬統一顏色修改；卡片背景色只同步套用到 MSBN C／D 卡片，副區與 MSBN A／B 固定白色。點畫布上的可換色色塊，也會定位到這裡。</div>
+              <div id="maint-color-list"></div>
+            </div>
+          </div>
+          <div id="maint-warn"></div>
+        </div>
+        <div id="maint-canvas-area">
+          <div id="maint-canvas-toolbar">
+            <h2>維修預覽</h2>
+            <div class="mb-stat" id="maint-stat">載入中…</div>
+          </div>
+          <div id="maint-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ══════════════ 編輯權限鎖 ══════════════ -->
+<button id="lock-fab" title="解鎖編輯家族名稱">🔒</button>
+
+<div id="pin-overlay">
+  <div id="pin-box">
+    <div id="pin-title">輸入 4 碼密碼解鎖編輯</div>
+    <input id="pin-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+    <div id="pin-error">密碼錯誤，再試一次</div>
+    <div id="pin-actions">
+      <button class="btn ghost" id="pin-cancel">取消</button>
+      <button class="btn primary" id="pin-submit">解鎖</button>
+    </div>
+  </div>
+</div>
+
+<div id="edit-banner">
+  <span>🔓 編輯模式中，家族名稱可以點兩下修改</span>
+  <button id="btn-export-config">⬇ 下載設定 JSON</button>
+  <button class="relock" id="btn-relock">鎖上</button>
+</div>
+
+<div id="app-loading" aria-hidden="true">
+  <div id="app-loading-card" role="status" aria-live="polite">
+    <div id="app-loading-head">
+      <span id="app-loading-label">LOADING</span>
+      <span id="app-loading-percent">0%</span>
+    </div>
+    <div id="app-loading-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="app-loading-fill"></div>
+    </div>
+    <div id="app-loading-note">請稍候…</div>
+  </div>
+</div>
+
+<script id="wo-manifest" type="application/json">
+{
+  "canvasWidth": 1200,
+  "rowHeight": 350,
+  "families": {
+    "A": {
+      "width": 400,
+      "height": 350,
+      "maxPerRow": 3,
+      "items": [
+        {
+          "variant": 1,
+          "combo": 1,
+          "file": "副區-A-1-1.jpg",
+          "label": "款式 1-1"
+        },
+        {
+          "variant": 1,
+          "combo": 2,
+          "file": "副區-A-1-2.jpg",
+          "label": "款式 1-2"
+        },
+        {
+          "variant": 1,
+          "combo": 3,
+          "file": "副區-A-1-3.jpg",
+          "label": "款式 1-3"
+        },
+        {
+          "variant": 1,
+          "combo": 4,
+          "file": "副區-A-1-4.jpg",
+          "label": "款式 1-4"
+        },
+        {
+          "variant": 2,
+          "combo": 1,
+          "file": "副區-A-2-1.jpg",
+          "label": "款式 2-1"
+        },
+        {
+          "variant": 2,
+          "combo": 2,
+          "file": "副區-A-2-2.jpg",
+          "label": "款式 2-2"
+        },
+        {
+          "variant": 2,
+          "combo": 3,
+          "file": "副區-A-2-3.jpg",
+          "label": "款式 2-3"
+        },
+        {
+          "variant": 2,
+          "combo": 4,
+          "file": "副區-A-2-4.jpg",
+          "label": "款式 2-4"
+        },
+        {
+          "variant": 3,
+          "combo": 1,
+          "file": "副區-A-3-1.jpg",
+          "label": "款式 3-1"
+        },
+        {
+          "variant": 3,
+          "combo": 2,
+          "file": "副區-A-3-2.jpg",
+          "label": "款式 3-2"
+        },
+        {
+          "variant": 3,
+          "combo": 3,
+          "file": "副區-A-3-3.jpg",
+          "label": "款式 3-3"
+        },
+        {
+          "variant": 3,
+          "combo": 4,
+          "file": "副區-A-3-4.jpg",
+          "label": "款式 3-4"
+        },
+        {
+          "variant": 4,
+          "combo": 1,
+          "file": "副區-A-4-1.jpg",
+          "label": "款式 4-1"
+        },
+        {
+          "variant": 4,
+          "combo": 2,
+          "file": "副區-A-4-2.jpg",
+          "label": "款式 4-2"
+        },
+        {
+          "variant": 4,
+          "combo": 3,
+          "file": "副區-A-4-3.jpg",
+          "label": "款式 4-3"
+        },
+        {
+          "variant": 4,
+          "combo": 4,
+          "file": "副區-A-4-4.jpg",
+          "label": "款式 4-4"
+        },
+        {
+          "variant": 5,
+          "combo": 1,
+          "file": "副區-A-5-1.jpg",
+          "label": "款式 5-1"
+        },
+        {
+          "variant": 5,
+          "combo": 2,
+          "file": "副區-A-5-2.jpg",
+          "label": "款式 5-2"
+        },
+        {
+          "variant": 5,
+          "combo": 3,
+          "file": "副區-A-5-3.jpg",
+          "label": "款式 5-3"
+        }
+      ]
+    },
+    "B": {
+      "width": 400,
+      "height": 350,
+      "maxPerRow": 3,
+      "items": [
+        {
+          "variant": 1,
+          "combo": 1,
+          "file": "副區-B-1-1.jpg",
+          "label": "款式 1-1"
+        },
+        {
+          "variant": 1,
+          "combo": 2,
+          "file": "副區-B-1-2.jpg",
+          "label": "款式 1-2"
+        },
+        {
+          "variant": 1,
+          "combo": 3,
+          "file": "副區-B-1-3.jpg",
+          "label": "款式 1-3"
+        },
+        {
+          "variant": 1,
+          "combo": 4,
+          "file": "副區-B-1-4.jpg",
+          "label": "款式 1-4"
+        },
+        {
+          "variant": 2,
+          "combo": 1,
+          "file": "副區-B-2-1.jpg",
+          "label": "款式 2-1"
+        },
+        {
+          "variant": 2,
+          "combo": 2,
+          "file": "副區-B-2-2.jpg",
+          "label": "款式 2-2"
+        },
+        {
+          "variant": 2,
+          "combo": 3,
+          "file": "副區-B-2-3.jpg",
+          "label": "款式 2-3"
+        },
+        {
+          "variant": 2,
+          "combo": 4,
+          "file": "副區-B-2-4.jpg",
+          "label": "款式 2-4"
+        },
+        {
+          "variant": 3,
+          "combo": 1,
+          "file": "副區-B-3-1.jpg",
+          "label": "款式 3-1"
+        },
+        {
+          "variant": 3,
+          "combo": 2,
+          "file": "副區-B-3-2.jpg",
+          "label": "款式 3-2"
+        },
+        {
+          "variant": 3,
+          "combo": 3,
+          "file": "副區-B-3-3.jpg",
+          "label": "款式 3-3"
+        },
+        {
+          "variant": 3,
+          "combo": 4,
+          "file": "副區-B-3-4.jpg",
+          "label": "款式 3-4"
+        },
+        {
+          "variant": 4,
+          "combo": 1,
+          "file": "副區-B-4-1.jpg",
+          "label": "款式 4-1"
+        },
+        {
+          "variant": 4,
+          "combo": 2,
+          "file": "副區-B-4-2.jpg",
+          "label": "款式 4-2"
+        },
+        {
+          "variant": 4,
+          "combo": 3,
+          "file": "副區-B-4-3.jpg",
+          "label": "款式 4-3"
+        },
+        {
+          "variant": 4,
+          "combo": 4,
+          "file": "副區-B-4-4.jpg",
+          "label": "款式 4-4"
+        },
+        {
+          "variant": 5,
+          "combo": 1,
+          "file": "副區-B-5-1.jpg",
+          "label": "款式 5-1"
+        },
+        {
+          "variant": 5,
+          "combo": 2,
+          "file": "副區-B-5-2.jpg",
+          "label": "款式 5-2"
+        },
+        {
+          "variant": 5,
+          "combo": 3,
+          "file": "副區-B-5-3.jpg",
+          "label": "款式 5-3"
+        },
+        {
+          "variant": 5,
+          "combo": 4,
+          "file": "副區-B-5-4.jpg",
+          "label": "款式 5-4"
+        }
+      ]
+    },
+    "C": {
+      "width": 600,
+      "height": 350,
+      "maxPerRow": 2,
+      "items": [
+        {
+          "variant": 1,
+          "combo": 1,
+          "file": "副區-C-1-1.jpg",
+          "label": "款式 1-1"
+        },
+        {
+          "variant": 1,
+          "combo": 2,
+          "file": "副區-C-1-2.jpg",
+          "label": "款式 1-2"
+        },
+        {
+          "variant": 1,
+          "combo": 3,
+          "file": "副區-C-1-3.jpg",
+          "label": "款式 1-3"
+        },
+        {
+          "variant": 2,
+          "combo": 1,
+          "file": "副區-C-2-1.jpg",
+          "label": "款式 2-1"
+        },
+        {
+          "variant": 2,
+          "combo": 2,
+          "file": "副區-C-2-2.jpg",
+          "label": "款式 2-2"
+        },
+        {
+          "variant": 2,
+          "combo": 3,
+          "file": "副區-C-2-3.jpg",
+          "label": "款式 2-3"
+        },
+        {
+          "variant": 3,
+          "combo": 1,
+          "file": "副區-C-3-1.jpg",
+          "label": "款式 3-1"
+        },
+        {
+          "variant": 3,
+          "combo": 2,
+          "file": "副區-C-3-2.jpg",
+          "label": "款式 3-2"
+        },
+        {
+          "variant": 3,
+          "combo": 3,
+          "file": "副區-C-3-3.jpg",
+          "label": "款式 3-3"
+        },
+        {
+          "variant": 4,
+          "combo": 1,
+          "file": "副區-C-4-1.jpg",
+          "label": "款式 4-1"
+        },
+        {
+          "variant": 4,
+          "combo": 2,
+          "file": "副區-C-4-2.jpg",
+          "label": "款式 4-2"
+        },
+        {
+          "variant": 4,
+          "combo": 3,
+          "file": "副區-C-4-3.jpg",
+          "label": "款式 4-3"
+        },
+        {
+          "variant": 4,
+          "combo": 4,
+          "file": "副區-C-4-4.jpg",
+          "label": "款式 4-4"
+        }
+      ]
+    },
+    "D": {
+      "width": 600,
+      "height": 350,
+      "maxPerRow": 2,
+      "items": [
+        {
+          "variant": 1,
+          "combo": 1,
+          "file": "副區-D-1-1.jpg",
+          "label": "款式 1-1"
+        },
+        {
+          "variant": 1,
+          "combo": 2,
+          "file": "副區-D-1-2.jpg",
+          "label": "款式 1-2"
+        },
+        {
+          "variant": 1,
+          "combo": 3,
+          "file": "副區-D-1-3.jpg",
+          "label": "款式 1-3"
+        },
+        {
+          "variant": 2,
+          "combo": 1,
+          "file": "副區-D-2-1.jpg",
+          "label": "款式 2-1"
+        },
+        {
+          "variant": 2,
+          "combo": 2,
+          "file": "副區-D-2-2.jpg",
+          "label": "款式 2-2"
+        },
+        {
+          "variant": 2,
+          "combo": 3,
+          "file": "副區-D-2-3.jpg",
+          "label": "款式 2-3"
+        },
+        {
+          "variant": 3,
+          "combo": 1,
+          "file": "副區-D-3-1.jpg",
+          "label": "款式 3-1"
+        },
+        {
+          "variant": 3,
+          "combo": 2,
+          "file": "副區-D-3-2.jpg",
+          "label": "款式 3-2"
+        },
+        {
+          "variant": 3,
+          "combo": 3,
+          "file": "副區-D-3-3.jpg",
+          "label": "款式 3-3"
+        },
+        {
+          "variant": 4,
+          "combo": 1,
+          "file": "副區-D-4-1.jpg",
+          "label": "款式 4-1"
+        },
+        {
+          "variant": 4,
+          "combo": 2,
+          "file": "副區-D-4-2.jpg",
+          "label": "款式 4-2"
+        },
+        {
+          "variant": 4,
+          "combo": 3,
+          "file": "副區-D-4-3.jpg",
+          "label": "款式 4-3"
+        },
+        {
+          "variant": 4,
+          "combo": 4,
+          "file": "副區-D-4-4.jpg",
+          "label": "款式 4-4"
+        }
+      ]
+    },
+    "E": {
+      "width": 600,
+      "height": 350,
+      "maxPerRow": 2,
+      "items": [
+        {
+          "variant": 1,
+          "combo": 1,
+          "file": "副區-E-1-1.jpg",
+          "label": "款式 1-1"
+        },
+        {
+          "variant": 1,
+          "combo": 2,
+          "file": "副區-E-1-2.jpg",
+          "label": "款式 1-2"
+        },
+        {
+          "variant": 1,
+          "combo": 3,
+          "file": "副區-E-1-3.jpg",
+          "label": "款式 1-3"
+        },
+        {
+          "variant": 2,
+          "combo": 1,
+          "file": "副區-E-2-1.jpg",
+          "label": "款式 2-1"
+        },
+        {
+          "variant": 2,
+          "combo": 2,
+          "file": "副區-E-2-2.jpg",
+          "label": "款式 2-2"
+        },
+        {
+          "variant": 2,
+          "combo": 3,
+          "file": "副區-E-2-3.jpg",
+          "label": "款式 2-3"
+        }
+      ]
+    },
+    "F": {
+      "width": 300,
+      "height": 350,
+      "maxPerRow": 4,
+      "items": [
+        {
+          "variant": 1,
+          "combo": 1,
+          "file": "副區-F-1-1.jpg",
+          "label": "款式 1-1"
+        }
+      ]
+    }
+  }
+}
+</script>
+
+<script id="wo-fields" type="application/json">
+{
+  "副區-A-1-1.jpg": {
+    "family": "A",
+    "variant": 1,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-1-2.jpg": {
+    "family": "A",
+    "variant": 1,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-1-3.jpg": {
+    "family": "A",
+    "variant": 1,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-1-4.jpg": {
+    "family": "A",
+    "variant": 1,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-2-1.jpg": {
+    "family": "A",
+    "variant": 2,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-2-2.jpg": {
+    "family": "A",
+    "variant": 2,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-2-3.jpg": {
+    "family": "A",
+    "variant": 2,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-2-4.jpg": {
+    "family": "A",
+    "variant": 2,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-3-1.jpg": {
+    "family": "A",
+    "variant": 3,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-A-3-2.jpg": {
+    "family": "A",
+    "variant": 3,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-A-3-3.jpg": {
+    "family": "A",
+    "variant": 3,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-A-3-4.jpg": {
+    "family": "A",
+    "variant": 3,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-A-4-1.jpg": {
+    "family": "A",
+    "variant": 4,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "4+4",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 5,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-A-4-2.jpg": {
+    "family": "A",
+    "variant": 4,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-A-4-3.jpg": {
+    "family": "A",
+    "variant": 4,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-A-4-4.jpg": {
+    "family": "A",
+    "variant": 4,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-A-5-1.jpg": {
+    "family": "A",
+    "variant": 5,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "4+4",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-5-2.jpg": {
+    "family": "A",
+    "variant": 5,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "4+4",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 5,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-A-5-3.jpg": {
+    "family": "A",
+    "variant": 5,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "4+4",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 5,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-B-1-1.jpg": {
+    "family": "B",
+    "variant": 1,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-1-2.jpg": {
+    "family": "B",
+    "variant": 1,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-1-3.jpg": {
+    "family": "B",
+    "variant": 1,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-1-4.jpg": {
+    "family": "B",
+    "variant": 1,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-2-1.jpg": {
+    "family": "B",
+    "variant": 2,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-2-2.jpg": {
+    "family": "B",
+    "variant": 2,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-2-3.jpg": {
+    "family": "B",
+    "variant": 2,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-2-4.jpg": {
+    "family": "B",
+    "variant": 2,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-3-1.jpg": {
+    "family": "B",
+    "variant": 3,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-B-3-2.jpg": {
+    "family": "B",
+    "variant": 3,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-B-3-3.jpg": {
+    "family": "B",
+    "variant": 3,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-B-3-4.jpg": {
+    "family": "B",
+    "variant": 3,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-B-4-1.jpg": {
+    "family": "B",
+    "variant": 4,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "4+4",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 5,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-B-4-2.jpg": {
+    "family": "B",
+    "variant": 4,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-B-4-3.jpg": {
+    "family": "B",
+    "variant": 4,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 10,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-B-4-4.jpg": {
+    "family": "B",
+    "variant": 4,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-B-5-1.jpg": {
+    "family": "B",
+    "variant": 5,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "4+4",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-5-2.jpg": {
+    "family": "B",
+    "variant": 5,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "4+4",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 5,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-B-5-3.jpg": {
+    "family": "B",
+    "variant": 5,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "4+4",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 5,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-B-5-4.jpg": {
+    "family": "B",
+    "variant": 5,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "4+4",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 5,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-C-1-1.jpg": {
+    "family": "C",
+    "variant": 1,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      }
+    ]
+  },
+  "副區-C-1-2.jpg": {
+    "family": "C",
+    "variant": 1,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      }
+    ]
+  },
+  "副區-C-1-3.jpg": {
+    "family": "C",
+    "variant": 1,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      }
+    ]
+  },
+  "副區-C-2-1.jpg": {
+    "family": "C",
+    "variant": 2,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-C-2-2.jpg": {
+    "family": "C",
+    "variant": 2,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-C-2-3.jpg": {
+    "family": "C",
+    "variant": 2,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-C-3-1.jpg": {
+    "family": "C",
+    "variant": 3,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-C-3-2.jpg": {
+    "family": "C",
+    "variant": 3,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-C-3-3.jpg": {
+    "family": "C",
+    "variant": 3,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-C-4-1.jpg": {
+    "family": "C",
+    "variant": 4,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "6+6",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 8,
+        "count": 1
+      }
+    ]
+  },
+  "副區-C-4-2.jpg": {
+    "family": "C",
+    "variant": 4,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "6+6",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-C-4-3.jpg": {
+    "family": "C",
+    "variant": 4,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "6+6",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-C-4-4.jpg": {
+    "family": "C",
+    "variant": 4,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "6+6",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-D-1-1.jpg": {
+    "family": "D",
+    "variant": 1,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      }
+    ]
+  },
+  "副區-D-1-2.jpg": {
+    "family": "D",
+    "variant": 1,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      }
+    ]
+  },
+  "副區-D-1-3.jpg": {
+    "family": "D",
+    "variant": 1,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      }
+    ]
+  },
+  "副區-D-2-1.jpg": {
+    "family": "D",
+    "variant": 2,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-D-2-2.jpg": {
+    "family": "D",
+    "variant": 2,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-D-2-3.jpg": {
+    "family": "D",
+    "variant": 2,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-D-3-1.jpg": {
+    "family": "D",
+    "variant": 3,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-D-3-2.jpg": {
+    "family": "D",
+    "variant": 3,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-D-3-3.jpg": {
+    "family": "D",
+    "variant": 3,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 16,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-D-4-1.jpg": {
+    "family": "D",
+    "variant": 4,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "6+6",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 8,
+        "count": 1
+      }
+    ]
+  },
+  "副區-D-4-2.jpg": {
+    "family": "D",
+    "variant": 4,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "6+6",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 1
+      }
+    ]
+  },
+  "副區-D-4-3.jpg": {
+    "family": "D",
+    "variant": 4,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "6+6",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": null,
+        "count": 1,
+        "note": "icon-only"
+      }
+    ]
+  },
+  "副區-D-4-4.jpg": {
+    "family": "D",
+    "variant": 4,
+    "combo": 4,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 12,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": "6+6",
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "CTA",
+        "limit": 3,
+        "count": 1,
+        "note": "領券去"
+      }
+    ]
+  },
+  "副區-E-1-1.jpg": {
+    "family": "E",
+    "variant": 1,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 5,
+        "count": 2
+      },
+      {
+        "type": "警語",
+        "limit": 6,
+        "count": 2
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 2
+      }
+    ]
+  },
+  "副區-E-1-2.jpg": {
+    "family": "E",
+    "variant": 1,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 5,
+        "count": 2
+      },
+      {
+        "type": "警語",
+        "limit": 6,
+        "count": 2
+      }
+    ]
+  },
+  "副區-E-1-3.jpg": {
+    "family": "E",
+    "variant": 1,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "促標",
+        "limit": 8,
+        "count": 1
+      },
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 5,
+        "count": 2
+      }
+    ]
+  },
+  "副區-E-2-1.jpg": {
+    "family": "E",
+    "variant": 2,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 5,
+        "count": 2
+      },
+      {
+        "type": "警語",
+        "limit": 6,
+        "count": 2
+      },
+      {
+        "type": "圓標",
+        "limit": 5,
+        "count": 2
+      }
+    ]
+  },
+  "副區-E-2-2.jpg": {
+    "family": "E",
+    "variant": 2,
+    "combo": 2,
+    "fields": [
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 5,
+        "count": 2
+      },
+      {
+        "type": "警語",
+        "limit": 6,
+        "count": 2
+      }
+    ]
+  },
+  "副區-E-2-3.jpg": {
+    "family": "E",
+    "variant": 2,
+    "combo": 3,
+    "fields": [
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 5,
+        "count": 2
+      }
+    ]
+  },
+  "副區-F-1-1.jpg": {
+    "family": "F",
+    "variant": 1,
+    "combo": 1,
+    "fields": [
+      {
+        "type": "LOGO圖",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "商品",
+        "limit": null,
+        "count": 1
+      },
+      {
+        "type": "品名",
+        "limit": 5,
+        "count": 1
+      },
+      {
+        "type": "警語",
+        "limit": 6,
+        "count": 1
+      }
+    ]
+  }
+}
+</script>
+
+<!-- MSBN 版位的欄位資料：跟副區（wo-fields）同一套邏輯，直接內嵌 JSON，
+     JS 端用 JSON.parse(document.getElementById('wo-msbn-fields').textContent) 讀取，
+     不再把資料寫死成 JS 物件語法，之後要新增/修正版位只要改這段 JSON 就好，不用碰邏輯程式碼。 -->
+<script id="wo-msbn-fields" type="application/json">
+{
+  "MSBN-A-1-1.jpg": {
+    "n": 1,
+    "workOrderLayout": "text-left",
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        "圓標",
+        {
+          "type": "警語",
+          "hint": "小字最多可9個字內"
+        },
+        "CTA",
+        "簽名小字",
+        "簽名小字",
+        "商品",
+        "代言人圖",
+        "簽名圖"
+      ]
+    ]
+  },
+  "MSBN-A-1-2.jpg": {
+    "n": 1,
+    "workOrderLayout": "text-right",
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        "圓標",
+        {
+          "type": "警語",
+          "hint": "小字最多可9個字內"
+        },
+        "CTA",
+        "簽名小字",
+        "簽名小字",
+        "商品",
+        "代言人圖",
+        "簽名圖"
+      ]
+    ]
+  },
+  "MSBN-A-2-1.jpg": {
+    "n": 2,
+    "groups": [
+      [
+        "圓標",
+        "簽名小字",
+        "簽名小字",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        },
+        "商品",
+        "代言人圖",
+        "簽名圖"
+      ],
+      [
+        "圓標",
+        "簽名小字",
+        "簽名小字",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        },
+        "商品",
+        "代言人圖",
+        "簽名圖"
+      ]
+    ]
+  },
+  "MSBN-A-2-2.jpg": {
+    "n": 2,
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多6個字內"
+        },
+        "商品",
+        "贈品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排最多8個字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8個字"
+        },
+        "圓標"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多6個字內"
+        },
+        "商品",
+        "贈品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排最多8個字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8個字"
+        },
+        "圓標"
+      ]
+    ]
+  },
+  "MSBN-A-2-3.jpg": {
+    "n": 2,
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標6個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        "圓標"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標6個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        "圓標"
+      ]
+    ]
+  },
+  "MSBN-A-2-4.jpg": {
+    "n": 2,
+    "groups": [
+      [
+        "LOGO圖"
+      ],
+      [
+        "LOGO圖"
+      ]
+    ]
+  },
+  "MSBN-A-3-1.jpg": {
+    "n": 3,
+    "groups": [
+      [
+        "商品",
+        "贈品圖",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        }
+      ],
+      [
+        "商品",
+        "贈品圖",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        }
+      ],
+      [
+        "商品",
+        "贈品圖",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        }
+      ]
+    ]
+  },
+  "MSBN-A-3-2.jpg": {
+    "n": 3,
+    "groups": [
+      [
+        "LOGO圖"
+      ],
+      [
+        "LOGO圖"
+      ],
+      [
+        "LOGO圖"
+      ]
+    ]
+  },
+  "MSBN-B-1-1.jpg": {
+    "n": 1,
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可9個字內"
+        },
+        "CTA",
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        "商品圖"
+      ]
+    ]
+  },
+  "MSBN-B-1-2.jpg": {
+    "n": 1,
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可9個字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        "商品圖"
+      ]
+    ]
+  },
+  "MSBN-B-1-3.jpg": {
+    "n": 1,
+    "groups": [
+      [
+        "LOGO圖",
+        {
+          "type": "文案",
+          "hint": "文案最多10個字以內"
+        },
+        "CTA",
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        "商品圖"
+      ]
+    ]
+  },
+  "MSBN-B-1-4.jpg": {
+    "n": 1,
+    "groups": [
+      [
+        "LOGO圖",
+        {
+          "type": "文案",
+          "hint": "文案最多10個字以內"
+        },
+        "CTA",
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        {
+          "type": "代言人小字",
+          "hint": "代言人小字8字內"
+        },
+        "商品圖"
+      ]
+    ]
+  },
+  "MSBN-B-2-1.jpg": {
+    "n": 2,
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名一排6字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排6字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色5個字"
+        },
+        "CTA"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名一排6字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排6字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色5個字"
+        },
+        "CTA"
+      ]
+    ],
+    "labels": [
+      "右",
+      "左"
+    ]
+  },
+  "MSBN-B-2-2.jpg": {
+    "n": 2,
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        }
+      ]
+    ],
+    "labels": [
+      "右",
+      "左"
+    ]
+  },
+  "MSBN-B-2-3.jpg": {
+    "n": 2,
+    "workOrderColumns": {
+      "labels": ["左", "右"],
+      "showHeaders": false,
+      "groups": [[1], [0]]
+    },
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多8個字內"
+        },
+        "商品",
+        {
+          "type": "品名",
+          "hint": "品名最多可以放10個字"
+        },
+        {
+          "type": "特色",
+          "hint": "特色最多放8個字"
+        }
+      ]
+    ],
+    "labels": [
+      "右",
+      "左"
+    ]
+  },
+  "MSBN-B-3-1.jpg": {
+    "n": 3,
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標7個字以內"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        },
+        {
+          "type": "品名",
+          "hint": "品名一排最多8字"
+        }
+      ],
+      [
+        "商品",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ],
+      [
+        "商品",
+        "圓標",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ]
+    ]
+  },
+  "MSBN-B-3-2.jpg": {
+    "n": 3,
+    "groups": [
+      [
+        "商品",
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        },
+        "圓標",
+        "品名"
+      ],
+      [
+        "商品",
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        },
+        "圓標",
+        "品名"
+      ],
+      [
+        "商品",
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        },
+        "圓標",
+        "品名"
+      ]
+    ]
+  },
+  "MSBN-B-3-3.jpg": {
+    "n": 3,
+    "groups": [
+      [
+        "LOGO圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        "CTA"
+      ],
+      [
+        "LOGO圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        "CTA"
+      ],
+      [
+        "LOGO圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        "CTA"
+      ]
+    ],
+    "labels": [
+      "右",
+      "中",
+      "左"
+    ]
+  },
+  "MSBN-B-3-4.jpg": {
+    "n": 3,
+    "groups": [
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排7字內"
+        },
+        {
+          "type": "警語",
+          "hint": "警語最多放8個字"
+        }
+      ]
+    ],
+    "labels": [
+      "右",
+      "中",
+      "左"
+    ]
+  },
+  "MSBN-B-4-1.jpg": {
+    "n": 4,
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        "CTA"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        "CTA"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        "CTA"
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        "CTA"
+      ]
+    ],
+    "labels": [
+      "右",
+      "中右",
+      "中左",
+      "左"
+    ]
+  },
+  "MSBN-B-4-2.jpg": {
+    "n": 4,
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字警語6字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字警語6字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字警語6字"
+        }
+      ],
+      [
+        {
+          "type": "促標",
+          "hint": "促標5字內"
+        },
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名5字內"
+        },
+        {
+          "type": "警語",
+          "hint": "小字警語6字"
+        }
+      ]
+    ],
+    "labels": [
+      "右",
+      "中右",
+      "中左",
+      "左"
+    ]
+  },
+  "MSBN-C-1-1.jpg": {
+    "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "右"],
+      "common": [0, 6],
+      "groups": [[1, 2], [3, 4, 5]]
+    },
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內",
+          "targetKey": "promo"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy2"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy2"
+        },
+        {
+          "type": "LOGO圖",
+          "targetKey": "logoImg"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可10個字以內",
+          "targetKey": "warn"
+        }
+      ]
+    ]
+  },
+  "MSBN-C-1-2.jpg": {
+    "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "右"],
+      "common": [0, 6],
+      "groups": [[1, 2], [3, 4, 5]]
+    },
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內",
+          "targetKey": "promo"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy2"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy2"
+        },
+        {
+          "type": "LOGO圖",
+          "targetKey": "logoImg"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可10個字以內",
+          "targetKey": "warn"
+        }
+      ]
+    ]
+  },
+  "MSBN-C-1-3.jpg": {
+    "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "右"],
+      "common": [0, 5],
+      "groups": [[1, 2], [3, 4]]
+    },
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多7字內",
+          "targetKey": "promo"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy2"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy2"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排最多6字",
+          "targetKey": "copy"
+        },
+        {
+          "type": "警語",
+          "hint": "小字最多可10個字以內",
+          "targetKey": "warn"
+        }
+      ]
+    ]
+  },
+  "MSBN-C-1-4.jpg": {
+    "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "中", "右"],
+      "groups": [[2, 4, 8], [1, 3, 7], [0, 5, 6]]
+    },
+    "groups": [
+      [
+        {
+          "type": "促標",
+          "hint": "促標最多6字",
+          "targetKey": "promo"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字",
+          "targetKey": "promo2"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字",
+          "targetKey": "promo3"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字",
+          "targetKey": "copy"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字",
+          "targetKey": "copy2"
+        },
+        {
+          "type": "信用卡圖",
+          "targetKey": "productImg"
+        },
+        {
+          "type": "CTA",
+          "hint": "領券去",
+          "targetKey": "cta"
+        },
+        {
+          "type": "CTA",
+          "hint": "領券去",
+          "targetKey": "cta2"
+        },
+        {
+          "type": "CTA",
+          "hint": "刷卡去",
+          "targetKey": "cta3"
+        }
+      ]
+    ]
+  },
+  "MSBN-C-1-5.jpg": {
+    "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "中", "右"],
+      "groups": [[0], [2, 4], [1, 3, 5, 6]]
+    },
+    "groups": [
+      [
+        {
+          "type": "商品圖",
+          "targetKey": "productImg"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字",
+          "targetKey": "promo"
+        },
+        {
+          "type": "促標",
+          "hint": "促標最多6字",
+          "targetKey": "promo2"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字",
+          "targetKey": "copy"
+        },
+        {
+          "type": "文案",
+          "hint": "文案一排4字",
+          "targetKey": "copy2"
+        },
+        {
+          "type": "LOGO圖",
+          "targetKey": "logoImg"
+        },
+        {
+          "type": "CTA",
+          "hint": "領券去",
+          "targetKey": "cta"
+        }
+      ]
+    ]
+  },
+  "MSBN-D-1-1-1.jpg": {
+    "n": 2,
+    "workOrderColumns": {
+      "labels": ["左", "右"],
+      "showHeaders": false,
+      "groups": [[3, 4, 5], [0, 1, 2]]
+    },
+    "labels": [
+      "右",
+      "左"
+    ],
+    "groups": [
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排最多09字內"
+        },
+        "CTA"
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排最多09字內"
+        },
+        "CTA"
+      ]
+    ]
+  },
+  "MSBN-D-1-1-2.jpg": {
+    "n": 2,
+    "workOrderColumns": {
+      "labels": ["左", "右"],
+      "showHeaders": false,
+      "groups": [[2, 3], [0, 1]]
+    },
+    "labels": [
+      "右",
+      "左"
+    ],
+    "groups": [
+      [
+        "商品圖",
+        "CTA"
+      ],
+      [
+        "商品圖",
+        "CTA"
+      ]
+    ]
+  },
+  "MSBN-D-1-2.jpg": {
+    "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "中", "右"],
+      "showHeaders": false,
+      "groups": [[10, 11, 12, 13, 14], [5, 6, 7, 8, 9], [0, 1, 2, 3, 4]]
+    },
+    "groups": [
+      [
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        }
+      ]
+    ]
+  },
+  "MSBN-D-1-3.jpg": {
+    "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "中", "右"],
+      "showHeaders": false,
+      "groups": [[10, 11, 12, 13, 14], [5, 6, 7, 8, 9], [0, 1, 2, 3, 4]]
+    },
+    "groups": [
+      [
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多09字內"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        }
+      ]
+    ]
+  },
+  "MSBN-D-2-1-1.jpg": {
+    "n": 3,
+    "workOrderColumns": {
+      "labels": ["左", "中", "右"],
+      "showHeaders": false,
+      "groups": [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+    },
+    "labels": [
+      "右",
+      "中",
+      "左"
+    ],
+    "groups": [
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排06字"
+        },
+        "CTA"
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排06字"
+        },
+        "CTA"
+      ],
+      [
+        "商品圖",
+        {
+          "type": "品名",
+          "hint": "品名一排06字"
+        },
+        "CTA"
+      ]
+    ]
+  },
+  "MSBN-D-2-1-2.jpg": {
+    "n": 3,
+    "workOrderColumns": {
+      "labels": ["左", "中", "右"],
+      "showHeaders": false,
+      "groups": [[4, 5], [2, 3], [0, 1]]
+    },
+    "labels": [
+      "右",
+      "中",
+      "左"
+    ],
+    "groups": [
+      [
+        "商品圖",
+        "CTA"
+      ],
+      [
+        "商品圖",
+        "CTA"
+      ],
+      [
+        "商品圖",
+        "CTA"
+      ]
+    ]
+  },
+  "MSBN-D-2-2.jpg": {
+    "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "中", "右"],
+      "showHeaders": false,
+      "groups": [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14]]
+    },
+    "groups": [
+      [
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        }
+      ]
+    ]
+  },
+  "MSBN-D-2-3.jpg": {
+    "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "中", "右"],
+      "showHeaders": false,
+      "groups": [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14]]
+    },
+    "groups": [
+      [
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字04字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排06字"
+        }
+      ]
+    ]
+  },
+  "MSBN-D-3-1.jpg": {
+    "n": 3,
+    "groups": [
+      [
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        }
+      ],
+      [
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        },
+        {
+          "type": "項目文字",
+          "hint": "項目文字4字"
+        }
+      ],
+      [
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        },
+        {
+          "type": "內文",
+          "hint": "內文一排最多9字內"
+        }
+      ]
+    ]
+  }
+}
+</script>
+
+<!-- SheetJS：純前端產生 .xlsx，不需要伺服器 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js"></script>
+<script src="JS/fonts-embed.js"></script>
+<script src="JS/render-config.js"></script>
+<script src="core/core-engine.js"></script>
+<script src="core/schema-renderer.js?v=20260902-1"></script>
+<script src="JS/image-layout.js?v=20260831-1"></script>
+<script src="JS/editor-plugin.js"></script>
+<script src="jbp/js/logo-editor-plugin.js"></script>
+<script src="jbp/js/banwords-engine-hbn.js"></script>
+
+<script>
+/* ════════════════════════════════════════
+   資料
+════════════════════════════════════════ */
+var MANIFEST = JSON.parse(document.getElementById('wo-manifest').textContent);
+var IMAGE_FIELDS = JSON.parse(document.getElementById('wo-fields').textContent);
+var FAMILIES = MANIFEST.families;
+var FAM_KEYS = Object.keys(FAMILIES).sort();
+var STORAGE_KEY = 'wo_canvas_state_v1';
+var NAMES_KEY = 'wo_family_names_v1';
+var UNLOCK_KEY = 'wo_unlocked_v1';
+var EDIT_PIN = '8888'; /* ⚠ 純前端的軟性防呆，不是真正的權限控管，任何人打開瀏覽器原始碼都能看到，只是擋掉一般人手滑誤改 */
+
+/* 全站共用 Loading 控制。
+   一般按鈕自動短暫顯示；標記在 manualIds 裡的按鈕由實際 Promise／讀檔流程控制結束時間。 */
+var APP_LOADING = {
+  active: false,
+  token: 0,
+  hideTimer: null,
+  pulseTimer: null,
+  manualIds: {
+    'btn-preview-all': true,
+    'import-generator-load': true,
+    'btn-sample': true,
+    'btn-xlsx': true,
+    'btn-all': true,
+    'maint-download-all-xlsx': true,
+    'btn-dl-image': true,
+    'btn-import-demo': true,
+    'btn-upload-generator-snapshot': true
+  }
+};
+function appLoadingRefs() {
+  return {
+    root: document.getElementById('app-loading'),
+    label: document.getElementById('app-loading-label'),
+    percent: document.getElementById('app-loading-percent'),
+    fill: document.getElementById('app-loading-fill'),
+    note: document.getElementById('app-loading-note'),
+    track: document.getElementById('app-loading-track')
+  };
+}
+function appLoadingLabelOf(el) {
+  if (!el) return '處理中…';
+  var text = String(el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent || '')
+    .replace(/\s+/g, ' ').trim();
+  return text ? text.replace(/^[⬇⬆⏳🧪🔄✕↺]+/, '').trim() : '處理中…';
+}
+function appLoadingStart(label, percent, note) {
+  var refs = appLoadingRefs();
+  if (!refs.root) return;
+  clearTimeout(APP_LOADING.hideTimer);
+  clearTimeout(APP_LOADING.pulseTimer);
+  APP_LOADING.token++;
+  APP_LOADING.active = true;
+  refs.root.classList.add('show');
+  refs.root.setAttribute('aria-hidden', 'false');
+  appLoadingUpdate(percent == null ? 5 : percent, label || '處理中…', note || '請稍候…');
+}
+function appLoadingUpdate(percent, label, note) {
+  var refs = appLoadingRefs();
+  if (!refs.root) return;
+  if (!APP_LOADING.active) {
+    APP_LOADING.active = true;
+    refs.root.classList.add('show');
+    refs.root.setAttribute('aria-hidden', 'false');
+  }
+  var value = Math.max(0, Math.min(100, Number(percent) || 0));
+  if (refs.label && label) refs.label.textContent = label;
+  if (refs.percent) refs.percent.textContent = Math.round(value) + '%';
+  if (refs.fill) refs.fill.style.width = value + '%';
+  if (refs.track) refs.track.setAttribute('aria-valuenow', String(Math.round(value)));
+  if (refs.note && note) refs.note.textContent = note;
+}
+function appLoadingFinish(note) {
+  if (!APP_LOADING.active) return;
+  appLoadingUpdate(100, '完成', note || '處理完成');
+  var token = APP_LOADING.token;
+  clearTimeout(APP_LOADING.hideTimer);
+  APP_LOADING.hideTimer = setTimeout(function () {
+    if (APP_LOADING.token !== token) return;
+    var refs = appLoadingRefs();
+    APP_LOADING.active = false;
+    if (refs.root) {
+      refs.root.classList.remove('show');
+      refs.root.setAttribute('aria-hidden', 'true');
+    }
+  }, 260);
+}
+function appLoadingFail(message) {
+  appLoadingUpdate(100, '處理失敗', message || '請稍後再試');
+  appLoadingFinish(message || '請稍後再試');
+}
+function appLoadingPulse(label) {
+  appLoadingStart('LOADING · ' + (label || '處理中…'), 8, '正在處理…');
+  var token = APP_LOADING.token;
+  APP_LOADING.pulseTimer = setTimeout(function () {
+    if (APP_LOADING.active && APP_LOADING.token === token) appLoadingFinish();
+  }, 420);
+}
+document.addEventListener('click', function (e) {
+  var el = e.target && e.target.closest ? e.target.closest('button, .home-card') : null;
+  if (!el || el.disabled || el.closest('#app-loading')) return;
+  var label = appLoadingLabelOf(el);
+  if (APP_LOADING.manualIds[el.id]) appLoadingStart('LOADING · ' + label, 8, '正在處理…');
+  else appLoadingPulse(label);
+}, true);
+
+/* 可混搭群組：同一排可以混插同一群組裡的不同系列（例如A、B混著放）。
+   F 只有自己一個系列、不可跟任何人混搭。 */
+var GROUPS = {
+  AB:  { families: ['A', 'B'],      label: '可混搭' },
+  CDE: { families: ['C', 'D', 'E'], label: '可混搭' },
+  F:   { families: ['F'],           label: '不可混搭' }
+};
+var FAMILY_GROUP = {};
+Object.keys(GROUPS).forEach(function (g) {
+  GROUPS[g].families.forEach(function (fam) { FAMILY_GROUP[fam] = g; });
+});
+function groupOf(fam) { return FAMILY_GROUP[fam] || fam; }
+/* 群組的寬度/每排上限，直接沿用該群組裡任一系列的資料（同群組內尺寸本來就相同） */
+function groupWidth(g) { var fam = GROUPS[g].families[0]; return famWidth(fam); }
+function groupMaxPerRow(g) { var fam = GROUPS[g].families[0]; return maxPerRow(fam); }
+
+/* 本機編輯（只有這台瀏覽器、解鎖後才會寫入） */
+var familyNames = loadNames();
+/* 從 config.json 讀到的「大家共用」設定，file:// 打開或還沒放 config.json 時會是空物件 */
+var remoteNames = {};
+/* 這台瀏覽器目前是否已解鎖編輯 */
+var unlocked = false;
+try { unlocked = sessionStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) { /* 有些環境(如file://的部分瀏覽器)存取會被擋，安靜略過 */ }
+
+function loadNames() {
+  try { return JSON.parse(localStorage.getItem(NAMES_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+function saveNames() {
+  try { localStorage.setItem(NAMES_KEY, JSON.stringify(familyNames)); }
+  catch (e) { /* 存不了就算了 */ }
+}
+function familyLabel(fam) {
+  return familyNames[fam] || remoteNames[fam] || (FAMILIES[fam] && FAMILIES[fam].name) || ('副區 ' + fam);
+}
+function loadRemoteConfig(cb) {
+  if (typeof fetch !== 'function') { cb && cb(); return; }
+  fetch('JS/config.json?t=' + Date.now())
+    .then(function (r) { return r.ok ? r.json() : {}; })
+    .then(function (d) { remoteNames = (d && d.familyNames) || {}; cb && cb(); })
+    .catch(function () { cb && cb(); }); /* file:// 打開或檔案不存在都會走到這裡，不影響其他功能 */
+}
+function downloadJSON(obj, filename) {
+  var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+function exportConfig() {
+  var out = { familyNames: {} };
+  FAM_KEYS.forEach(function (f) { out.familyNames[f] = familyLabel(f); });
+  downloadJSON(out, 'config.json');
+}
+
+/* ════════════════════════════════════════
+   工單試算表／JSON 匯出
+   ────────────────────────────────────────
+   依畫布上目前放置的每一格，去 IMAGE_FIELDS 查這張圖對應的欄位清單
+   （促標／LOGO圖／商品／品名／警語／圓標／CTA，含字數上限），
+   同一橫排的每一格各自是一欄，欄位種類對不上的地方留空，
+   排法比照你們「副區系統專用」／「BODA_副區」的格式。
+════════════════════════════════════════ */
+var FIELD_VALUE_TEXT = { 'LOGO圖': '(檔名/券名)', '商品': '(檔名/券名)' };
+/* 欄位名稱顯示文字，比照 MSBN_FIELD_LABELS 的寫法（例如商品要提醒多圖用逗號分開） */
+var FIELD_LABEL_TEXT = { '商品': '商品 (多圖用逗號分開)' };
+
+function fieldValueText(f) {
+  var t = f.type;
+  if (FIELD_VALUE_TEXT[t]) return FIELD_VALUE_TEXT[t];
+  var limit = extractFieldCharLimit(f);
+  var rawLimit = f.limit != null ? f.limit : f.maxLength;
+  var rawLimitText = rawLimit == null ? '' : String(rawLimit).trim();
+  var displayLimit = limit == null ? rawLimitText : limit;
+  if (t === 'CTA') {
+    if (f.note === 'icon-only') return '(icon圖，無文字)';
+    return displayLimit == null || displayLimit === '' ? '' : '限' + displayLimit + '個字';
+  }
+  if (displayLimit == null || displayLimit === '') return '';
+  return '限' + displayLimit + '個字';
+}
+
+/* slots 不給就用副區那一排；MSBN 副區版配列會傳自己的 slots 進來 */
+function getFilledColumns(slots) {
+  return (slots || state.slots)
+    .map(function (item, idx) { return { item: item, idx: idx }; })
+    .filter(function (x) { return !!x.item; });
+}
+
+/* 把每一格的 fields 展開成「rowKey -> {label, value}」，rowKey 用來跨欄對齊同種欄位 */
+function expandFields(item) {
+  var data = IMAGE_FIELDS[item.file];
+  var fields = (data && data.fields) || [];
+  var out = {};
+  var order = [];
+  fields.forEach(function (f) {
+    var cnt = f.count || 1;
+    for (var i = 0; i < cnt; i++) {
+      var suffix = cnt > 1 ? ('-' + (i + 1)) : '';
+      var key = f.type + suffix;
+      var label = (FIELD_LABEL_TEXT[f.type] || f.type) + suffix;
+      out[key] = { label: label, value: fieldValueText(f) };
+      order.push(key);
+    }
+  });
+  return { map: out, order: order };
+}
+
+function buildWorkOrderGrid(slots) {
+  var cols = getFilledColumns(slots);
+  var expanded = cols.map(function (c) { return expandFields(c.item); });
+
+  /* rowKey 的總順序：依欄位在畫布上出現的先後合併，重複的只留一次 */
+  var rowKeys = [];
+  var seen = {};
+  expanded.forEach(function (e) {
+    e.order.forEach(function (k) { if (!seen[k]) { seen[k] = true; rowKeys.push(k); } });
+  });
+
+  var columns = cols.map(function (c, i) {
+    return {
+      slotIndex: c.idx,
+      header: familyLabel(c.item.family) + '（' + c.item.family + '-' + c.item.variant + '-' + c.item.combo + '）',
+      item: c.item,
+      /* 這顆自己實際有的欄位，依序列出、不管其他顆有沒有同一個欄位，
+         下載試算表時每一顆各自往上補齊，不會因為別顆有更多欄位而留空 */
+      entries: expanded[i].order.map(function (k) { return expanded[i].map[k]; })
+    };
+  });
+
+  var rows = rowKeys.map(function (key) {
+    return {
+      key: key,
+      cells: expanded.map(function (e) { return e.map[key] || null; })
+    };
+  });
+
+  return { columns: columns, rows: rows };
+}
+
+function exportWorkOrderJSON() {
+  if (state.group === null && !state.msbn.length) { alert('畫布是空的，先放幾張圖再下載'); return; }
+  var grid = state.group !== null ? buildWorkOrderGrid() : { columns: [], rows: [] };
+  var out = {
+    group: state.group,
+    exportedAt: new Date().toISOString(),
+    columns: grid.columns.map(function (c) {
+      return { slotIndex: c.slotIndex, family: c.item.family, file: c.item.file, variant: c.item.variant, combo: c.item.combo, label: c.item.label };
+    }),
+    rows: grid.rows.map(function (r) {
+      return { key: r.key, cells: r.cells.map(function (c) { return c ? { label: c.label, value: c.value } : null; }) };
+    }),
+    msbn: state.msbn.map(function (m) {
+      if (isSubRow(m)) {
+        return {
+          kind: 'sub', group: m.group,
+          slots: m.slots.map(function (s) {
+            return s ? { family: s.family, file: s.file, variant: s.variant, combo: s.combo, label: s.label } : null;
+          })
+        };
+      }
+      return { file: m.file, cat: m.cat, label: m.label };
+    })
+  };
+  downloadJSON(out, '排版暫存_' + (state.group || 'MSBN') + '_' + Date.now() + '.json');
+}
+
+/* ════════════════════════════════════════
+   下載範例圖：把副區那一排＋MSBN 區的圖片
+   照畫布目前的排法接成一張 JPG（原始尺寸 1:1）
+════════════════════════════════════════ */
+function generatorSnapshotItem(raw) {
+  if (!raw || !raw.file) return null;
+  var family = String(raw.family || '').trim();
+  if (!family || !GROUPS[groupOf(family)]) return null;
+  return {
+    family: family,
+    file: String(raw.file),
+    variant: raw.variant,
+    combo: raw.combo,
+    label: raw.label || raw.file
+  };
+}
+
+function generatorSnapshotSubRow(raw) {
+  if (!raw || !Array.isArray(raw.slots)) return null;
+  var group = raw.group && GROUPS[raw.group] ? raw.group : null;
+  if (!group) {
+    var firstRaw = raw.slots.filter(Boolean)[0];
+    var firstItem = generatorSnapshotItem(firstRaw);
+    group = firstItem ? groupOf(firstItem.family) : null;
+  }
+  if (!group || !GROUPS[group]) return null;
+  var slots = new Array(groupMaxPerRow(group)).fill(null);
+  raw.slots.forEach(function (slot, index) {
+    if (index >= slots.length) return;
+    var item = generatorSnapshotItem(slot);
+    if (item && groupOf(item.family) === group) slots[index] = item;
+  });
+  if (!slots.some(function (slot) { return !!slot; })) return null;
+  return { kind: 'sub', group: group, slots: slots };
+}
+
+function restoreGeneratorSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') throw new Error('暫存檔不是有效的 JSON');
+  if (snapshot.type === 'wo_import_snapshot') {
+    throw new Error('這是「匯入工單」編輯暫存檔，請在匯入工單頁簽上傳；生成器請使用「下載排版暫存檔」產生的 JSON');
+  }
+  var rawColumns = Array.isArray(snapshot.columns) ? snapshot.columns : [];
+  var group = snapshot.group == null || snapshot.group === '' ? null : String(snapshot.group);
+  if (group && !GROUPS[group]) throw new Error('暫存檔的副區群組無法辨識：' + group);
+
+  var previewItems = rawColumns.map(generatorSnapshotItem).filter(function (item) { return !!item; });
+  if (!group && previewItems.length) group = groupOf(previewItems[0].family);
+  if (group && !GROUPS[group]) throw new Error('暫存檔的副區群組無法辨識');
+
+  var slotCount = group ? groupMaxPerRow(group) : 4;
+  var slots = new Array(slotCount).fill(null);
+  var nextSlot = 0;
+  rawColumns.forEach(function (raw) {
+    var item = generatorSnapshotItem(raw);
+    if (!item || (group && groupOf(item.family) !== group)) return;
+    var requestedIndex = Number(raw.slotIndex);
+    var index = isFinite(requestedIndex) && Math.floor(requestedIndex) === requestedIndex
+      ? requestedIndex
+      : nextSlot;
+    while (index < slots.length && slots[index]) index++;
+    if (index < 0 || index >= slots.length) return;
+    slots[index] = item;
+    nextSlot = index + 1;
+  });
+
+  var msbn = [];
+  (Array.isArray(snapshot.msbn) ? snapshot.msbn : []).forEach(function (raw) {
+    if (!raw) return;
+    if (raw.kind === 'sub') {
+      var subRow = generatorSnapshotSubRow(raw);
+      if (subRow) msbn.push(subRow);
+      return;
+    }
+    if (raw.file) msbn.push({
+      file: String(raw.file),
+      cat: raw.cat,
+      label: raw.label || raw.file
+    });
+  });
+
+  if (!slots.some(function (slot) { return !!slot; }) && !msbn.length) {
+    throw new Error('暫存檔沒有可呈現的副區或 MSBN 版位');
+  }
+
+  state.group = group;
+  state.slots = slots;
+  state.msbn = msbn;
+  selectedThumb = null;
+  saveState();
+  renderPalette();
+  renderCanvas();
+  return {
+    slots: slots.filter(function (slot) { return !!slot; }).length,
+    msbn: msbn.length
+  };
+}
+
+function handleGeneratorSnapshotFile(file) {
+  if (!file) return;
+  var button = document.getElementById('btn-upload-generator-snapshot');
+  var input = document.getElementById('generator-snapshot-input');
+  var originalHtml = button ? button.innerHTML : '';
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = '⏳ 讀取暫存檔…';
+  }
+  appLoadingStart('LOADING · 上傳暫存檔', 8, '正在讀取 ' + (file.name || '暫存檔') + '…');
+  var reader = new FileReader();
+  reader.onload = function () {
+    appLoadingUpdate(58, 'LOADING · 上傳暫存檔', '檔案讀取完成，正在還原畫布…');
+    try {
+      var result = restoreGeneratorSnapshot(JSON.parse(reader.result));
+      appLoadingFinish('暫存檔已載入到畫布（副區 ' + result.slots + ' 格、MSBN ' + result.msbn + ' 顆）');
+    } catch (err) {
+      appLoadingFail('暫存檔載入失敗');
+      alert('暫存檔載入失敗：' + (err && err.message ? err.message : String(err || '未知錯誤')));
+    }
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = originalHtml;
+    }
+    if (input) input.value = '';
+  };
+  reader.onerror = function () {
+    appLoadingFail('暫存檔讀取失敗');
+    alert('暫存檔讀取失敗');
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = originalHtml;
+    }
+    if (input) input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function loadImageForCanvas(src, timeoutMs) {
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    var settled = false;
+    var timer = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      img.onload = null;
+      img.onerror = null;
+      reject(new Error('圖片載入逾時：' + src));
+    }, timeoutMs || 15000);
+    function finish(ok, value) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (ok) resolve(value);
+      else reject(value);
+    }
+    img.onload = function () { finish(true, img); };
+    img.onerror = function () { finish(false, new Error('圖片載入失敗：' + src)); };
+    img.src = src;
+  });
+}
+
+/* 把畫布目前的排法（副區那一排＋MSBN 由上往下接）合成一張 canvas，
+   給「下載範例圖」跟「工單試算表右邊的參考圖附件」共用。
+   畫布是空的，或是瀏覽器把本機圖片畫進 canvas 擋下來（file:// 直接開啟常見），
+   都回傳 null，呼叫端自己決定要不要跳提示。 */
+function buildSampleCanvas() {
+  appLoadingUpdate(14, 'LOADING · 輸出範例圖', '正在載入畫布圖片…');
+  if (state.group === null && !state.msbn.length) return Promise.resolve(null);
+  var W = 1200;
+  var rowH = 0, slotW = 0, slotN = 0;
+  if (state.group !== null) {
+    slotW = groupWidth(state.group);
+    slotN = groupMaxPerRow(state.group);
+    rowH = FAMILIES[GROUPS[state.group].families[0]].height;
+    W = Math.max(W, slotW * slotN);
+  }
+
+  /* 先把會用到的圖全部載進來（畫布上本來就顯示過，通常是快取秒回） */
+  var slotJobs = (state.group !== null ? state.slots.slice(0, slotN) : []).map(function (s) {
+    return s ? loadImageForCanvas('img/' + s.file) : Promise.resolve(null);
+  });
+  /* MSBN 每一列可能是「MSBN 的圖」或「副區版配（一整排副區圖）」 */
+  var msbnJobs = state.msbn.map(function (m) {
+    if (isSubRow(m)) {
+      return Promise.all(m.slots.map(function (s) {
+        return s ? loadImageForCanvas('img/' + s.file) : Promise.resolve(null);
+      })).then(function (imgs) { return { sub: true, group: m.group, imgs: imgs }; });
+    }
+    return loadImageForCanvas('msbn-img/' + m.file).then(function (img) { return { sub: false, img: img }; });
+  });
+
+  /* 副區與第一顆 MSBN 之間固定夾的那張圖（載不到就當作沒有，不擋住輸出） */
+  var bannerJob = loadImageForCanvas(MID_BANNER_SRC).catch(function () { return null; });
+
+  return Promise.all([Promise.all(slotJobs), Promise.all(msbnJobs), bannerJob]).then(function (res) {
+    appLoadingUpdate(76, 'LOADING · 輸出範例圖', '圖片已載入，正在合成範例圖…');
+    var slotImgs = res[0], msbnImgs = res[1], bannerImg = res[2];
+    var bannerH = bannerImg ? Math.round(bannerImg.naturalHeight * (W / bannerImg.naturalWidth)) : 0;
+    /* MSBN 用原始高度（寬不足/超過 1200 就等比例縮放到畫布寬）；副區版配那列固定用副區高度 */
+    var msbnHeights = msbnImgs.map(function (e) {
+      if (e.sub) return FAMILIES[GROUPS[e.group].families[0]].height;
+      return Math.round(e.img.naturalHeight * (W / e.img.naturalWidth));
+    });
+    var H = rowH + bannerH + msbnHeights.reduce(function (a, b) { return a + b; }, 0);
+    if (!H) return null;
+
+    var canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    /* 副區那一排 */
+    for (var i = 0; i < slotN; i++) {
+      var x = i * slotW;
+      if (slotImgs[i]) ctx.drawImage(slotImgs[i], x, 0, slotW, rowH);
+      else { ctx.fillStyle = '#eeeeee'; ctx.fillRect(x, 0, slotW, rowH); ctx.fillStyle = '#ffffff'; }
+    }
+    /* 副區與 MSBN 之間固定夾的那張圖 */
+    var y = rowH;
+    if (bannerImg) { ctx.drawImage(bannerImg, 0, y, W, bannerH); y += bannerH; }
+    /* MSBN 由上往下接 */
+    msbnImgs.forEach(function (e, mi) {
+      if (e.sub) { /* 副區版配：照副區的格寬一格一格畫 */
+        var sw = groupWidth(e.group), sn = groupMaxPerRow(e.group), sh = msbnHeights[mi];
+        for (var k = 0; k < sn; k++) {
+          var sx = k * sw;
+          if (e.imgs[k]) ctx.drawImage(e.imgs[k], sx, y, sw, sh);
+          else { ctx.fillStyle = '#eeeeee'; ctx.fillRect(sx, y, sw, sh); ctx.fillStyle = '#ffffff'; }
+        }
+      } else {
+        ctx.drawImage(e.img, 0, y, W, msbnHeights[mi]);
+      }
+      y += msbnHeights[mi];
+    });
+
+    return canvas;
+  });
+}
+
+function exportSampleImage() {
+  appLoadingUpdate(10, 'LOADING · 輸出範例圖', '正在準備輸出…');
+  if (state.group === null && !state.msbn.length) {
+    alert('畫布是空的，先放幾張圖再下載');
+    appLoadingFinish('沒有可輸出的內容');
+    return Promise.resolve(false);
+  }
+  return buildSampleCanvas().then(function (canvas) {
+    if (!canvas) { alert('畫布是空的，先放幾張圖再下載'); return false; }
+    return new Promise(function (resolve) {
+      try {
+        canvas.toBlob(function (blob) {
+          if (!blob) { alert('範例圖輸出失敗'); resolve(false); return; }
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = '範例圖_' + (state.group || 'MSBN') + '_' + Date.now() + '.jpg';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+          resolve(true);
+        }, 'image/jpeg', 0.92);
+      } catch (err) {
+        /* file:// 直接開啟時，瀏覽器會把本機圖片畫進 canvas 視為安全風險而擋下匯出 */
+        alert('範例圖輸出被瀏覽器安全限制擋下（用 file:// 直接開啟網頁時無法合成本機圖片）。\n' +
+          '解法：用本機伺服器開啟這個資料夾再操作，例如在資料夾裡執行：\n' +
+          'python -m http.server\n之後瀏覽器開 http://localhost:8000 即可。\n其他檔案仍會照常下載。');
+        resolve(false);
+      }
+    });
+  }).catch(function (err) {
+    alert('範例圖輸出失敗：' + err.message);
+    return false;
+  });
+}
+
+/* 從提示文字裡找「限幾個字/最多幾字/幾字內」這種字數上限的數字。
+   規則很單純：文字裡同時有數字又有「字」這個字，就把第一個數字當上限；
+   純檔名/CTA按鈕文字這種提示（例如「(檔名)」「領券去」）沒有數字，直接跳過不做字數檢查。 */
+function extractCharLimit(hintText) {
+  if (!hintText || hintText.indexOf('字') === -1) return null;
+  var m = /([0-9]+)/.exec(hintText);
+  return m ? parseInt(m[1], 10) : null;
+}
+/* 欄位限制可能來自副區的 limit／maxLength，或 MSBN 的 hint；
+   匯出試算表時統一從欄位物件讀取，避免狀態欄因提示文字格式不同而退回「待填」。 */
+function extractFieldCharLimit(fieldOrHint) {
+  if (fieldOrHint && typeof fieldOrHint === 'object') {
+    var rawLimit = fieldOrHint.limit != null ? fieldOrHint.limit : fieldOrHint.maxLength;
+    if (rawLimit != null && String(rawLimit).trim() !== '') {
+      var rawLimitText = String(rawLimit).trim();
+      if (/^\d+$/.test(rawLimitText)) {
+        var directLimit = parseInt(rawLimitText, 10);
+        if (isFinite(directLimit) && directLimit > 0) return directLimit;
+      }
+    }
+    return extractCharLimit(fieldOrHint.hint || '');
+  }
+  return extractCharLimit(fieldOrHint);
+}
+
+function exportWorkOrderXlsx(exportOptions) {
+  appLoadingUpdate(12, 'LOADING · 輸出試算表', '正在建立工作表與欄位…');
+  /* 一般按鈕的 click 事件會把 MouseEvent 當成第一個參數傳進來；
+     只有內部呼叫明確帶上 __bodaExportOptions 才視為匯出設定。 */
+  var opts = exportOptions && exportOptions.__bodaExportOptions === true ? exportOptions : {};
+  var exportState = opts.state || state;
+  var isAllPlacementsExport = !!opts.allPlacements;
+  if (exportState.group === null && !(exportState.msbn || []).length) { alert('畫布是空的，先放幾張圖再下載'); return; }
+  if (typeof ExcelJS === 'undefined') { alert('試算表功能還在載入中，稍等一下再試一次'); return; }
+
+  var wb = new ExcelJS.Workbook();
+  wb.creator = 'BODA';
+  wb.title = isAllPlacementsExport ? 'BODA 全版位試算表' : 'BODA 工單';
+  wb.subject = isAllPlacementsExport ? '副區與 MSBN 全部版位排版檢查' : 'BODA 工單';
+  wb.lastModifiedBy = 'BODA';
+  wb.created = new Date();
+  wb.modified = new Date();
+  if (wb.calcProperties) {
+    wb.calcProperties.fullCalcOnLoad = true;
+    wb.calcProperties.forceFullCalc = true;
+    wb.calcProperties.calcMode = 'auto';
+  }
+
+  var overview = wb.addWorksheet('工單總覽', { views: [{ showGridLines: false }] });
+  var layoutWs = wb.addWorksheet('MS Layout', {
+    views: [{ showGridLines: false, state: 'frozen', xSplit: 2, ySplit: 2 }]
+  });
+  var settingsWs = wb.addWorksheet('設定');
+  var metaWs = wb.addWorksheet('_BODA_META');
+  /* 吸底欄位的可見內容放在 MS Layout 最下方；這張 veryHidden 對照表只記錄
+     5 顆的實際儲存格位置，讓 bottom 原本的工單匯入器能精準讀回，不受欄寬、
+     合併儲存格或未來 MS Layout 排版調整影響。 */
+  var bottomMetaWs = wb.addWorksheet('_BODA_BOTTOM');
+  var bottomStateWs = wb.addWorksheet('_BODA_BOTTOM_STATE');
+  var rulesWs = wb.addWorksheet('_BODA_RULES');
+  settingsWs.state = 'veryHidden';
+  metaWs.state = 'veryHidden';
+  bottomMetaWs.state = 'veryHidden';
+  bottomStateWs.state = 'veryHidden';
+  rulesWs.state = 'veryHidden';
+  var workOrderTextRules = (typeof IMPORT_TEXT_RULES_STATE !== 'undefined' &&
+    IMPORT_TEXT_RULES_STATE.status === 'ready' && Array.isArray(IMPORT_TEXT_RULES_STATE.rules))
+    ? IMPORT_TEXT_RULES_STATE.rules : [];
+  rulesWs.getCell('A1').value = 'keyword';
+  rulesWs.getCell('B1').value = 'replacement';
+  rulesWs.getCell('C1').value = 'action';
+  workOrderTextRules.forEach(function (rule, ruleIndex) {
+    rulesWs.getCell(ruleIndex + 2, 1).value = String(rule.keyword || '');
+    rulesWs.getCell(ruleIndex + 2, 2).value = String(rule.rule || '');
+    rulesWs.getCell(ruleIndex + 2, 3).value = String(rule.rule || '') === '直接無法輸入' ? 'block' : 'replace';
+  });
+  rulesWs.getColumn(1).width = 28;
+  rulesWs.getColumn(2).width = 28;
+  rulesWs.getColumn(3).width = 12;
+  var workOrderRuleRange = workOrderTextRules.length
+    ? 'BODA_BannedKeywords' : '';
+  if (workOrderTextRules.length && wb.definedNames &&
+      typeof wb.definedNames.add === 'function') {
+    try {
+      wb.definedNames.add('BODA_BannedKeywords',
+        '_BODA_RULES!$A$2:$A$' + (workOrderTextRules.length + 1));
+    } catch (err) {
+      console.warn('BODA 禁用語命名範圍無法建立，略過試算表禁用語驗證：', err);
+      workOrderRuleRange = '';
+    }
+  }
+
+  var COLORS = {
+    black: 'FF171717', dark: 'FF202124', dark2: 'FF3C4043', white: 'FFFFFFFF',
+    teal: 'FF45818E', tealDark: 'FF134F5C', tealSoft: 'FFD9EAD3',
+    input: 'FFD9EAD3', inputText: 'FF0000FF', linkedText: 'FF008000',
+    staticText: 'FF666666', note: 'FFFFF2CC', warn: 'FFFCE5CD',
+    error: 'FFF4CCCC', gray: 'FFE7E6E6', gray2: 'FFF3F3F3',
+    green: 'FFD9EAD3', yellow: 'FFFFE599', orange: 'FFF6B26B',
+    border: 'FF777777', red: 'FFCC0000'
+  };
+  var THIN = { style: 'thin', color: { argb: COLORS.border } };
+  var BORDER_ALL = { top: THIN, bottom: THIN, left: THIN, right: THIN };
+  var cfPriority = 1;
+
+  function solid(argb) { return { type: 'pattern', pattern: 'solid', fgColor: { argb: argb } }; }
+  function setBorder(ws, r1, c1, r2, c2, border) {
+    for (var r = r1; r <= r2; r++) for (var c = c1; c <= c2; c++) ws.getCell(r, c).border = border || BORDER_ALL;
+  }
+  function setFill(ws, r1, c1, r2, c2, argb) {
+    for (var r = r1; r <= r2; r++) for (var c = c1; c <= c2; c++) ws.getCell(r, c).fill = solid(argb);
+  }
+  function setProtection(ws, r1, c1, r2, c2, locked) {
+    for (var r = r1; r <= r2; r++) for (var c = c1; c <= c2; c++) ws.getCell(r, c).protection = { locked: !!locked };
+  }
+  function mergeSafe(ws, r1, c1, r2, c2) {
+    var top = Math.min(r1, r2);
+    var left = Math.min(c1, c2);
+    var bottom = Math.max(r1, r2);
+    var right = Math.max(c1, c2);
+    function masterCell(row, col) {
+      var cell = ws.getCell(row, col);
+      return cell && cell.isMerged && cell.master ? cell.master : cell;
+    }
+    if (top === bottom && left === right) return masterCell(top, left);
+    /* ExcelJS 會在任何一格已屬於其他合併範圍時直接丟例外。全版位匯出
+       會混合不同版型的欄位分組，因此先檢查既有範圍，避免相鄰版位或
+       內部分欄的範圍重疊時中斷整份工單。 */
+    var merges = ws && ws._merges ? ws._merges : {};
+    var mergeKeys = Object.keys(merges);
+    for (var mi = 0; mi < mergeKeys.length; mi++) {
+      var existing = merges[mergeKeys[mi]];
+      var existingTop = Number(existing && existing.top);
+      var existingLeft = Number(existing && existing.left);
+      var existingBottom = Number(existing && existing.bottom);
+      var existingRight = Number(existing && existing.right);
+      if (![existingTop, existingLeft, existingBottom, existingRight].every(function (v) { return isFinite(v); })) continue;
+      var overlaps = top <= existingBottom && bottom >= existingTop && left <= existingRight && right >= existingLeft;
+      if (overlaps) return masterCell(existingTop, existingLeft);
+    }
+    try {
+      ws.mergeCells(top, left, bottom, right);
+    } catch (err) {
+      if (!/already merged/i.test(String(err && err.message || err))) throw err;
+      return masterCell(top, left);
+    }
+    return masterCell(top, left);
+  }
+  function hexToArgb(hex, fallback) {
+    var m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex || ''));
+    return m ? ('FF' + m[1].toUpperCase()) : (fallback || COLORS.white);
+  }
+  function cellTextValue(v) {
+    if (v && typeof v === 'object' && v.richText) return v.richText.map(function (x) { return x.text; }).join('');
+    if (v && typeof v === 'object' && v.text != null) return String(v.text);
+    if (v && typeof v === 'object' && v.result != null) return String(v.result);
+    return v == null ? '' : String(v);
+  }
+  function applyCharLimitGuard(ws, inputCell, fieldOrHint, checkCell) {
+    var limit = extractFieldCharLimit(fieldOrHint);
+    var addr = inputCell.address;
+    if (limit != null) {
+      inputCell.dataValidation = {
+        type: 'custom',
+        formulae: ['LENB(' + addr + ')/2<=' + limit],
+        allowBlank: true,
+        showErrorMessage: true,
+        errorStyle: 'stop',
+        errorTitle: '超過字數上限',
+        error: '最多 ' + limit + ' 個字；中文算 1，英數與半形符號算 0.5。',
+        showInputMessage: true,
+        promptTitle: '字數限制：' + limit,
+        prompt: '中文算 1，英數與半形符號算 0.5。'
+      };
+      ws.addConditionalFormatting({
+        ref: addr,
+        rules: [{
+          type: 'expression', priority: cfPriority++,
+          formulae: ['LENB(' + addr + ')/2>' + limit],
+          style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) }
+        }]
+      });
+      if (checkCell) {
+        checkCell.value = {
+          formula: 'IF(' + addr + '="","限' + limit + '字",IF(LENB(' + addr + ')/2<=' + limit + ',"OK","超過"))',
+          result: '限' + limit + '字'
+        };
+      }
+      return limit;
+    }
+    if (checkCell) {
+      checkCell.value = { formula: 'IF(' + addr + '="","待填","OK")', result: '待填' };
+    }
+    return null;
+  }
+  function applyWorkbookTextGuard(ws, inputCell, field, checkCell, ruleRange) {
+    var limit = applyCharLimitGuard(ws, inputCell, field, checkCell);
+    var addr = inputCell.address;
+    var dateLike = importFieldRuleRole(field, field.metaLabel || field.type) === 'date';
+    if (!dateLike) inputCell.numFmt = '$#,##0';
+    if (!ruleRange) return limit;
+
+    var lengthCheck = limit != null ? 'LENB(' + addr + ')/2<=' + limit : 'TRUE';
+    var cleanCheck = 'SUMPRODUCT(--ISNUMBER(SEARCH(' + ruleRange + ',' + addr + ')))=0';
+    inputCell.dataValidation = {
+      type: 'custom',
+      formulae: ['AND(' + lengthCheck + ',' + cleanCheck + ')'],
+      allowBlank: true,
+      showErrorMessage: true,
+      errorStyle: 'stop',
+      errorTitle: '禁用語或字數限制',
+      error: '內容含禁用語，或超過欄位字數限制；請修改後再繼續。',
+      showInputMessage: true,
+      promptTitle: 'BODA 文字規則',
+      prompt: 'Excel 內純數字可用儲存格格式顯示 $ 與千分位；像「滿200送20」這種混合文案，匯回 BODA 時會自動整理為「滿$200送$20」，並套用禁用語規則。'
+    };
+    var validFormula = limit != null
+      ? 'IF(LENB(' + addr + ')/2<=' + limit + ',"OK","超過")'
+      : '"OK"';
+    var emptyCheckText = limit != null ? '限' + limit + '字' : '待填';
+    checkCell.value = {
+      formula: 'IF(' + addr + '="","' + emptyCheckText + '",IF(SUMPRODUCT(--ISNUMBER(SEARCH(' +
+        ruleRange + ',' + addr + ')))>0,"禁用語",' + validFormula + '))',
+      result: emptyCheckText
+    };
+    return limit;
+  }
+  function applyImageFilenameGuard(ws, inputCell, checkCell) {
+    if (!checkCell) return;
+    var addr = inputCell.address;
+    checkCell.value = {
+      formula: 'IF(' + addr + '="","待填",IF(ISNUMBER(SEARCH(".",'+ addr + ')),"OK","記得加副檔名"))',
+      result: '待填'
+    };
+  }
+  function setInputStyle(cell, locked, opts) {
+    opts = opts || {};
+    var fitText = !!opts.fitText;
+    cell.font = { name: 'Arial', size: 10, color: { argb: locked ? COLORS.staticText : COLORS.inputText } };
+    cell.fill = solid(locked ? COLORS.gray : COLORS.input);
+    /* C 系列票券文案每排仍受字數規則保護，但英數字寬度交給 Excel 自動縮放，
+       不讓固定的合併儲存格把一排文案折行或截掉。 */
+    cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: !fitText, shrinkToFit: fitText };
+    cell.protection = { locked: !!locked };
+  }
+  function setStaticStyle(cell, opts) {
+    opts = opts || {};
+    cell.font = {
+      name: 'Arial', size: opts.size || 10,
+      bold: !!opts.bold,
+      color: { argb: opts.color || COLORS.black }
+    };
+    if (opts.fill) cell.fill = solid(opts.fill);
+    cell.alignment = {
+      vertical: opts.vertical || 'middle',
+      horizontal: opts.horizontal || 'left',
+      wrapText: opts.wrap !== false
+    };
+    cell.protection = { locked: true };
+  }
+
+  function collectWorkOrderItems(sourceState) {
+    sourceState = sourceState || exportState;
+    var out = [];
+    var band = 0;
+    var seq = 0;
+    /* 副區在畫布上是一整排版配；匯出 MS Layout 時也維持同一排的空間關係。
+       一排 3 格固定標示為「左／中／右」，一排 2 格為「左／右」，
+       一排 4 格則標示為「左1／左2／右1／右2」。每一格仍保留自己的
+       sourceKey 與版型資訊，重新匯入時會還原成原本的獨立可編輯卡片。 */
+    function subPositionLabel(index, capacity) {
+      var labels = capacity === 2 ? ['左', '右']
+        : capacity === 3 ? ['左', '中', '右']
+        : capacity === 4 ? ['左1', '左2', '右1', '右2']
+        : ['單格'];
+      return labels[index] || ('位置' + (index + 1));
+    }
+
+    function makeSubPosition(slot, sourceKey, bandNo, positionIndex, capacity) {
+      var positionLabel = subPositionLabel(positionIndex, capacity);
+      if (!slot) {
+        return { label: positionLabel, fields: [], empty: true, previewSrc: null };
+      }
+      var data = IMAGE_FIELDS[slot.file] || { fields: [] };
+      var fields = [];
+      var isInnerSplit = String(slot.family || '').toUpperCase() === 'E';
+      var innerCount = 1;
+      if (isInnerSplit) {
+        (data.fields || []).forEach(function (f) { innerCount = Math.max(innerCount, f.count || 1); });
+      }
+      (data.fields || []).forEach(function (f) {
+        var cnt = f.count || 1;
+        var baseLabel = FIELD_LABEL_TEXT[f.type] || f.type;
+        var hint = fieldValueText(f);
+        if (isInnerSplit && cnt > 1) {
+          var innerFields = [];
+          for (var innerIndex = 0; innerIndex < cnt; innerIndex++) {
+            var innerSuffix = '-' + (innerIndex + 1);
+            var innerFixed = f.type === 'CTA' && f.note === 'icon-only';
+            innerFields.push({
+              type: f.type,
+              label: baseLabel + innerSuffix,
+              metaLabel: f.type + innerSuffix,
+              hint: hint,
+              value: innerFixed ? '固定 icon（不需填寫）' : '',
+              locked: innerFixed
+            });
+          }
+          fields.push({
+            type: f.type,
+            label: baseLabel + '-1',
+            metaLabel: f.type + '-1',
+            hint: hint,
+            value: '',
+            locked: false,
+            innerFields: innerFields
+          });
+          return;
+        }
+        for (var i = 0; i < cnt; i++) {
+          var suffix = cnt > 1 ? ('-' + (i + 1)) : '';
+          var label = baseLabel + suffix;
+          var fixed = f.type === 'CTA' && f.note === 'icon-only';
+          fields.push({
+            type: f.type,
+            label: label,
+            metaLabel: f.type + suffix,
+            hint: hint,
+            value: fixed ? '固定 icon（不需填寫）' : '',
+            locked: fixed
+          });
+        }
+      });
+      var innerLabels = [];
+      if (isInnerSplit && innerCount > 1) {
+        for (var labelIndex = 0; labelIndex < innerCount; labelIndex++) {
+          innerLabels.push(positionLabel + (labelIndex + 1));
+        }
+      }
+      return {
+        label: positionLabel,
+        fields: fields,
+        innerCount: isInnerSplit ? innerCount : 1,
+        innerLabels: innerLabels,
+        empty: false,
+        sourceKey: sourceKey,
+        order: ++seq,
+        band: bandNo,
+        family: slot.family,
+        variant: slot.variant,
+        combo: slot.combo,
+        file: slot.file,
+        header: slot.label || familyLabel(slot.family) || slot.file,
+        specText: slot.family + '-' + slot.variant + '-' + slot.combo,
+        previewSrc: 'img/' + slot.file
+      };
+    }
+
+    function addSubBand(slots, sourceKeyForIndex, bandNo) {
+      slots = Array.isArray(slots) ? slots : [];
+      var capacity = Math.max(1, Math.min(4, slots.length || 1));
+      var positionData = slots.map(function (slot, slotIndex) {
+        return slot ? makeSubPosition(slot, sourceKeyForIndex(slotIndex), bandNo, slotIndex, capacity) : null;
+      });
+      var filled = positionData.filter(Boolean);
+      if (!filled.length) return;
+      var positions = [];
+      slots.forEach(function (slot, slotIndex) {
+        positions.push(positionData[slotIndex]
+          ? positionData[slotIndex]
+          : { label: subPositionLabel(slotIndex, capacity), fields: [], empty: true, previewSrc: null });
+      });
+      out.push({
+        order: filled[0].order,
+        kind: 'subarea',
+        sourceKey: 'sub-band:' + bandNo,
+        band: bandNo,
+        file: filled.map(function (p) { return p.file; }).join(' / '),
+        header: '副區 一排' + capacity + '（' + positions.map(function (p) { return p.label; }).join('／') + '）',
+        specText: filled.map(function (p) {
+          return p.label + '：' + p.header + '（' + p.specText + '）';
+        }).join('\n'),
+        positions: positions,
+        sourceCount: filled.length,
+        previewSources: positions.map(function (p) { return p.previewSrc; }),
+        previewSrc: filled[0].previewSrc
+      });
+    }
+
+    if (sourceState.group !== null && (sourceState.slots || []).some(function (s) { return !!s; })) {
+      band++;
+      addSubBand(sourceState.slots || [], function (idx) { return 'top:' + idx; }, band);
+    }
+
+    (sourceState.msbn || []).forEach(function (row, rowIndex) {
+      if (!row) return;
+      if (isSubRow(row)) {
+        if (!(row.slots || []).some(function (s) { return !!s; })) return;
+        band++;
+        addSubBand(row.slots || [], function (slotIndex) {
+          return 'msbn-sub:' + rowIndex + ':' + slotIndex;
+        }, band);
+        return;
+      }
+      if (!row.file) return;
+      band++;
+      var spec = MSBN_FIELDS[row.file] || { n: 1, groups: [[]], labels: ['左右'] };
+      var workOrderLayout = spec.workOrderLayout || '';
+      var workOrderColumns = spec.workOrderColumns || null;
+      var labels = spec.labels || MSBN_POS_LABELS[spec.n] || ['左右'];
+      var positions = [];
+      for (var gi = 0; gi < spec.n; gi++) {
+        var gFields = [];
+        (spec.groups[gi] || []).forEach(function (t) {
+          var descriptor = typeof t === 'string' ? { type: t } : (t || {});
+          var ftype = descriptor.type;
+          var hint = descriptor.hint != null ? descriptor.hint : (MSBN_FIELD_HINTS[ftype] || '');
+          gFields.push({
+            type: ftype,
+            label: MSBN_FIELD_LABELS[ftype] || ftype,
+            metaLabel: ftype,
+            hint: hint,
+            targetKey: descriptor.targetKey || descriptor.fieldKey || '',
+            value: '',
+            locked: false
+          });
+        });
+        if (workOrderColumns && spec.n === 1) {
+          var columnFields = (workOrderColumns.groups || []).map(function (indices) {
+            return (indices || []).map(function (fieldIndex) {
+              return gFields[fieldIndex];
+            }).filter(Boolean);
+          });
+          var commonFields = (workOrderColumns.common || []).map(function (fieldIndex) {
+            return gFields[fieldIndex];
+          }).filter(Boolean);
+          positions.push({
+            label: labels[gi] || '左右',
+            fields: gFields,
+            sideFields: columnFields,
+            commonFields: commonFields,
+            innerCount: workOrderColumns.showHeaders === false ? 1 : columnFields.length,
+            innerLabels: workOrderColumns.labels || columnFields.map(function (_, index) {
+              return '位置' + (index + 1);
+            })
+          });
+        } else if (workOrderLayout && spec.n === 1) {
+          var textFields = gFields.filter(function (field) {
+            return ['促標', '品名', '警語'].indexOf(field.type) !== -1;
+          });
+          var imageFields = gFields.filter(function (field) {
+            return ['促標', '品名', '警語'].indexOf(field.type) === -1;
+          });
+          var imageOrder = ['商品', '代言人圖', '圓標', '簽名小字', '簽名圖', 'CTA'];
+          imageFields.sort(function (a, b) {
+            return imageOrder.indexOf(a.type) - imageOrder.indexOf(b.type);
+          });
+          var leftFields = workOrderLayout === 'text-right' ? imageFields : textFields;
+          var rightFields = workOrderLayout === 'text-right' ? textFields : imageFields;
+          positions.push({
+            label: labels[gi] || '左右',
+            fields: gFields,
+            sideFields: [leftFields, rightFields],
+            sideLabels: workOrderLayout === 'text-right' ? ['圖', '文'] : ['文', '圖']
+          });
+        } else {
+          positions.push({ label: labels[gi] || ('位置' + (gi + 1)), fields: gFields });
+        }
+      }
+      out.push({
+        order: ++seq, kind: 'msbn', sourceKey: 'msbn:' + rowIndex, band: band,
+        msbnFile: row.file,
+        file: row.file,
+        header: row.label || row.file.replace(/\.(jpg|jpeg|png)$/i, ''),
+        specText: row.file.replace(/\.(jpg|jpeg|png)$/i, ''),
+        positions: positions,
+        previewSrc: 'msbn-img/' + row.file,
+        layoutColumns: (workOrderColumns || (workOrderLayout && spec.n === 1)) ? 1 : 4
+      });
+    });
+    return out;
+  }
+
+  var items = collectWorkOrderItems(exportState);
+
+  /* ──────────────────────────────────────────────
+     MS Layout：比照參考表的「左側欄位＋中間 Layout＋右側視覺參考」
+     ────────────────────────────────────────────── */
+  layoutWs.properties.tabColor = { argb: COLORS.tealDark };
+  /* A／B 欄比照參考檔 MS Layout 的緊湊寬度：
+     A 只放「MSBN／副區」，B 的版位名稱與規格採自動換行，不再佔掉大片橫向空間。 */
+  layoutWs.getColumn(1).width = 10.63;
+  layoutWs.getColumn(2).width = 10.5;
+  for (var gc = 0; gc < 4; gc++) {
+    var baseCol = 3 + gc * 4;
+    layoutWs.getColumn(baseCol).width = 15;
+    layoutWs.getColumn(baseCol + 1).width = 12;
+    layoutWs.getColumn(baseCol + 2).width = 12;
+    layoutWs.getColumn(baseCol + 3).width = 10;
+  }
+  layoutWs.getColumn(19).width = 2.5;
+  for (var pc = 20; pc <= 33; pc++) layoutWs.getColumn(pc).width = 6.8;
+
+  mergeSafe(layoutWs, 1, 1, 2, 1).value = '素材名稱';
+  mergeSafe(layoutWs, 1, 2, 2, 2).value = '版位／規格';
+  mergeSafe(layoutWs, 1, 3, 1, 18).value = 'Layout（綠色欄位可填；固定欄位與規則已鎖定）';
+  mergeSafe(layoutWs, 1, 20, 1, 33).value = '視覺參考（目前系統實際版位）';
+  mergeSafe(layoutWs, 2, 3, 2, 18).value = '中文 1 字、英數與半形符號 0.5 字；純數字自動以 $／千分位顯示；匯入 BODA 後混合文案也會整理；禁用語會阻擋並標紅';
+  mergeSafe(layoutWs, 2, 20, 2, 33).value = '圖片僅供版配與欄位位置對照，不代表最終正式稿';
+  [layoutWs.getCell(1, 1), layoutWs.getCell(1, 2), layoutWs.getCell(1, 3), layoutWs.getCell(1, 20)].forEach(function (cell) {
+    setStaticStyle(cell, { bold: true, color: COLORS.white, fill: COLORS.black, horizontal: 'center', size: 11 });
+  });
+  [layoutWs.getCell(2, 3), layoutWs.getCell(2, 20)].forEach(function (cell) {
+    setStaticStyle(cell, { color: COLORS.white, fill: COLORS.dark2, horizontal: 'center', size: 9 });
+  });
+  setFill(layoutWs, 1, 1, 2, 33, COLORS.black);
+  setFill(layoutWs, 2, 3, 2, 33, COLORS.dark2);
+  setBorder(layoutWs, 1, 1, 2, 33);
+  layoutWs.getRow(1).height = 24;
+  layoutWs.getRow(2).height = 20;
+
+  metaWs.getCell('A1').value = 'BODA_WORKORDER_V2';
+   var metaHeaders = ['kind', 'sourceKey', 'band', 'order', 'family', 'variant', 'combo', 'msbnFile', 'position', 'label', 'address', 'header', 'file', 'locked', 'hint', 'targetKey'];
+  metaHeaders.forEach(function (h, i) { metaWs.getCell(2, i + 1).value = h; });
+  var metaRow = 3;
+  var previewJobs = [];
+  var layoutRow = 3;
+
+  /* MSBN 仍保留最多四個位置的固定欄位；副區則依畫布實際格數平均分配
+     C:R 的 Layout 寬度。副區一排 3 格時，畫面只出現左／中／右三格，
+     不再多留一個沒有用途的第四格。 */
+  function layoutPositionRanges(item) {
+    var count = item.kind === 'subarea'
+      ? Math.max(1, Math.min(4, item.positions.length || 1))
+      : (item.layoutColumns || 4);
+    var ranges = [];
+    for (var i = 0; i < count; i++) {
+      var start = 3 + Math.floor(i * 16 / count);
+      var end = 3 + Math.floor((i + 1) * 16 / count) - 1;
+      ranges.push({
+        start: start,
+        end: end,
+        label: start,
+        inputStart: start + 1,
+        inputEnd: end - 1,
+        check: end
+      });
+    }
+    return ranges;
+  }
+  function innerPositionRanges(posRange, count) {
+    var start = posRange.start + 1;
+    var endLimit = posRange.end;
+    var total = Math.max(0, endLimit - start + 1);
+    var ranges = [];
+    for (var i = 0; i < count; i++) {
+      var rangeStart = start + Math.floor(i * total / count);
+      var end = start + Math.floor((i + 1) * total / count) - 1;
+      if (i === count - 1) end = endLimit;
+      if (end < rangeStart) end = rangeStart;
+      ranges.push({
+        start: rangeStart,
+        end: end,
+        label: posRange.label,
+        inputStart: rangeStart,
+        inputEnd: end - 1,
+        check: end
+      });
+    }
+    return ranges;
+  }
+  function sidePositionRanges(posRange, count) {
+    var start = posRange.start;
+    var total = posRange.end - posRange.start + 1;
+    var ranges = [];
+    for (var i = 0; i < count; i++) {
+      var end = posRange.start + Math.floor((i + 1) * total / count) - 1;
+      ranges.push({
+        start: start,
+        end: end,
+        label: start,
+        inputStart: start + 1,
+        inputEnd: end - 1,
+        check: end
+      });
+      start = end + 1;
+    }
+    return ranges;
+  }
+  items.forEach(function (item) {
+    var hasInnerPositions = item.positions.some(function (p) {
+      return p && p.innerCount > 1;
+    });
+    var commonRows = Math.max.apply(null, item.positions.map(function (p) {
+      return p && p.commonFields ? p.commonFields.length : 0;
+    }).concat([0]));
+    var maxFields = Math.max.apply(null, item.positions.map(function (p) {
+      if (!p) return 0;
+      if (p.sideFields) {
+        return Math.max.apply(null, p.sideFields.map(function (fields) {
+          return (fields || []).length;
+        }).concat([0]));
+      }
+      return (p.fields || []).length;
+    }).concat([0]));
+    var fieldRows = Math.max(maxFields, 6);
+    var innerHeaderRows = hasInnerPositions ? 1 : 0;
+    var displayRows = fieldRows + innerHeaderRows + commonRows;
+    var headerRow = layoutRow;
+    var firstFieldRow = headerRow + 1 + commonRows + innerHeaderRows;
+    var endRow = firstFieldRow + fieldRows - 1;
+    item.layoutRow = headerRow;
+
+    mergeSafe(layoutWs, headerRow, 1, endRow, 1).value = item.kind === 'msbn' ? 'MSBN' : '副區';
+    mergeSafe(layoutWs, headerRow, 2, endRow, 2).value = item.header + '\n' + item.specText + '\nBand ' + item.band;
+    setStaticStyle(layoutWs.getCell(headerRow, 1), {
+      bold: true, color: COLORS.white, fill: COLORS.black, horizontal: 'center'
+    });
+    setStaticStyle(layoutWs.getCell(headerRow, 2), {
+      bold: true, color: COLORS.white, fill: COLORS.black, horizontal: 'center'
+    });
+    setFill(layoutWs, headerRow, 1, headerRow, 18, COLORS.black);
+
+    var positionRanges = layoutPositionRanges(item);
+    for (var pi = 0; pi < positionRanges.length; pi++) {
+      var posRange = positionRanges[pi];
+      var pos = item.positions[pi];
+      mergeSafe(layoutWs, headerRow, posRange.start, headerRow, posRange.end).value = pos ? pos.label : '—';
+      setStaticStyle(layoutWs.getCell(headerRow, posRange.start), {
+        bold: true, color: COLORS.white, fill: COLORS.black, horizontal: 'center'
+      });
+      setBorder(layoutWs, headerRow, posRange.start, headerRow, posRange.end);
+
+      var commonFieldCount = pos && pos.commonFields ? pos.commonFields.length : 0;
+      if (pos && pos.commonFields) {
+        pos.commonFields.forEach(function (commonField, commonIndex) {
+          renderLayoutField(
+            commonField,
+            headerRow + 1 + commonIndex,
+            posRange,
+            commonField.label,
+            true
+          );
+        });
+      }
+      var splitRow = headerRow + 1 + commonFieldCount;
+      var innerRanges = pos && pos.innerCount > 1 ? innerPositionRanges(posRange, pos.innerCount) : null;
+      if (hasInnerPositions) {
+        if (innerRanges) {
+          var splitLabel = layoutWs.getCell(splitRow, posRange.label);
+          splitLabel.value = '分欄';
+          setStaticStyle(splitLabel, { bold: true, fill: COLORS.gray2, size: 9.5, horizontal: 'center' });
+          setBorder(layoutWs, splitRow, posRange.label, splitRow, posRange.label);
+          innerRanges.forEach(function (innerRange, innerIndex) {
+            var innerHeader = mergeSafe(layoutWs, splitRow, innerRange.start, splitRow, innerRange.end);
+            innerHeader.value = (pos.innerLabels || [])[innerIndex] || (pos.label + (innerIndex + 1));
+            setStaticStyle(innerHeader, {
+              bold: true, color: COLORS.white, fill: COLORS.teal, horizontal: 'center', size: 9
+            });
+            setBorder(layoutWs, splitRow, innerRange.start, splitRow, innerRange.end);
+          });
+        } else {
+          setFill(layoutWs, splitRow, posRange.start, splitRow, posRange.end, COLORS.gray2);
+          setProtection(layoutWs, splitRow, posRange.start, splitRow, posRange.end, true);
+          setBorder(layoutWs, splitRow, posRange.start, splitRow, posRange.end);
+        }
+        layoutWs.getRow(splitRow).height = 22;
+      }
+
+      function isImageFilenameField(field) {
+        return ['商品', '商品圖', '情境圖', '信用卡圖', '贈品圖'].indexOf(String(field.type || '')) !== -1;
+      }
+      function isCSeriesTicketCopyField(field) {
+        var file = item.kind === 'msbn' ? (item.msbnFile || item.file) : '';
+        return /^MSBN-C-/i.test(String(file || '')) && String(field.type || '') === '文案';
+      }
+
+      function normalizeWorkOrderExportText(field) {
+        if (!field || field.locked || isImageFilenameField(field)) return field ? field.value : '';
+        var raw = field.value == null ? '' : String(field.value);
+        var role = importFieldRuleRole(field, field.metaLabel || field.label || field.type);
+        if (IMPORT_TEXT_RULES_STATE.status === 'ready' && window.banwordEngine &&
+            typeof window.banwordEngine.transformText === 'function') {
+          return window.banwordEngine.transformText(raw, role, {}).text;
+        }
+        return importFallbackNumericFormat(raw, role);
+      }
+
+      function renderLayoutField(field, rowNo, fieldRange, labelText, showLabel) {
+        var labelColumn = fieldRange.label != null ? fieldRange.label : posRange.label;
+        var labelCell = layoutWs.getCell(rowNo, labelColumn);
+        var inputCell = mergeSafe(layoutWs, rowNo, fieldRange.inputStart, rowNo, fieldRange.inputEnd);
+        var checkCell = layoutWs.getCell(rowNo, fieldRange.check);
+        setBorder(layoutWs, rowNo, posRange.label, rowNo, posRange.label);
+        setBorder(layoutWs, rowNo, fieldRange.start, rowNo, fieldRange.end);
+        layoutWs.getRow(rowNo).height = 22;
+
+        if (showLabel) {
+          labelCell.value = labelText;
+          setStaticStyle(labelCell, { bold: true, fill: COLORS.gray2, size: 9.5 });
+        }
+        inputCell.value = normalizeWorkOrderExportText(field);
+        var inputNote = field.hint ? ('填寫規則：' + field.hint) : '請填入工單內容';
+        if (!field.locked && !isImageFilenameField(field)) {
+          inputNote += '\n匯回 BODA 時會自動補上 $ 與千分位，並套用禁用語規則；Excel 內直接輸入不會即時改寫。';
+        }
+        inputCell.note = inputNote;
+        setInputStyle(inputCell, field.locked, { fitText: isCSeriesTicketCopyField(field) });
+        setProtection(layoutWs, rowNo, fieldRange.inputStart, rowNo, fieldRange.inputEnd, field.locked);
+        setStaticStyle(checkCell, {
+          fill: field.locked ? COLORS.gray : COLORS.white, horizontal: 'center', size: 9
+        });
+
+        if (field.locked) {
+          checkCell.value = '鎖定';
+        } else {
+          if (isImageFilenameField(field)) {
+            applyImageFilenameGuard(layoutWs, inputCell, checkCell);
+          } else {
+            applyWorkbookTextGuard(layoutWs, inputCell, field, checkCell, workOrderRuleRange);
+          }
+          checkCell.font = { name: 'Arial', size: 9, color: { argb: COLORS.black } };
+          layoutWs.addConditionalFormatting({
+            ref: checkCell.address,
+            rules: [
+              { type: 'expression', priority: cfPriority++, formulae: [checkCell.address + '="超過"'], style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) } },
+              { type: 'expression', priority: cfPriority++, formulae: [checkCell.address + '="禁用語"'], style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) } },
+              { type: 'expression', priority: cfPriority++, formulae: [checkCell.address + '="記得加副檔名"'], style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) } },
+              { type: 'expression', priority: cfPriority++, formulae: [checkCell.address + '="OK"'], style: { font: { color: { argb: COLORS.linkedText }, bold: true }, fill: solid(COLORS.green) } }
+            ]
+          });
+        }
+
+        /* 副區同一排雖然在 MS Layout 橫向合併呈現，但每一格仍寫入自己的
+           sourceKey／版型／檔名，確保填好的 XLSX 匯回後仍是左、中、右三張獨立卡片。 */
+        var metaSource = (item.kind === 'subarea' && pos && !pos.empty) ? pos : item;
+        var metaValues = [
+          item.kind, metaSource.sourceKey || item.sourceKey, item.band, metaSource.order || item.order,
+          metaSource.family || item.family || '', metaSource.variant || item.variant || '',
+          metaSource.combo || item.combo || '', metaSource.msbnFile || item.msbnFile || '',
+          pi + 1, field.metaLabel || stripLabelAnnotation(field.label), inputCell.address,
+          metaSource.header || item.header, metaSource.file || item.file || '',
+          field.locked ? 1 : 0, field.hint || '', field.targetKey || ''
+        ];
+        metaValues.forEach(function (v, idx) { metaWs.getCell(metaRow, idx + 1).value = v; });
+        metaRow++;
+      }
+
+      for (var fi = 0; fi < fieldRows; fi++) {
+        var rowNo = firstFieldRow + fi;
+        setBorder(layoutWs, rowNo, posRange.start, rowNo, posRange.end);
+        layoutWs.getRow(rowNo).height = 22;
+
+        if (pos && pos.sideFields) {
+          var sideRanges = sidePositionRanges(posRange, pos.sideFields.length);
+          for (var si = 0; si < sideRanges.length; si++) {
+            var sideRange = sideRanges[si];
+            var sideField = pos.sideFields[si][fi];
+            if (!sideField) {
+              setFill(layoutWs, rowNo, sideRange.start, rowNo, sideRange.end, COLORS.gray2);
+              setProtection(layoutWs, rowNo, sideRange.start, rowNo, sideRange.end, true);
+              continue;
+            }
+            renderLayoutField(sideField, rowNo, sideRange, sideField.label, true);
+          }
+          continue;
+        }
+
+        var field = pos && pos.fields[fi];
+        var labelCell = layoutWs.getCell(rowNo, posRange.label);
+        if (!field) {
+          labelCell.value = '';
+          setFill(layoutWs, rowNo, posRange.start, rowNo, posRange.end, COLORS.gray2);
+          setProtection(layoutWs, rowNo, posRange.start, rowNo, posRange.end, true);
+          continue;
+        }
+
+        if (field.innerFields && field.innerFields.length > 1) {
+          var fieldRanges = innerPositionRanges(posRange, field.innerFields.length);
+          field.innerFields.forEach(function (innerField, innerIndex) {
+            renderLayoutField(
+              innerField,
+              rowNo,
+              fieldRanges[innerIndex],
+              field.label.replace(/-1$/, ''),
+              innerIndex === 0
+            );
+          });
+        } else {
+          renderLayoutField(field, rowNo, posRange, field.label, true);
+        }
+      }
+    layoutWs.getRow(headerRow).height = 23;
+
+    /* 右側示意圖是浮在儲存格上方的圖片。只保留最上方的標題框線；
+       圖片下方與周圍的空白儲存格不要再畫黑色格線，避免縮圖區看起來像表格。 */
+    setFill(layoutWs, headerRow, 20, endRow, 33, COLORS.white);
+    setFill(layoutWs, headerRow, 20, headerRow, 33, COLORS.black);
+    setBorder(layoutWs, headerRow, 20, headerRow, 33);
+    for (var previewBlankRow = headerRow + 1; previewBlankRow <= endRow; previewBlankRow++) {
+      for (var previewBlankCol = 20; previewBlankCol <= 33; previewBlankCol++) {
+        layoutWs.getCell(previewBlankRow, previewBlankCol).border = {};
+      }
+    }
+    }
+
+    var maxPreviewHeight = Math.max(150, Math.round((displayRows * 22 + 35) * 96 / 72));
+    if (item.kind === 'subarea' && item.positions.length > 1) {
+      /* 右側示意圖也保持副區畫布的橫向順序，不再把左／中／右拆成三段直排。 */
+      var previewCount = Math.min(4, item.positions.length);
+      for (var pvi = 0; pvi < previewCount; pvi++) {
+        var previewPos = item.positions[pvi];
+        var rangeStart = 20 + Math.floor(pvi * 14 / previewCount);
+        var rangeEnd = 20 + Math.floor((pvi + 1) * 14 / previewCount) - 1;
+        var previewHeader = mergeSafe(layoutWs, headerRow, rangeStart, headerRow, rangeEnd);
+        previewHeader.value = previewPos ? previewPos.label : '—';
+        setStaticStyle(previewHeader, {
+          bold: true,
+          color: COLORS.white,
+          fill: COLORS.black,
+          horizontal: 'center',
+          size: 9
+        });
+        setBorder(layoutWs, headerRow, rangeStart, headerRow, rangeEnd);
+        if (previewPos && !previewPos.empty && previewPos.previewSrc) {
+          previewJobs.push({
+            item: item,
+            src: previewPos.previewSrc,
+            row: headerRow - 1,
+            col: 19 + pvi * (14 / previewCount),
+            fallbackCol: rangeStart,
+            maxWidth: Math.max(90, Math.floor(500 / previewCount) - 12),
+            maxHeight: maxPreviewHeight,
+            positionLabel: previewPos.label
+          });
+        }
+      }
+    } else {
+      layoutWs.getCell(headerRow, 20).value = item.header;
+      setStaticStyle(layoutWs.getCell(headerRow, 20), {
+        bold: true, color: COLORS.white, fill: COLORS.black, horizontal: 'center', size: 9
+      });
+      previewJobs.push({
+        item: item, src: item.previewSrc, row: headerRow - 1, col: 19,
+        fallbackCol: 20, maxWidth: 500, maxHeight: maxPreviewHeight
+      });
+    }
+    layoutRow = endRow + 2;
+  });
+  /* ──────────────────────────────────────────────
+     吸底圖：所有工單／全版位試算表固定附在 MS Layout 最下方
+     ──────────────────────────────────────────────
+     版面參考「吸底圖demo.xlsx」：最少 2 顆、最多 5 顆，每顆可填 Icon 或 Logo
+     （二選一）與一段 5 字內文案。右側數字不是固定上限，而是實際字數公式：
+     中文 1 字、英數／半形符號 0.5 字。可填欄位解除保護；標題、說明與計數鎖定。 */
+  var embeddedBottomState = getBottomStateForSync();
+  var embeddedBottomStateData = null;
+  if (embeddedBottomState) {
+    try { embeddedBottomStateData = JSON.parse(embeddedBottomState); } catch (e) { embeddedBottomStateData = null; }
+  }
+  function appendBottomWorkOrderSection(startRow) {
+    var headerRow = startRow;
+    var iconRow = startRow + 1;
+    var logoRow = startRow + 2;
+    var textRow = startRow + 3;
+    var exportBanner = embeddedBottomStateData && embeddedBottomStateData.banners &&
+      embeddedBottomStateData.banners[embeddedBottomStateData.activeBannerIndex || 0];
+    var exportSlots = exportBanner && Array.isArray(exportBanner.slots) ? exportBanner.slots : [];
+    var exportCustomIcons = embeddedBottomStateData && Array.isArray(embeddedBottomStateData.customIcons)
+      ? embeddedBottomStateData.customIcons : [];
+    function exportedIconName(slot) {
+      if (!slot) return '';
+      if (slot.iconText != null && String(slot.iconText) !== '') return String(slot.iconText);
+      if (!slot.iconId) return '';
+      for (var ei = 0; ei < exportCustomIcons.length; ei++) {
+        if (exportCustomIcons[ei] && exportCustomIcons[ei].id === slot.iconId) {
+          return String(exportCustomIcons[ei].displayName || exportCustomIcons[ei].name || slot.iconId);
+        }
+      }
+      return String(slot.iconId);
+    }
+    function exportedLogoName(slot) {
+      if (!slot || slot.iconText != null || !slot.iconId) return '';
+      for (var el = 0; el < exportCustomIcons.length; el++) {
+        if (exportCustomIcons[el] && exportCustomIcons[el].id === slot.iconId &&
+            exportCustomIcons[el].type === 'logo') {
+          return String(exportCustomIcons[el].displayName || exportCustomIcons[el].name || slot.iconId);
+        }
+      }
+      return '';
+    }
+    function showExportedBottomValue(cell, value) {
+      if (!value) return;
+      cell.value = value;
+      cell.font = {
+        name: 'Arial', size: 9,
+        color: { argb: COLORS.inputText },
+        italic: false
+      };
+    }
+    /* 依 MS Layout 既有欄寬分成五個視覺上接近等寬的區段。 */
+    var spans = [
+      { start: 3,  end: 7  },  /* C:G  */
+      { start: 8,  end: 12 },  /* H:L  */
+      { start: 13, end: 17 },  /* M:Q  */
+      { start: 18, end: 25 },  /* R:Y  */
+      { start: 26, end: 33 }   /* Z:AG */
+    ];
+    var firstIconPlaceholder = '(輸入許願的Icon，例：房子)';
+    var firstLogoPlaceholder = '(輸入圖檔名，例：三星.png)';
+    var optionalPlaceholder = '(需要再填即可)';
+    var textPlaceholder = '文案5字內';
+    var stickyLine = { style: 'thin', color: { argb: 'FF999999' } };
+    var stickyDotted = { style: 'dotted', color: { argb: 'FF999999' } };
+
+    function stickyBorder(top, right, bottom, left) {
+      return {
+        top: top || stickyLine,
+        right: right || stickyLine,
+        bottom: bottom || stickyLine,
+        left: left || stickyLine
+      };
+    }
+    function setStickyRangeBorder(r1, c1, r2, c2, border) {
+      for (var rr = r1; rr <= r2; rr++) {
+        for (var cc = c1; cc <= c2; cc++) layoutWs.getCell(rr, cc).border = border || stickyBorder();
+      }
+    }
+    function setStickyInput(master, r1, c1, r2, c2, optional, placeholder, noteText) {
+      master.value = placeholder;
+      master.note = noteText;
+      master.font = {
+        name: 'Arial', size: 9,
+        color: { argb: optional ? COLORS.staticText : COLORS.inputText },
+        italic: true
+      };
+      master.fill = solid(optional ? COLORS.gray : COLORS.input);
+      master.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+      setProtection(layoutWs, r1, c1, r2, c2, false);
+      setStickyRangeBorder(r1, c1, r2, c2);
+    }
+    function quotedExcelText(value) {
+      return '"' + String(value).replace(/"/g, '""') + '"';
+    }
+    function isPlaceholderFormula(addr, placeholder) {
+      return 'OR(' + addr + '=\"\",' + addr + '=' + quotedExcelText(placeholder) + ')';
+    }
+
+    /* 左側固定說明。 */
+    mergeSafe(layoutWs, iconRow, 1, textRow, 1).value = '吸底圖';
+    mergeSafe(layoutWs, iconRow, 2, textRow, 2).value = '填你要的資訊\n最少2格、最多5格\n（不要的不填即可）';
+    setStaticStyle(layoutWs.getCell(iconRow, 1), {
+      color: COLORS.staticText, fill: COLORS.white, horizontal: 'center', size: 11
+    });
+    setStaticStyle(layoutWs.getCell(iconRow, 2), {
+      color: COLORS.black, fill: COLORS.white, horizontal: 'center', size: 9
+    });
+    setStickyRangeBorder(iconRow, 1, textRow, 2, stickyBorder(stickyDotted, stickyLine, stickyDotted, stickyDotted));
+
+    bottomMetaWs.getCell('A1').value = 'BODA_BOTTOM_V1';
+    bottomMetaWs.getCell('B1').value = 'MS Layout';
+    ['group', 'title', 'iconAddress', 'logoAddress', 'textAddress', 'countAddress', 'optional'].forEach(function (h, idx) {
+      bottomMetaWs.getCell(2, idx + 1).value = h;
+    });
+
+    spans.forEach(function (span, i) {
+      var optional = i >= 2;
+      var title = '第' + (i + 1) + '顆';
+      var labelCol = span.start + 1;
+      var inputStart = span.start + 2;
+      var inputEnd = span.end;
+      var iconPlaceholder = optional ? optionalPlaceholder : firstIconPlaceholder;
+      var logoPlaceholder = optional ? optionalPlaceholder : firstLogoPlaceholder;
+      var thisTextPlaceholder = optional ? optionalPlaceholder : textPlaceholder;
+
+      var titleCell = mergeSafe(layoutWs, headerRow, span.start, headerRow, span.end);
+      titleCell.value = title;
+      setStaticStyle(titleCell, {
+        bold: true, color: COLORS.white, fill: COLORS.black, horizontal: 'center', size: 10
+      });
+      setStickyRangeBorder(headerRow, span.start, headerRow, span.end, stickyBorder());
+
+      var intro = mergeSafe(layoutWs, iconRow, span.start, logoRow, span.start);
+      intro.value = 'Icon與Logo\n2選1填即可';
+      setStaticStyle(intro, {
+        color: COLORS.black, fill: COLORS.white, horizontal: 'center', size: 8.5
+      });
+      setStickyRangeBorder(iconRow, span.start, logoRow, span.start, stickyBorder(stickyLine, stickyDotted, stickyLine, stickyLine));
+
+      var iconLabel = layoutWs.getCell(iconRow, labelCol);
+      var logoLabel = layoutWs.getCell(logoRow, labelCol);
+      iconLabel.value = 'Icon';
+      logoLabel.value = 'Logo';
+      setStaticStyle(iconLabel, { fill: COLORS.white, horizontal: 'center', size: 9 });
+      setStaticStyle(logoLabel, { fill: COLORS.white, horizontal: 'center', size: 9 });
+      iconLabel.border = stickyBorder(stickyLine, stickyDotted, stickyDotted, stickyDotted);
+      logoLabel.border = stickyBorder(stickyDotted, stickyDotted, stickyLine, stickyDotted);
+
+      var iconInput = mergeSafe(layoutWs, iconRow, inputStart, iconRow, inputEnd);
+      var logoInput = mergeSafe(layoutWs, logoRow, inputStart, logoRow, inputEnd);
+      setStickyInput(
+        iconInput, iconRow, inputStart, iconRow, inputEnd, optional, iconPlaceholder,
+        'Icon 與 Logo 二選一。請輸入素材庫名稱，例如：房子。'
+      );
+      setStickyInput(
+        logoInput, logoRow, inputStart, logoRow, inputEnd, optional, logoPlaceholder,
+        'Icon 與 Logo 二選一。請輸入 Logo 圖檔名，例如：三星.png。'
+      );
+      var exportedSlot = exportSlots[i] || null;
+      showExportedBottomValue(iconInput, exportedLogoName(exportedSlot) ? '' : exportedIconName(exportedSlot));
+      showExportedBottomValue(logoInput, exportedLogoName(exportedSlot));
+
+      /* 二選一：若 Icon 與 Logo 都填入真實內容，兩格都標紅並阻擋後輸入的那格。 */
+      var iconAddr = iconInput.address;
+      var logoAddr = logoInput.address;
+      var iconEmpty = isPlaceholderFormula(iconAddr, iconPlaceholder);
+      var logoEmpty = isPlaceholderFormula(logoAddr, logoPlaceholder);
+      var chooseOneFormula = 'OR(' + iconEmpty + ',' + logoEmpty + ')';
+      iconInput.dataValidation = {
+        type: 'custom', formulae: [chooseOneFormula], allowBlank: true,
+        showErrorMessage: true, errorStyle: 'stop', errorTitle: 'Icon／Logo 請二選一',
+        error: '同一顆只能填 Icon 或 Logo；請先清空另一格。',
+        showInputMessage: true, promptTitle: 'Icon／Logo 二選一',
+        prompt: 'Icon 填素材名稱；Logo 填圖檔名。'
+      };
+      logoInput.dataValidation = iconInput.dataValidation;
+      var bothFilledFormula = 'AND(NOT(' + iconEmpty + '),NOT(' + logoEmpty + '))';
+      layoutWs.addConditionalFormatting({
+        ref: iconAddr + ':' + logoAddr,
+        rules: [{
+          type: 'expression', priority: cfPriority++, formulae: [bothFilledFormula],
+          style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) }
+        }]
+      });
+
+      var textInput = mergeSafe(layoutWs, textRow, span.start, textRow, span.end - 1);
+      var countCell = layoutWs.getCell(textRow, span.end);
+      setStickyInput(
+        textInput, textRow, span.start, textRow, span.end - 1, optional, thisTextPlaceholder,
+        '吸底文案最多 5 字；中文算 1，英數與半形符號算 0.5。'
+      );
+      showExportedBottomValue(textInput, exportedSlot && exportedSlot.text ? String(exportedSlot.text) : '');
+      textInput.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      var textAddr = textInput.address;
+      var textEmpty = isPlaceholderFormula(textAddr, thisTextPlaceholder);
+      textInput.dataValidation = {
+        type: 'custom', formulae: ['OR(' + textEmpty + ',LENB(' + textAddr + ')/2<=5)'],
+        allowBlank: true, showErrorMessage: true, errorStyle: 'stop',
+        errorTitle: '超過吸底文案字數',
+        error: '最多 5 個字；中文算 1，英數與半形符號算 0.5。',
+        showInputMessage: true, promptTitle: '吸底文案：最多 5 字',
+        prompt: '中文算 1，英數與半形符號算 0.5。'
+      };
+      layoutWs.addConditionalFormatting({
+        ref: textAddr,
+        rules: [{
+          type: 'expression', priority: cfPriority++,
+          formulae: ['AND(NOT(' + textEmpty + '),LENB(' + textAddr + ')/2>5)'],
+          style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) }
+        }]
+      });
+
+      countCell.value = {
+        formula: 'IF(' + textEmpty + ',\"\",LENB(' + textAddr + ')/2)',
+        result: ''
+      };
+      countCell.note = '實際字數：中文 1 字；英數與半形符號 0.5 字；上限 5。';
+      countCell.numFmt = '0.0;-0.0;0';
+      setStaticStyle(countCell, { fill: COLORS.white, color: COLORS.staticText, horizontal: 'center', size: 9 });
+      countCell.border = stickyBorder(stickyLine, stickyLine, stickyLine, stickyDotted);
+      countCell.protection = { locked: true };
+      layoutWs.addConditionalFormatting({
+        ref: countCell.address,
+        rules: [
+          { type: 'expression', priority: cfPriority++, formulae: [countCell.address + '>5'], style: { font: { color: { argb: COLORS.red }, bold: true }, fill: solid(COLORS.error) } },
+          { type: 'expression', priority: cfPriority++, formulae: ['AND(ISNUMBER(' + countCell.address + '),' + countCell.address + '<=5)'], style: { font: { color: { argb: COLORS.linkedText }, bold: true } } }
+        ]
+      });
+
+      var mr = 3 + i;
+      [i + 1, title, iconAddr, logoAddr, textAddr, countCell.address, optional ? 1 : 0].forEach(function (v, idx) {
+        bottomMetaWs.getCell(mr, idx + 1).value = v;
+      });
+    });
+
+    layoutWs.getRow(headerRow).height = 22;
+    layoutWs.getRow(iconRow).height = 30;
+    layoutWs.getRow(logoRow).height = 30;
+    layoutWs.getRow(textRow).height = 30;
+
+    /* A/B 的標題列留白，比照 demo；仍把底色鎖定，避免誤編輯。 */
+    layoutWs.getCell(headerRow, 1).fill = solid(COLORS.white);
+    layoutWs.getCell(headerRow, 2).fill = solid(COLORS.white);
+    layoutWs.getCell(headerRow, 1).protection = { locked: true };
+    layoutWs.getCell(headerRow, 2).protection = { locked: true };
+
+    return textRow + 1;
+  }
+
+  layoutRow = appendBottomWorkOrderSection(layoutRow);
+
+  /* 吸底編輯器的完整狀態（含自訂 LOGO／ICON 的 data URI、分頁、文案與銳化設定）
+     以分段 JSON 寫入 veryHidden 工作表。這份資料不影響可見工單版面，
+     但重新匯入時可精準還原吸底成品，而不只靠文字名稱猜素材。 */
+  if (embeddedBottomState) {
+    var bottomStateChunkSize = 28000;
+    var bottomStateChunkCount = Math.ceil(embeddedBottomState.length / bottomStateChunkSize);
+    bottomStateWs.getCell('A1').value = 'BODA_BOTTOM_STATE_V1';
+    bottomStateWs.getCell('B1').value = bottomStateChunkCount;
+    bottomStateWs.getCell('C1').value = 'JSON chunks';
+    for (var bottomStateIndex = 0; bottomStateIndex < bottomStateChunkCount; bottomStateIndex++) {
+      bottomStateWs.getCell(bottomStateIndex + 3, 1).value = bottomStateIndex + 1;
+      bottomStateWs.getCell(bottomStateIndex + 3, 2).value =
+        embeddedBottomState.slice(bottomStateIndex * bottomStateChunkSize, (bottomStateIndex + 1) * bottomStateChunkSize);
+    }
+    bottomStateWs.getColumn(1).width = 12;
+    bottomStateWs.getColumn(2).width = 45;
+  }
+
+
+  layoutWs.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 33 } };
+  layoutWs.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, margins: { left: 0.25, right: 0.25, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } };
+  layoutWs.headerFooter.oddFooter = '&L BODA 工單&C MS Layout&R 第 &P / &N 頁';
+
+  /* ──────────────────────────────────────────────
+     設定：等級與曝光資源矩陣（隱藏，供工單總覽公式使用）
+     ────────────────────────────────────────────── */
+  var CATALOG = {
+    'DDCard': { display: 'DD Card BN (APP)', size: '531×792', format: 'JPG', rules: '品牌名≤9；主標≤8；副標≤7；日期/警語≤14', reminder: 'LOGO、商品圖；CTA 依版型', layouts: 'ddcard方logo／ddcard橫logo', available: true },
+    'HBN': { display: 'HBN (PC)', size: '1200×360', format: 'JPG', rules: '品牌名≤9；主標≤8；副標≤7；日期/警語≤14', reminder: '橫式或方形 LOGO 版', layouts: 'HBN_橫式LOGO／HBN_方式LOGO', available: true },
+    '活動總覽': { display: '活動總覽', size: '依活動規格', format: 'JPG/PNG', rules: '依活動需求', reminder: '目前系統尚未提供可編輯版型', layouts: '尚未提供版型', available: false },
+    '首頁LOGO牆': { display: '首頁 LOGO 牆', size: '402×483', format: 'JPG/PNG', rules: 'LOGO／人物或商品圖可縮放', reminder: 'LOGO 位於曝品或人物範圍內，可用滑鼠縮放', layouts: '首頁LOGO牆', available: true },
+    'AR': { display: 'AR', size: '100×100（依規範）', format: 'JPG/PNG', rules: '文案≤6 或 LOGO；2擇1', reminder: '目前系統尚未提供可編輯版型', layouts: '尚未提供版型', available: false },
+    'FB_Post': { display: 'FB POST', size: '1200×630', format: 'JPG', rules: '品牌名≤9；主標≤8；副標≤7；日期/警語≤14', reminder: '方 LOGO／橫 LOGO', layouts: 'FB_POST_方LOGO／FB_POST_橫LOGO', available: true },
+    'AMS BN': { display: 'AMS BN', size: '1077×264（依規範）', format: 'JPG', rules: '依 AMS 規格', reminder: '目前系統尚未提供可編輯版型', layouts: '尚未提供版型', available: false },
+    'Coin_page': { display: 'Coin Page BN', size: '1200×391', format: 'JPG', rules: '品牌名≤9；主標≤8；副標≤7；日期/警語≤14', reminder: '方 LOGO／橫 LOGO', layouts: 'Coin_pageBN_APP方LOGO／Coin_pageBN_APP橫LOGO', available: true },
+    'IG': { display: 'IG', size: '900×1600', format: 'JPG', rules: '品牌名≤9；主標≤8；副標≤7；日期/警語≤14', reminder: '方 LOGO／橫 LOGO', layouts: 'IG方logo排版／IG橫logo排版', available: true },
+    'SearchIcon': { display: 'Search ICON', size: '120×120＋84×84', format: 'PNG', rules: 'ICON 文案≤2；或 LOGO／商品圖', reminder: '120×120 建議 <50KB，另輸出 84×84', layouts: 'SearchICON_LOGO／PRODUCT／TEXT', available: true },
+    'SearchImage': { display: 'Search Image', size: '1125×156', format: 'JPG/PNG', rules: '副標≤7；LOGO 1～3 個', reminder: '依選用版型提供 1～3 個 LOGO', layouts: 'Search_Image1logo／2logo／3logo', available: true },
+    'SCPN': { display: 'SCBN／SCPN', size: '1200×200', format: 'JPG', rules: '品牌名≤9；副標≤7；CTA', reminder: '商城橫幅', layouts: 'SCBN_APP', available: true }
+  };
+  var LEVEL_PLAN = {
+    'brand_star_mega': [],
+    'brand_star_mega_zj': [],
+    'select_pkg': [],
+    'mdd': [],
+    'mdd_zj': [],
+    'bod_a': [
+      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['首頁LOGO牆', '預設'], ['AR', '預設'], ['FB_Post', '預設'], ['AMS BN', '預設'],
+      ['Coin_page', '選配'], ['IG', '選配'], ['SearchIcon', '選配'], ['SearchImage', '選配']
+    ],
+    'bod_a_zj': [
+      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['首頁LOGO牆', '預設'], ['AR', '預設'], ['FB_Post', '預設'], ['AMS BN', '預設'],
+      ['Coin_page', '選配'], ['IG', '選配'], ['SearchIcon', '選配'], ['SearchImage', '選配']
+    ],
+    'bod_b_mega': [
+      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['首頁LOGO牆', '預設'], ['AR', '預設'],
+      ['FB_Post', '選配'], ['AMS BN', '選配'], ['Coin_page', '選配'], ['IG', '選配']
+    ],
+    'basic': [
+      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['首頁LOGO牆', '預設'], ['AR', '預設'],
+      ['FB_Post', '選配'], ['AMS BN', '選配'], ['Coin_page', '選配'], ['IG', '選配']
+    ],
+    'jbp_multi': [
+      ['IG', '預設'], ['HBN', '預設'], ['DDCard', '預設'], ['Coin_page', '預設'], ['FB_Post', '預設'], ['SCPN', '預設'], ['SearchImage', '預設'], ['SearchIcon', '預設']
+    ],
+    'gold_mega': [
+      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['AR', '預設'], ['Coin_page', '選配']
+    ]
+  };
+
+  settingsWs.getCell(1, 1).value = '等級';
+  settingsWs.getCell(1, 2).value = 'MSBN額度';
+  for (var ri = 0; ri < 12; ri++) {
+    settingsWs.getCell(1, 3 + ri).value = '資源' + (ri + 1);
+    settingsWs.getCell(1, 15 + ri).value = '類型' + (ri + 1);
+  }
+  LEVELS.forEach(function (lv, idx) {
+    var rowNo = idx + 2;
+    settingsWs.getCell(rowNo, 1).value = lv.label;
+    settingsWs.getCell(rowNo, 2).value = lv.msbnMax;
+    var plan = LEVEL_PLAN[lv.id] || [];
+    for (var pi = 0; pi < 12; pi++) {
+      settingsWs.getCell(rowNo, 3 + pi).value = plan[pi] ? plan[pi][0] : '';
+      settingsWs.getCell(rowNo, 15 + pi).value = plan[pi] ? plan[pi][1] : '';
+    }
+  });
+  var catalogStartCol = 28; /* AB */
+  ['key', '顯示名稱', '張數', '尺寸', '格式', '規範字數', '提醒', '系統排版', '可用'].forEach(function (h, i) {
+    settingsWs.getCell(1, catalogStartCol + i).value = h;
+  });
+  Object.keys(CATALOG).forEach(function (key, idx) {
+    var c = CATALOG[key];
+    var rowNo = idx + 2;
+    [key, c.display, 1, c.size, c.format, c.rules, c.reminder, c.layouts, c.available ? '是' : '否'].forEach(function (v, i) {
+      settingsWs.getCell(rowNo, catalogStartCol + i).value = v;
+    });
+  });
+
+  /* ──────────────────────────────────────────────
+     工單總覽：包套(等級)、曝光資源規則、提醒與本次版配
+     ────────────────────────────────────────────── */
+  overview.properties.tabColor = { argb: COLORS.teal };
+  [18, 14, 9, 16, 12, 30, 38, 36, 12].forEach(function (w, i) { overview.getColumn(i + 1).width = w; });
+  mergeSafe(overview, 1, 1, 1, 9).value = 'BODA 工單總覽';
+  setStaticStyle(overview.getCell(1, 1), { bold: true, color: COLORS.white, fill: COLORS.tealDark, horizontal: 'center', size: 15 });
+  overview.getRow(1).height = 28;
+
+  function overviewLabel(row, col, text) {
+    var cell = overview.getCell(row, col);
+    cell.value = text;
+    setStaticStyle(cell, { bold: true, color: COLORS.white, fill: COLORS.teal, horizontal: 'center' });
+    cell.border = BORDER_ALL;
+    return cell;
+  }
+  function overviewInput(r1, c1, r2, c2, value) {
+    var cell = mergeSafe(overview, r1, c1, r2, c2);
+    cell.value = value == null ? '' : value;
+    setInputStyle(cell, false);
+    setBorder(overview, r1, c1, r2, c2);
+    setProtection(overview, r1, c1, r2, c2, false);
+    return cell;
+  }
+
+  overviewLabel(3, 1, '包套(等級)');
+  var levelCell = overviewInput(3, 2, 3, 4, currentLevelLabel());
+  levelCell.dataValidation = {
+    type: 'list', allowBlank: false,
+    formulae: ['"' + LEVELS.map(function (l) { return l.label; }).join(',') + '"'],
+    showErrorMessage: true, errorStyle: 'stop', errorTitle: '請選擇系統等級', error: '請使用下拉選單中的包套(等級)。'
+  };
+  overviewLabel(3, 5, 'MSBN 額度');
+  var currentLv = currentLevel();
+  var msbnFormula = 'IFERROR(VLOOKUP(B3,設定!$A$2:$B$' + (LEVELS.length + 1) + ',2,FALSE),0)';
+  var msbnCell = mergeSafe(overview, 3, 6, 3, 7);
+  msbnCell.value = { formula: msbnFormula, result: currentLv.msbnMax };
+  setStaticStyle(msbnCell, { bold: true, color: COLORS.linkedText, fill: COLORS.green, horizontal: 'center' });
+  setBorder(overview, 3, 6, 3, 7);
+  overviewLabel(3, 8, '輸出時間');
+  var timeCell = overview.getCell(3, 9);
+  timeCell.value = new Date();
+  timeCell.numFmt = 'yyyy/mm/dd hh:mm';
+  setStaticStyle(timeCell, { color: COLORS.staticText, fill: COLORS.gray2, horizontal: 'center', size: 9 });
+  timeCell.border = BORDER_ALL;
+
+  overviewLabel(4, 1, '負責人'); overviewInput(4, 2, 4, 4, '');
+  overviewLabel(4, 5, '版本'); overviewInput(4, 6, 4, 7, 'V1');
+  overviewLabel(4, 8, '更新重點'); overviewInput(4, 9, 4, 9, '');
+  overviewLabel(5, 1, '活動時間'); overviewInput(5, 2, 5, 4, '');
+  overviewLabel(5, 5, '美術 Deadline'); overviewInput(5, 6, 5, 7, '');
+  overviewLabel(5, 8, '總製作張數');
+  var totalCell = overview.getCell(5, 9);
+  setStaticStyle(totalCell, { bold: true, color: COLORS.linkedText, fill: COLORS.green, horizontal: 'center' });
+  totalCell.border = BORDER_ALL;
+  overviewLabel(6, 1, '工作項目名稱'); overviewInput(6, 2, 6, 4, '');
+  overviewLabel(6, 5, '行銷目標'); overviewInput(6, 6, 6, 9, '');
+  overviewLabel(7, 1, '目標客群'); overviewInput(7, 2, 7, 9, '');
+
+  mergeSafe(overview, 9, 1, 9, 9).value = '曝光資源共用文案與色彩';
+  setStaticStyle(overview.getCell(9, 1), { bold: true, color: COLORS.white, fill: COLORS.tealDark, horizontal: 'left', size: 11 });
+  setBorder(overview, 9, 1, 9, 9);
+  overviewLabel(10, 1, '背景顏色');
+  var sharedBg = (typeof resolvedImportBg === 'function') ? resolvedImportBg() : '#6bc0ec';
+  var bgCell = overviewInput(10, 2, 10, 4, sharedBg);
+  bgCell.fill = solid(hexToArgb(sharedBg, COLORS.input));
+  bgCell.font = { name: 'Arial', size: 10, bold: true, color: { argb: COLORS.black } };
+  bgCell.dataValidation = {
+    type: 'custom', allowBlank: false, formulae: ['AND(LEFT(B10,1)="#",LEN(B10)=7)'],
+    showErrorMessage: true, errorTitle: '色碼格式錯誤', error: '請輸入 #RRGGBB，例如 #6bc0ec。'
+  };
+  overviewLabel(10, 5, '連動規則');
+  mergeSafe(overview, 10, 6, 10, 9).value = '與「曝光資源」背景色、匯入工單統一背景及 MSBN D 系列卡片背景同步；此處記錄匯出當下色號。';
+  setStaticStyle(overview.getCell(10, 6), { fill: COLORS.note, color: COLORS.staticText, size: 9 });
+  setBorder(overview, 10, 6, 10, 9);
+
+  var commonRows = [
+    ['品牌名', 9, '曝光資源品牌名稱'],
+    ['主標', 8, '曝光資源主標'],
+    ['副標', 7, '曝光資源副標'],
+    ['日期／警語', 14, '日期、活動期間或警語'],
+    ['ICON 獨立文案', 2, 'Search ICON 文字版；也可改用 LOGO／商品圖']
+  ];
+  commonRows.forEach(function (it, idx) {
+    var rr = 11 + idx;
+    overviewLabel(rr, 1, it[0]);
+    var inp = overviewInput(rr, 2, rr, 4, '');
+    overview.getCell(rr, 5).value = '上限 ' + it[1];
+    setStaticStyle(overview.getCell(rr, 5), { fill: COLORS.gray2, horizontal: 'center', size: 9 });
+    overview.getCell(rr, 5).border = BORDER_ALL;
+    mergeSafe(overview, rr, 6, rr, 8).value = it[2] + '；中文 1、英數 0.5。';
+    setStaticStyle(overview.getCell(rr, 6), { fill: COLORS.note, color: COLORS.staticText, size: 9 });
+    setBorder(overview, rr, 6, rr, 8);
+    var chk = overview.getCell(rr, 9);
+    setStaticStyle(chk, { fill: COLORS.white, horizontal: 'center', size: 9 });
+    chk.border = BORDER_ALL;
+    applyCharLimitGuard(overview, inp, '最多' + it[1] + '字', chk);
+  });
+
+  var resourceHeaderRow = 18;
+  mergeSafe(overview, 17, 1, 17, 9).value = '製作曝光資源（依包套／等級自動切換；預設張數可手動調整，選配預設為 0）';
+  setStaticStyle(overview.getCell(17, 1), { bold: true, color: COLORS.white, fill: COLORS.tealDark, size: 11 });
+  setBorder(overview, 17, 1, 17, 9);
+  ['版位', '類型', '張數', '尺寸', '格式', '規範字數', '提醒', '系統排版', 'Check'].forEach(function (h, idx) {
+    var cell = overview.getCell(resourceHeaderRow, idx + 1);
+    cell.value = h;
+    setStaticStyle(cell, { bold: true, color: COLORS.white, fill: COLORS.teal, horizontal: 'center' });
+    cell.border = BORDER_ALL;
+  });
+  overview.getRow(resourceHeaderRow).height = 23;
+
+  var currentPlan = LEVEL_PLAN[currentLevelId] || [];
+  var settingsLastLevelRow = LEVELS.length + 1;
+  var catalogLastRow = Object.keys(CATALOG).length + 1;
+  var resourceFirstRow = resourceHeaderRow + 1;
+  var resourceRows = 12;
+  for (var resIdx = 0; resIdx < resourceRows; resIdx++) {
+    var rr = resourceFirstRow + resIdx;
+    var currentPlanEntry = currentPlan[resIdx] || null;
+    var currentKey = currentPlanEntry ? currentPlanEntry[0] : '';
+    var currentType = currentPlanEntry ? currentPlanEntry[1] : '';
+    var currentCat = currentKey ? CATALOG[currentKey] : null;
+    var seqNo = resIdx + 1;
+    var nameFormula = 'IFERROR(INDEX(設定!$C$2:$N$' + settingsLastLevelRow + ',MATCH($B$3,設定!$A$2:$A$' + settingsLastLevelRow + ',0),' + seqNo + '),"")';
+    var typeFormula = 'IFERROR(INDEX(設定!$O$2:$Z$' + settingsLastLevelRow + ',MATCH($B$3,設定!$A$2:$A$' + settingsLastLevelRow + ',0),' + seqNo + '),"")';
+    overview.getCell(rr, 1).value = { formula: nameFormula, result: currentKey };
+    overview.getCell(rr, 2).value = { formula: typeFormula, result: currentType };
+    overview.getCell(rr, 3).value = { formula: 'IF(A' + rr + '="","",IF(B' + rr + '="預設",1,0))', result: currentType === '預設' ? 1 : (currentType ? 0 : '') };
+    overview.getCell(rr, 4).value = { formula: 'IF(A' + rr + '="","",IFERROR(VLOOKUP(A' + rr + ',設定!$AB$2:$AJ$' + catalogLastRow + ',4,FALSE),""))', result: currentCat ? currentCat.size : '' };
+    overview.getCell(rr, 5).value = { formula: 'IF(A' + rr + '="","",IFERROR(VLOOKUP(A' + rr + ',設定!$AB$2:$AJ$' + catalogLastRow + ',5,FALSE),""))', result: currentCat ? currentCat.format : '' };
+    overview.getCell(rr, 6).value = { formula: 'IF(A' + rr + '="","",IFERROR(VLOOKUP(A' + rr + ',設定!$AB$2:$AJ$' + catalogLastRow + ',6,FALSE),""))', result: currentCat ? currentCat.rules : '' };
+    overview.getCell(rr, 7).value = { formula: 'IF(A' + rr + '="","",IFERROR(VLOOKUP(A' + rr + ',設定!$AB$2:$AJ$' + catalogLastRow + ',7,FALSE),""))', result: currentCat ? currentCat.reminder : '' };
+    overview.getCell(rr, 8).value = { formula: 'IF(A' + rr + '="","",IFERROR(VLOOKUP(A' + rr + ',設定!$AB$2:$AJ$' + catalogLastRow + ',8,FALSE),"尚未提供版型"))', result: currentCat ? currentCat.layouts : '' };
+    var checkResult = !currentKey ? '' : ((currentType === '選配' ? 0 : 1) === 0 ? '未選' : (currentCat && currentCat.available ? '待製作' : '缺版型'));
+    overview.getCell(rr, 9).value = { formula: 'IF(A' + rr + '="","",IF(C' + rr + '=0,"未選",IF(H' + rr + '="尚未提供版型","缺版型","待製作")))', result: checkResult };
+
+    for (var cc = 1; cc <= 9; cc++) {
+      var cell = overview.getCell(rr, cc);
+      cell.border = BORDER_ALL;
+      cell.alignment = { vertical: 'middle', horizontal: cc === 3 || cc === 9 ? 'center' : 'left', wrapText: true };
+      cell.font = { name: 'Arial', size: cc >= 6 && cc <= 8 ? 8.5 : 9, color: { argb: cc <= 2 ? COLORS.linkedText : COLORS.black } };
+      cell.fill = solid(COLORS.white);
+    }
+    overview.getCell(rr, 3).protection = { locked: false };
+    overview.getCell(rr, 3).font = { name: 'Arial', size: 9, color: { argb: COLORS.inputText }, bold: true };
+    overview.getCell(rr, 3).fill = solid(COLORS.input);
+    overview.getCell(rr, 3).dataValidation = {
+      type: 'whole', operator: 'between', formulae: [0, 20], allowBlank: true,
+      showErrorMessage: true, errorTitle: '張數格式錯誤', error: '請輸入 0～20 的整數。'
+    };
+    overview.getRow(rr).height = 38;
+  }
+  overview.addConditionalFormatting({
+    ref: 'A' + resourceFirstRow + ':I' + (resourceFirstRow + resourceRows - 1),
+    rules: [
+      { type: 'expression', priority: cfPriority++, formulae: ['$B' + resourceFirstRow + '="預設"'], style: { fill: solid(COLORS.green) } },
+      { type: 'expression', priority: cfPriority++, formulae: ['$B' + resourceFirstRow + '="選配"'], style: { fill: solid(COLORS.yellow) } },
+      { type: 'expression', priority: cfPriority++, formulae: ['$I' + resourceFirstRow + '="缺版型"'], style: { fill: solid(COLORS.error), font: { color: { argb: COLORS.red }, bold: true } } }
+    ]
+  });
+
+  var selectedHeaderRow = resourceFirstRow + resourceRows + 2;
+  mergeSafe(overview, selectedHeaderRow, 1, selectedHeaderRow, 9).value = isAllPlacementsExport
+    ? '全版位排版檢查（副區＋MSBN；內容欄與視覺參考請至 MS Layout 查看）'
+    : '本次工單版配（來源：工單生成器畫布；內容欄請至 MS Layout 填寫）';
+  setStaticStyle(overview.getCell(selectedHeaderRow, 1), { bold: true, color: COLORS.white, fill: COLORS.tealDark, size: 11 });
+  setBorder(overview, selectedHeaderRow, 1, selectedHeaderRow, 9);
+  ['類型', '版位名稱', 'Band', '位置數', '素材檔案', '字數／欄位規則', '提醒', 'MS Layout', 'Check'].forEach(function (h, idx) {
+    var cell = overview.getCell(selectedHeaderRow + 1, idx + 1);
+    cell.value = h;
+    setStaticStyle(cell, { bold: true, color: COLORS.white, fill: COLORS.teal, horizontal: 'center' });
+    cell.border = BORDER_ALL;
+  });
+  items.forEach(function (item, idx) {
+    var rr = selectedHeaderRow + 2 + idx;
+    var allHints = [];
+    item.positions.forEach(function (p) { (p.fields || []).forEach(function (f) { if (f.hint && allHints.indexOf(f.hint) === -1) allHints.push(f.hint); }); });
+    var vals = [
+      item.kind === 'msbn' ? 'MSBN' : '副區', item.header, item.band,
+      item.sourceCount || item.positions.filter(function (p) { return p && !p.empty; }).length || item.positions.length,
+      item.file || '', allHints.join('；'), '綠色欄位可填；固定欄位已鎖',
+      '第 ' + item.layoutRow + ' 列', '待填'
+    ];
+    vals.forEach(function (v, ci) {
+      var cell = overview.getCell(rr, ci + 1);
+      cell.value = v;
+      setStaticStyle(cell, { fill: ci === 8 ? COLORS.yellow : COLORS.white, horizontal: ci === 2 || ci === 3 || ci === 8 ? 'center' : 'left', size: ci >= 5 && ci <= 6 ? 8.5 : 9 });
+      cell.border = BORDER_ALL;
+    });
+    overview.getRow(rr).height = 34;
+  });
+  if (!items.length) {
+    mergeSafe(overview, selectedHeaderRow + 2, 1, selectedHeaderRow + 2, 9).value = '目前畫布沒有已選版配。';
+    setStaticStyle(overview.getCell(selectedHeaderRow + 2, 1), { fill: COLORS.note, color: COLORS.staticText });
+    setBorder(overview, selectedHeaderRow + 2, 1, selectedHeaderRow + 2, 9);
+  }
+
+  var selectedLayoutCount = items.reduce(function (sum, item) {
+    if (item.kind !== 'subarea') return sum + 1;
+    return sum + (item.sourceCount || item.positions.filter(function (p) { return p && !p.empty; }).length || 1);
+  }, 0);
+  /* 全版位表裡 F 系列會依真實畫布規則重複鋪滿四格，但它仍只是一個版位。
+     工單總覽的版位總數改用唯一素材檔名計算，避免 107 個版位被誤算成 110。 */
+  if (isAllPlacementsExport) {
+    var uniquePlacementFiles = {};
+    items.forEach(function (item) {
+      if (item.kind === 'subarea') {
+        (item.positions || []).forEach(function (pos) {
+          if (pos && !pos.empty && pos.file) uniquePlacementFiles['sub:' + pos.file] = true;
+        });
+      } else if (item.file) {
+        uniquePlacementFiles['msbn:' + item.file] = true;
+      }
+    });
+    selectedLayoutCount = Object.keys(uniquePlacementFiles).length;
+  }
+  var totalFormula = 'SUM(C' + resourceFirstRow + ':C' + (resourceFirstRow + resourceRows - 1) + ')+' + selectedLayoutCount;
+  var defaultResourceCount = currentPlan.filter(function (p) { return p[1] === '預設'; }).length;
+  totalCell.value = { formula: totalFormula, result: defaultResourceCount + selectedLayoutCount };
+  overview.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, margins: { left: 0.25, right: 0.25, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } };
+  overview.headerFooter.oddFooter = '&L BODA 工單&C 工單總覽&R 第 &P / &N 頁';
+  overview.autoFilter = { from: { row: resourceHeaderRow, column: 1 }, to: { row: resourceHeaderRow + resourceRows, column: 9 } };
+  overview.views = [{ showGridLines: false, state: 'frozen', ySplit: 3 }];
+
+  function previewToJpeg(src) {
+    return loadImageForCanvas(src).then(function (img) {
+      var w = img.naturalWidth || img.width;
+      var h = img.naturalHeight || img.height;
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      return { base64: c.toDataURL('image/jpeg', 0.88), width: w, height: h };
+    });
+  }
+
+  var previewDone = 0;
+  var previewTotal = previewJobs.length;
+  function reportPreviewProgress() {
+    previewDone++;
+    appLoadingUpdate(58 + Math.round((previewDone / Math.max(1, previewTotal)) * 20),
+      'LOADING · 輸出試算表',
+      '已處理示意圖 ' + previewDone + '/' + previewTotal);
+  }
+  if (!previewTotal) {
+    appLoadingUpdate(78, 'LOADING · 輸出試算表', '沒有需要附加的示意圖，正在準備檔案…');
+  }
+  var previewPromise = Promise.all(previewJobs.map(function (job) {
+    return previewToJpeg(job.src).then(function (img) { return { job: job, img: img }; })
+      .catch(function () { return { job: job, img: null }; })
+      .then(function (result) {
+        reportPreviewProgress();
+        return result;
+      });
+  })).then(function (results) {
+    results.forEach(function (res) {
+      if (!res.img) {
+        var fallback = layoutWs.getCell(res.job.row + 2, res.job.fallbackCol || 20);
+        fallback.value = '示意圖載入失敗：' + res.job.src + '\n請用 http://localhost 或網站環境匯出，避免 file:// 的瀏覽器安全限制。';
+        setStaticStyle(fallback, { color: COLORS.red, fill: COLORS.warn, size: 9 });
+        return;
+      }
+      var scale = Math.min(res.job.maxWidth / res.img.width, res.job.maxHeight / res.img.height, 1);
+      var imageId = wb.addImage({ base64: res.img.base64, extension: 'jpeg' });
+      layoutWs.addImage(imageId, {
+        tl: { col: res.job.col + 0.15, row: res.job.row + 0.95 },
+        ext: { width: Math.max(80, Math.round(res.img.width * scale)), height: Math.max(50, Math.round(res.img.height * scale)) }
+      });
+    });
+  });
+
+  appLoadingUpdate(previewTotal ? 58 : 78, 'LOADING · 輸出試算表',
+    previewTotal ? '正在處理示意圖…' : '沒有需要附加的示意圖，正在準備檔案…');
+  return previewPromise
+    .then(function () {
+      return Promise.all([
+        layoutWs.protect('', {
+          selectLockedCells: true, selectUnlockedCells: true,
+          formatCells: false, formatColumns: false, formatRows: false,
+          insertRows: false, deleteRows: false, sort: false, autoFilter: true
+        }),
+        overview.protect('', {
+          selectLockedCells: true, selectUnlockedCells: true,
+          formatCells: false, formatColumns: false, formatRows: false,
+          insertRows: false, deleteRows: false, sort: false, autoFilter: true
+        })
+      ]);
+    })
+    .then(function () {
+      appLoadingUpdate(82, 'LOADING · 輸出試算表', '正在寫入 Excel 檔案…');
+      return wb.xlsx.writeBuffer();
+    })
+    .then(function (buf) {
+      appLoadingUpdate(96, 'LOADING · 輸出試算表', '檔案已產生，正在下載…');
+      var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      var downloadPrefix = opts.filenamePrefix || (isAllPlacementsExport ? 'BODA全版位試算表' : ('BODA工單_' + currentLevelId));
+      a.download = downloadPrefix + '_' + Date.now() + '.xlsx';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    })
+    .catch(function (err) {
+      console.error(err);
+      throw err;
+    });
+}
+
+/* 維修頁「下載全版位試算表」：
+   - 副區依真正的一排格數分組，A/B 一排 3、C/D/E 一排 2。
+   - F 系列在生成器裡本來就是同款一排 4，因此全版位表也照實呈現。
+   - MSBN 依素材庫順序逐一列出。
+   這份狀態只供匯出使用，不會寫入畫布、不會覆蓋使用者目前的工單。 */
+function buildAllPlacementExportState() {
+  var rows = [];
+
+  FAM_KEYS.forEach(function (family) {
+    var familyData = FAMILIES[family] || {};
+    var sourceItems = familyData.items || [];
+    var group = groupOf(family);
+    var capacity = Math.max(1, groupMaxPerRow(group));
+
+    if (family === 'F') {
+      sourceItems.forEach(function (item) {
+        var repeatedSlots = [];
+        for (var fi = 0; fi < capacity; fi++) {
+          repeatedSlots.push({
+            family: family, variant: item.variant, combo: item.combo,
+            file: item.file, label: item.label
+          });
+        }
+        rows.push({ kind: 'sub', group: group, slots: repeatedSlots });
+      });
+      return;
+    }
+
+    for (var start = 0; start < sourceItems.length; start += capacity) {
+      var slots = new Array(capacity).fill(null);
+      sourceItems.slice(start, start + capacity).forEach(function (item, slotIndex) {
+        slots[slotIndex] = {
+          family: family, variant: item.variant, combo: item.combo,
+          file: item.file, label: item.label
+        };
+      });
+      rows.push({ kind: 'sub', group: group, slots: slots });
+    }
+  });
+
+  Object.keys(MSBN_ITEMS).sort().forEach(function (cat) {
+    (MSBN_ITEMS[cat] || []).forEach(function (file) {
+      rows.push({
+        file: file,
+        cat: cat,
+        label: file.replace(/\.(jpg|jpeg|png)$/i, '')
+      });
+    });
+  });
+
+  return { group: null, slots: [], msbn: rows };
+}
+
+function getAllPlacementExportCounts() {
+  var subarea = FAM_KEYS.reduce(function (sum, family) {
+    return sum + (((FAMILIES[family] || {}).items || []).length);
+  }, 0);
+  var msbn = Object.keys(MSBN_ITEMS).reduce(function (sum, cat) {
+    return sum + ((MSBN_ITEMS[cat] || []).length);
+  }, 0);
+  return { subarea: subarea, msbn: msbn, total: subarea + msbn };
+}
+
+function exportAllPlacementsXlsx() {
+  appLoadingUpdate(10, 'LOADING · 輸出全版位試算表', '正在整理全部版位…');
+  var btn = document.getElementById('maint-download-all-xlsx');
+  if (!btn || btn.disabled) return;
+  var counts = getAllPlacementExportCounts();
+  var originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ 產生 ' + counts.total + ' 個版位中…';
+
+  var task;
+  try {
+    task = exportWorkOrderXlsx({
+      __bodaExportOptions: true,
+      allPlacements: true,
+      state: buildAllPlacementExportState(),
+      filenamePrefix: 'BODA全版位試算表_副區' + counts.subarea + '_MSBN' + counts.msbn
+    });
+  } catch (err) {
+    console.error('[BODA] 全版位試算表建立失敗', err);
+    alert('全版位試算表建立失敗：' + (err && err.message ? err.message : err));
+    btn.disabled = false;
+    btn.textContent = originalText;
+    appLoadingFinish('全版位試算表建立失敗');
+    return;
+  }
+
+  function restoreButton() {
+    btn.disabled = false;
+    btn.textContent = originalText;
+    appLoadingFinish('全版位試算表已下載');
+  }
+  function failExport(err) {
+    btn.disabled = false;
+    btn.textContent = originalText;
+    reportWorkOrderExportError(err);
+  }
+  if (task && typeof task.then === 'function') task.then(restoreButton, failExport);
+  else restoreButton();
+}
+
+/* ════════════════════════════════════════
+   匯入工單
+   ────────────────────────────────────────
+   支援兩種檔案：
+   1. 本工具「下載JSON」產生的 .json（欄位是規則說明文字，不是填好的內容，
+      適合技術性使用者直接改 json 內容後重新匯入）
+   2. 填好的 .xlsx（依「下載試算表」的格式：標頭合併儲存格帶（系列字母），
+      下面每列 A欄=欄位名稱 B欄=內容，同一組版位佔兩欄）
+
+   偵測「哪個變體(variant)」的邏輯，不看品名/警語內容，只看裝飾類欄位：
+   - 有 CTA 列且內容含 icon 字樣 → variant 3（CTA圖示版）
+   - 有 CTA 列但不是icon → variant 4（CTA文字版）
+   - 沒有CTA、但有圓標 → variant 2
+   - 都沒有 → variant 1
+   E系列另外判斷：有促標 → E-1，沒有促標 → E-2；F系列固定 F-1。
+════════════════════════════════════════ */
+var LABEL_TO_FIELD_BASE = {
+  '促標': 'promo', 'LOGO圖': 'logoImg', '商品': 'productImg', '品名': 'name', '警語': 'warn', '圓標': 'badge', 'CTA': 'cta',
+  /* MSBN 專用的欄位類型，對到目前 block.json 裡最接近的既有欄位；
+     block.json 目前沒有「特色」這個欄位，依需求直接當「警語」處理，共用同一個欄位 */
+  '特色': 'warn',
+  '代言人圖': 'endorserImg',
+  '簽名圖': 'signImg',
+  '簽名小字': 'signNote',
+  '代言人小字': 'endorserNote',
+  '商品圖': 'productImg',
+  '情境圖': 'productImg',
+  '信用卡圖': 'productImg',
+  '贈品圖': 'giftImg',
+  '文案': 'promo',
+  '內文': 'content',
+  '項目文字': 'itemText'
+};
+
+/* 匯出的試算表欄位名稱有時候會多帶說明文字，例如「商品 (多圖用逗號分開)」
+   「CTA (放03字)」，那是給人看的提示；匯入比對要用回原本的欄位類型，
+   所以讀進來時先把結尾的括號說明去掉，還原成「商品」「CTA」再去查表。 */
+function stripLabelAnnotation(label) {
+  return String(label).replace(/[（(][^）)]*[）)]\s*$/, '').trim();
+}
+
+function detectVariant(fam, entries) {
+  if (fam === 'F') return 1;
+  function hasBase(base) { return entries.some(function (e) { return e.label === base || e.label.indexOf(base + '-') === 0; }); }
+  if (fam === 'E') return hasBase('促標') ? 1 : 2;
+  var ctaEntry = entries.filter(function (e) { return e.label === 'CTA'; })[0];
+  if (ctaEntry) return (ctaEntry.value && ctaEntry.value.indexOf('icon') !== -1) ? 3 : 4;
+  if (hasBase('圓標')) return 2;
+  return 1;
+}
+
+/* 把「標籤→內容」的原始清單，對到某個版位實際的欄位 key。
+   會自動處理新舊格式差異：
+   - 舊格式「品名-1」「品名-2」分兩欄，但目標版位只有一個「name」單一多行欄位
+     → 自動合併成一個欄位、用換行接起來
+   - 目標版位本身就是分開的欄位（例如 E 系列的 name1/name2）→ 依編號各自對應
+   - 完全對不到欄位的內容不會報錯，單純略過（保留原始資料在 col.raw 以防要除錯） */
+function smartMapEntriesToFields(entries, blockDef) {
+  var fieldKeys = blockDef.fields.map(function (f) { return f.key; });
+  var groups = {};
+  /* 新版 MS Layout 的 _BODA_META 會把每個欄位實際對應的 field key 一起記下來。
+     先吃這些精準 key，才能讓「左券文案兩行」回到 copy2、「右券文案兩行」回到 copy；
+     舊格式沒有 targetKey 時，仍走下面原本的標籤／位置推測邏輯。重複指向同一個文字框的
+     多列（例如同一張券的兩行文案）用換行合併，避免後一列覆蓋前一列。 */
+  var keyedEntries = {};
+  var unkeyedEntries = [];
+  (entries || []).forEach(function (e) {
+    var targetKey = String(e && e.targetKey || '').trim();
+    if (targetKey && fieldKeys.indexOf(targetKey) !== -1) {
+      (keyedEntries[targetKey] = keyedEntries[targetKey] || []).push(e);
+    } else {
+      unkeyedEntries.push(e);
+    }
+  });
+  unkeyedEntries.forEach(function (e, order) {
+    var m = /^(.+?)(?:-(\d+))?$/.exec(e.label);
+    if (!m) return;
+    var base = m[1], idx = m[2] ? parseInt(m[2], 10) : null;
+    (groups[base] = groups[base] || []).push({ idx: idx, value: e.value, order: order });
+  });
+
+  var data = {};
+  Object.keys(keyedEntries).forEach(function (targetKey) {
+    data[targetKey] = keyedEntries[targetKey].map(function (e) {
+      return e && e.value != null ? String(e.value) : '';
+    }).filter(function (value) { return value !== ''; }).join('\n');
+  });
+  Object.keys(groups).forEach(function (base) {
+    var baseKey = LABEL_TO_FIELD_BASE[base];
+    if (!baseKey) return;
+
+    /* 同一種欄位可能同時有兩種重複方式：
+       1. 同一個位置重複多列，但版型只有一個欄位，例如兩列「簽名小字」
+          → 合併成同一欄的多行文字。
+       2. 同一個位置重複多列，而且版型真的有多個獨立欄位，例如 D-3-1
+          左欄五列內文、右欄五列內文 → 依畫面順序分配到 content～content10。
+
+       先把項目按「位置（左／中／右）」分組，再找出版型實際存在的連號欄位。
+       連號欄位足夠時一列對一欄；不足時才把同位置的多列合併。 */
+    var byPosition = {};
+    groups[base].forEach(function (it) {
+      var pos = it.idx == null ? 1 : it.idx;
+      (byPosition[pos] = byPosition[pos] || []).push(it);
+    });
+    var positions = Object.keys(byPosition).map(function (x) { return parseInt(x, 10); })
+      .sort(function (a, b) { return a - b; });
+    positions.forEach(function (pos) {
+      byPosition[pos].sort(function (a, b) { return a.order - b.order; });
+    });
+
+    var keyRe = new RegExp('^' + baseKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\d*)$');
+    var available = fieldKeys.filter(function (key) { return keyRe.test(key); })
+      .sort(function (a, b) {
+        var ma = keyRe.exec(a), mb = keyRe.exec(b);
+        var na = ma && ma[1] ? parseInt(ma[1], 10) : 1;
+        var nb = mb && mb[1] ? parseInt(mb[1], 10) : 1;
+        return na - nb;
+      });
+    if (!available.length) return;
+
+    var ordered = [];
+    positions.forEach(function (pos) {
+      byPosition[pos].forEach(function (it) { ordered.push(it); });
+    });
+
+    if (available.length >= ordered.length) {
+      /* D-3-1：10 筆內文對到 content、content2…content10；
+         一般左右版位的一筆一欄也同樣走這條。 */
+      ordered.forEach(function (it, i) {
+        data[available[i]] = it.value;
+      });
+      return;
+    }
+
+    if (available.length >= positions.length) {
+      /* A-2-1 這類每個位置各有兩列小字，但每個位置只有一個文字框：
+         左邊兩列合併到 signNote，右邊兩列合併到 signNote2。 */
+      positions.forEach(function (pos, i) {
+        data[available[i]] = byPosition[pos].map(function (it) { return it.value; })
+          .filter(Boolean).join('\n');
+      });
+      return;
+    }
+
+    /* 極舊版型的退路：所有內容合併到第一個可用欄位，不讓資料直接遺失。 */
+    data[available[0]] = ordered.map(function (it) { return it.value; }).filter(Boolean).join('\n');
+  });
+  return data;
+}
+
+var blocksLoadedForImport = false;
+var blocksLoadingCallbacks = null; /* null=目前沒有在載入；陣列=正在載入中，後續呼叫排隊等這次載完 */
+function ensureBlocksLoaded(cb) {
+  if (blocksLoadedForImport) { cb(); return; }
+  if (blocksLoadingCallbacks) { blocksLoadingCallbacks.push(cb); return; } /* 已經有一次載入在進行中，排隊等它，不要再開一次 */
+  blocksLoadingCallbacks = [cb];
+  if (!APP_LOADING.active) appLoadingStart('LOADING · 載入版位模板', 6, '正在讀取版位清單…');
+  var importLog = document.getElementById('import-log');
+  if (importLog) importLog.innerHTML = '<span class="ok">讀取成功，載入版位模板中…</span>';
+  bnLoadAllBlocks(function (result) {
+    /* 只有「全部」都成功，才把這次結果鎖定下來，之後不再重抓；
+       只要有任何一個失敗，這個標記就不設，下次呼叫（不管是使用者點重試、
+       或再次匯入）都會整批重新嘗試一次，不會卡在一次失敗的結果上不動。 */
+    if (result && result.total > 0 && result.succeeded >= result.total) {
+      blocksLoadedForImport = true;
+    } else {
+      console.error('[BNCore] 版位模板沒有全部載入成功（' + (result ? result.succeeded : 0) + '/' + (result ? result.total : '?') + '），保留重試機會');
+    }
+    var queued = blocksLoadingCallbacks; blocksLoadingCallbacks = null;
+    queued.forEach(function (fn) { fn(); });
+  }, 'blocks/', function (p) {
+    if (!p || !p.total) return;
+    var pct = 8 + Math.round((p.loaded / p.total) * 84);
+    appLoadingUpdate(pct, 'LOADING · 載入版位模板', '已載入 ' + p.loaded + '/' + p.total + ' 個版位');
+  });
+}
+
+/* 解析本工具自己下載的 .json（排版暫存檔）→ 回傳「原始」欄位清單，還沒對應到實際版位欄位。
+   最上面那排副區來自 columns/rows，MSBN 區塊（含任一格的副區版配）來自 msbn 陣列。 */
+function parseImportOwnJSON(obj) {
+  if (!obj) return [];
+  var out = [];
+  if (obj.columns && obj.columns.length) {
+    obj.columns.forEach(function (c, ci) {
+      var entries = [];
+      (obj.rows || []).forEach(function (r) {
+        var cell = r.cells[ci];
+        if (cell && cell.value) entries.push({ label: r.key, value: cell.value });
+      });
+      out.push({ family: c.family, variant: c.variant, combo: c.combo, entries: entries, header: c.label, band: 1 });
+    });
+  }
+  return out.concat(parseImportOwnJSONMsbn(obj, out.length ? 1 : 0));
+}
+
+/* 排版暫存檔（.json）裡的 MSBN 區塊：每一顆各自一段接在副區下面。
+   其中 kind:'sub' 的那一顆就是「任一格改放副區版配」，照副區的方式展開成一整排格子，
+   排出來的結果跟工單生成器的畫布一致。 */
+function parseImportOwnJSONMsbn(obj, startBand) {
+  var out = [];
+  var band = startBand || 0;
+  ((obj && obj.msbn) || []).forEach(function (m) {
+    if (!m) return;
+    if (m.kind === 'sub') {
+      var slots = (m.slots || []).filter(Boolean);
+      if (!slots.length) return;
+      band++;
+      slots.forEach(function (s) {
+        out.push({
+          family: s.family, variant: s.variant, combo: s.combo,
+          entries: [], header: s.label || ('副區 ' + s.family), band: band
+        });
+      });
+      return;
+    }
+    if (!m.file) return;
+    band++;
+    out.push({ kind: 'msbn', msbnFile: m.file, entries: [], header: m.label || m.file, band: band });
+  });
+  return out;
+}
+
+/* 副區表頭格式：「XXX（A-1-2）」（新格式，精準）或「XXX（A）」（舊格式，只有家族字母）*/
+var SUBAREA_HEADER_RE = /（([A-F])(?:-(\d+)-(\d+))?）\s*$/;
+/* MSBN 每一顆最上面那列，第2欄固定是這三種位置標籤之一（MSBN_POS_LABELS 各種 n 值的第1個） */
+var MSBN_POS1_LABELS = ['左右', '左', '左1', '右'];
+
+/* 解析填好的 .xlsx（用 ExcelJS 讀） → 同樣回傳原始欄位清單。
+   ────────────────────────────────────────
+   整張表是由「一段一段的區塊」由上往下接起來的，這裡就照這個方式一列一列往下掃，
+   遇到哪一種區塊就用對應的方式讀，不再假設「副區一定只有最上面那一段」：
+     - 副區區塊：第2欄是「XXX（A-1-2）」這種表頭 → 往右每2欄一格（欄位名＋內容）
+       最上面那一段是工單生成器最上面那排副區（第1欄寫「副區」）；
+       MSBN 區裡面也可能夾一段（第1欄寫「副區版配」）──那就是 MSBN 第一格
+       改放副區版配的情況，一樣照副區的方式讀進來。
+     - MSBN 區塊：第2欄是位置標籤（左右／左／左1）→ 第1欄是檔名（合併儲存格）
+   每一段給一個 band 編號，右邊畫布就照 band 分排（同一段排成一橫排），
+   排出來的結果跟工單生成器的畫布一致。 */
+/* 解析新版 BODA 工單：可見頁簽採「工單總覽＋MS Layout」，實際欄位對應記在 veryHidden 的 _BODA_META。
+   這樣可以自由調整試算表呈現與插圖，又不會破壞匯入時精準還原版位的能力。 */
+function parseImportXlsxV2Workbook(wb) {
+  var meta = wb.getWorksheet('_BODA_META');
+  var ws = wb.getWorksheet('MS Layout');
+  if (!meta || !ws || String(meta.getCell('A1').value || '').trim() !== 'BODA_WORKORDER_V2') return null;
+
+  function plainCellString(cell) {
+    var v = cell ? cell.value : '';
+    if (v && typeof v === 'object' && v.richText) v = v.richText.map(function (t) { return t.text; }).join('');
+    if (v && typeof v === 'object' && v.text != null) v = v.text;
+    if (v && typeof v === 'object' && v.result != null) v = v.result;
+    return v == null ? '' : String(v).trim();
+  }
+
+  /* 新版工單把共用背景色記在「工單總覽」B10。
+     匯回另一台電腦時也一併套用，讓曝光資源、匯入工單統一背景與 MSBN D 卡片保持同色。 */
+  var overviewWs = wb.getWorksheet('工單總覽');
+  var workbookBg = overviewWs ? plainCellString(overviewWs.getCell('B10')) : '';
+  if (/^#[0-9a-fA-F]{6}$/.test(workbookBg)) {
+    workbookBg = workbookBg.toLowerCase();
+    if (typeof importTheme === 'object' && importTheme) {
+      importTheme.bg = workbookBg;
+      importTheme.bgAuto = false;
+    }
+    if (typeof writeSharedCanvasBg === 'function') writeSharedCanvasBg(workbookBg);
+    if (typeof saveImportTheme === 'function') saveImportTheme();
+    if (typeof pushImportBgToExposure === 'function') pushImportBgToExposure(workbookBg);
+  }
+
+  function cellStringByAddress(addr) {
+    return addr ? plainCellString(ws.getCell(String(addr))) : '';
+  }
+  function metaString(row, col) {
+    return plainCellString(meta.getCell(row, col));
+  }
+
+  var grouped = {};
+  var order = [];
+  for (var r = 3; r <= meta.rowCount; r++) {
+    var kind = metaString(r, 1);
+    var sourceKey = metaString(r, 2);
+    if (!kind || !sourceKey) continue;
+    if (!grouped[sourceKey]) {
+      grouped[sourceKey] = {
+        kind: kind,
+        sourceKey: sourceKey,
+        band: parseInt(metaString(r, 3), 10) || 1,
+        order: parseInt(metaString(r, 4), 10) || order.length + 1,
+        family: metaString(r, 5),
+        variant: parseInt(metaString(r, 6), 10) || null,
+        combo: parseInt(metaString(r, 7), 10) || null,
+        msbnFile: metaString(r, 8),
+        header: metaString(r, 12),
+        file: metaString(r, 13),
+        entries: []
+      };
+      order.push(sourceKey);
+    }
+    var g = grouped[sourceKey];
+    var pos = parseInt(metaString(r, 9), 10) || 1;
+    var label = stripLabelAnnotation(metaString(r, 10));
+    var addr = metaString(r, 11);
+    var locked = metaString(r, 14) === '1';
+    var targetKey = metaString(r, 16);
+    if (!label || locked) continue; /* 固定 icon 等鎖定欄位不需要回灌 */
+    var suffix = (g.kind === 'msbn' && pos > 1) ? ('-' + pos) : '';
+    g.entries.push({ label: label + suffix, value: cellStringByAddress(addr), targetKey: targetKey });
+  }
+
+  order.sort(function (a, b) { return grouped[a].order - grouped[b].order; });
+  return order.map(function (key) {
+    var g = grouped[key];
+    if (g.kind === 'msbn') {
+      return {
+        kind: 'msbn', msbnFile: g.msbnFile || g.file,
+        entries: g.entries, header: g.header || g.msbnFile || g.file,
+        band: g.band, sourceKey: 'xlsx:' + g.sourceKey
+      };
+    }
+    return {
+      family: g.family,
+      variant: g.variant || detectVariant(g.family, g.entries),
+      combo: g.combo || detectCombo(g.family, g.entries),
+      entries: g.entries,
+      header: g.header || g.file || ('副區 ' + g.family),
+      band: g.band,
+      sourceKey: 'xlsx:' + g.sourceKey
+    };
+  });
+}
+
+/* 從「工單總覽」同步曝光資源共用文案。
+   目前 BODA 匯出的固定位置：B12＝主標、B13＝副標、B14＝日期／警語。
+   這段放在新版／舊版工單解析之前，因此只要活頁簿含有「工單總覽」，
+   就會把這三格帶進曝光資源，不必先切到曝光資源頁面。 */
+function workbookCellPlainString(cell) {
+  var v = cell ? cell.value : '';
+  if (v && typeof v === 'object' && v.richText) v = v.richText.map(function (t) { return t.text; }).join('');
+  if (v && typeof v === 'object' && v.text != null) v = v.text;
+  if (v && typeof v === 'object' && v.result != null) v = v.result;
+  return v == null ? '' : String(v).trim();
+}
+function syncWorkbookOverviewTextToExposure(wb) {
+  var ws = wb && typeof wb.getWorksheet === 'function' ? wb.getWorksheet('工單總覽') : null;
+  if (!ws) return false;
+  if (typeof syncImportedExposureOverviewText !== 'function') return false;
+  syncImportedExposureOverviewText({
+    main: workbookCellPlainString(ws.getCell('B12')),
+    sub: workbookCellPlainString(ws.getCell('B13')),
+    date: workbookCellPlainString(ws.getCell('B14'))
+  });
+  return true;
+}
+
+function parseImportXlsx(arrayBuffer) {
+  return new ExcelJS.Workbook().xlsx.load(arrayBuffer).then(function (wb) {
+    syncWorkbookOverviewTextToExposure(wb);
+    var v2 = parseImportXlsxV2Workbook(wb);
+    if (v2 !== null) return v2;
+    /* 舊版相容：優先找原本的「工單」頁簽；再退回第一張可見工作表。 */
+    var ws = wb.getWorksheet('工單') || wb.getWorksheet('MS Layout') || wb.worksheets[0];
+    if (!ws) return [];
+    var maxRow = ws.rowCount, maxCol = Math.max(ws.columnCount, 2);
+
+    function cellStr(row, col) {
+      var v = ws.getCell(row, col).value;
+      if (v && typeof v === 'object' && v.richText) { /* 有格式的文字，ExcelJS 會回 richText 物件 */
+        v = v.richText.map(function (t) { return t.text; }).join('');
+      }
+      if (v && typeof v === 'object' && v.text != null) v = v.text; /* 超連結等 */
+      return v == null ? '' : String(v).trim();
+    }
+    function isMsbnBlockStart(row) { return MSBN_POS1_LABELS.indexOf(cellStr(row, 2)) !== -1; }
+    function isSubareaBandStart(row) { return SUBAREA_HEADER_RE.test(cellStr(row, 2)); }
+
+    var out = [];
+    var band = 0;
+    var r = 1;
+
+    while (r <= maxRow) {
+      /* ── 副區區塊（最上面那排副區，或 MSBN 任一格改放的「副區版配」）── */
+      if (isSubareaBandStart(r)) {
+        var cols = [];
+        for (var c = 2; c <= maxCol; c += 2) {
+          var headerVal = cellStr(r, c);
+          var m = headerVal ? SUBAREA_HEADER_RE.exec(headerVal) : null;
+          if (!m) break; /* 這一段的格子到這裡結束 */
+          cols.push({
+            col: c, header: headerVal,
+            family: m[1], variant: m[2] || null, combo: m[3] || null,
+            entries: []
+          });
+        }
+        var sr = r + 1;
+        while (sr <= maxRow) {
+          if (isMsbnBlockStart(sr) || isSubareaBandStart(sr)) break; /* 下一段開始了 */
+          var rowHasAny = false;
+          cols.forEach(function (cc) {
+            var label = cellStr(sr, cc.col);
+            if (label !== '') {
+              cc.entries.push({ label: stripLabelAnnotation(label), value: cellStr(sr, cc.col + 1) });
+              rowHasAny = true;
+            }
+          });
+          sr++;
+          if (!rowHasAny) break; /* 段與段之間的空白列 */
+        }
+        band++;
+        cols.forEach(function (cc) {
+          out.push({
+            family: cc.family,
+            variant: cc.variant || detectVariant(cc.family, cc.entries),
+            combo: cc.combo || detectCombo(cc.family, cc.entries),
+            entries: cc.entries, header: cc.header, band: band
+          });
+        });
+        r = sr;
+        continue;
+      }
+
+      /* ── MSBN 區塊 ──
+         第1欄是檔名（例如 MSBN-A-2-1，跟這顆所有列合併儲存格），同一列往右每2欄
+         是一個位置的標籤（左/右/左1~左4…），再往下每一列是該位置的「欄位名稱、內容」，
+         直到遇到下一段，或整列都空白（區段之間的空一列）才算這一顆結束。
+         檔名那一欄是合併儲存格，ExcelJS 讀回來時「每一列」都會讀到同樣的檔名文字，
+         所以不能拿它判斷「這是不是新的一顆開始」，要用第2欄的位置標籤來判斷。
+         同一顆裡面，第1個位置的欄位名稱不加編號（跟 block.json 對齊，例如 warn），
+         第2個位置開始才加「-2」「-3」「-4」，比對到 warn2、warn3、warn4；
+         同一個位置裡重複出現的同名欄位（例如簽名小字兩行）保留原樣不加編號，
+         讓 smartMapEntriesToFields 既有的「同名多筆→合併成多行文字」邏輯照樣生效。 */
+      if (isMsbnBlockStart(r)) {
+        var msbnFile = cellStr(r, 1);
+        var posCols = [];
+        for (var pcol = 2; pcol <= maxCol; pcol += 2) {
+          if (cellStr(r, pcol) === '') break;
+          posCols.push(pcol);
+        }
+        var fr = r + 1;
+        if (msbnFile && posCols.length) {
+          var msbnEntries = [];
+          while (fr <= maxRow) {
+            if (isMsbnBlockStart(fr) || isSubareaBandStart(fr)) break;
+            var fRowHasAny = false;
+            posCols.forEach(function (pc, gi) {
+              var flabel = cellStr(fr, pc);
+              if (flabel !== '') {
+                var suffix = gi === 0 ? '' : ('-' + (gi + 1));
+                msbnEntries.push({ label: stripLabelAnnotation(flabel) + suffix, value: cellStr(fr, pc + 1) });
+                fRowHasAny = true;
+              }
+            });
+            fr++;
+            if (!fRowHasAny) break;
+          }
+          band++;
+          out.push({ kind: 'msbn', msbnFile: msbnFile, entries: msbnEntries, header: msbnFile, band: band });
+        }
+        r = fr;
+        continue;
+      }
+
+      r++;
+    }
+
+    return out;
+  });
+}
+
+/* 舊格式檔案（標頭只有家族字母，沒有編碼組合編號）才會用到這個猜測邏輯：
+   依品名/警語是否都有內容，猜是哪個組合（1=都有 2=只有品名 3=只有警語 4=都沒有）。
+   注意：這只是還沒編碼組合編號的舊檔案的退路，不保證每個版位都準， 
+   建議都用新版工單生成器重新產生的試算表匯入，才會是精準對應。 */
+function detectCombo(fam, entries) {
+  function hasNonEmpty(base) {
+    return entries.some(function (e) {
+      var matchBase = e.label === base || e.label.indexOf(base + '-') === 0;
+      return matchBase && e.value && String(e.value).trim() !== '';
+    });
+  }
+  var hasName = hasNonEmpty('品名');
+  var hasWarn = hasNonEmpty('警語');
+  if (hasName && hasWarn) return 1;
+  if (hasName) return 2;
+  if (hasWarn) return 3;
+  return 4;
+}
+
+/* ════════════════════════════════════════
+   圖片素材：可以一次上傳多張，供 LOGO/商品 這類圖片欄位選用
+════════════════════════════════════════ */
+var DEMO_IMPORT_FOLDER = '測試工單與圖片';
+var DEMO_IMPORT_WORKORDER_FILE = 'BODA工單_brand_star_mega_zj_1787896948520.xlsx';
+/* 瀏覽器無法直接列出靜態資料夾內容，因此這裡明確列出 demo 資料夾內的圖片；
+   之後若替換 demo 素材，保留檔名或同步更新這份清單即可。 */
+var DEMO_IMPORT_IMAGE_FILES = [
+  '1-(4)-(1).jpg',
+  '1.png',
+  '2-(4)-Photoroom.png',
+  '2-(4).jpg',
+  '2.png',
+  '2023 NATGEO LOGO_640x360.jpg',
+  '2026-05-19 11 49 59-Photoroom.png',
+  '2026-05-19 11 49 59.png',
+  '2026-05-19 11 50 16-Photoroom.png',
+  '2026-05-19 11 50 16.png',
+  '3.png',
+  '代言人照片.png',
+  '範例圖_AB_1787881078770.jpg',
+  '簽名檔.png',
+  'apple.png',
+  'Copy of SF_logo_596x596.png',
+  'Dyson_Logo480x360去背版.png',
+  'GIGASTONE_LOGO.png',
+  'iphone17.png',
+  'iPhone19 PLUS.png',
+  'iPhone20 PRO.png',
+  'KI60415GG-1.JPG',
+  'Logitech G.png',
+  'Logo.jpg',
+  'Plainme_YOBI 連帽外套 _1-Photoroom.png',
+  'Plainme_YOBI 連帽外套 _1.jpg',
+  'POLYWELL logo new.png',
+  'SAMPO 640X360-Photoroom.png',
+  'vivo 标志（RGB).jpg',
+  'WB_MATIN KIM.png'
+];
+
+var uploadedImages = []; /* { name, url }，url 一律是 dataURL */
+
+/* 把「逗號分隔的多張圖」欄位值拆成陣列。
+   dataURL（data:image/png;base64,xxxx）本身固定含有一個逗號，
+   不能直接用逗號切，切開後遇到 data: 開頭的片段，
+   要把緊接著的下一段（base64 內容）接回來，才是完整的一張圖。 */
+function splitImageList(v) {
+  var raw = String(v == null ? '' : v).split(',');
+  var out = [];
+  for (var i = 0; i < raw.length; i++) {
+    var t = raw[i].trim();
+    if (!t) continue;
+    if (/^data:/i.test(t) && i + 1 < raw.length) { out.push(t + ',' + raw[i + 1].trim()); i++; }
+    else out.push(t);
+  }
+  return out;
+}
+/* 匯入工單圖片自動裁白邊：商品／人物／LOGO 的可見內容都算有效範圍，四邊圓點等非白色內容也會被納入。 */
+function trimImportImageWhiteBorder(dataUrl) {
+  return new Promise(function (resolve) {
+    if (!dataUrl || !/^data:image\/(png|jpe?g|webp|bmp|gif);/i.test(String(dataUrl))) { resolve(dataUrl); return; }
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var fullW = img.naturalWidth || img.width, fullH = img.naturalHeight || img.height;
+        if (!fullW || !fullH) { resolve(dataUrl); return; }
+        /* 這張掃描畫布只用來找白邊；縮到 1200px 已足夠精準，
+           可避免多張高解析圖片同時匯入時耗盡主執行緒。 */
+        var scale = Math.min(1, 1200 / Math.max(fullW, fullH));
+        var w = Math.max(1, Math.round(fullW * scale)), h = Math.max(1, Math.round(fullH * scale));
+        var scan = document.createElement('canvas'); scan.width = w; scan.height = h;
+        var ctx = scan.getContext('2d', { willReadFrequently: true }); ctx.drawImage(img, 0, 0, w, h);
+        var pixels = ctx.getImageData(0, 0, w, h).data;
+        function pixelAt(x, y) { var p = (y * w + x) * 4; return { r:pixels[p], g:pixels[p+1], b:pixels[p+2], a:pixels[p+3] }; }
+        var corners = [pixelAt(0, 0), pixelAt(w - 1, 0), pixelAt(0, h - 1), pixelAt(w - 1, h - 1)];
+        var blankCorners = corners.every(function (p) { return p.a <= 12 || (p.a >= 235 && p.r >= 238 && p.g >= 238 && p.b >= 238); });
+        if (!blankCorners) { resolve(dataUrl); return; }
+        var transparentCorner = corners.some(function (p) { return p.a <= 12; });
+        var x0 = w, y0 = h, x1 = -1, y1 = -1;
+        for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+          var p = (y * w + x) * 4, alpha = pixels[p + 3];
+          var isTransparent = alpha <= 12;
+          var isNearWhite = alpha >= 235 && pixels[p] >= 238 && pixels[p + 1] >= 238 && pixels[p + 2] >= 238;
+          var keep = !isTransparent && (transparentCorner || !isNearWhite);
+          if (keep) { if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y; }
+        }
+        if (x1 < 0) { resolve(dataUrl); return; }
+        var left = Math.max(0, Math.floor(x0 / scale) - 1), top = Math.max(0, Math.floor(y0 / scale) - 1);
+        var right = Math.min(fullW - 1, Math.ceil((x1 + 1) / scale)), bottom = Math.min(fullH - 1, Math.ceil((y1 + 1) / scale));
+        var cropW = right - left + 1, cropH = bottom - top + 1;
+        if (left === 0 && top === 0 && right === fullW - 1 && bottom === fullH - 1) { resolve(dataUrl); return; }
+        var out = document.createElement('canvas'); out.width = cropW; out.height = cropH;
+        out.getContext('2d').drawImage(img, left, top, cropW, cropH, 0, 0, cropW, cropH);
+        resolve(out.toDataURL('image/png'));
+      } catch (err) { resolve(dataUrl); }
+    };
+    img.onerror = function () { resolve(dataUrl); };
+    img.src = dataUrl;
+  });
+}
+
+/* 上傳的圖片直接轉成 dataURL（不用 blob: 臨時網址）。
+   blob: 網址只在當次瀏覽器工作階段有效，存進暫存檔後下次開啟就是死連結；
+   dataURL 是把圖片內容本身編碼在網址字串裡，存到哪都有效──
+   暫存檔還原、下載 PNG 內嵌圖片，全部不用再做任何轉換。 */
+
+function trimImportColumnImages(columns) {
+  var jobs = [];
+  (columns || []).forEach(function (col) {
+    var def = BNCore.getBlock(col.blockId);
+    if (!def || !col.data) return;
+    (def.fields || []).forEach(function (field) {
+      if (field.type !== 'image') return;
+      var parts = splitImageList(col.data[field.key] || '');
+      var imageJobs = parts.map(function (part) {
+        return /^data:image\//i.test(String(part || '').trim())
+          ? trimImportImageWhiteBorder(part)
+          : Promise.resolve(part);
+      });
+      jobs.push(Promise.all(imageJobs).then(function (trimmed) {
+        col.data[field.key] = trimmed.join(',');
+      }));
+    });
+  });
+  return Promise.all(jobs).then(function () { return columns; });
+}
+function handleImageFiles(fileList) {
+  var files = Array.prototype.filter.call(fileList, function (f) { return f.type.indexOf('image/') === 0; });
+  if (!files.length) return;
+  var startIndex = uploadedImages.length;
+  var remaining = files.length;
+  var completed = 0;
+  appLoadingStart('LOADING · 上傳圖片', 5, '正在讀取圖片素材…');
+  function doneOne() {
+    completed++;
+    appLoadingUpdate(8 + Math.round((completed / files.length) * 84),
+      'LOADING · 上傳圖片', '已讀取 ' + completed + '/' + files.length + ' 張');
+    if (--remaining > 0) return;
+    /* 讀失敗的空項目剔除掉，再一次性重畫 */
+    uploadedImages = uploadedImages.filter(function (x) { return x && x.url; });
+    renderImageGallery();
+    autoMatchImagesToColumns();
+    renderImportFieldsForCurrentColumns();
+    appLoadingFinish('圖片素材已上傳');
+  }
+  files.forEach(function (f, i) {
+    uploadedImages[startIndex + i] = { name: f.name, url: '' }; /* 先佔位，保持上傳順序 */
+    var fr = new FileReader();
+    fr.onload = function () {
+      trimImportImageWhiteBorder(fr.result).then(function (trimmed) {
+        uploadedImages[startIndex + i].url = trimmed;
+        uploadedImages[startIndex + i].baseUrl = fr.result;
+        doneOne();
+      });
+    };
+    fr.onerror = function () { doneOne(); };
+    fr.readAsDataURL(f);
+  });
+}
+
+/* 試算表裡圖片欄位填的通常是「檔名」（例如 apple.png），不是真的網址。
+   這裡自動比對：檔名跟目前上傳的圖片素材一樣（不分大小寫），就自動換成真的圖片網址。 */
+function autoMatchImagesToColumns() {
+  currentImportColumns.forEach(function (col) {
+    var def = BNCore.getBlock(col.blockId);
+    if (!def) return;
+    def.fields.forEach(function (f) {
+      if (f.type !== 'image') return;
+      var val = col.data[f.key];
+      if (!val) return;
+      /* 欄位可能是逗號分隔的多個檔名（一個範圍要放好幾張圖），
+         要先拆開、每個檔名各自比對已上傳的圖片，再重新用逗號接回去，
+         不能直接拿整串去比對（不會有任何一張上傳的圖片檔名長那樣） */
+      var parts = splitImageList(val);
+      var changed = false;
+       var resolved = parts.map(function (part) {
+         var sameAsset = uploadedImages.filter(function (img) {
+           return img && img.url && (img.url === part || img.baseUrl === part);
+         })[0];
+         if (sameAsset && sameAsset.url !== part) { changed = true; return sameAsset.url; }
+         if (/^(https?:|blob:|data:)/.test(part)) return part; /* 已經是網址就不動它 */
+         var match = uploadedImages.filter(function (img) { return img.name.toLowerCase() === part.toLowerCase(); })[0];
+         if (match) { changed = true; return match.url; }
+         return part;
+       });
+      if (changed) col.data[f.key] = resolved.join(',');
+    });
+  });
+}
+
+/* 已上傳的素材列成一排小縮圖，可以直接拖到右邊畫布的圖片框裡。
+   （拖曳時 dataTransfer 只帶「第幾張」這個索引，不帶 data: 網址本身 ——
+     圖片轉成 base64 後動輒好幾 MB，塞進 dataTransfer 會拖不動。） */
+function renderImageGallery() {
+  var wrap = document.getElementById('import-img-gallery');
+  if (!wrap) return;
+  if (!uploadedImages.length) {
+    wrap.innerHTML = '<div class="im-empty">還沒有上傳圖片</div>';
+    return;
+  }
+  var html = '<div class="im-empty">已上傳 <b>' + uploadedImages.length + '</b> 張，檔名對得上的欄位會自動帶入；' +
+    '也可以把下面的縮圖<b>直接拖到右邊畫布的圖片框</b>。</div><div class="im-grid">';
+  uploadedImages.forEach(function (img, i) {
+    if (!img || !img.url) return;
+    html += '<div class="im-thumb" draggable="true" data-asset-index="' + i + '" title="' + esc(img.name || '') + '">' +
+      '<img src="' + esc(img.url) + '" alt="' + esc(img.name || '') + '" draggable="false">' +
+      '</div>';
+  });
+  wrap.innerHTML = html + '</div>';
+
+  wrap.querySelectorAll('.im-thumb').forEach(function (el) {
+    el.addEventListener('dragstart', function (e) {
+      e.dataTransfer.setData(CANVAS_ASSET_DND_TYPE, el.getAttribute('data-asset-index'));
+      e.dataTransfer.effectAllowed = 'copy';
+      el.classList.add('is-dragging');
+    });
+    el.addEventListener('dragend', function () { el.classList.remove('is-dragging'); });
+  });
+}
+
+/* 目前畫面上的匯入結果（重新上傳圖片後要重畫欄位面板用）。
+   source 用來區分目前內容是檔案匯入、暫存檔，或工單生成器直接同步而來：
+   只有 generator 來源會在再次切進「匯入工單」時自動對照新版配，
+   不會把使用者已匯入的試算表／暫存檔無聲覆蓋掉。 */
+var currentImportColumns = [];
+var currentImportHasBottomWorkOrder = false;
+var currentImportSource = 'saved';
+var currentGeneratorSignature = '';
+var IMPORT_STORAGE_KEY = 'wo_import_state_v1';
+var IMPORT_TEXT_RULES_STATE = {
+  status: 'idle',
+  rules: [],
+  callbacks: [],
+  error: ''
+};
+
+function importExcelCellText(value) {
+  if (value && typeof value === 'object' && value.richText) {
+    return value.richText.map(function (item) { return item && item.text != null ? item.text : ''; }).join('');
+  }
+  if (value && typeof value === 'object' && value.result != null) return String(value.result);
+  if (value && typeof value === 'object' && value.text != null) return String(value.text);
+  return value == null ? '' : String(value);
+}
+
+function importRulesFromExcelBuffer(arrayBuffer) {
+  if (typeof ExcelJS === 'undefined') throw new Error('ExcelJS 尚未載入');
+  if (!window.banwordEngine || typeof window.banwordEngine.convertExcelRowsToRules !== 'function') {
+    throw new Error('禁用語引擎尚未載入');
+  }
+  return new ExcelJS.Workbook().xlsx.load(arrayBuffer).then(function (wb) {
+    var ws = wb.getWorksheet('禁用語') || wb.worksheets[0];
+    if (!ws) return [];
+    var headers = [];
+    var headerValues = ws.getRow(1).values || [];
+    for (var hi = 1; hi < headerValues.length; hi++) headers.push(importExcelCellText(headerValues[hi]).trim());
+    var rows = [];
+    ws.eachRow(function (row, rowNumber) {
+      if (rowNumber === 1) return;
+      var obj = {};
+      headers.forEach(function (header, index) {
+        if (header) obj[header] = importExcelCellText(row.getCell(index + 1).value);
+      });
+      rows.push(obj);
+    });
+    var rules = window.banwordEngine.convertExcelRowsToRules(rows);
+    window.banwordEngine.setRules(rules);
+    return rules;
+  });
+}
+
+function notifyImportTextRules(result) {
+  var callbacks = IMPORT_TEXT_RULES_STATE.callbacks.splice(0);
+  callbacks.forEach(function (callback) {
+    try { callback(result); } catch (e) {}
+  });
+}
+
+function ensureImportTextRules(callback) {
+  callback = typeof callback === 'function' ? callback : function () {};
+  if (IMPORT_TEXT_RULES_STATE.status === 'ready') {
+    callback({ ok: true, rules: IMPORT_TEXT_RULES_STATE.rules });
+    return;
+  }
+  if (IMPORT_TEXT_RULES_STATE.status === 'failed') {
+    callback({ ok: false, rules: [], error: IMPORT_TEXT_RULES_STATE.error });
+    return;
+  }
+  IMPORT_TEXT_RULES_STATE.callbacks.push(callback);
+  if (IMPORT_TEXT_RULES_STATE.status === 'loading') return;
+  IMPORT_TEXT_RULES_STATE.status = 'loading';
+  fetch('jbp/banwords.xlsx', { cache: 'no-store' })
+    .then(function (response) {
+      if (!response.ok) throw new Error('找不到 jbp/banwords.xlsx');
+      return response.arrayBuffer();
+    })
+    .then(importRulesFromExcelBuffer)
+    .then(function (rules) {
+      IMPORT_TEXT_RULES_STATE.status = 'ready';
+      IMPORT_TEXT_RULES_STATE.rules = Array.isArray(rules) ? rules : [];
+      notifyImportTextRules({ ok: true, rules: IMPORT_TEXT_RULES_STATE.rules });
+    })
+    .catch(function (err) {
+      IMPORT_TEXT_RULES_STATE.status = 'failed';
+      IMPORT_TEXT_RULES_STATE.error = err && err.message ? err.message : String(err);
+      console.warn('[BODA] 匯入工單文字規則載入失敗：' + IMPORT_TEXT_RULES_STATE.error);
+      notifyImportTextRules({ ok: false, rules: [], error: IMPORT_TEXT_RULES_STATE.error });
+    });
+}
+
+function importFieldRuleRole(fieldDef, key) {
+  var label = String(fieldDef && fieldDef.label || '');
+  var fieldKey = String(key || '');
+  return /(date|日期|期間|時段|時間)/i.test(label + ' ' + fieldKey) ? 'date' : '';
+}
+
+function importFallbackNumericFormat(value, role) {
+  var out = String(value == null ? '' : value);
+  if (role === 'date') return out;
+  var protectedParts = [];
+  function keep(match) {
+    var token = '\u0000BODA_NUM_' + protectedParts.length + '\u0000';
+    protectedParts.push({ token: token, value: match });
+    return token;
+  }
+  out = out.replace(/\b0*\d{1,2}\/0*\d{1,2}(?:\s*-\s*0*\d{1,2}\/0*\d{1,2})?\b|\b\d{1,2}:\d{1,2}\b|\b\d{1,2}%/g, keep);
+  out = out.replace(/\$([\d,]+)/g, function (_, digits) {
+    var clean = String(digits).replace(/,/g, '');
+    return /^\d+$/.test(clean) ? '$' + clean.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '$' + digits;
+  });
+  out = out.replace(/(^|[^\d$,\x00])(\d[\d,]*)(?=$|[^\d,])/g, function (match, prefix, digits) {
+    var clean = String(digits).replace(/,/g, '');
+    return /^\d+$/.test(clean) ? prefix + '$' + clean.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : match;
+  });
+  protectedParts.forEach(function (part) { out = out.split(part.token).join(part.value); });
+  return out;
+}
+
+function cloneImportDollarExemptByKey(source) {
+  var out = {};
+  if (!source || typeof source !== 'object') return out;
+  Object.keys(source).forEach(function (key) {
+    var list = Array.isArray(source[key]) ? source[key] : [];
+    var safe = [];
+    list.forEach(function (value) {
+      var digits = String(value == null ? '' : value).replace(/[$,]/g, '').trim();
+      if (/^\d+$/.test(digits) && safe.indexOf(digits) === -1) safe.push(digits);
+    });
+    if (safe.length) out[String(key)] = safe;
+  });
+  return out;
+}
+
+function importDollarExemptList(col, key) {
+  if (!col) return [];
+  if (!col._dollarExemptByKey || typeof col._dollarExemptByKey !== 'object' ||
+      Array.isArray(col._dollarExemptByKey)) {
+    col._dollarExemptByKey = cloneImportDollarExemptByKey(col._dollarExemptByKey);
+  }
+  var fieldKey = String(key || '');
+  return Array.isArray(col._dollarExemptByKey[fieldKey])
+    ? col._dollarExemptByKey[fieldKey]
+    : [];
+}
+
+function setImportDollarExemptList(col, key, list) {
+  if (!col) return;
+  var safe = [];
+  (Array.isArray(list) ? list : []).forEach(function (value) {
+    var digits = String(value == null ? '' : value).replace(/[$,]/g, '').trim();
+    if (/^\d+$/.test(digits) && safe.indexOf(digits) === -1) safe.push(digits);
+  });
+  if (!col._dollarExemptByKey || typeof col._dollarExemptByKey !== 'object' ||
+      Array.isArray(col._dollarExemptByKey)) {
+    col._dollarExemptByKey = {};
+  }
+  var fieldKey = String(key || '');
+  if (safe.length) col._dollarExemptByKey[fieldKey] = safe;
+  else delete col._dollarExemptByKey[fieldKey];
+}
+
+function transformImportTextValue(value, fieldDef, key, options) {
+  options = options || {};
+  var before = String(value == null ? '' : value);
+  var role = importFieldRuleRole(fieldDef, key);
+  var transformOptions = {
+    dollarExempt: Array.isArray(options.dollarExempt) ? options.dollarExempt : []
+  };
+  if (IMPORT_TEXT_RULES_STATE.status === 'ready' && window.banwordEngine &&
+      typeof window.banwordEngine.transformText === 'function') {
+    return window.banwordEngine.transformText(before, role, transformOptions);
+  }
+  var fallback = importFallbackNumericFormat(before, role);
+  return {
+    text: fallback,
+    changed: fallback !== before,
+    blocked: false,
+    message: '',
+    messages: []
+  };
+}
+
+function normalizeImportColumnTexts(columns) {
+  var result = { changed: 0, blocked: 0, messages: [] };
+  (Array.isArray(columns) ? columns : []).forEach(function (col) {
+    var def = BNCore.getBlock(col.blockId);
+    if (!def || !col.data) return;
+    (def.fields || []).forEach(function (field) {
+      if (field.type !== 'text') return;
+      var key = field.key;
+      var before = col.data[key] == null ? '' : String(col.data[key]);
+      var transformed = transformImportTextValue(before, field, key, {
+        dollarExempt: importDollarExemptList(col, key)
+      });
+      if (transformed.text !== before) {
+        col.data[key] = transformed.text;
+        result.changed++;
+      }
+      if (transformed.blocked) result.blocked++;
+      (transformed.messages || []).forEach(function (message) {
+        if (message && result.messages.indexOf(message) === -1) result.messages.push(message);
+      });
+    });
+  });
+  return result;
+}
+
+function normalizeImportFieldText(col, key, value) {
+  var def = BNCore.getBlock(col && col.blockId);
+  var field = def && (def.fields || []).find(function (item) { return item.key === key; });
+  return transformImportTextValue(
+    value,
+    field || { type: 'text', label: key },
+    key,
+    { dollarExempt: importDollarExemptList(col, key) }
+  );
+}
+
+function importTextSelectionOf(target) {
+  if (!target) return null;
+  if (typeof target.selectionStart === 'number' &&
+      typeof target.selectionEnd === 'number') {
+    var start = Math.max(0, Number(target.selectionStart));
+    var end = Math.max(start, Number(target.selectionEnd));
+    if (start === end) return null;
+    var value = String(target.value == null ? '' : target.value);
+    return {
+      kind: 'input',
+      text: value.slice(start, end),
+      start: start,
+      end: end
+    };
+  }
+
+  if (!target.isContentEditable) return null;
+  var selection = window.getSelection && window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
+  var range = selection.getRangeAt(0);
+  if (!target.contains(range.startContainer) || !target.contains(range.endContainer)) return null;
+  var selectedText = String(selection.toString() || '');
+  if (!selectedText) return null;
+  return {
+    kind: 'contenteditable',
+    text: selectedText,
+    range: range.cloneRange()
+  };
+}
+
+function importCleanNumberText(value) {
+  return String(value == null ? '' : value).replace(/[$,]/g, '').trim();
+}
+
+function importAddThousands(value) {
+  return String(value || '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function importFormatDollar(value) {
+  var digits = importCleanNumberText(value);
+  if (!/^\d+$/.test(digits)) return String(value || '');
+  digits = digits.replace(/^0+(?=\d)/, '') || '0';
+  return '$' + (digits.length >= 4 ? importAddThousands(digits) : digits);
+}
+
+function importSideTextInput(ctx, idx, key) {
+  if (!ctx || !ctx.sideRoot) return null;
+  var root = document.querySelector(ctx.sideRoot);
+  if (!root) return null;
+  var card = Array.prototype.find.call(root.querySelectorAll('.imp-col[data-col]'), function (item) {
+    return String(item.getAttribute('data-col')) === String(idx);
+  });
+  if (!card) return null;
+  var field = Array.prototype.find.call(card.querySelectorAll('.field[data-key]'), function (item) {
+    return String(item.getAttribute('data-key')) === String(key);
+  });
+  return field ? field.querySelector('input.fv') : null;
+}
+
+function importReplaceContentSelection(target, selection, replacement) {
+  var savedRange = selection && selection.range ? selection.range.cloneRange() : null;
+  if (!target || !savedRange) return '';
+  var inserted = false;
+  try {
+    target.focus();
+    var liveSelection = window.getSelection();
+    liveSelection.removeAllRanges();
+    liveSelection.addRange(savedRange);
+    inserted = !!document.execCommand('insertText', false, replacement);
+  } catch (e) {}
+  if (!inserted) {
+    try {
+      savedRange.deleteContents();
+      var node = document.createTextNode(replacement);
+      savedRange.insertNode(node);
+      var after = document.createRange();
+      after.setStart(node, node.length);
+      after.collapse(true);
+      var liveAfter = window.getSelection();
+      liveAfter.removeAllRanges();
+      liveAfter.addRange(after);
+    } catch (e2) {}
+  }
+  return readEditableText(target);
+}
+
+function commitImportTextSelection(target, col, idx, ctxName, key, selection, replacement, exemptList) {
+  if (!target || !col || !selection) return;
+  setImportDollarExemptList(col, key, exemptList);
+  var nextText = '';
+  if (selection.kind === 'input') {
+    var source = String(target.value == null ? '' : target.value);
+    nextText = source.slice(0, selection.start) + replacement + source.slice(selection.end);
+    target.value = nextText;
+  } else {
+    nextText = importReplaceContentSelection(target, selection, replacement);
+  }
+  col.data[key] = nextText;
+
+  var ctx = canvasCtx(ctxName);
+  if (ctxName === 'import') saveImportState();
+  var sideInput = importSideTextInput(ctx, idx, key);
+  if (sideInput && sideInput !== target) sideInput.value = nextText;
+
+  var mount = document.getElementById(ctx.mountId(idx));
+  if (mount) {
+    mount.innerHTML = BNCore.renderInstance(
+      col.blockId,
+      col.data,
+      importRenderOpts(true, ctxName, col)
+    );
+    bindCanvasInteractions(mount, col, idx, ctxName);
+  }
+
+  if (ctxName === 'import') {
+    var ruleLog = document.getElementById('import-log');
+    if (ruleLog) ruleLog.innerHTML = '<span class="ok">' + lineIcon('done') +
+      ' 已更新文字格式；目前選取的數字暫不加 $ 與千分位</span>';
+  }
+}
+
+function showImportTextContextMenu(e, target, col, idx, ctxName, key) {
+  var selection = importTextSelectionOf(target);
+  if (!selection) return false;
+  var selectedText = String(selection.text || '');
+  var numberParts = selectedText.match(/\d[\d,]*/g) || [];
+  if (!selectedText || !numberParts.length) return false;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  var existing = document.getElementById('_boda_import_text_ctx');
+  if (existing) existing.remove();
+
+  var cleanSelected = importCleanNumberText(selectedText);
+  var isPureNumber = /^\d+$/.test(cleanSelected) && cleanSelected.length > 0;
+  var hasDollar = selectedText.indexOf('$') !== -1;
+  var exemptList = importDollarExemptList(col, key).slice();
+  var alreadyExempt = isPureNumber && exemptList.indexOf(cleanSelected) !== -1;
+
+  var menu = document.createElement('div');
+  menu.id = '_boda_import_text_ctx';
+  menu.style.cssText = [
+    'position:fixed;z-index:999999;',
+    'background:#1a1d2a;border:1px solid #2e3347;',
+    'border-radius:10px;padding:6px 0;',
+    'box-shadow:0 8px 24px rgba(0,0,0,.5);',
+    'min-width:245px;font-size:13px;'
+  ].join('');
+
+  var outsideHandler;
+  function closeMenu() {
+    if (menu.parentNode) menu.parentNode.removeChild(menu);
+    if (outsideHandler) document.removeEventListener('mousedown', outsideHandler);
+  }
+  function menuButton(label, handler) {
+    var button = document.createElement('div');
+    button.textContent = label;
+    button.style.cssText = 'padding:8px 16px;cursor:pointer;color:#dde3f0;white-space:nowrap;';
+    button.addEventListener('mouseenter', function () { button.style.background = '#2b2f42'; });
+    button.addEventListener('mouseleave', function () { button.style.background = ''; });
+    button.addEventListener('mousedown', function (event) {
+      event.preventDefault();
+      closeMenu();
+      handler();
+    });
+    menu.appendChild(button);
+  }
+
+  if (isPureNumber) {
+    if (alreadyExempt || !hasDollar) {
+      menuButton('恢復 $' + importAddThousands(cleanSelected) + ' 的千分位格式', function () {
+        var nextList = exemptList.filter(function (value) { return value !== cleanSelected; });
+        commitImportTextSelection(
+          target, col, idx, ctxName, key, selection,
+          importFormatDollar(cleanSelected), nextList
+        );
+      });
+    } else {
+      menuButton('暫時不加$和千分位符號', function () {
+        if (exemptList.indexOf(cleanSelected) === -1) exemptList.push(cleanSelected);
+        commitImportTextSelection(
+          target, col, idx, ctxName, key, selection,
+          cleanSelected, exemptList
+        );
+      });
+    }
+  } else {
+    menuButton('暫時不加$和千分位符號（整段）', function () {
+      var nextList = exemptList.slice();
+      numberParts.forEach(function (part) {
+        var digits = importCleanNumberText(part);
+        if (/^\d+$/.test(digits) && nextList.indexOf(digits) === -1) nextList.push(digits);
+      });
+      var cleaned = selectedText.replace(/\$/g, '').replace(/(\d),(\d{3})(?!\d)/g, '$1$2');
+      commitImportTextSelection(
+        target, col, idx, ctxName, key, selection, cleaned, nextList
+      );
+    });
+  }
+
+  var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 800;
+  var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 600;
+  menu.style.left = Math.max(8, Math.min(Number(e.clientX) || 8, viewportWidth - 270)) + 'px';
+  menu.style.top = Math.max(8, Math.min(Number(e.clientY) || 8, viewportHeight - 80)) + 'px';
+  document.body.appendChild(menu);
+  outsideHandler = function (event) {
+    if (!menu.contains(event.target)) closeMenu();
+  };
+  document.addEventListener('mousedown', outsideHandler);
+  return true;
+}
+
+function importImageFieldKeys(col) {
+  var def = BNCore.getBlock(col && col.blockId);
+  return def ? (def.fields || []).filter(function (field) {
+    return field.type === 'image';
+  }).map(function (field) { return field.key; }) : [];
+}
+
+function normalizedImportImageOrder(col) {
+  var keys = importImageFieldKeys(col);
+  var saved = Array.isArray(col && col._imageOrder) ? col._imageOrder : [];
+  var order = [];
+  saved.forEach(function (key) {
+    if (keys.indexOf(key) !== -1 && order.indexOf(key) === -1) order.push(key);
+  });
+  keys.forEach(function (key) {
+    if (order.indexOf(key) === -1) order.push(key);
+  });
+  if (col && order.length) col._imageOrder = order.slice();
+  return order;
+}
+
+/* 同一欄位可放多張圖時，資料陣列順序永遠代表「圖片本人」與其既有座標。
+   圖層前後則用獨立索引排序，按上下鍵絕不交換圖片位置。 */
+function cloneImportImagePartLayerOrder(value) {
+  var out = {};
+  if (!value || typeof value !== 'object') return out;
+  Object.keys(value).forEach(function (key) {
+    if (Array.isArray(value[key])) out[key] = value[key].slice();
+  });
+  return out;
+}
+function normalizedImportImagePartLayerOrder(col, key, count) {
+  count = Math.max(0, Math.floor(Number(count) || 0));
+  if (!col || !key) return [];
+  if (!col._imagePartLayerOrder || typeof col._imagePartLayerOrder !== 'object') col._imagePartLayerOrder = {};
+  var saved = Array.isArray(col._imagePartLayerOrder[key]) ? col._imagePartLayerOrder[key] : [];
+  var order = [];
+  saved.forEach(function (value) {
+    var index = Math.floor(Number(value));
+    if (isFinite(index) && index >= 0 && index < count && order.indexOf(index) === -1) order.push(index);
+  });
+  for (var i = 0; i < count; i++) if (order.indexOf(i) === -1) order.push(i);
+  col._imagePartLayerOrder[key] = order.slice();
+  return order;
+}
+function importImagePartLayerOrders(col) {
+  var out = {};
+  importImageFieldKeys(col).forEach(function (key) {
+    var count = splitImageList(col && col.data ? col.data[key] : '').length;
+    if (count) out[key] = normalizedImportImagePartLayerOrder(col, key, count);
+  });
+  return out;
+}
+function rerenderImportImageLayer(idx, ctxName) {
+  var ctx = canvasCtx(ctxName);
+  var col = ctx.columns()[idx];
+  var mount = document.getElementById(ctx.mountId(idx));
+  if (!col || !mount) return;
+  mount.innerHTML = BNCore.renderInstance(col.blockId, col.data,
+    importRenderOpts(true, ctxName === 'maint' ? 'maint' : 'import', col));
+  bindCanvasInteractions(mount, col, idx, ctxName);
+}
+
+function moveImportImageField(idx, key, direction, ctxName) {
+  var ctx = canvasCtx(ctxName);
+  var col = ctx.columns()[idx];
+  if (!col) return;
+  var order = normalizedImportImageOrder(col);
+  var from = order.indexOf(key);
+  var to = from + Number(direction || 0);
+  if (from < 0 || to < 0 || to >= order.length) return;
+  var moved = order[from];
+  order[from] = order[to];
+  order[to] = moved;
+  col._imageOrder = order;
+  ctx.afterChange();
+  rerenderImportImageLayer(idx, ctxName);
+  var log = document.getElementById('import-log');
+  if (log && ctxName !== 'maint') {
+    log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已調整「' +
+      esc(key) + '」圖片層順序</span>';
+  }
+}
+
+function moveImportFieldImageLayer(idx, key, imageIndex, direction, ctxName) {
+  var ctx = canvasCtx(ctxName);
+  var col = ctx.columns()[idx];
+  var parts = col ? splitImageList(col.data[key] || '') : [];
+  var sourceIndex = Math.floor(Number(imageIndex));
+  if (!col || !isFinite(sourceIndex) || sourceIndex < 0 || sourceIndex >= parts.length) return;
+  var order = normalizedImportImagePartLayerOrder(col, key, parts.length);
+  var from = order.indexOf(sourceIndex);
+  var to = from + Number(direction || 0);
+  if (from < 0 || to < 0 || to >= order.length) return;
+  var movedIndex = order[from];
+  order[from] = order[to];
+  order[to] = movedIndex;
+  col._imagePartLayerOrder[key] = order;
+  ctx.afterChange();
+  rerenderImportImageLayer(idx, ctxName);
+  var log = document.getElementById('import-log');
+  if (log && ctxName !== 'maint') {
+    log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已調整圖片前後圖層；圖片位置維持不變</span>';
+  }
+}
+function handleImportImageAction(idx, key, act, imageIndex, ctxName) {
+  if (act === 'field-up') {
+    moveImportImageField(idx, key, -1, ctxName);
+  } else if (act === 'field-down') {
+    moveImportImageField(idx, key, 1, ctxName);
+  } else if (act === 'part-layer-up' || act === 'part-up') {
+    moveImportFieldImageLayer(idx, key, imageIndex, -1, ctxName);
+  } else if (act === 'part-layer-down' || act === 'part-down') {
+    moveImportFieldImageLayer(idx, key, imageIndex, 1, ctxName);
+  } else if (act === 'edit') {
+    openImportFieldImageEditor(idx, key, imageIndex);
+  } else if (act === 'swap') {
+    pickImportFieldImage(idx, key, imageIndex);
+  } else if (act === 'del') {
+    var ctx = canvasCtx(ctxName);
+    var col = ctx.columns()[idx];
+    var parts = col ? splitImageList(col.data[key] || '') : [];
+    if (col && isFinite(imageIndex) && imageIndex >= 0 && imageIndex < parts.length) {
+      parts.splice(Math.floor(imageIndex), 1);
+      setImportFieldImages(idx, key, parts, ctxName);
+    }
+  }
+}
+
+/* 首次匯入會同時建立大量 dataURL；localStorage 的 JSON 序列化改在畫面完成後
+   再合併執行，避免畫布、縮圖與儲存三件事卡在同一個同步迴圈。 */
+var importStateSaveTimer = null;
+function queueImportStateSave() {
+  clearTimeout(importStateSaveTimer);
+  importStateSaveTimer = setTimeout(function () {
+    importStateSaveTimer = null;
+    saveImportState();
+  }, 180);
+}
+
+function saveImportState() {
+  try {
+    var toSave = {
+      version: 2,
+      source: currentImportSource,
+      generatorSignature: currentGeneratorSignature,
+      columns: currentImportColumns.map(function (c) {
+        return {
+          blockId: c.blockId,
+          data: c.data,
+          header: c.header,
+          band: c.band,
+          sourceKey: c.sourceKey || '',
+          imageOrder: Array.isArray(c._imageOrder) ? c._imageOrder.slice() : [],
+          imagePartLayerOrder: cloneImportImagePartLayerOrder(c._imagePartLayerOrder),
+          dollarExemptByKey: cloneImportDollarExemptByKey(c._dollarExemptByKey)
+        };
+      })
+    };
+    localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(toSave));
+  } catch (e) { /* 存不了就算了，不影響操作 */ }
+}
+
+function loadImportState() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(IMPORT_STORAGE_KEY));
+    if (!saved) return null;
+    /* 舊版直接存 columns 陣列；讀進來時包成新版結構，原內容完全保留。 */
+    if (Array.isArray(saved)) {
+      return { version: 1, source: 'saved', generatorSignature: '', columns: saved };
+    }
+    return {
+      version: saved.version || 2,
+      source: saved.source || 'saved',
+      generatorSignature: saved.generatorSignature || '',
+      columns: Array.isArray(saved.columns) ? saved.columns : []
+    };
+  } catch (e) { return null; }
+}
+
+/* 原始工單格 → BNCore 的 block id。檔案匯入與「工單生成器直接帶入」共用
+   同一支轉換，確保兩條路徑永遠指到同一個可編輯版位。 */
+function rawColumnBlockId(c) {
+  if (!c) return '';
+  if (c.blockId) return c.blockId;
+  if (c.kind === 'msbn' && c.msbnFile) {
+    return 'msbn_' + String(c.msbnFile)
+      .replace(/\.(jpg|jpeg|png)$/i, '')
+      .replace(/^MSBN-/i, '')
+      .replace(/-/g, '_');
+  }
+  if (!c.family) return '';
+  var variant = c.variant || detectVariant(c.family, c.entries || []);
+  var combo = c.combo || detectCombo(c.family, c.entries || []);
+  return 'subarea_' + c.family + '_' + variant + '_' + combo;
+}
+
+/* 把工單生成器目前畫布上的選擇，轉成跟 XLSX／JSON 匯入相同的 raw columns。
+   這裡只帶「選了哪個版配」；文字與圖片內容會從版位預設值開始，進到匯入頁後
+   就能直接在左側工具列或畫布上編輯。 */
+function generatorSelectionRawColumns() {
+  if (typeof state === 'undefined' || !state) return [];
+  var out = [];
+  var band = 0;
+
+  var topSlots = state.slots || [];
+  var hasTop = state.group !== null && topSlots.some(function (slot) { return !!slot; });
+  if (hasTop) {
+    band++;
+    topSlots.forEach(function (slot, slotIndex) {
+      if (!slot) return;
+      out.push({
+        family: slot.family,
+        variant: slot.variant,
+        combo: slot.combo,
+        entries: [],
+        header: slot.label || slot.file || ('副區 ' + slot.family),
+        band: band,
+        sourceKey: 'generator:top:' + slotIndex
+      });
+    });
+  }
+
+  (state.msbn || []).forEach(function (row, rowIndex) {
+    if (!row) return;
+    if (typeof isSubRow === 'function' && isSubRow(row)) {
+      var subSlots = row.slots || [];
+      if (!subSlots.some(function (slot) { return !!slot; })) return;
+      band++;
+      subSlots.forEach(function (slot, slotIndex) {
+        if (!slot) return;
+        out.push({
+          family: slot.family,
+          variant: slot.variant,
+          combo: slot.combo,
+          entries: [],
+          header: slot.label || slot.file || ('副區 ' + slot.family),
+          band: band,
+          sourceKey: 'generator:msbn-sub:' + rowIndex + ':' + slotIndex
+        });
+      });
+      return;
+    }
+    if (!row.file) return;
+    band++;
+    out.push({
+      kind: 'msbn',
+      msbnFile: row.file,
+      entries: [],
+      header: row.label || row.file,
+      band: band,
+      sourceKey: 'generator:msbn:' + rowIndex
+    });
+  });
+  return out;
+}
+
+function generatorSelectionSignature(rawColumns) {
+  return JSON.stringify((rawColumns || []).map(function (c) {
+    return [c.sourceKey || '', rawColumnBlockId(c), c.band == null ? '' : c.band];
+  }));
+}
+
+function refreshGeneratorImportButton() {
+  var btn = document.getElementById('import-generator-load');
+  if (!btn) return;
+  var count = generatorSelectionRawColumns().length;
+  var badge = btn.querySelector('.igl-count');
+  if (badge) badge.textContent = count + ' 格';
+  btn.disabled = count === 0;
+  btn.title = count
+    ? '把工單生成器目前選好的 ' + count + ' 格載入成可編輯版位'
+    : '工單生成器畫布目前沒有已選版配';
+}
+
+/* 將工單生成器的選擇載入匯入頁。
+   - generator 來源：新版配有變動時只重建變動格，未變動格保留已編輯內容。
+   - file/snapshot 來源：自動進頁時絕不覆蓋；只有手動按按鈕時才詢問。 */
+function loadGeneratorSelectionIntoImport(options) {
+  options = options || {};
+  var raw = generatorSelectionRawColumns();
+  refreshGeneratorImportButton();
+  var log = document.getElementById('import-log');
+  if (!raw.length) {
+    if (!options.auto) {
+      if (log) log.innerHTML = '<span class="err">工單生成器畫布目前沒有已選版配</span>';
+    }
+    return false;
+  }
+
+  var sig = generatorSelectionSignature(raw);
+  if (currentImportSource === 'generator' && currentGeneratorSignature === sig && currentImportColumns.length) {
+    if (!options.auto && log) log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已與工單生成器同步，目前是 ' + raw.length + ' 格</span>';
+    return false;
+  }
+
+  var replacingOtherSource = currentImportColumns.length && currentImportSource !== 'generator';
+  if (replacingOtherSource) {
+    /* 重新整理後直接停在匯入頁，不應彈窗、更不能覆蓋既有檔案內容。 */
+    if (options.auto && !options.fromGeneratorView) return false;
+    var ok = confirm(
+      '匯入工單目前已有 ' + currentImportColumns.length + ' 格編輯內容。\n\n' +
+      '載入工單生成器版配會取代目前畫布；原內容仍可先用「下載圖片＋編輯暫存檔」保存。\n\n' +
+      '確定要改載入生成器目前選好的 ' + raw.length + ' 格嗎？'
+    );
+    if (!ok) return false;
+  }
+
+  afterImportParsed(raw, {
+    source: 'generator',
+    generatorSignature: sig,
+    preserveExisting: currentImportSource === 'generator'
+  });
+  syncBottomAfterImportAction('import-sync');
+  return true;
+}
+
+
+function renderImportFieldsForCurrentColumns() {
+  if (currentImportColumns.length) renderImportColumns(currentImportColumns, true);
+}
+
+/* 「直接預覽全部版位」專用：純粹由上到下堆疊，不包卡片外框，
+   只是要快速看每個版位長怎樣，跟「匯入工單」正式呈現(整排無縫拼接)是不同用途 */
+function renderPreviewAllStacked(columns) {
+  var list = document.getElementById('import-preview-list');
+  hideImportBottomPreview();
+  currentImportHasBottomWorkOrder = false;
+  var scroll = document.getElementById('import-fields-scroll');
+  list.classList.add('show');
+  document.getElementById('import-empty2').style.display = 'none';
+  showImportToolbar(false); /* 預覽全部版位是每張各自縮到 900 寬，跟畫布的縮放下拉無關 */
+  scroll.innerHTML = '<div style="padding:8px;font-size:11.5px;color:var(--ink3);">預覽模式沒有欄位編輯，選「匯入工單」才會有。</div>';
+
+  var html = '';
+  columns.forEach(function (col, idx) {
+    var def = BNCore.getBlock(col.blockId);
+    if (!def) { html += '<div class="imp-col">' + lineIcon('warning') + ' 找不到版位「' + esc(col.blockId) + '」</div>'; return; }
+    var scale = Math.min(1, 900 / def.width);
+    html +=
+      '<div>' +
+      '<div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">' + esc(def.name) + '　' + def.width + '×' + def.height + '</div>' +
+      '<div style="width:' + Math.round(def.width * scale) + 'px;height:' + Math.round(def.height * scale) + 'px;overflow:hidden;">' +
+      '<div id="prevall-mount-' + idx + '" style="transform:scale(' + scale + ');transform-origin:top left;width:' + def.width + 'px;height:' + def.height + 'px;"></div>' +
+      '</div></div>';
+  });
+  list.innerHTML = html;
+
+  columns.forEach(function (col, idx) {
+    var def = BNCore.getBlock(col.blockId);
+    if (!def) return;
+    var mount = document.getElementById('prevall-mount-' + idx);
+    if (mount) mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(false, 'preview'));
+  });
+}
+
+function colorToHex(v) {
+  if (!v) return '#000000';
+  v = String(v).trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v;
+  var m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(v);
+  if (m) {
+    return '#' + [m[1], m[2], m[3]].map(function (n) {
+      var h = parseInt(n, 10).toString(16);
+      return h.length === 1 ? '0' + h : h;
+    }).join('');
+  }
+  return '#000000';
+}
+/* 將色彩與白色各混合一半：保留背景色相性，同時明確提高文字亮度。 */
+function lightenColorBy50(v) {
+  var hex = colorToHex(v);
+  var channels = [1, 3, 5].map(function (offset) { return parseInt(hex.slice(offset, offset + 2), 16); });
+  return '#' + channels.map(function (channel) {
+    var out = Math.round(channel + (255 - channel) * 0.5).toString(16);
+    return out.length === 1 ? '0' + out : out;
+  }).join('');
+}
+/* 這個欄位值算不算「真的有圖」（跟渲染引擎同一套判斷：只認 data:／http(s):／blob:；
+   純檔名代表對應的素材還沒上傳，畫面上是佔位卡，不是真的有圖） */
+function isUsableImageValue(v) {
+  return splitImageList(v).some(function (p) { return /^(data:|https?:|blob:)/i.test(p); });
+}
+
+/* 圖片欄位的「✏️ 編輯」：
+   找到畫布上目前實際渲染出來的<img>，交給外掛編輯器(JS/editor-plugin.js)處理
+   （裁切／去背／擦除／影子）。外掛編輯完成後會直接把新結果寫進那個<img>的
+   src 屬性──這裡用 MutationObserver 監看 src 有沒有被改掉，改掉了就同步寫回
+   我們自己的資料(col.data)，這樣才會存檔、下次重新渲染也不會被蓋回舊圖。
+   所有圖片欄位都能用（商品圖、代言人、簽名檔、LOGO、贈品圖…）。
+   如果欄位本身是逗號分隔的多張圖，每一張都可以獨立編輯，
+   編輯結果只會寫回目前選取的那一張。 */
+function openImportFieldImageEditor(idx, fieldKey, imageIndex) {
+  if (typeof window.HBNProductEditorPlugin === 'undefined' && typeof window.openEraseEditor === 'undefined') {
+    alert('圖片編輯器外掛(editor-plugin.js)還沒載入成功，確認檔案是否放在 JS/ 資料夾裡');
+    return;
+  }
+
+  var col = currentImportColumns[idx];
+  var parts = splitImageList(col.data[fieldKey] || '');
+  if (!parts.length) parts = [''];
+  var selectedIndex = Number(imageIndex);
+  if (!isFinite(selectedIndex) || selectedIndex < 0) selectedIndex = 0;
+  selectedIndex = Math.floor(selectedIndex);
+  if (selectedIndex >= parts.length || !isUsableImageValue(parts[selectedIndex])) {
+    alert('這個欄位的第 ' + (selectedIndex + 1) + ' 張圖片還沒有可編輯的內容');
+    return;
+  }
+  var mount = document.getElementById('imp-mount-' + idx);
+  if (!mount) return;
+  var group = mount.querySelector('.bn-imggroup[data-field-key="' + fieldKey + '"]');
+  var renderedIndex = 0;
+  for (var pi = 0; pi < selectedIndex; pi++) {
+    if (isUsableImageValue(parts[pi])) renderedIndex++;
+  }
+  var renderedImgs = group ? group.querySelectorAll('img.bn-imggroup-img') : [];
+  var imgEl = renderedImgs[renderedIndex] || null;
+  if (!imgEl || !imgEl.src) { alert('這個欄位的第 ' + (selectedIndex + 1) + ' 張圖片目前還沒有渲染完成'); return; }
+  var oldUrl = parts[selectedIndex];
+  var isLogoField = /^logoImg\d*$/i.test(String(fieldKey || ''));
+  /* 監看這張<img>的src有沒有被外掛編輯器改掉 */
+  var mo = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      if (m.attributeName !== 'src') return;
+      var rawNewUrl = imgEl.src;
+      if (!rawNewUrl || rawNewUrl === oldUrl) return;
+      mo.disconnect();
+      trimImportImageWhiteBorder(rawNewUrl).then(function (newUrl) {
+        if (!newUrl || newUrl === oldUrl) return;
+      parts[selectedIndex] = newUrl;
+      col.data[fieldKey] = parts.join(',');
+
+      /* 同檔名／同網址的 LOGO，編輯結果自動同步到所有版位與 LOGO 欄位。 */
+      var others = isLogoField ? findImageUsages(oldUrl) : [];
+      var linked = replaceImageInUsages(others, oldUrl, newUrl);
+      if (isLogoField) syncImageAssetsByName(oldUrl, newUrl);
+
+      saveImportState();
+      renderImportColumns(currentImportColumns); /* 左邊縮圖＋右邊畫布一起更新 */
+      var log = document.getElementById('import-log');
+      if (log) log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已套用圖片編輯結果' +
+        (linked ? '，另外 ' + linked + ' 個用到同一張圖的欄位也一起換了' : '') + '</span>';
+      });
+    });
+  });
+  mo.observe(imgEl, { attributes: true, attributeFilter: ['src'] });
+
+  /* Logo 編輯沿用曝光資源的 BNLogoMenu（裁切編輯器），
+     商品／人物則維持 HBNProductEditorPlugin 的去背、擦除與影子工具。 */
+  if (isLogoField && window.BNLogoMenu && window.BNLogoMenu.openCropEditor) {
+    window.BNLogoMenu.openCropEditor(imgEl.src, function (newSrc) {
+      if (newSrc && newSrc !== imgEl.src) imgEl.src = newSrc;
+    });
+    return;
+  }
+
+  if (window.HBNProductEditorPlugin && window.HBNProductEditorPlugin.open) {
+    window.HBNProductEditorPlugin.open(imgEl);
+  } else {
+    window.openEraseEditor(imgEl);
+  }
+}
+function imageAssetNamesForUrl(url) {
+  var names = [];
+  if (!url) return names;
+  var key = String(url).trim().toLowerCase();
+  (uploadedImages || []).forEach(function (img) {
+    if (!img) return;
+    var name = String(img.name || '').trim().toLowerCase();
+    if (img.url !== url && img.baseUrl !== url && name !== key) return;
+    if (name && names.indexOf(name) === -1) names.push(name);
+  });
+  return names;
+}
+function sameImageAsset(a, b) {
+  var left = String(a || '').trim();
+  var right = String(b || '').trim();
+  if (!left || !right) return false;
+  if (left === right) return true;
+  var names = imageAssetNamesForUrl(left);
+  if (!names.length) return false;
+  return (uploadedImages || []).some(function (img) {
+    var name = String(img && img.name || '').trim().toLowerCase();
+    return names.indexOf(name) !== -1 && img &&
+      (img.url === right || img.baseUrl === right);
+  });
+
+}
+function syncImageAssetsByName(oldUrl, newUrl) {
+  var names = imageAssetNamesForUrl(oldUrl);
+  (uploadedImages || []).forEach(function (img) {
+    if (!img) return;
+    var name = String(img.name || '').trim().toLowerCase();
+    var sameName = name && names.indexOf(name) !== -1;
+    if (img.url !== oldUrl && img.baseUrl !== oldUrl && !sameName) return;
+    img.baseUrl = img.baseUrl || oldUrl;
+    img.url = newUrl;
+  });
+}
+/* 找出「還有哪些欄位也在用同一張圖」（exclude＝要排除的那一格，通常是正在編輯的那格）。
+   同一個欄位可能是逗號分隔的多張圖，所以是逐張比對。 */
+function findImageUsages(url, exclude) {
+  var out = [];
+  if (!url) return out;
+  currentImportColumns.forEach(function (col, ci) {
+    Object.keys(col.data || {}).forEach(function (k) {
+      if (exclude && exclude.idx === ci && exclude.key === k) return;
+      if (!splitImageList(col.data[k]).some(function (p) { return sameImageAsset(p, url); })) return;
+      out.push({ idx: ci, key: k });
+    });
+  });
+  return out;
+}
+
+/* 把這些欄位裡的舊圖換成新圖（多圖欄位只換相同的那一張，其他張保留） */
+function replaceImageInUsages(usages, oldUrl, newUrl) {
+  usages.forEach(function (u) {
+    var col = currentImportColumns[u.idx];
+    if (!col) return;
+    col.data[u.key] = splitImageList(col.data[u.key]).map(function (p) {
+      return sameImageAsset(p, oldUrl) ? newUrl : p;
+    }).join(',');
+  });
+  return usages.length;
+}
+
+/* 圖片欄位的「🔄 換圖」：選一張本機圖片換掉這一格的圖。
+   換進來的圖同時也會加進圖片素材清單，之後同檔名的欄位可以自動比對到。 */
+var importFieldPickTarget = null; /* { idx, key, imageIndex } */
+function pickImportFieldImage(idx, key, imageIndex) {
+  importFieldPickTarget = { idx: idx, key: key, imageIndex: imageIndex };
+  var input = document.getElementById('imp-field-img-input');
+  if (input) { input.value = ''; input.click(); }
+}
+
+/* ════════════════════════════════════════
+   畫布情境（canvas context）
+   ────────────────────────────────────────
+   同一套畫布互動（改文字、拖圖片進來）現在有兩個地方在用：
+     import：匯入工單 —— 資料要存進 localStorage 暫存，左邊還有欄位面板要同步
+     maint ：維修頁 —— 純測試用，資料只放在記憶體，絕對不能碰到匯入工單的暫存
+              （不然使用者去維修頁測一下，回來發現工單被蓋掉了）
+   差異就集中在這張表裡，互動邏輯本身兩邊共用同一份，
+   維修頁測到的行為才等於實際行為。
+════════════════════════════════════════ */
+var CANVAS_CTX = {
+  import: {
+    columns: function () { return currentImportColumns; },
+    mountId: function (idx) { return 'imp-mount-' + idx; },
+    sideRoot: '#import-fields-scroll',
+    afterChange: function () {
+      saveImportState();
+      renderImageGallery();
+      renderImportFieldsForCurrentColumns();
+    }
+  },
+  maint: {
+    columns: function () { return maintColumns; },
+    mountId: function (idx) { return 'mnt-mount-' + idx; },
+    sideRoot: null,        /* 維修頁沒有側欄欄位面板 */
+    afterChange: function () { renderImageGallery(); }  /* 素材清單是共用的，還是要更新 */
+  }
+};
+function canvasCtx(name) { return CANVAS_CTX[name] || CANVAS_CTX.import; }
+
+/* 把一組圖片網址寫進某個版位的某個圖片欄位，然後把畫面更新到最新狀態。
+   「換圖」按鈕跟「拖到畫布上」都走這一支，行為才會一致
+   （寫回資料 → 存暫存 → 重畫左邊欄位面板 → 重畫那一格畫布並重新綁事件）。 */
+function setImportFieldImages(idx, key, urls, ctxName) {
+  var ctx = canvasCtx(ctxName);
+  var col = ctx.columns()[idx];
+  if (!col || !key || !Array.isArray(urls)) return;
+  /* 多張圖用逗號接起來：渲染器會等高並排、整組置中、超寬自動縮小 */
+  col.data[key] = urls.join(',');
+  ctx.afterChange();
+  var mount = document.getElementById(ctx.mountId(idx));
+  if (mount) {
+    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, ctxName === 'maint' ? 'maint' : 'import', col));
+    bindCanvasInteractions(mount, col, idx, ctxName);
+  }
+}
+
+/* 讀進一批圖片檔，轉成 data 網址，順便加進素材清單（之後同檔名的欄位可以自動比對到）。
+   讀完才一次性回呼，並且維持使用者選檔／拖曳的順序。 */
+function readImageFilesAsUrls(fileList, done) {
+  var files = Array.prototype.filter.call(fileList || [], function (f) {
+    return f && f.type && f.type.indexOf('image/') === 0;
+  });
+  if (!files.length) { done([]); return; }
+  var urls = new Array(files.length);
+  var remaining = files.length;
+  var completed = 0;
+  appLoadingStart('LOADING · 讀取圖片', 5, '正在讀取圖片素材…');
+  function completeOne() {
+    completed++;
+    appLoadingUpdate(8 + Math.round((completed / files.length) * 84),
+      'LOADING · 讀取圖片', '已讀取 ' + completed + '/' + files.length + ' 張');
+    if (--remaining === 0) {
+      done(urls.filter(Boolean));
+      appLoadingFinish('圖片讀取完成');
+    }
+  }
+  files.forEach(function (f, i) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      trimImportImageWhiteBorder(fr.result).then(function (trimmed) {
+        urls[i] = trimmed;
+        if (!uploadedImages.some(function (img) { return img.url === trimmed; })) {
+          uploadedImages.push({ name: f.name, url: trimmed, baseUrl: fr.result });
+        }
+        completeOne();
+      });
+    };
+    fr.onerror = completeOne;
+    fr.readAsDataURL(f);
+  });
+}
+
+function applyPickedImportFieldImage(file) {
+  var target = importFieldPickTarget;
+  importFieldPickTarget = null;
+  if (!target || !file) return;
+  readImageFilesAsUrls([file], function (urls) {
+    if (!urls.length) return;
+    var imageIndex = Number(target.imageIndex);
+    if (!isFinite(imageIndex) || imageIndex < 0) imageIndex = 0;
+    imageIndex = Math.floor(imageIndex);
+    var ctx = canvasCtx(target.ctxName);
+    var col = ctx.columns()[target.idx];
+    if (!col) return;
+    var parts = splitImageList(col.data[target.key] || '');
+    if (imageIndex >= parts.length) parts.push(urls[0]);
+    else parts[imageIndex] = urls[0];
+    setImportFieldImages(target.idx, target.key, parts, target.ctxName);
+  });
+}
+
+/* ════════════════════════════════════════
+   匯入預覽的縮放（右上角下拉，比照工單生成器的「顯示 xx%」）
+   ────────────────────────────────────────
+   預設 80%，選了哪個比例會記在這台瀏覽器裡，下次進來還是同一個比例。
+════════════════════════════════════════ */
+var IMPORT_ZOOM_KEY = 'wo_import_zoom_v1';
+var IMPORT_ZOOM_DEFAULT = 0.8;
+var importZoom = (function () {
+  var v = null;
+  try { v = parseFloat(localStorage.getItem(IMPORT_ZOOM_KEY)); } catch (e) {}
+  return (v && v > 0.05 && v <= 1) ? v : IMPORT_ZOOM_DEFAULT;
+})();
+
+function resizeImportPreviewToFit() {
+  var wrap = document.getElementById('imp-strip-wrap');
+  var strip = document.getElementById('imp-strip');
+  if (!wrap || !strip) return;
+
+  var totalWidth = Number(wrap.getAttribute('data-total-width')) || 0;
+  var maxHeight = Number(wrap.getAttribute('data-max-height')) || 0;
+  if (!totalWidth || !maxHeight) return;
+
+  wrap.style.width = Math.round(totalWidth * importZoom) + 'px';
+  wrap.style.height = Math.round(maxHeight * importZoom) + 'px';
+  strip.style.transform = 'scale(' + importZoom + ')';
+  strip.style.setProperty('--impz', importZoom); /* 目前對到那一格的框線粗細要抵銷縮放 */
+}
+
+/* ════════════════════════════════════════
+   副區那一排與 MSBN 之間固定夾的一張圖（img/three.jpg）
+   ────────────────────────────────────────
+   跟工單生成器的畫布一樣，接在副區那一排的下面；下載成品 PNG 時也會一起輸出
+   （它就在預覽的那一塊裡面，截圖自然含進去）。
+   只有「最上面那一段是副區」時才會插，整份只有 MSBN 的工單不會多一張。
+════════════════════════════════════════ */
+var IMPORT_MID_BANNER_RATIO_DEFAULT = 180 / 1200; /* img/three.jpg 原始尺寸 1200×180 */
+var importMidBannerRatio = IMPORT_MID_BANNER_RATIO_DEFAULT;
+var importMidBannerAvailable = true; /* 檔案不在就不插這一張，版面不會多一塊空白 */
+function importMidBannerSrc() {
+  return (typeof MID_BANNER_SRC === 'string' && MID_BANNER_SRC) ? MID_BANNER_SRC : 'img/three.jpg';
+}
+/* 開頁時量一次真實比例（換圖之後不用改程式）；跟預設不一樣才重畫，避免多餘的閃動 */
+function probeImportMidBanner() {
+  var img = new Image();
+  img.onload = function () {
+    var ratio = (img.naturalWidth && img.naturalHeight) ? (img.naturalHeight / img.naturalWidth) : importMidBannerRatio;
+    var changed = Math.abs(ratio - importMidBannerRatio) > 0.0005 || !importMidBannerAvailable;
+    importMidBannerRatio = ratio;
+    importMidBannerAvailable = true;
+    if (changed && currentImportColumns.length) renderImportColumns(currentImportColumns);
+  };
+  img.onerror = function () {
+    importMidBannerAvailable = false;
+    if (currentImportColumns.length) renderImportColumns(currentImportColumns);
+  };
+  img.src = importMidBannerSrc();
+}
+
+function showImportToolbar(show) {
+  var bar = document.getElementById('import-toolbar');
+  if (bar) bar.classList.toggle('show', !!show);
+}
+
+/* ════════════════════════════════════════
+   右邊工具列 ←→ 右邊畫布：捲動互相吸附
+   ────────────────────────────────────────
+   右邊畫布捲到哪一個版位，右邊工具列那個版位的卡片就跟著捲到最上面；
+   右邊工具列捲到哪一個版位，右邊畫布也捲到那個版位。
+   兩邊互相帶動很容易變成無窮迴圈，所以每次「程式自己捲」時會上一個
+   短暫的鎖，鎖住的期間不理對面傳來的捲動事件。
+════════════════════════════════════════ */
+var IMPORT_SYNC = { lockUntil: 0, canvasTimer: null, toolTimer: null };
+function importSyncLock(ms) { IMPORT_SYNC.lockUntil = Date.now() + (ms || 700); }
+function importSyncLocked() { return Date.now() < IMPORT_SYNC.lockUntil; }
+
+/* 目前在「參考線」位置上的是第幾格（找不到就回 -1） */
+function activeIndexAt(container, items, lineOffset) {
+  if (!container || !items.length) return -1;
+  var line = container.getBoundingClientRect().top + (lineOffset || 0);
+  var best = -1, bestDist = Infinity;
+  items.forEach(function (el) {
+    var r = el.getBoundingClientRect();
+    var col = Number(el.getAttribute('data-col'));
+    if (isNaN(col)) return;
+    if (r.top <= line && r.bottom > line) { best = col; bestDist = -1; return; }
+    if (bestDist === -1) return;
+    var dist = Math.abs(r.top - line);
+    if (dist < bestDist) { bestDist = dist; best = col; }
+  });
+  return best;
+}
+
+function markActiveImportCol(idx) {
+  document.querySelectorAll('#import-fields-scroll .imp-col').forEach(function (card) {
+    card.classList.toggle('is-active', Number(card.getAttribute('data-col')) === idx);
+  });
+  document.querySelectorAll('#import-block-tools .import-block-tool').forEach(function (card) {
+    card.classList.toggle('is-active', Number(card.getAttribute('data-col')) === idx);
+  });
+  /* 右邊畫布上對應的那一格也框起來，一眼看得出現在對到哪一格 */
+  document.querySelectorAll('#imp-strip .imp-slot').forEach(function (slot) {
+    slot.classList.toggle('is-active', Number(slot.getAttribute('data-col')) === idx);
+  });
+}
+
+function scrollImportToolsToCol(idx) {
+  var tools = document.getElementById('import-canvas-tools');
+  var card = tools && tools.querySelector('.imp-col[data-col="' + idx + '"]');
+  if (!card) return;
+  var ar = tools.getBoundingClientRect(), cr = card.getBoundingClientRect();
+  if (cr.top >= ar.top && cr.bottom <= ar.bottom) return; /* 整張卡片本來就看得到，不用動 */
+  var delta = cr.top - (ar.top + 10);
+  if (Math.abs(delta) < 4) return;
+  tools.scrollTo({ top: tools.scrollTop + delta, behavior: 'smooth' });
+}
+
+/* 把對到的那一格「整格」帶進畫面，不是只露出一角：
+   格子塞得進可視範圍就置中（上下左右都算，副區那種左右排的才不會停在半格）；
+   格子比可視範圍還大就對齊左上角，至少從頭開始看得到。 */
+function scrollImportCanvasToCol(idx) {
+  var area = document.getElementById('import-canvas-area');
+  var slot = area && area.querySelector('.imp-slot[data-col="' + idx + '"]');
+  if (!slot) return;
+  var ar = area.getBoundingClientRect(), sr = slot.getBoundingClientRect();
+  /* 整格本來就完整看得到就別動，免得畫面一直跳 */
+  if (sr.top >= ar.top && sr.bottom <= ar.bottom && sr.left >= ar.left && sr.right <= ar.right) return;
+
+  var PAD = 16;
+  var viewH = area.clientHeight, viewW = area.clientWidth;
+  var slotTop = sr.top - ar.top + area.scrollTop;
+  var slotLeft = sr.left - ar.left + area.scrollLeft;
+
+  var top = (sr.height + PAD * 2 <= viewH)
+    ? slotTop - (viewH - sr.height) / 2   /* 塞得下 → 垂直置中 */
+    : slotTop - PAD;                       /* 太高 → 對齊上緣 */
+  var left = (sr.width + PAD * 2 <= viewW)
+    ? slotLeft - (viewW - sr.width) / 2    /* 塞得下 → 水平置中 */
+    : slotLeft - PAD;                      /* 太寬 → 對齊左緣 */
+
+  area.scrollTo({
+    top: Math.max(0, Math.round(top)),
+    left: Math.max(0, Math.round(left)),
+    behavior: 'smooth'
+  });
+}
+
+function bindImportScrollSync() {
+  var area = document.getElementById('import-canvas-area');
+  var tools = document.getElementById('import-canvas-tools');
+  if (!area || !tools) return;
+
+  area.addEventListener('scroll', function () {
+    if (importSyncLocked()) return;
+    clearTimeout(IMPORT_SYNC.canvasTimer);
+    IMPORT_SYNC.canvasTimer = setTimeout(function () {
+      if (importSyncLocked()) return;
+      /* 判斷「現在在看哪一格」用可視範圍的正中間當參考線，
+         跟上面「把整格置中」的做法一致，才不會吸完又被判定成別一格、來回跳 */
+      var idx = activeIndexAt(area, area.querySelectorAll('.imp-slot'), area.clientHeight / 2);
+      if (idx < 0) return;
+      importSyncLock(900);
+      markActiveImportCol(idx);
+      /* 畫布的「完整呈現」優先：捲到哪一格就把那一格整格吸進畫面
+         （停在半格的話會自己補齊，本來就完整看得到就不動），右邊工具列再跟過來 */
+      scrollImportCanvasToCol(idx);
+      scrollImportToolsToCol(idx);
+    }, 100);
+  });
+
+  tools.addEventListener('scroll', function () {
+    if (importSyncLocked()) return;
+    clearTimeout(IMPORT_SYNC.toolTimer);
+    IMPORT_SYNC.toolTimer = setTimeout(function () {
+      if (importSyncLocked()) return;
+      var idx = activeIndexAt(tools, tools.querySelectorAll('.imp-col, .import-block-tool[data-col]'), 20);
+      if (idx < 0) return;
+      importSyncLock(900);
+      markActiveImportCol(idx);
+      scrollImportCanvasToCol(idx); /* 右邊畫布一定把整格完整帶進畫面 */
+    }, 100);
+  });
+}
+
+(function () {
+  var sel = document.getElementById('import-canvas-zoom');
+  if (!sel) return;
+  sel.value = String(importZoom);
+  if (!sel.value) { importZoom = IMPORT_ZOOM_DEFAULT; sel.value = String(IMPORT_ZOOM_DEFAULT); }
+  sel.addEventListener('change', function () {
+    var v = parseFloat(this.value);
+    if (!v || v <= 0) return;
+    importZoom = v;
+    try { localStorage.setItem(IMPORT_ZOOM_KEY, String(v)); } catch (e) {}
+    resizeImportPreviewToFit();
+  });
+})();
+
+/* ════════════════════════════════════════
+   統一顏色（左側「🎨 統一顏色」那一區）
+   ────────────────────────────────────────
+   背景顏色／促標底色・字色／圓標底色・字色／CTA底色・字色，
+   改一個就讓畫布上「所有」版位一起變──實際覆寫是在渲染階段做的
+   （core/schema-renderer.js 的 opts.theme），所以連「本來沒有顏色欄位、
+   顏色寫死在版位裡」的地方（例如很多版位的 CTA 底色）也一起吃得到。
+
+   背景顏色的預設值＝「曝光資源」目前的背景色：
+   曝光資源是同一個網站裡用 iframe 載入的 jbp/jbpbn.html，直接去問它目前的背景色，
+   還沒開過那一頁（iframe 還沒載入）就先用它的預設藍 #6bc0ec，
+   之後只要去過曝光資源再回到這一頁，就會自動同步成實際的顏色
+   （已經手動改過背景色的話就以手動的為準，不會被蓋掉）。
+════════════════════════════════════════ */
+var IMPORT_THEME_KEY = 'wo_import_theme_v1';
+var SHARED_CANVAS_BG_KEY = 'wo_shared_canvas_bg_v1';
+var SHARED_EXPOSURE_TEXT_KEY = 'wo_shared_exposure_text_v1';
+var EXPOSURE_DEFAULT_BG = '#6bc0ec'; /* jbp/jbpbn.html 裡 colorState.canvasBg 的預設值 */
+
+/* 「曝光資源」與「匯入工單 → 統一顏色 → 背景顏色」共用同一個色號。
+   MSBN D 系列卡片背景也由 importRenderOpts() 的 theme.bg 吃這個值，
+   所以任一頁改色後，三者會一起更新。 */
+function readSharedCanvasBg() {
+  try {
+    var v = localStorage.getItem(SHARED_CANVAS_BG_KEY);
+    return /^#[0-9a-fA-F]{6}$/.test(v || '') ? v : null;
+  } catch (e) { return null; }
+}
+function writeSharedCanvasBg(hex) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) return false;
+  try { localStorage.setItem(SHARED_CANVAS_BG_KEY, hex); } catch (e) {}
+  return true;
+}
+
+/* 工單總覽 B12／B13／B14 與曝光資源的主標／副標／日期共用。
+   先存到 localStorage：即使曝光資源 iframe 尚未載入，之後切過去仍可套用；
+   再用 postMessage 即時推給已載入的曝光資源。 */
+function normalizeExposureOverviewText(data, keepTimestamp) {
+  data = data && typeof data === 'object' ? data : {};
+  var ts = Number(data.ts);
+  if (!keepTimestamp || !isFinite(ts) || ts <= 0) ts = Date.now();
+  return {
+    main: data.main == null ? '' : String(data.main),
+    sub: data.sub == null ? '' : String(data.sub),
+    date: data.date == null ? '' : String(data.date),
+    ts: ts
+  };
+}
+function readSharedExposureOverviewText() {
+  try {
+    var raw = localStorage.getItem(SHARED_EXPOSURE_TEXT_KEY);
+    if (!raw) return null;
+    var parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    return normalizeExposureOverviewText(parsed, true);
+  } catch (e) { return null; }
+}
+function writeSharedExposureOverviewText(data) {
+  var payload = normalizeExposureOverviewText(data, !!(data && data.ts));
+  try { localStorage.setItem(SHARED_EXPOSURE_TEXT_KEY, JSON.stringify(payload)); } catch (e) {}
+  return payload;
+}
+function pushExposureOverviewText(payload) {
+  payload = payload || readSharedExposureOverviewText();
+  if (!payload) return false;
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var win = frame && frame.contentWindow;
+    if (!win) return false;
+    win.postMessage({
+      type: 'wo-workorder-overview-text',
+      data: { main: payload.main, sub: payload.sub, date: payload.date },
+      ts: payload.ts
+    }, '*');
+    return true;
+  } catch (e) { return false; }
+}
+function syncImportedExposureOverviewText(data) {
+  var payload = writeSharedExposureOverviewText(normalizeExposureOverviewText(data, false));
+  pushExposureOverviewText(payload);
+  return payload;
+}
+
+var IMPORT_COLOR_ITEMS = [
+  { key: 'bg',        label: '背景顏色',   auto: true },
+  { key: 'cardBg',    label: '卡片背景色（MSBN C／D）' },
+  { key: 'cardBgA23Left',  label: 'A-2-3 左卡片背景色' },
+  { key: 'cardBgA23Right', label: 'A-2-3 右卡片背景色' },
+  { key: 'promoBg',   label: '促標底色' },
+  { key: 'promoText', label: '促標字色' },
+  { key: 'badgeBg',   label: '圓標底色' },
+  { key: 'badgeText', label: '圓標字色' },
+  { key: 'ctaBg',     label: 'CTA 底色' },
+  { key: 'ctaText',   label: 'CTA 字色' },
+  { key: 'bodyText',  label: '文字顏色' },  /* 品名、內文、文案、小字…等一般文字 */
+  { key: 'warnText',  label: '警語顏色' }
+];
+
+function isCardBgThemeEligible(blockId) {
+  return /^msbn_[CD]_/i.test(String(blockId || ''));
+}
+function isA23CardBgField(blockId, fieldKey, fieldLabel) {
+  return /^msbn_A_2_3$/i.test(String(blockId || '')) && isCardBgField(fieldKey, fieldLabel);
+}
+function isCardBgField(fieldKey, fieldLabel) {
+  return /^bgColor\d*$/i.test(String(fieldKey || '')) && /卡片背景色/i.test(String(fieldLabel || ''));
+}
+
+/* 匯入工單中，這些局部色欄位已由上方「統一顏色」集中覆寫，
+   只隱藏匯入側欄的重複控制；schema 欄位本身保留，避免影響維修頁與既有資料。 */
+function importColorRoleOfField(blockId, fieldKey, fieldLabel) {
+  var key = String(fieldKey || '');
+  if (/^promoColor\d*$/i.test(key)) return 'promoBg';
+  if (/^badgeColor\d*$/i.test(key)) return 'badgeBg';
+  if (/^ctaColor\d*$/i.test(key)) return 'ctaBg';
+  /* 只把真正標示為「卡片背景色」的 bgColor 欄位集中；
+     商品圖／情境圖的「底色」仍是局部用途，保留個別編輯。 */
+  if (isCardBgField(key, fieldLabel)) {
+    if (/^msbn_A_2_3$/i.test(String(blockId || ''))) {
+      return /^bgColor2$/i.test(key) ? 'cardBgA23Right' : 'cardBgA23Left';
+    }
+    return isCardBgThemeEligible(blockId) ? 'cardBg' : '';
+  }
+  return '';
+}
+function isImportColorGloballyManagedField(blockId, fieldKey, fieldLabel) {
+  if (isA23CardBgField(blockId, fieldKey, fieldLabel)) return true;
+  /* 副區與 MSBN A／B 的卡片背景固定白色，隱藏個別色票，避免繞過鎖定。 */
+  if (isCardBgField(fieldKey, fieldLabel) && !isCardBgThemeEligible(blockId)) return true;
+  return !!importColorRoleOfField(blockId, fieldKey, fieldLabel);
+}
+
+/* 值是空字串＝沒有覆寫，維持版位自己原本的顏色。
+   背景色是唯一有「自動預設值」的，bgAuto=true 代表還沒手動改過、要跟著曝光資源。 */
+var importTheme = (function () {
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(IMPORT_THEME_KEY)); } catch (e) {}
+  var t = { bgAuto: false };
+  IMPORT_COLOR_ITEMS.forEach(function (it) { t[it.key] = ''; });
+  if (saved && typeof saved === 'object') {
+    IMPORT_COLOR_ITEMS.forEach(function (it) {
+      if (typeof saved[it.key] === 'string') t[it.key] = saved[it.key];
+    });
+  }
+  var shared = readSharedCanvasBg();
+  if (shared) t.bg = shared;
+  else if (/^#[0-9a-fA-F]{6}$/.test(t.bg || '')) writeSharedCanvasBg(t.bg);
+  else {
+    t.bg = EXPOSURE_DEFAULT_BG;
+    writeSharedCanvasBg(t.bg);
+  }
+  return t;
+})();
+
+function saveImportTheme() {
+  /* 先吸收目前共用值，避免只改 CTA/文字色時，用舊的 importTheme.bg 把曝光資源新色蓋回去。 */
+  var shared = readSharedCanvasBg();
+  if (shared) importTheme.bg = shared;
+  else if (/^#[0-9a-fA-F]{6}$/.test(importTheme.bg || '')) writeSharedCanvasBg(importTheme.bg);
+  try { localStorage.setItem(IMPORT_THEME_KEY, JSON.stringify(importTheme)); } catch (e) {}
+}
+
+/* 去問「曝光資源」那個 iframe 目前的背景色（還沒載入或被瀏覽器擋住就回 null） */
+function getExposureCanvasBg() {
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var win = frame && frame.contentWindow;
+    if (!win) return null;
+    if (typeof win._bnGetAuthoritativeCanvasBg === 'function') {
+      var v = win._bnGetAuthoritativeCanvasBg();
+      if (/^#[0-9a-fA-F]{6}$/.test(v || '')) return v;
+    }
+    if (win.colorState && /^#[0-9a-fA-F]{6}$/.test(win.colorState.canvasBg || '')) return win.colorState.canvasBg;
+  } catch (e) { /* file:// 或跨網域被擋，安靜略過 */ }
+  return null;
+}
+
+var SHARED_EXPOSURE_SUB_TEXT_COLOR_KEY = 'wo_shared_exposure_sub_text_color_v1';
+var SHARED_EXPOSURE_TEXT_PALETTE_KEY = 'wo_shared_exposure_text_palette_v1';
+var EXPOSURE_DEFAULT_TEXT_PALETTE = {
+  mainText: '#2b79c4',
+  subText: '#2540b5',
+  dateText: '#2540b5',
+  brandText: '#2b79c4'
+};
+var EXPOSURE_DEFAULT_SUB_TEXT = EXPOSURE_DEFAULT_TEXT_PALETTE.subText;
+var EXPOSURE_TEXT_COLOR_KEYS = ['mainText', 'subText', 'dateText', 'brandText'];
+function readSharedExposureTextPalette() {
+  try {
+    var raw = localStorage.getItem(SHARED_EXPOSURE_TEXT_PALETTE_KEY);
+    var parsed = raw ? JSON.parse(raw) : null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    var out = {};
+    EXPOSURE_TEXT_COLOR_KEYS.forEach(function (key) {
+      if (/^#[0-9a-fA-F]{6}$/.test(parsed[key] || '')) out[key] = parsed[key];
+    });
+    return Object.keys(out).length ? out : null;
+  } catch (e) { return null; }
+}
+function writeSharedExposureTextPalette(palette) {
+  if (!palette || typeof palette !== 'object') return false;
+  var current = readSharedExposureTextPalette() || {};
+  var out = Object.assign({}, current);
+  EXPOSURE_TEXT_COLOR_KEYS.forEach(function (key) {
+    if (/^#[0-9a-fA-F]{6}$/.test(palette[key] || '')) out[key] = palette[key];
+  });
+  if (!Object.keys(out).length) return false;
+  try { localStorage.setItem(SHARED_EXPOSURE_TEXT_PALETTE_KEY, JSON.stringify(out)); } catch (e) {}
+  if (/^#[0-9a-fA-F]{6}$/.test(out.subText || '')) {
+    try { localStorage.setItem(SHARED_EXPOSURE_SUB_TEXT_COLOR_KEY, out.subText); } catch (e) {}
+  }
+  return true;
+}
+function readSharedExposureSubTextColor() {
+  try {
+    var v = localStorage.getItem(SHARED_EXPOSURE_SUB_TEXT_COLOR_KEY);
+    return /^#[0-9a-fA-F]{6}$/.test(v || '') ? v : null;
+  } catch (e) { return null; }
+}
+function writeSharedExposureSubTextColor(hex) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) return false;
+  try { localStorage.setItem(SHARED_EXPOSURE_SUB_TEXT_COLOR_KEY, hex); } catch (e) {}
+  writeSharedExposureTextPalette({ subText: hex });
+  return true;
+}
+/* 取得曝光資源目前主／副／日期色；目前 iframe 優先，避免舊暫存覆蓋最新吸色結果。 */
+function getExposureTextPalette() {
+  var live = {};
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var win = frame && frame.contentWindow;
+    if (win) {
+      var data = typeof win.getColorData === 'function' ? win.getColorData() : null;
+      var source = data || win.colorState || {};
+      EXPOSURE_TEXT_COLOR_KEYS.forEach(function (key) {
+        if (/^#[0-9a-fA-F]{6}$/.test(source[key] || '')) live[key] = source[key];
+      });
+      if (Object.keys(live).length) {
+        writeSharedExposureTextPalette(live);
+        return Object.assign({}, EXPOSURE_DEFAULT_TEXT_PALETTE, live);
+      }
+    }
+  } catch (e) { /* iframe 尚未載入時使用預設色 */ }
+  var stored = readSharedExposureTextPalette() || {};
+  var legacySubText = readSharedExposureSubTextColor();
+  if (legacySubText && !stored.subText) stored.subText = legacySubText;
+  return Object.assign({}, EXPOSURE_DEFAULT_TEXT_PALETTE, stored);
+}
+/* 取得曝光資源目前副標色，供匯入工單／維修的促標底色作為預設連動來源。 */
+function getExposureSubTextColor() {
+  return getExposureTextPalette().subText || EXPOSURE_DEFAULT_SUB_TEXT;
+}
+/* 把背景色推回「曝光資源」那個 iframe，兩邊連動。
+   jbp/jbpbn.html 的 applyColor() 是吃全域的 cpActiveKey 決定要改哪個顏色，
+   所以先暫時把它設成 canvasBg、改完再還原，避免影響它自己的取色面板狀態。 */
+function pushImportBgToExposure(hex) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) return false;
+  writeSharedCanvasBg(hex);
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var win = frame && frame.contentWindow;
+    if (!win) return false;
+    if (typeof win._bnApplySharedCanvasBg === 'function') {
+      win._bnApplySharedCanvasBg(hex, true);
+      return true;
+    }
+    if (typeof win.applyColor !== 'function') return false;
+    var prevKey = win.cpActiveKey;
+    win.cpActiveKey = 'canvasBg';
+    win.applyColor(hex);
+    win.cpActiveKey = prevKey;
+    return true;
+  } catch (e) { return false; } /* file:// 或跨網域被擋，安靜略過 */
+}
+
+/* 背景色只有一個共用來源：localStorage 的 SHARED_CANVAS_BG_KEY。
+   不再拿第一個版位原色覆蓋它，避免工具列、曝光資源與畫布看到不同色號。 */
+function resolvedImportBg() {
+  var shared = readSharedCanvasBg();
+  if (shared) return shared;
+  if (/^#[0-9a-fA-F]{6}$/.test(importTheme.bg || '')) return importTheme.bg;
+  var fromExposure = getExposureCanvasBg();
+  if (fromExposure) {
+    writeSharedCanvasBg(fromExposure);
+    return fromExposure;
+  }
+  writeSharedCanvasBg(EXPOSURE_DEFAULT_BG);
+  return EXPOSURE_DEFAULT_BG;
+}
+
+/* 沒有手動改過的顏色，把「畫面上目前實際的色號」吸進來顯示（不再只寫「版位原色」）。
+   來源是畫布上第一個有這個角色的版位圖層，所以看到的就是眼前那個顏色。 */
+var maintTheme = {};
+IMPORT_COLOR_ITEMS.forEach(function (it) { maintTheme[it.key] = ''; });
+
+function sampledRoleColors(columns) {
+  var out = {};
+  if (!window.BNSchemaRenderer || !BNSchemaRenderer.roleColorsOf) return out;
+  (Array.isArray(columns) ? columns : currentImportColumns).forEach(function (col) {
+    var def = BNCore.getBlock(col.blockId);
+    if (!def || !def.schema) return;
+    var colors = BNSchemaRenderer.roleColorsOf(def.schema, col.data);
+    Object.keys(colors).forEach(function (role) {
+      if (role === 'cardBg' && !isCardBgThemeEligible(col.blockId)) return;
+      if ((role === 'cardBgA23Left' || role === 'cardBgA23Right') && !/^msbn_A_2_3$/i.test(String(col.blockId || ''))) return;
+      if (!out[role]) out[role] = colors[role];
+    });
+  });
+  return out;
+}
+
+/* 匯入工單的連動預設：未手動覆寫時，促標底色跟曝光副標、促標字色跟背景，
+   MSBN C／D 卡片底色跟圓標底；一旦使用者手動指定，外層呼叫端會優先使用手動色。 */
+function importLinkedDefaultColors(colorState, sampled, sharedBg) {
+  colorState = colorState || {};
+  sampled = sampled || {};
+  var badgeBg = colorState.badgeBg || sampled.badgeBg || '';
+  return {
+    promoBg: getExposureSubTextColor(),
+    promoText: lightenColorBy50(sharedBg),
+    cardBg: badgeBg || sampled.cardBg || '',
+    cardBgA23Left: badgeBg || sampled.cardBgA23Left || '',
+    cardBgA23Right: badgeBg || sampled.cardBgA23Right || ''
+  };
+}
+/* 手動換背景色代表配色情境已改變：促標不保留先前的手動覆寫，
+   重新使用「副標色當底、背景色加亮 50% 當字」的連動預設。 */
+function relinkImportPromoColorsToBackground() {
+  importTheme.promoBg = '';
+  importTheme.promoText = '';
+}
+/* 交給 BNCore.renderInstance 的 opts（畫布上可直接點著改文字＋統一顏色覆寫） */
+function importRenderOpts(editable, mode, col) {
+  mode = mode || 'import';
+  var isMaint = mode === 'maint';
+  var colorState = isMaint ? maintTheme : importTheme;
+  var columns = isMaint ? maintColumns : currentImportColumns;
+  /* 背景色維持畫布／曝光資源的共用來源；卡片背景另外使用 cardBg，
+     只讓 MSBN C／D 的卡片一起同步，又不必把畫布留白變成卡片色。 */
+  var sharedBg = isMaint ? (colorState.bg || resolvedImportBg()) : resolvedImportBg();
+  var sampled = sampledRoleColors(columns);
+  var linkedDefaults = importLinkedDefaultColors(colorState, sampled, sharedBg);
+  var sharedCardBg = colorState.cardBg || linkedDefaults.cardBg;
+  var a23LeftCardBg = colorState.cardBgA23Left || linkedDefaults.cardBgA23Left;
+  var a23RightCardBg = colorState.cardBgA23Right || linkedDefaults.cardBgA23Right;
+  var theme = { canvasBg: sharedBg, bg: sharedBg, cardBg: sharedCardBg,
+    cardBgA23Left: a23LeftCardBg, cardBgA23Right: a23RightCardBg,
+    promoBg: colorState.promoBg || linkedDefaults.promoBg,
+    promoText: colorState.promoText || linkedDefaults.promoText, bgScope: 'msbn-d' };
+  IMPORT_COLOR_ITEMS.forEach(function (it) {
+    if (it.key === 'bg') return;
+    if (colorState[it.key]) theme[it.key] = colorState[it.key];
+  });
+  return {
+    editable: editable !== false,
+    theme: theme,
+    /* 匯入工單與維修編輯都依實際圖片內容套用空間吸附；
+       非編輯的全部版位預覽仍顯示設計稿的每一個原始範圍，方便檢查。 */
+    imageAbsorb: mode === 'import' || mode === 'maint',
+    forceImageAbsorb: mode === 'import' || mode === 'maint',
+    imageOrder: col ? normalizedImportImageOrder(col) : [],
+    imagePartLayerOrder: col ? importImagePartLayerOrders(col) : {},
+    dynamicRowRows: col && Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows.slice() : []
+  };
+}
+
+/* 預覽外框的底色也跟著背景色走，四周留白才不會是突兀的黑邊 */
+function applyImportStripBg() {
+  var wrap = document.getElementById('imp-strip-wrap');
+  if (wrap) wrap.style.background = resolvedImportBg();
+}
+
+/* 原生色盤開啟期間，外部色彩連動仍更新畫布，但不能重建色票 DOM；
+   否則每次拖色時色盤會被中斷而跳掉。 */
+var importColorPickerEditing = false;
+var importColorPanelRefreshPending = false;
+var importColorPickerReleaseTimer = null;
+function holdImportColorPicker() {
+  clearTimeout(importColorPickerReleaseTimer);
+  importColorPickerEditing = true;
+}
+function releaseImportColorPicker(delay) {
+  clearTimeout(importColorPickerReleaseTimer);
+  importColorPickerReleaseTimer = setTimeout(function () {
+    importColorPickerEditing = false;
+    if (!importColorPanelRefreshPending) return;
+    importColorPanelRefreshPending = false;
+    renderImportColorPanel();
+  }, typeof delay === 'number' ? delay : 0);
+}
+
+function renderImportColorPanel() {
+  if (importColorPickerEditing) {
+    importColorPanelRefreshPending = true;
+    return;
+  }
+  var list = document.getElementById('import-color-list');
+  if (!list) return;
+  var bgNow = resolvedImportBg();
+  var sampled = sampledRoleColors(); /* 畫布上目前實際的色號 */
+  var hasEligibleCardBg = currentImportColumns.some(function (col) { return isCardBgThemeEligible(col.blockId); });
+  var hasA23 = currentImportColumns.some(function (col) { return /^msbn_A_2_3$/i.test(String(col.blockId || '')); });
+  var linkedDefaults = importLinkedDefaultColors(importTheme, sampled, bgNow);
+  var colorItems = IMPORT_COLOR_ITEMS.filter(function (it) {
+    if (it.key === 'cardBg') return hasEligibleCardBg;
+    if (it.key === 'cardBgA23Left' || it.key === 'cardBgA23Right') return hasA23;
+    return true;
+  });
+
+  list.innerHTML = colorItems.map(function (it) {
+    var isBg = it.key === 'bg';
+    var isCardBg = it.key === 'cardBg';
+    var isA23CardBg = it.key === 'cardBgA23Left' || it.key === 'cardBgA23Right';
+    /* 背景色永遠是共用值；卡片背景沒有手動覆寫時，以目前第一個卡片色為基準並套用全版面。 */
+    var overridden = isBg ? true : !!importTheme[it.key];
+    var value = isBg ? bgNow : (importTheme[it.key] || linkedDefaults[it.key] || sampled[it.key] || '');
+    var note = isBg ? '與曝光資源、畫布留白連動' : (it.key === 'promoBg'
+      ? (overridden ? '' : '預設跟曝光資源副標文字色')
+      : (it.key === 'promoText'
+        ? (overridden ? '' : '預設為背景色加亮 50%')
+        : (isCardBg
+          ? (overridden ? '只同步 MSBN C／D 卡片' : '預設跟圓標底色相同')
+          : (isA23CardBg
+            ? (overridden ? '只同步 MSBN A-2-3 的左／右卡片' : '預設跟圓標底色相同')
+            : (overridden ? '' : (sampled[it.key] ? '畫布實際色' : '這批版位沒有這個顏色'))))));
+    return '<div class="ic-color-row' + (overridden ? '' : ' is-off') + '" data-key="' + it.key + '">' +
+      '<span class="icc-label">' + esc(it.label) +
+        (note ? '<span class="icc-auto">' + esc(note) + '</span>' : '') + '</span>' +
+      '<input type="color" class="icc-picker" value="' + esc(colorToHex(value || '#ffffff')) + '">' +
+      '<input type="text" class="icc-hex" placeholder="（無）" value="' + esc(value) + '">' +
+      '<button type="button" class="icc-reset" title="' +
+        (isBg ? '恢復共用預設背景色' : (isCardBg ? '清除統一卡片背景色' : (isA23CardBg ? '清除 A-2-3 左／右卡片背景色' : '改回這個版位原本的顏色'))) + '">' + lineIcon('reset') + '</button>' +
+    '</div>';
+  }).join('');
+
+  list.querySelectorAll('.ic-color-row').forEach(function (row) {
+    var key = row.getAttribute('data-key');
+    var picker = row.querySelector('.icc-picker');
+    var hex = row.querySelector('.icc-hex');
+    var autoTag = row.querySelector('.icc-auto');
+
+    /* 拖色盤時 input 事件會連續狂發，每一發都重畫整個畫布會頓，
+       所以畫布這邊延遲一點再套用，資料本身是即時更新的。 */
+    function setValue(v, rebuildPanel) {
+      if (key === 'bg') {
+        var normalized = /^#[0-9a-fA-F]{6}$/.test(v || '') ? colorToHex(v) : v;
+        importTheme.bg = normalized;
+        importTheme.bgAuto = false;
+        /* 完整色碼才同步；使用者正在輸入半套色碼時先不覆蓋畫布。 */
+        if (/^#[0-9a-fA-F]{6}$/.test(normalized || '')) {
+          relinkImportPromoColorsToBackground();
+          writeSharedCanvasBg(normalized);
+          pushImportBgToExposure(normalized);
+        }
+      } else {
+        importTheme[key] = v;
+      }
+      saveImportTheme();
+      if (rebuildPanel) {
+        applyImportTheme();
+        renderImportColorPanel(); /* 重畫這一區，讓提示文字（版位原色／跟著曝光資源）跟著更新 */
+        return;
+      }
+      /* 不重畫整區時，手動把這一列的樣子更新一下（不要打斷使用者正在輸入的框） */
+      row.classList.toggle('is-off', key === 'bg' ? false : !v);
+      if (autoTag) autoTag.style.display = (key === 'bg' || !v) ? '' : 'none';
+      applyImportThemeSoon();
+    }
+
+    picker.addEventListener('pointerdown', holdImportColorPicker);
+    picker.addEventListener('focus', holdImportColorPicker);
+    picker.addEventListener('input', function () {
+      holdImportColorPicker();
+      hex.value = this.value;
+      setValue(this.value, false);
+    });
+    picker.addEventListener('change', function () {
+      setValue(this.value, false);
+      applyImportTheme(); /* 色盤確認時，不等待防抖，畫布立即完成最後一幀。 */
+      importColorPanelRefreshPending = true;
+      releaseImportColorPicker(0);
+    });
+    /* 有些瀏覽器打開原生色盤時會短暫 blur，延後釋放可避免拖曳一開始就被重建。 */
+    picker.addEventListener('blur', function () { releaseImportColorPicker(250); });
+    hex.addEventListener('input', function () {
+      var v = this.value.trim();
+      setValue(v, false);
+      if (v) picker.value = colorToHex(v);
+    });
+    hex.addEventListener('change', function () { renderImportColorPanel(); });
+    row.querySelector('.icc-reset').addEventListener('click', function () {
+      setValue(key === 'bg' ? EXPOSURE_DEFAULT_BG : '', true);
+    });
+  });
+}
+
+/* 顏色連續拖動時，畫布延遲一小段時間才重畫，避免每一個 input 事件都整塊重繪 */
+var importThemeApplyTimer = null;
+function applyImportThemeSoon() {
+  clearTimeout(importThemeApplyTimer);
+  importThemeApplyTimer = setTimeout(applyImportTheme, 60);
+}
+
+/* 顏色改了：不用重建左側欄位面板，只把畫布上每一格重新渲染一次就好 */
+function applyImportTheme() {
+  applyImportStripBg();
+  currentImportColumns.forEach(function (col, idx) {
+    var mount = document.getElementById('imp-mount-' + idx);
+    if (!mount) return;
+    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import', col));
+    bindCanvasInteractions(mount, col, idx, 'import');
+  });
+}
+
+var maintThemeApplyTimer = null;
+function applyMaintThemeSoon() {
+  clearTimeout(maintThemeApplyTimer);
+  maintThemeApplyTimer = setTimeout(applyMaintTheme, 60);
+}
+
+/* 維修頁的統一顏色工具：只改 maintTheme，不寫 localStorage，方便反覆測試。 */
+function applyMaintTheme() {
+  maintColumns.forEach(function (col, idx) {
+    var mount = document.getElementById('mnt-mount-' + idx);
+    if (!mount) return;
+    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'maint', col));
+    applyDynamicStageSize(mount, col);
+    bindCanvasInteractions(mount, col, idx, 'maint');
+  });
+  renderMaintColorPanel();
+}
+
+function renderMaintColorPanel() {
+  var list = document.getElementById('maint-color-list');
+  if (!list) return;
+  var sampled = sampledRoleColors(maintColumns);
+  var hasEligibleCardBg = maintColumns.some(function (col) { return isCardBgThemeEligible(col.blockId); });
+  var hasA23 = maintColumns.some(function (col) { return /^msbn_A_2_3$/i.test(String(col.blockId || '')); });
+  var maintBg = maintTheme.bg || resolvedImportBg();
+  var linkedDefaults = importLinkedDefaultColors(maintTheme, sampled, maintBg);
+  var colorItems = IMPORT_COLOR_ITEMS.filter(function (it) {
+    if (it.key === 'cardBg') return hasEligibleCardBg;
+    if (it.key === 'cardBgA23Left' || it.key === 'cardBgA23Right') return hasA23;
+    return true;
+  });
+  list.innerHTML = colorItems.map(function (it) {
+    var isBg = it.key === 'bg';
+    var isCardBg = it.key === 'cardBg';
+    var isA23CardBg = it.key === 'cardBgA23Left' || it.key === 'cardBgA23Right';
+    var overridden = !!maintTheme[it.key];
+    var value = maintTheme[it.key] || (isBg ? maintBg : linkedDefaults[it.key] || sampled[it.key] || '');
+    var note = isBg ? (overridden ? '維修測試背景色' : '目前共用背景色') : (it.key === 'promoBg'
+      ? (overridden ? '' : '預設跟曝光資源副標文字色')
+      : (it.key === 'promoText'
+        ? (overridden ? '' : '預設為背景色加亮 50%')
+        : (isCardBg
+          ? (overridden ? '只同步 MSBN C／D 卡片' : '預設跟圓標底色相同')
+          : (isA23CardBg
+            ? (overridden ? '只同步 MSBN A-2-3 的左／右卡片' : '預設跟圓標底色相同')
+            : (overridden ? '' : (sampled[it.key] ? '維修頁實際色' : '目前沒有這個顏色'))))));
+    return '<div class="ic-color-row' + (overridden ? '' : ' is-off') + '" data-key="' + it.key + '">' +
+      '<span class="icc-label">' + esc(it.label) +
+        (note ? '<span class="icc-auto">' + esc(note) + '</span>' : '') + '</span>' +
+      '<input type="color" class="icc-picker" value="' + esc(colorToHex(value || '#ffffff')) + '">' +
+      '<input type="text" class="icc-hex" placeholder="（無）" value="' + esc(value) + '">' +
+      '<button type="button" class="icc-reset" title="恢復維修頁原色">↺</button>' +
+    '</div>';
+  }).join('');
+
+  list.querySelectorAll('.ic-color-row').forEach(function (row) {
+    var key = row.getAttribute('data-key');
+    var picker = row.querySelector('.icc-picker');
+    var hex = row.querySelector('.icc-hex');
+    var autoTag = row.querySelector('.icc-auto');
+    function setValue(v, rebuildPanel) {
+      maintTheme[key] = v;
+      row.classList.toggle('is-off', !v);
+      if (autoTag) autoTag.style.display = v ? 'none' : '';
+      if (rebuildPanel) {
+        applyMaintTheme();
+        return;
+      }
+      applyMaintThemeSoon();
+    }
+    picker.addEventListener('pointerdown', holdImportColorPicker);
+    picker.addEventListener('focus', holdImportColorPicker);
+    picker.addEventListener('input', function () {
+      holdImportColorPicker();
+      hex.value = this.value;
+      setValue(this.value, false);
+    });
+    picker.addEventListener('change', function () {
+      setValue(this.value, false);
+      applyImportTheme(); /* 色盤確認時，不等待防抖，畫布立即完成最後一幀。 */
+      importColorPanelRefreshPending = true;
+      releaseImportColorPicker(0);
+    });
+    /* 有些瀏覽器打開原生色盤時會短暫 blur，延後釋放可避免拖曳一開始就被重建。 */
+    picker.addEventListener('blur', function () { releaseImportColorPicker(250); });
+    hex.addEventListener('input', function () {
+      var v = this.value.trim();
+      setValue(v, false);
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) picker.value = colorToHex(v);
+    });
+    hex.addEventListener('change', function () { renderMaintColorPanel(); });
+    row.querySelector('.icc-reset').addEventListener('click', function () {
+      setValue('', true);
+    });
+  });
+}
+
+function resetMaintTheme() {
+  IMPORT_COLOR_ITEMS.forEach(function (it) { maintTheme[it.key] = ''; });
+  applyMaintTheme();
+}
+
+/* 跟曝光資源對一次背景色（兩邊連動）。
+   進到「匯入工單」這一頁時呼叫：曝光資源那邊改過就跟著它；
+   曝光資源還沒載入、而這一頁有自己設定過的顏色，就維持自己的。 */
+function syncImportBgFromExposure() {
+  var fromExposure = getExposureCanvasBg();
+  var shared = readSharedCanvasBg();
+  var next = fromExposure || shared || importTheme.bg || EXPOSURE_DEFAULT_BG;
+  if (/^#[0-9a-fA-F]{6}$/.test(next || '')) {
+    importTheme.bg = colorToHex(next);
+    importTheme.bgAuto = false;
+    writeSharedCanvasBg(importTheme.bg);
+    saveImportTheme();
+  }
+  renderImportColorPanel();
+  if (currentImportColumns.length) applyImportTheme();
+  else applyImportStripBg();
+}
+
+function refreshImportAndMaintColorLinks() {
+  renderImportColorPanel();
+  renderMaintColorPanel();
+  if (currentImportColumns.length) applyImportTheme();
+  if (maintColumns.length) applyMaintTheme();
+}
+
+/* 曝光資源吸色／手動改色 → 匯入工單與維修立即同步，不回推造成循環。 */
+window.addEventListener('message', function (e) {
+  var d = e.data || {};
+  if (d.type === 'wo-exposure-palette' && d.palette && typeof d.palette === 'object') {
+    writeSharedExposureTextPalette(d.palette);
+    refreshImportAndMaintColorLinks();
+    return;
+  }
+  if (d.type === 'wo-exposure-color' && EXPOSURE_TEXT_COLOR_KEYS.indexOf(d.key) >= 0 && /^#[0-9a-fA-F]{6}$/.test(d.color || '')) {
+    var nextPalette = {};
+    nextPalette[d.key] = d.color;
+    writeSharedExposureTextPalette(nextPalette);
+    refreshImportAndMaintColorLinks();
+    return;
+  }
+  if (d.type !== 'wo-bg' || !/^#[0-9a-fA-F]{6}$/.test(d.color || '')) return;
+  var hex = colorToHex(d.color);
+  if (resolvedImportBg().toLowerCase() === hex.toLowerCase() && importTheme.bg === hex) return;
+  importTheme.bg = hex;
+  importTheme.bgAuto = false;
+  relinkImportPromoColorsToBackground();
+  writeSharedCanvasBg(hex);
+  saveImportTheme();
+  renderImportColorPanel();
+  if (currentImportColumns.length) applyImportTheme();
+  else applyImportStripBg();
+});
+
+/* 其他分頁／視窗變更共用背景色時也跟著更新。 */
+window.addEventListener('storage', function (e) {
+  if (e.key !== SHARED_CANVAS_BG_KEY || !/^#[0-9a-fA-F]{6}$/.test(e.newValue || '')) return;
+  importTheme.bg = colorToHex(e.newValue);
+  importTheme.bgAuto = false;
+  relinkImportPromoColorsToBackground();
+  saveImportTheme();
+  renderImportColorPanel();
+  if (currentImportColumns.length) applyImportTheme();
+  else applyImportStripBg();
+});
+
+document.getElementById('btn-color-reset-all').addEventListener('click', function () {
+  IMPORT_COLOR_ITEMS.forEach(function (it) { importTheme[it.key] = ''; });
+  importTheme.bg = EXPOSURE_DEFAULT_BG;
+  importTheme.bgAuto = false;
+  writeSharedCanvasBg(importTheme.bg);
+  pushImportBgToExposure(importTheme.bg);
+  saveImportTheme();
+  applyImportTheme();
+  renderImportColorPanel();
+});
+
+renderImportColorPanel();
+
+function renderedBlockSizeOf(def, col) {
+  var size = { width: Number(def && def.width) || 1200, height: Number(def && def.height) || 400 };
+  var schema = def && def.schema;
+  if (!schema || !schema.dynamicRowLayout || !schema.dynamicRowLayout.fixedRowHeight ||
+      !window.BNSchemaRenderer || typeof BNSchemaRenderer.dynamicRowLayoutOf !== 'function') return size;
+  var layout = BNSchemaRenderer.dynamicRowLayoutOf(schema, col && col.data, {
+    dynamicRowRows: col && Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows : []
+  });
+  if (layout && layout.totalHeight != null) size.height = Number(layout.totalHeight) || size.height;
+  return size;
+}
+function applyDynamicStageSize(mount, col, zoom) {
+  if (!mount || !col) return;
+  var def = BNCore.getBlock(col.blockId);
+  var size = renderedBlockSizeOf(def, col);
+  var scale = Number(zoom);
+  if (!isFinite(scale) || scale <= 0) {
+    var zoomEl = document.getElementById('maint-zoom');
+    scale = zoomEl ? (parseFloat(zoomEl.value) || 1) : 1;
+  }
+  mount.style.width = size.width + 'px';
+  mount.style.height = size.height + 'px';
+  var stage = mount.closest('.mt-stage');
+  if (!stage) return;
+  stage.style.width = size.width + 'px';
+  stage.style.height = size.height + 'px';
+  var stageWrap = stage.closest('.mt-stage-wrap');
+  if (stageWrap) {
+    stageWrap.style.width = Math.ceil(size.width * scale) + 'px';
+    stageWrap.style.height = Math.ceil(size.height * scale) + 'px';
+  }
+}
+function importImageActionButton(label, title, key, act, imageIndex, disabled, iconName, iconOnly, danger, idx, ctxName) {
+  var button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'if-btn' + (iconOnly ? ' if-icon-btn' : '') + (danger ? ' danger' : '');
+  button.title = title;
+  button.setAttribute('aria-label', title);
+  button.disabled = !!disabled;
+  button.innerHTML = lineIcon(iconName) + (iconOnly ? '' : ' ' + label);
+  button.addEventListener('click', function () {
+    handleImportImageAction(idx, key, act, imageIndex, ctxName);
+  });
+  return button;
+}
+
+function bindImportImageFieldTools(box, idx, ctxName) {
+  if (!box) return;
+  var ctx = canvasCtx(ctxName);
+  var col = ctx.columns()[idx];
+  if (!col) return;
+  var order = normalizedImportImageOrder(col);
+  box.querySelectorAll('.img-field').forEach(function (fieldEl) {
+    var key = fieldEl.getAttribute('data-key');
+    if (!key) return;
+    var orderIndex = order.indexOf(key);
+    var head = fieldEl.querySelector('.img-field-head');
+    if (head) {
+      var orderWrap = document.createElement('span');
+      orderWrap.className = 'import-image-tool-order';
+      orderWrap.appendChild(importImageActionButton('上移', '圖片層上移', key, 'field-up', NaN, orderIndex <= 0, 'up', true, false, idx, ctxName));
+      orderWrap.appendChild(importImageActionButton('下移', '圖片層下移', key, 'field-down', NaN, orderIndex < 0 || orderIndex >= order.length - 1, 'down', true, false, idx, ctxName));
+      head.appendChild(orderWrap);
+    }
+    var parts = splitImageList(col.data[key] || '');
+    if (!parts.length) parts = [''];
+    fieldEl.querySelectorAll('.if-row').forEach(function (row, layerIndex) {
+      var imageIndex = Number(row.getAttribute('data-image-index'));
+      var part = parts[imageIndex] || '';
+      var usable = /^(data:|https?:|blob:)/i.test(String(part).trim());
+      var actions = document.createElement('div');
+      actions.className = 'if-actions';
+      actions.appendChild(importImageActionButton('上移', '這張圖片圖層上移', key, 'part-layer-up', imageIndex, layerIndex <= 0, 'up', true, false, idx, ctxName));
+      actions.appendChild(importImageActionButton('下移', '這張圖片圖層下移', key, 'part-layer-down', imageIndex, layerIndex >= parts.length - 1, 'down', true, false, idx, ctxName));
+      actions.appendChild(importImageActionButton('編輯', '裁切／去背／擦除／影子', key, 'edit', imageIndex, !usable, 'edit', false, false, idx, ctxName));
+      actions.appendChild(importImageActionButton('換圖', '更換這張圖片', key, 'swap', imageIndex, false, 'refresh', false, false, idx, ctxName));
+      actions.appendChild(importImageActionButton('刪除', '刪除這張圖片', key, 'del', imageIndex, !part, 'close', false, true, idx, ctxName));
+      row.appendChild(actions);
+    });
+  });
+}
+
+function renderImportColumns(columns, skipPreviewRerender) {
+  currentImportColumns = columns;
+  queueImportStateSave();
+  var scroll = document.getElementById('import-fields-scroll');
+  var list = document.getElementById('import-preview-list');
+  list.classList.add('show');
+  document.getElementById('import-empty2').style.display = 'none';
+  showImportToolbar(true);
+  scroll.innerHTML = '';
+  var actionRail = document.getElementById('import-block-tools');
+  if (actionRail) actionRail.innerHTML = '';
+
+  /* 排版方式跟版位畫布(工單生成器)一樣，照「段(band)」分排：
+     同一段的格子橫向排成一排，段與段由上往下接。
+       - 最上面那排副區＝一段
+       - MSBN 每一顆＝各自一段（整排 1200）
+       - MSBN 任一格改放的「副區版配」＝也是一段（一整排副區格子）
+     舊版的暫存/檔案沒有 band 資訊，就退回舊行為：所有副區算同一段排在最上面、
+     每一顆 MSBN 各自一段接在下面。 */
+  var defs = columns.map(function (c) { return BNCore.getBlock(c.blockId); });
+  var colSizes = columns.map(function (c, i) { return renderedBlockSizeOf(defs[i], c); });
+  function bandKeyOf(col, i) {
+    if (col.band != null) return 'b' + col.band;
+    return col.blockId.indexOf('msbn_') === 0 ? 'm' + i : 'sub';
+  }
+  var bands = [];
+  columns.forEach(function (c, i) {
+    var key = bandKeyOf(c, i);
+    var last = bands[bands.length - 1];
+    if (last && last.key === key) last.items.push(i);
+    else bands.push({ key: key, items: [i] });
+  });
+
+  /* 先量每一段的寬高，才知道整塊多寬（中間那張固定圖要跟整塊一樣寬） */
+  var rowSizes = bands.map(function (b) {
+    var w = 0, h = 0;
+    b.items.forEach(function (i) {
+      var def0 = defs[i];
+      if (!def0) return;
+      w += def0.width;
+      h = Math.max(h, colSizes[i].height);
+    });
+    return { w: w, h: h };
+  });
+  var totalWidth = rowSizes.reduce(function (a, r) { return Math.max(a, r.w); }, 0);
+
+  /* 最上面那一段是副區、而且下面還有東西 → 中間夾一張 img/three.jpg */
+  var firstIsSubarea = bands.length > 0 && columns[bands[0].items[0]] &&
+    String(columns[bands[0].items[0]].blockId).indexOf('subarea_') === 0;
+  var bannerH = (firstIsSubarea && bands.length > 1 && importMidBannerAvailable && totalWidth)
+    ? Math.round(totalWidth * importMidBannerRatio) : 0;
+  var bannerTop = 0;
+
+  var positions = columns.map(function () { return { left: 0, top: 0 }; });
+  var cumTop = 0;
+  bands.forEach(function (b, bi) {
+    var left = 0;
+    b.items.forEach(function (i) {
+      if (!defs[i]) return;
+      positions[i].left = left;
+      positions[i].top = cumTop;
+      left += defs[i].width;
+    });
+    cumTop += rowSizes[bi].h;
+    if (bi === 0 && bannerH) { bannerTop = cumTop; cumTop += bannerH; }
+  });
+  var bottomSyncTop = cumTop;
+  var hasMsbn = columns.some(function (col) { return /^msbn_/i.test(String(col.blockId || '')); });
+  var hasImportBottom = currentImportHasBottomWorkOrder && latestBottomWorkOrder && hasMsbn;
+  var bottomOutputWidth = importBottomPreviewResult && Number(importBottomPreviewResult.width) > 0
+    ? Number(importBottomPreviewResult.width) : 1200;
+  var bottomOutputHeight = importBottomPreviewResult && Number(importBottomPreviewResult.height) > 0
+    ? Number(importBottomPreviewResult.height) : 150;
+  /* 吸底固定是 1200×150；匯入畫布依 MSBN 實際寬度縮放，確保左右邊緣完全對齊。 */
+  var bottomSyncH = hasImportBottom && totalWidth
+    ? Math.round(totalWidth * bottomOutputHeight / bottomOutputWidth) : 0;
+  var maxHeight = cumTop + bottomSyncH;
+
+  if (!skipPreviewRerender) {
+    list.innerHTML =
+      '<div id="imp-strip-wrap" data-total-width="' + totalWidth + '" data-max-height="' + maxHeight + '" style="width:' + Math.round(totalWidth * importZoom) + 'px;height:' + Math.round(maxHeight * importZoom) + 'px">' +
+      '<div id="imp-strip" style="transform:scale(' + importZoom + ');--impz:' + importZoom + ';width:' + totalWidth + 'px;height:' + maxHeight + 'px"></div>' +
+      '</div>';
+    applyImportStripBg();
+  }
+  var strip = document.getElementById('imp-strip');
+  if (!skipPreviewRerender && strip) {
+    strip.innerHTML = '';
+    if (bannerH) { /* 副區與 MSBN 之間固定夾的那一張圖 */
+      var bannerImg = document.createElement('img');
+      bannerImg.id = 'imp-mid-banner';
+      bannerImg.src = importMidBannerSrc();
+      bannerImg.alt = '副區與 MSBN 之間的固定版位';
+      bannerImg.draggable = false;
+      bannerImg.style.cssText = 'position:absolute;left:0;top:' + bannerTop + 'px;width:' +
+        totalWidth + 'px;height:' + bannerH + 'px;display:block;';
+      strip.appendChild(bannerImg);
+    }
+  }
+
+  columns.forEach(function (col, idx) {
+    var def = BNCore.getBlock(col.blockId);
+    if (!def) {
+      var warnBox = document.createElement('div');
+      warnBox.className = 'imp-col';
+      warnBox.innerHTML = lineIcon('warning') + ' 找不到版位「' + esc(col.blockId) + '」（' + esc(col.header || '') + '）' +
+        '<button class="btn ghost imp-retry-btn" style="margin-top:8px;width:100%;">' + lineIcon('refresh') + ' 重新載入版位模板再試一次</button>';
+      scroll.appendChild(warnBox);
+      warnBox.querySelector('.imp-retry-btn').addEventListener('click', function () {
+        blocksLoadedForImport = false; /* 強制重新抓一次，不管之前的狀態 */
+        blocksLoadingCallbacks = null;
+        ensureBlocksLoaded(function () { renderImportColumns(columns); });
+      });
+      return;
+    }
+
+    /* 每個版位一張卡：
+       - 圖片欄位：左側只顯示縮圖，操作集中在右側圖片工具列
+       - 文字欄位：直接修改，並可一鍵清空（空白就是刪除該資訊）
+       - 顏色欄位：只顯示未被上方「統一顏色」管理的局部色票 */
+    var box = document.createElement('div');
+    box.className = 'imp-col';
+    box.setAttribute('data-col', idx);
+    var fieldDefsByKey = {};
+    var imageToolDefs = [];
+    def.fields.forEach(function (f) { fieldDefsByKey[f.key] = f; });
+    var fieldsHtml = def.fields.map(function (f) {
+      if (f.type === 'color' && isImportColorGloballyManagedField(col.blockId, f.key, f.label)) return '';
+      var val = col.data[f.key] != null ? col.data[f.key] : f.default;
+      if (val == null) val = '';
+      var limitHint = f.maxLength ? '<span class="field-limit">限' + f.maxLength + '字</span>' : '';
+
+      if (f.type === 'image') {
+        var shortLabel = String(f.label || f.key).replace(/圖片網址|網址/g, '').trim() || '圖片';
+        var imageParts = splitImageList(val);
+        if (!imageParts.length) imageParts = [''];
+        var imageLayerOrder = normalizedImportImagePartLayerOrder(col, f.key, imageParts.length);
+        imageToolDefs.push({ key: f.key, label: shortLabel, parts: imageParts.slice(), partLayerOrder: imageLayerOrder.slice() });
+        /* 右側清單由最上層到最下層排列；只改這個順序，不改每張圖片的座標索引。 */
+        var imageRows = imageLayerOrder.map(function (imageIndex) {
+          var part = imageParts[imageIndex] || '';
+          var usable = /^(data:|https?:|blob:)/i.test(String(part || '').trim());
+          var indexLabel = imageParts.length > 1 ? '<span class="if-index">圖' + (imageIndex + 1) + '</span>' : '';
+          var thumbHtml = usable
+            ? '<img src="' + esc(part) + '" alt="">'
+            : '<span class="if-empty">' + lineIcon('image') + '<br>' + (part ? '待載入' : '未上傳') + '</span>';
+          return '<div class="if-row" data-image-index="' + imageIndex + '">' +
+            '<div class="if-thumb' + (usable ? '' : ' is-empty') + '">' + indexLabel + thumbHtml + '</div>' +
+          '</div>';
+        }).join('');
+        return '<div class="field img-field" data-key="' + f.key + '">' +
+          '<div class="img-field-head"><label>' + esc(shortLabel) + limitHint + '</label></div>' +
+          '<div class="if-list">' + imageRows + '</div></div>';
+
+      }
+      if (f.type === 'color') {
+        /* 空字串代表沒有覆寫，畫布會回退到圖層原色；工具列也必須顯示
+           同一個實際色號，不能再顯示黑色或空白。 */
+        var actualColorVal = String(val || '').trim() || String(f.default || '').trim() || '#000000';
+        return '<div class="field local-color-field" data-key="' + f.key + '">' +
+          '<label>' + esc(f.label || f.key) + '</label>' +
+          '<div class="local-color-field-row">' +
+            '<input type="color" class="local-color-picker" value="' + esc(colorToHex(actualColorVal)) + '" title="選擇顏色">' +
+            '<input type="text" class="fv local-color-text" value="' + esc(actualColorVal) + '" placeholder="#RRGGBB 或 rgb(...)" aria-label="' + esc(f.label || f.key) + '">' +
+            '<button type="button" class="field-mini-btn local-color-reset" title="還原這個版位的預設色">' + lineIcon('reset') + '</button>' +
+          '</div>' +
+          '<div class="local-field-note">此色只修改本版位；若上方統一顏色有設定，畫面會優先使用統一色。</div>' +
+        '</div>';
+      }
+
+      var maxAttr = f.maxLength ? ' maxlength="' + f.maxLength + '"' : '';
+      return '<div class="field text-field" data-key="' + f.key + '"><label>' + esc(f.label) + limitHint + '</label>' +
+        '<div class="text-field-row">' +
+          '<input type="text" class="fv text-fv"' + maxAttr + ' value="' + esc(val) + '">' +
+          '<button type="button" class="field-mini-btn danger text-clear" title="清空／刪除此資訊">' + lineIcon('close') + '</button>' +
+        '</div></div>';
+    }).join('');
+    var toolDefsByKey = {};
+    imageToolDefs.forEach(function (toolDef) { toolDefsByKey[toolDef.key] = toolDef; });
+    imageToolDefs = normalizedImportImageOrder(col).map(function (key) {
+      return toolDefsByKey[key];
+    }).filter(Boolean);
+    box.innerHTML = '<div class="ic-head">' + (idx + 1) + '. ' + esc(def.name) + '</div>' + fieldsHtml;
+    scroll.appendChild(box);
+    bindImportImageFieldTools(box, idx, 'import');
+    if (actionRail) {
+      var toolGroupsHtml = imageToolDefs.map(function (toolDef) {
+        var toolRowsHtml = toolDef.partLayerOrder.map(function (imageIndex, layerIndex) {
+          var part = toolDef.parts[imageIndex] || '';
+          var usable = /^(data:|https?:|blob:)/i.test(String(part || '').trim());
+          var partLabel = toolDef.parts.length > 1 ? '圖' + (imageIndex + 1) : '圖片';
+          return '<div class="import-image-tool-row">' +
+            '<span class="import-image-tool-label">' + esc(partLabel) + '</span>' +
+            '<div class="import-image-tool-actions">' +
+              '<button type="button" class="if-btn if-icon-btn" data-key="' + esc(toolDef.key) + '" data-act="part-layer-up" data-image-index="' + imageIndex + '"' +
+                (layerIndex === 0 ? ' disabled' : '') +
+                ' title="這張圖片圖層上移" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 上移') + '">' + lineIcon('up') + '</button>' +
+              '<button type="button" class="if-btn if-icon-btn" data-key="' + esc(toolDef.key) + '" data-act="part-layer-down" data-image-index="' + imageIndex + '"' +
+                (layerIndex === toolDef.parts.length - 1 ? ' disabled' : '') +
+                ' title="這張圖片圖層下移" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 下移') + '">' + lineIcon('down') + '</button>' +
+              '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="edit" data-image-index="' + imageIndex + '"' + (usable ? '' : ' disabled') +
+                ' title="裁切／去背／擦除／影子" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 編輯') + '">' + lineIcon('edit') + ' 編輯</button>' +
+              '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="swap" data-image-index="' + imageIndex + '"' +
+                ' title="更換這張圖片" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 換圖') + '">' + lineIcon('refresh') + ' 換圖</button>' +
+              '<button type="button" class="if-btn danger" data-key="' + esc(toolDef.key) + '" data-act="del" data-image-index="' + imageIndex + '"' + (part ? '' : ' disabled') +
+                ' title="刪除這張圖片" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 刪除') + '">' + lineIcon('close') + ' 刪除</button>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+        return '<div class="import-image-tool-group">' +
+          '<div class="import-image-tool-group-head">' +
+            '<span class="import-image-tool-label">' + esc(toolDef.label) + '</span>' +
+            '<span class="import-image-tool-order">' +
+              '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="field-up"' +
+                (imageToolDefs.indexOf(toolDef) === 0 ? ' disabled' : '') +
+                ' title="圖片層上移" aria-label="' + esc(toolDef.label + ' 上移') + '">' + lineIcon('up') + '</button>' +
+              '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="field-down"' +
+                (imageToolDefs.indexOf(toolDef) === imageToolDefs.length - 1 ? ' disabled' : '') +
+                ' title="圖片層下移" aria-label="' + esc(toolDef.label + ' 下移') + '">' + lineIcon('down') + '</button>' +
+            '</span>' +
+          '</div>' +
+          toolRowsHtml +
+        '</div>';
+      }).join('');
+      var toolBox = document.createElement('div');
+      toolBox.className = 'import-block-tool';
+      toolBox.setAttribute('data-col', idx);
+      toolBox.innerHTML = '<div class="import-block-tool-head">' + (idx + 1) + '. ' + esc(def.name) + '</div>' +
+        (toolGroupsHtml || '<div class="import-block-tool-empty">這個版位沒有圖片欄位。</div>');
+      actionRail.appendChild(toolBox);
+      toolBox.querySelectorAll('.if-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var key = btn.getAttribute('data-key');
+          var act = btn.getAttribute('data-act');
+          var imageIndex = Number(btn.getAttribute('data-image-index'));
+          handleImportImageAction(idx, key, act, imageIndex, 'import');
+        });
+      });
+    }
+
+    function updateAndRerender(key, value) {
+      col.data[key] = value;
+      saveImportState();
+      var mount = document.getElementById('imp-mount-' + idx);
+      if (mount) mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import', col));
+      bindCanvasInteractions(mount, col, idx, 'import');
+    }
+
+    box.querySelectorAll('.field').forEach(function (fieldEl) {
+      var key = fieldEl.getAttribute('data-key');
+      var fieldDef = fieldDefsByKey[key] || {};
+      var textInput = fieldEl.querySelector('input.text-fv');
+      if (textInput) {
+        textInput.addEventListener('input', function () { updateAndRerender(key, this.value); });
+        textInput.addEventListener('blur', function () {
+          var transformed = normalizeImportFieldText(col, key, this.value);
+          if (transformed.text !== this.value) {
+            this.value = transformed.text;
+            updateAndRerender(key, transformed.text);
+          }
+          if (transformed.blocked) {
+            var ruleLog = document.getElementById('import-log');
+            if (ruleLog) ruleLog.innerHTML = '<span class="err">' + lineIcon('warning') +
+              ' 已移除或修正禁用語內容</span>';
+          }
+        });
+        textInput.addEventListener('contextmenu', function (event) {
+          showImportTextContextMenu(event, textInput, col, idx, 'import', key);
+        });
+        var clearBtn = fieldEl.querySelector('.text-clear');
+        if (clearBtn) clearBtn.addEventListener('click', function () {
+          setImportDollarExemptList(col, key, []);
+          textInput.value = '';
+          updateAndRerender(key, '');
+        });
+      }
+
+      var colorPicker = fieldEl.querySelector('.local-color-picker');
+      var colorText = fieldEl.querySelector('.local-color-text');
+      if (colorPicker && colorText) {
+        colorPicker.addEventListener('input', function () {
+          colorText.value = this.value;
+          updateAndRerender(key, this.value);
+        });
+        colorText.addEventListener('input', function () {
+          var v = this.value.trim();
+          if (v) colorPicker.value = colorToHex(v);
+          updateAndRerender(key, v);
+        });
+        var resetBtn = fieldEl.querySelector('.local-color-reset');
+        if (resetBtn) resetBtn.addEventListener('click', function () {
+          var v = fieldDef.default || '';
+          colorText.value = v;
+          colorPicker.value = colorToHex(v || '#000000');
+          updateAndRerender(key, v);
+        });
+      }
+    });
+
+    var myLeft = positions[idx].left || 0;
+    var myTop = positions[idx].top || 0;
+
+    if (!skipPreviewRerender && strip) {
+      var slot = document.createElement('div');
+      slot.className = 'imp-slot';
+      slot.setAttribute('data-col', idx);
+      slot.style.cssText = 'position:absolute;left:' + myLeft + 'px;top:' + myTop + 'px;width:' + colSizes[idx].width + 'px;height:' + colSizes[idx].height + 'px;overflow:hidden;';
+      slot.innerHTML = '<div class="imp-mount" id="imp-mount-' + idx + '" style="width:' + colSizes[idx].width + 'px;height:' + colSizes[idx].height + 'px"></div>';
+      strip.appendChild(slot);
+    }
+    var mountEl = document.getElementById('imp-mount-' + idx);
+    if (mountEl) {
+      mountEl.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import', col));
+      bindCanvasInteractions(mountEl, col, idx, 'import');
+    }
+  });
+
+  if (!skipPreviewRerender && strip && hasImportBottom && bottomSyncH) {
+    var resultMatchesCurrent = importBottomPreviewResult &&
+      (!Number(importBottomPreviewResult.workOrderVersion) ||
+       importBottomPreviewResult.workOrderVersion === latestBottomWorkOrder.version) &&
+      importBottomPreviewResult.dataUrl;
+    if (resultMatchesCurrent) {
+      /* 吸底輸出圖的上方 20px 是透明空白，不能讓透明 PNG 直接透出／吃到上一張 MSBN。
+         先建立完整承接框，讓這段空白保留在 MSBN 與吸底白底內容之間。 */
+      var bottomFrame = document.createElement('div');
+      bottomFrame.className = 'import-bottom-final-wrap';
+      bottomFrame.style.cssText = 'left:0;top:' + bottomSyncTop + 'px;width:' +
+        totalWidth + 'px;height:' + bottomSyncH + 'px;background:' + resolvedImportBg() + ';';
+      var bottomImg = document.createElement('img');
+      bottomImg.className = 'import-bottom-final';
+      bottomImg.src = importBottomPreviewResult.dataUrl;
+      bottomImg.alt = '吸底最終成品（含上方空白區）';
+      bottomImg.draggable = false;
+      bottomImg.style.cssText = 'width:' + totalWidth + 'px;height:' + bottomSyncH + 'px;';
+      bottomFrame.appendChild(bottomImg);
+      strip.appendChild(bottomFrame);
+    } else {
+      var bottomLoading = document.createElement('div');
+      bottomLoading.className = 'import-bottom-loading';
+      bottomLoading.textContent = '吸底成品產生中…（上方空白區會保留）';
+      bottomLoading.style.cssText = 'top:' + bottomSyncTop + 'px;width:' + totalWidth + 'px;height:' + bottomSyncH + 'px;';
+      strip.appendChild(bottomLoading);
+    }
+    ensureBottomPreviewLoaded(false);
+    if (bottomPreviewBridgeReady) sendLatestWorkOrderToBottomPreview('import-canvas');
+  }
+  /* 重畫「統一顏色」區：沒有手動改過的顏色要把這批版位實際的色號吸進來顯示 */
+  renderImportColorPanel();
+}
+
+/* 畫布重畫之後要重新綁的所有互動，統一從這裡進。
+   每次 mount.innerHTML = ... 之後只要呼叫這一支就好 ——
+   以前是各自呼叫 bindCanvasEditable，之後新增互動（例如拖曳圖片進來）
+   很容易漏掉其中一兩個重畫的地方，導致「某些情況下拖不進去」這種難查的問題。 */
+function dynamicRowInfoOf(col) {
+  if (!col || !window.BNSchemaRenderer || typeof BNSchemaRenderer.dynamicRowLayoutOf !== 'function') return null;
+  var def = BNCore.getBlock(col.blockId);
+  var schema = def && def.schema;
+  if (!schema || !schema.dynamicRowLayout) return null;
+  var layout = BNSchemaRenderer.dynamicRowLayoutOf(schema, col.data, {
+    dynamicRowRows: Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows : []
+  });
+  return layout ? { schema: schema, layout: layout } : null;
+}
+
+function setDynamicRowUiState(col, rows) {
+  if (!col) return;
+  var safeRows = Array.isArray(rows) ? rows.map(function (n) { return Number(n); }).filter(function (n) {
+    return isFinite(n) && n >= 0;
+  }) : [];
+  if (!safeRows.length) {
+    try { delete col._dynamicRowRows; } catch (e) { col._dynamicRowRows = []; }
+    return;
+  }
+  try {
+    Object.defineProperty(col, '_dynamicRowRows', {
+      value: safeRows,
+      writable: true,
+      configurable: true,
+      enumerable: false
+    });
+  } catch (e) {
+    col._dynamicRowRows = safeRows;
+  }
+}
+
+function copyDynamicRowData(data) {
+  var copy = {};
+  Object.keys(data || {}).forEach(function (key) { copy[key] = data[key]; });
+  return copy;
+}
+
+function dynamicRowSnapshotOf(col) {
+  return {
+    data: copyDynamicRowData(col && col.data),
+    forced: col && Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows.slice() : []
+  };
+}
+
+function restoreDynamicRowSnapshot(col, snapshot) {
+  if (!col || !snapshot) return;
+  if (!col.data) col.data = {};
+  Object.keys(col.data).forEach(function (key) { delete col.data[key]; });
+  Object.keys(snapshot.data || {}).forEach(function (key) { col.data[key] = snapshot.data[key]; });
+  setDynamicRowUiState(col, snapshot.forced || []);
+}
+
+function dynamicRowValuesOf(schema, data, rowIndex) {
+  var fields = schema.dynamicRowLayout.rows[rowIndex] || [];
+  return fields.map(function (key) { return data && data[key] != null ? data[key] : ''; });
+}
+
+function dynamicRowEntriesOf(info, col) {
+  var schema = info.schema;
+  var layout = info.layout;
+  var forced = layout.forcedRows || [];
+  return layout.activeRows.map(function (rowIndex) {
+    return {
+      rowIndex: rowIndex,
+      values: dynamicRowValuesOf(schema, col.data, rowIndex),
+      forced: forced.indexOf(rowIndex) !== -1
+    };
+  });
+}
+
+function writeDynamicRowEntries(col, schema, entries) {
+  var cfg = schema.dynamicRowLayout;
+  cfg.rows.forEach(function (fields) {
+    (fields || []).forEach(function (key) { col.data[key] = ''; });
+  });
+
+  if (cfg.protectBottomRow) {
+    /* D-1-3／D-2-3 的最底列固定保留；前面的可刪除列重新由上往下排列，
+       底列資料仍寫回 schema 最後一列，不會因刪除而被上移或消失。 */
+    var bottomRowIndex = cfg.rows.length - 1;
+    var bottomEntry = null;
+    var movableEntries = [];
+    entries.slice(0, cfg.rows.length).forEach(function (entry) {
+      if (entry && entry.rowIndex === bottomRowIndex) bottomEntry = entry;
+      else movableEntries.push(entry || {});
+    });
+    var maxMovable = Math.max(0, cfg.rows.length - 1);
+    movableEntries.slice(0, maxMovable).forEach(function (entry, rowIndex) {
+      var fields = cfg.rows[rowIndex] || [];
+      var values = Array.isArray(entry.values) ? entry.values : [];
+      fields.forEach(function (key, fieldIndex) {
+        col.data[key] = values[fieldIndex] == null ? '' : values[fieldIndex];
+      });
+    });
+    if (bottomEntry) {
+      var bottomFields = cfg.rows[bottomRowIndex] || [];
+      var bottomValues = Array.isArray(bottomEntry.values) ? bottomEntry.values : [];
+      bottomFields.forEach(function (key, fieldIndex) {
+        col.data[key] = bottomValues[fieldIndex] == null ? '' : bottomValues[fieldIndex];
+      });
+    }
+    var protectedForced = movableEntries.slice(0, maxMovable).map(function (entry, rowIndex) {
+      return entry && entry.forced ? rowIndex : -1;
+    }).filter(function (rowIndex) { return rowIndex >= 0; });
+    if (bottomEntry && bottomEntry.forced) protectedForced.push(bottomRowIndex);
+    setDynamicRowUiState(col, protectedForced);
+    return;
+  }
+
+  entries.slice(0, cfg.rows.length).forEach(function (entry, rowIndex) {
+    var fields = cfg.rows[rowIndex] || [];
+    var values = Array.isArray(entry.values) ? entry.values : [];
+    fields.forEach(function (key, fieldIndex) {
+      col.data[key] = values[fieldIndex] == null ? '' : values[fieldIndex];
+    });
+  });
+  setDynamicRowUiState(col, entries.slice(0, cfg.rows.length).map(function (entry, rowIndex) {
+    return entry.forced ? rowIndex : -1;
+  }).filter(function (rowIndex) { return rowIndex >= 0; }));
+}
+var dynamicRowToastTimer = null;
+var dynamicRowUndo = null;
+
+function hideDynamicRowToast() {
+  var toast = document.getElementById('bn-dynamic-row-toast');
+  if (toast) toast.classList.remove('show');
+  if (dynamicRowToastTimer) clearTimeout(dynamicRowToastTimer);
+  dynamicRowToastTimer = null;
+}
+
+function showDynamicRowToast(message, undoFn) {
+  var toast = document.getElementById('bn-dynamic-row-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'bn-dynamic-row-toast';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = '';
+  var label = document.createElement('span');
+  label.textContent = message;
+  var undoButton = document.createElement('button');
+  undoButton.type = 'button';
+  undoButton.textContent = '復原';
+  undoButton.title = '復原剛才的列操作';
+  toast.appendChild(label);
+  toast.appendChild(undoButton);
+  dynamicRowUndo = undoFn;
+  undoButton.addEventListener('click', function () {
+    var restore = dynamicRowUndo;
+    dynamicRowUndo = null;
+    hideDynamicRowToast();
+    if (restore) restore();
+  });
+  requestAnimationFrame(function () { toast.classList.add('show'); });
+  if (dynamicRowToastTimer) clearTimeout(dynamicRowToastTimer);
+  dynamicRowToastTimer = setTimeout(function () {
+    dynamicRowUndo = null;
+    hideDynamicRowToast();
+  }, 6500);
+}
+
+function focusDynamicRowField(col, idx, ctxName, key) {
+  if (!key) return;
+  var mount = document.getElementById(canvasCtx(ctxName).mountId(idx));
+  if (!mount) return;
+  var target = Array.prototype.find.call(mount.querySelectorAll('[contenteditable="true"]'), function (el) {
+    return el.getAttribute('data-field') === key;
+  });
+  if (!target) return;
+  target.focus();
+  try {
+    var range = document.createRange();
+    range.selectNodeContents(target);
+    range.collapse(false);
+    var selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  } catch (e) {}
+}
+
+function rerenderAfterDynamicRowMutation(col, idx, ctxName, focusKey) {
+  var ctx = canvasCtx(ctxName);
+  if (ctxName === 'import') {
+    /* 動態列改變會影響整個 band 高度，必須重建整排 1200px 畫布。 */
+    saveImportState();
+    renderImageGallery();
+    renderImportColumns(currentImportColumns);
+  } else {
+    ctx.afterChange();
+    var mount = document.getElementById(ctx.mountId(idx));
+    if (mount) {
+      mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'maint', col));
+      applyDynamicStageSize(mount, col);
+      bindCanvasInteractions(mount, col, idx, 'maint');
+    }
+  }
+  if (focusKey) requestAnimationFrame(function () {
+    focusDynamicRowField(col, idx, ctxName, focusKey);
+  });
+}
+
+function commitDynamicRowMutation(col, idx, ctxName, before, message, focusKey) {
+  rerenderAfterDynamicRowMutation(col, idx, ctxName, focusKey);
+  showDynamicRowToast(message, function () {
+    restoreDynamicRowSnapshot(col, before);
+    rerenderAfterDynamicRowMutation(col, idx, ctxName, null);
+  });
+}
+
+function deleteDynamicRowAt(col, idx, ctxName, visibleIndex) {
+  var info = dynamicRowInfoOf(col);
+  if (!info || visibleIndex < 0 || visibleIndex >= info.layout.activeRows.length) return;
+  if (info.layout.protectedBottomRow != null && info.layout.activeRows[visibleIndex] === info.layout.protectedBottomRow) return;
+  var before = dynamicRowSnapshotOf(col);
+  var entries = dynamicRowEntriesOf(info, col);
+  entries.splice(visibleIndex, 1);
+  writeDynamicRowEntries(col, info.schema, entries);
+  commitDynamicRowMutation(col, idx, ctxName, before, '已刪除第 ' + (visibleIndex + 1) + ' 列，後續資料已上移', null);
+}
+
+function insertDynamicRowAt(col, idx, ctxName, gapIndex) {
+  var info = dynamicRowInfoOf(col);
+  if (!info) return;
+  var cfg = info.schema.dynamicRowLayout;
+  var maxEditableRows = cfg.rows.length - (cfg.protectBottomRow ? 1 : 0);
+  if (info.layout.editableCount >= maxEditableRows) return;
+  var maxGapIndex = info.layout.protectedBottomRow != null ? Math.max(0, info.layout.activeCount - 1) : info.layout.activeCount;
+  if (gapIndex < 0 || gapIndex > maxGapIndex) return;
+  var before = dynamicRowSnapshotOf(col);
+  var entries = dynamicRowEntriesOf(info, col);
+  entries.splice(gapIndex, 0, { values: {}, forced: true });
+  writeDynamicRowEntries(col, info.schema, entries);
+  var focusKey = (info.schema.dynamicRowLayout.rows[gapIndex] || [])[0];
+  commitDynamicRowMutation(col, idx, ctxName, before, '已新增第 ' + (gapIndex + 1) + ' 列，請直接輸入內容', focusKey);
+}
+
+function bindDynamicRowControls(mountEl, col, idx, ctxName) {
+  if (!mountEl || !col || (ctxName !== 'import' && ctxName !== 'maint')) return;
+  var info = dynamicRowInfoOf(col);
+  if (!info) return;
+  var root = mountEl.querySelector('[data-bn-schema-id]');
+  if (!root) return;
+  root.querySelectorAll('.bn-dynamic-row-action').forEach(function (el) { el.remove(); });
+
+  var schema = info.schema;
+  var layout = info.layout;
+  var cfg = schema.dynamicRowLayout;
+  var maxTop = Math.max(0, Number(layout.totalHeight || schema.height) - 24);
+
+  function addAction(top, text, className, title, handler) {
+    var wrap = document.createElement('span');
+    wrap.className = 'bn-dynamic-row-action';
+    wrap.setAttribute('data-hint', title);
+    wrap.style.top = Math.max(0, Math.min(maxTop, Number(top) || 0)) + 'px';
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'bn-dynamic-row-btn ' + className;
+    button.textContent = text;
+    button.title = title;
+    button.setAttribute('aria-label', title);
+    button.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      handler();
+    });
+    wrap.appendChild(button);
+    root.appendChild(wrap);
+  }
+
+  layout.activeRows.forEach(function (rowIndex, visibleIndex) {
+    /* 有底部圓角的 D-1-3／D-2-3：最底列固定保留，不建立減號。 */
+    if (layout.protectedBottomRow != null && rowIndex === layout.protectedBottomRow) return;
+    var top = Number(cfg.top) + visibleIndex * layout.rowHeight + layout.rowHeight / 2 - 12;
+    addAction(top, '−', 'is-delete', '刪除第 ' + (visibleIndex + 1) + ' 列（後續列上移）', function () {
+      deleteDynamicRowAt(col, idx, ctxName, visibleIndex);
+    });
+  });
+
+  var maxEditableRows = cfg.rows.length - (cfg.protectBottomRow ? 1 : 0);
+  var maxGapIndex = layout.protectedBottomRow != null ? Math.max(0, layout.activeCount - 1) : layout.activeCount;
+  if (layout.editableCount < maxEditableRows) {
+    for (var gapIndex = 0; gapIndex <= maxGapIndex; gapIndex++) {
+      var gapTop;
+      if (!layout.activeCount) gapTop = Number(cfg.top) + layout.rowHeight / 2 - 12;
+      else gapTop = Number(cfg.top) + gapIndex * layout.rowHeight - 12;
+      var gapLabel = gapIndex === 0 ? '在第一列前新增空白列'
+        : (gapIndex === layout.activeCount ? '在最後一列後新增空白列'
+          : '在第 ' + gapIndex + '、' + (gapIndex + 1) + ' 列之間新增空白列');
+      addAction(gapTop, '＋', 'is-insert', gapLabel, function (at) {
+        return function () { insertDynamicRowAt(col, idx, ctxName, at); };
+      }(gapIndex));
+    }
+  }
+}
+
+
+function bindCanvasInteractions(mountEl, col, idx, ctxName) {
+  bindCanvasEditable(mountEl, col, idx, ctxName);
+  bindDynamicRowControls(mountEl, col, idx, ctxName);
+  bindCanvasColorPick(mountEl, col, idx, ctxName);
+  bindCanvasImageDrop(mountEl, col, idx, ctxName);
+  /* 圖片縮放／拖曳原本只靠 MutationObserver 自動抓新 DOM；某些電腦在頁籤切換、
+     大量版位一次重畫或瀏覽器省電模式下，observer 可能延後到使用者已經開始操作。
+     每次畫布重畫後直接掃描這一格，確保所有可編輯圖片立即恢復滾輪縮放、拖曳與雙擊復原。 */
+  if (window.BNImageLayout && typeof BNImageLayout.scanAndProcess === 'function') {
+    BNImageLayout.scanAndProcess(mountEl);
+  }
+}
+
+/* 匯入工單畫布上的可換色色塊：點一下就定位到左側同一欄，並直接打開
+   瀏覽器色盤。MSBN D-1-1-2 / D-2-1-2 的圓形色塊因此不必先在長工具列裡找。 */
+function bindCanvasColorPick(mountEl, col, idx, ctxName) {
+  var isMaint = ctxName === 'maint';
+  if (!mountEl || (!isMaint && ctxName !== 'import')) return;
+  mountEl.querySelectorAll('[data-color-field]').forEach(function (shape) {
+    shape.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var key = shape.getAttribute('data-color-field');
+      if (!key) return;
+      if (isMaint) {
+        var maintDef = BNCore.getBlock(col.blockId);
+        var maintFieldDef = maintDef && maintDef.fields && maintDef.fields.filter(function (f) {
+          return f.key === key;
+        })[0];
+        var maintRole = importColorRoleOfField(col.blockId, key, maintFieldDef && maintFieldDef.label);
+        if (!maintRole) return;
+        var maintPanel = document.getElementById('maint-color-panel');
+        var maintRow = document.querySelector('#maint-color-list .ic-color-row[data-key="' + maintRole + '"]');
+        if (!maintRow) return;
+        if (maintPanel) maintPanel.style.display = '';
+        var maintPicker = maintRow.querySelector('.icc-picker');
+        if (!maintPicker) return;
+        maintRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        maintRow.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
+        setTimeout(function () { maintRow.style.boxShadow = ''; }, 900);
+        maintPicker.click();
+        return;
+      }
+      var card = document.querySelector('#import-fields-scroll .imp-col[data-col="' + idx + '"]');
+      if (!card) return;
+      var fieldEl = Array.prototype.find.call(card.querySelectorAll('.field'), function (el) {
+        return el.getAttribute('data-key') === key;
+      });
+      if (fieldEl) {
+        var picker = fieldEl.querySelector('.local-color-picker');
+        if (!picker) return;
+        fieldEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        fieldEl.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
+        setTimeout(function () { fieldEl.style.boxShadow = ''; }, 900);
+        /* 這次 click 仍在使用者手勢事件鏈裡，Chrome / Edge 可以直接開原生色盤。 */
+        picker.click();
+        return;
+      }
+      /* 已集中管理的色塊不再有個別欄位，點畫布時改定位到統一顏色。 */
+      var colorDef = BNCore.getBlock(col.blockId);
+      var colorFieldDef = colorDef && colorDef.fields && colorDef.fields.filter(function (f) {
+        return f.key === key;
+      })[0];
+      var role = importColorRoleOfField(col.blockId, key, colorFieldDef && colorFieldDef.label);
+      if (!role) return;
+      var row = document.querySelector('#import-color-list .ic-color-row[data-key="' + role + '"]');
+      if (!row) return;
+      var sharedPicker = row.querySelector('.icc-picker');
+      if (!sharedPicker) return;
+      row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      row.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
+      setTimeout(function () { row.style.boxShadow = ''; }, 900);
+      sharedPicker.click();
+    });
+  });
+}
+
+/* 讀出畫布上這一塊可編輯文字目前的內容（含換行）。
+
+   為什麼不能用 textContent：在 contenteditable 裡按 Enter，瀏覽器是插入
+   <div> 或 <br> 這種標籤來斷行，textContent 只會把文字接起來、換行整個不見。
+   結果就是「品名打成兩行、放開滑鼠又變回一行」。
+   innerText 會照實際排版把斷行還原成 \n，所以兩行的品名／促標才存得回去。
+   （順便把瀏覽器可能塞進來的不斷行空白換回一般空白。） */
+function readEditableText(el) {
+  var t = (el.innerText != null ? el.innerText : el.textContent) || '';
+  return t.replace(/\u00a0/g, ' ').replace(/\r\n?/g, '\n').replace(/\n+$/, '');
+}
+
+/* 讓畫布上 contenteditable 的文字，編輯完（失焦或輸入時）同步寫回資料，
+   並且順手把側欄對應的輸入框也更新，兩邊互相同步 */
+function rerenderDynamicCanvasRow(col, idx, ctxName, key) {
+  var mount = document.getElementById((ctxName === 'maint' ? 'mnt-mount-' : 'imp-mount-') + idx);
+  if (!mount) return;
+  if (ctxName === 'import') {
+    /* 文字讓某一列從空白變成有效列時，整個匯入 band 也要同步長高／縮短。 */
+    renderImportColumns(currentImportColumns);
+    mount = document.getElementById('imp-mount-' + idx);
+  } else {
+    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, ctxName, col));
+    applyDynamicStageSize(mount, col);
+    bindCanvasInteractions(mount, col, idx, ctxName);
+  }
+  var target = Array.prototype.find.call(mount.querySelectorAll('[contenteditable="true"]'), function (el) {
+    return el.getAttribute('data-field') === key;
+  });
+  if (!target) return;
+  target.focus();
+  try {
+    var range = document.createRange();
+    range.selectNodeContents(target);
+    range.collapse(false);
+    var selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  } catch (e) {}
+}
+
+function applyImportCanvasTextRules(el, col, idx, ctxName, key) {
+  if (!el || !col || !key) return;
+  var raw = readEditableText(el);
+  var transformed = normalizeImportFieldText(col, key, raw);
+  if (transformed.text === raw && !transformed.blocked) return;
+
+  var blockDef = BNCore.getBlock(col.blockId);
+  var dynamicSchema = blockDef && blockDef.schema;
+  var beforeRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
+    ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
+  col.data[key] = transformed.text;
+  var afterRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
+    ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
+  var rowsChanged = beforeRows !== afterRows;
+
+  if (ctxName === 'maint') {
+    if (!rowsChanged) el.textContent = transformed.text;
+    if (rowsChanged) rerenderDynamicCanvasRow(col, idx, ctxName, key);
+    return;
+  }
+
+  saveImportState();
+  var sideInput = importSideTextInput(canvasCtx(ctxName), idx, key);
+  if (sideInput) sideInput.value = transformed.text;
+  if (rowsChanged) {
+    rerenderDynamicCanvasRow(col, idx, ctxName, key);
+  } else {
+    el.textContent = transformed.text;
+  }
+  if (transformed.blocked) {
+    el.classList.add('audit-error');
+    var canvasLog = document.getElementById('import-log');
+    if (canvasLog) canvasLog.innerHTML = '<span class="err">' + lineIcon('warning') +
+      ' 已移除或修正禁用語內容</span>';
+  } else {
+    el.classList.remove('audit-error');
+  }
+}
+function bindCanvasEditable(mountEl, col, idx, ctxName) {
+  if (!mountEl) return;
+  var ctx = canvasCtx(ctxName);
+  mountEl.querySelectorAll('[contenteditable="true"]').forEach(function (el) {
+    var key = el.getAttribute('data-field');
+    if (!key) return;
+    el.addEventListener('input', function () {
+      var text = readEditableText(el);
+      var blockDef = BNCore.getBlock(col.blockId);
+      var dynamicSchema = blockDef && blockDef.schema;
+      var beforeRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
+        ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
+      col.data[key] = text;
+      var afterRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
+        ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
+      var rowsChanged = beforeRows !== afterRows;
+      if (ctxName === 'maint') {
+        if (rowsChanged) requestAnimationFrame(function () {
+          rerenderDynamicCanvasRow(col, idx, ctxName, key);
+        });
+        return;   /* 維修頁只改記憶體，不動工單暫存、也沒有側欄 */
+      }
+      saveImportState();
+      var sideInput = ctx.sideRoot
+        && document.querySelector(ctx.sideRoot + ' .field[data-key="' + key + '"] input.fv');
+      if (sideInput) sideInput.value = text;
+      if (rowsChanged) requestAnimationFrame(function () {
+        rerenderDynamicCanvasRow(col, idx, ctxName, key);
+      });
+    });
+    el.addEventListener('blur', function () {
+      setTimeout(function () { applyImportCanvasTextRules(el, col, idx, ctxName, key); }, 0);
+    });
+    el.addEventListener('contextmenu', function (event) {
+      showImportTextContextMenu(event, el, col, idx, ctxName, key);
+    });
+  });
+}
+
+/* ════════════════════════════════════════
+   直接把圖片拖到畫布的圖片框裡
+   ────────────────────────────────────────
+   兩種來源都吃：
+     1. 從電腦拖檔案進來（dataTransfer.files）
+     2. 從左邊「圖片素材」把已上傳的縮圖拖過來（帶素材索引）
+   一次拖多張到同一個框 → 全部並排進那個欄位（逗號分隔，渲染器會等高並列）。
+
+   只有圖片框會接受，拖到文字或卡片空白處不會有反應；但畫布範圍內一律
+   preventDefault，否則瀏覽器會把圖片當成連結直接開啟、整個頁面被取代掉
+   （辛苦填的內容就沒了）。
+════════════════════════════════════════ */
+var CANVAS_ASSET_DND_TYPE = 'application/x-wo-asset';
+
+/* 這次拖曳有沒有帶「圖片」。注意 dragover 階段依規範讀不到檔案內容，
+   只能看 types，所以用 types 判斷，不是看 files.length。 */
+function dragHasImagePayload(e) {
+  var types = e.dataTransfer && e.dataTransfer.types;
+  if (!types) return false;
+  var list = Array.prototype.slice.call(types);
+  return list.indexOf('Files') !== -1 || list.indexOf(CANVAS_ASSET_DND_TYPE) !== -1;
+}
+
+function bindCanvasImageDrop(mountEl, col, idx, ctxName) {
+  if (!mountEl) return;
+
+  /* 畫布整體：吞掉預設行為，避免拖歪的時候瀏覽器直接開圖片離開頁面 */
+  ['dragover', 'drop'].forEach(function (evt) {
+    mountEl.addEventListener(evt, function (e) {
+      if (dragHasImagePayload(e)) e.preventDefault();
+    });
+  });
+
+  mountEl.querySelectorAll('[data-img-field]').forEach(function (box) {
+    var key = box.getAttribute('data-img-field');
+    if (!key) return;
+    var label = box.getAttribute('data-img-label') || '圖片';
+    box.title = '可以把圖片拖進來（' + label + '）';
+
+    function clear() { box.classList.remove('imp-canvas-drop'); }
+
+    box.addEventListener('dragover', function (e) {
+      if (!dragHasImagePayload(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'copy';
+      box.classList.add('imp-canvas-drop');
+    });
+    box.addEventListener('dragleave', function (e) {
+      /* 進到子元素（例如裡面的 <img>）也會觸發 dragleave，
+         真的離開這個框才取消highlight，不然框會一直閃 */
+      if (box.contains(e.relatedTarget)) return;
+      clear();
+    });
+    box.addEventListener('drop', function (e) {
+      if (!dragHasImagePayload(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      clear();
+
+      /* 來源一：左邊素材清單的縮圖 */
+      var assetIdx = e.dataTransfer.getData(CANVAS_ASSET_DND_TYPE);
+      if (assetIdx !== '' && assetIdx != null) {
+        var asset = uploadedImages[parseInt(assetIdx, 10)];
+        if (asset && asset.url) setImportFieldImages(idx, key, [asset.url], ctxName);
+        return;
+      }
+
+      /* 來源二：從電腦拖進來的檔案（可以一次多張） */
+      var files = e.dataTransfer.files;
+      if (files && files.length) {
+        readImageFilesAsUrls(files, function (urls) {
+          if (urls.length) setImportFieldImages(idx, key, urls, ctxName);
+        });
+      }
+    });
+  });
+}
+
+function afterImportParsed(rawColumns, options) {
+  options = options || {};
+  var importLog = document.getElementById('import-log');
+  if (!rawColumns || !rawColumns.length) {
+    importLog.innerHTML = '<span class="err">沒有讀到任何版位資料，確認檔案格式是否正確</span>';
+    appLoadingFinish('沒有讀到可匯入的版位資料');
+    return;
+  }
+  importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 讀到 ' + rawColumns.length + ' 格，載入可編輯版位中…</span>';
+  ensureBlocksLoaded(function () {
+    var oldBySourceKey = {};
+    if (options.preserveExisting) {
+      currentImportColumns.forEach(function (oldCol) {
+        if (oldCol.sourceKey) oldBySourceKey[oldCol.sourceKey] = oldCol;
+      });
+    }
+
+    var columns = rawColumns.map(function (c) {
+      var blockId = rawColumnBlockId(c);
+      var def = BNCore.getBlock(blockId);
+      var defaults = def ? BNCore.defaultData(blockId) : {};
+      var mapped = def ? smartMapEntriesToFields(c.entries || [], def) : {};
+      var oldCol = c.sourceKey ? oldBySourceKey[c.sourceKey] : null;
+      var data = (oldCol && oldCol.blockId === blockId)
+        ? Object.assign({}, defaults, oldCol.data || {})
+        : Object.assign({}, defaults, mapped);
+      return {
+        blockId: blockId,
+        data: data,
+        header: c.header,
+        band: c.band,
+        sourceKey: c.sourceKey || '',
+        _imageOrder: oldCol && Array.isArray(oldCol._imageOrder) ? oldCol._imageOrder.slice() : [],
+        _imagePartLayerOrder: oldCol ? cloneImportImagePartLayerOrder(oldCol._imagePartLayerOrder) : {},
+        _dollarExemptByKey: oldCol
+          ? cloneImportDollarExemptByKey(oldCol._dollarExemptByKey)
+          : {}
+      };
+    });
+
+    var initialTextRuleResult = normalizeImportColumnTexts(columns);
+    currentImportSource = options.source || 'file';
+    currentGeneratorSignature = options.generatorSignature || '';
+    currentImportHasBottomWorkOrder = !!options.hasBottomWorkOrder && !!latestBottomWorkOrder;
+    currentImportColumns = columns;
+    autoMatchImagesToColumns();
+    renderImportColumns(columns);
+    var importDoneMessage = currentImportSource === 'generator'
+      ? '已從工單生成器載入 ' + columns.length + ' 格，可直接編輯'
+      : currentImportSource === 'demo'
+        ? '已匯入 demo 工單：' + columns.length + ' 格，圖片素材 ' + (options.demoImageCount || 0) + ' 張'
+        : '已畫出 ' + columns.length + ' 格';
+    importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' ' + importDoneMessage + '</span>';
+    if (initialTextRuleResult.changed) {
+      importLog.innerHTML += '<br><span class="ok">' + lineIcon('done') +
+        ' 已自動整理金額格式（$／千分位）</span>';
+    }
+    appLoadingFinish('工單已完成匯入');
+
+    /* 吸底成品由隱藏的 preview iframe 渲染完成後回傳，renderImportColumns() 會將它接在最後一排 MSBN 下方。 */
+
+    /* banwords.xlsx 是非同步讀取；若匯入動作比規則載入更早完成，規則到位後
+       再補跑一次，讓禁用語與引擎內完整的數字例外也能套用。 */
+    ensureImportTextRules(function (ruleLoad) {
+      if (!ruleLoad.ok || currentImportColumns !== columns) return;
+      var ruleResult = normalizeImportColumnTexts(columns);
+      if (!ruleResult.changed && !ruleResult.blocked) return;
+      saveImportState();
+      renderImportColumns(columns);
+      var loadedLog = document.getElementById('import-log');
+      if (loadedLog) loadedLog.innerHTML += '<br><span class="ok">' + lineIcon('done') +
+        ' 已套用禁用語檢查與完整金額格式</span>';
+    });
+  });
+}
+
+function encodeDemoAssetPath(fileName) {
+  return String(DEMO_IMPORT_FOLDER + '/' + fileName).split('/').map(function (part) {
+    return encodeURIComponent(part);
+  }).join('/');
+}
+
+function fetchDemoImage(fileName, index, total, onError) {
+  return fetch(encodeDemoAssetPath(fileName), { cache: 'no-store' })
+    .then(function (response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.blob();
+    })
+    .then(function (blob) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () {
+          trimImportImageWhiteBorder(reader.result).then(function (trimmed) {
+            appLoadingUpdate(8 + Math.round(((index + 1) / total) * 40),
+              'LOADING · 匯入 demo 工單', '已讀取圖片 ' + (index + 1) + '/' + total);
+            resolve({ name: fileName, url: trimmed, baseUrl: reader.result });
+          });
+        };
+        reader.onerror = function () { reject(new Error('圖片轉換失敗')); };
+        reader.readAsDataURL(blob);
+      });
+    })
+    .catch(function (err) {
+      if (typeof onError === 'function') onError(fileName, err);
+      return null;
+    });
+}
+
+function loadDemoImport() {
+  var button = document.getElementById('btn-import-demo');
+  var importLog = document.getElementById('import-log');
+  if (!button || button.disabled) return;
+  var originalHtml = button.innerHTML;
+  var missingImages = [];
+  button.disabled = true;
+  button.innerHTML = lineIcon('loading') + ' 載入demo工單中…';
+  importLog.innerHTML = '<span class="ok">正在讀取「測試工單與圖片」中的工單與圖片…</span>';
+  appLoadingStart('LOADING · 匯入 demo 工單', 5, '正在讀取 demo 工單與圖片…');
+
+  var imageJobs = DEMO_IMPORT_IMAGE_FILES.map(function (fileName, index) {
+    return fetchDemoImage(fileName, index, DEMO_IMPORT_IMAGE_FILES.length, function (name) {
+      missingImages.push(name);
+    });
+  });
+
+  Promise.all([
+    fetch(encodeDemoAssetPath(DEMO_IMPORT_WORKORDER_FILE), { cache: 'no-store' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('找不到工單檔：' + DEMO_IMPORT_WORKORDER_FILE);
+        return response.arrayBuffer();
+      }),
+    Promise.all(imageJobs)
+  ]).then(function (result) {
+    var workOrderBuffer = result[0];
+    var images = result[1].filter(function (item) { return item && item.url; });
+    uploadedImages = images;
+    renderImageGallery();
+    rememberBottomWorkOrder(DEMO_IMPORT_WORKORDER_FILE, workOrderBuffer);
+    appLoadingUpdate(54, 'LOADING · 匯入 demo 工單', '圖片素材已載入，正在解析工單…');
+    return parseImportXlsx(workOrderBuffer).then(function (rawColumns) {
+      afterImportParsed(rawColumns, {
+        source: 'demo',
+        hasBottomWorkOrder: true,
+        demoImageCount: images.length
+      });
+      syncBottomAfterImportAction('import-sync');
+      if (missingImages.length) {
+        importLog.innerHTML += '<br><span class="err">有 ' + missingImages.length + ' 張 demo 圖片讀取失敗</span>';
+      }
+    });
+  }).catch(function (err) {
+    importLog.innerHTML = '<span class="err">demo 工單匯入失敗：' + esc(err.message || err) + '</span>';
+    appLoadingFinish('demo 工單匯入失敗');
+  }).then(function () {
+    button.disabled = false;
+    button.innerHTML = originalHtml;
+  });
+}
+
+function handleImportFile(file) {
+  var importLog = document.getElementById('import-log');
+  importLog.innerHTML = '讀取中…';
+  appLoadingStart('LOADING · 匯入工單', 5, '正在讀取 ' + (file && file.name ? file.name : '檔案') + '…');
+  var name = file.name.toLowerCase();
+  var reader = new FileReader();
+  reader.onprogress = function (e) {
+    if (!e.lengthComputable) return;
+    var pct = 8 + Math.round((e.loaded / e.total) * 34);
+    appLoadingUpdate(pct, 'LOADING · 匯入工單', '檔案讀取 ' + Math.round((e.loaded / e.total) * 100) + '%');
+  };
+  reader.onload = function () {
+    appLoadingUpdate(48, 'LOADING · 匯入工單', '檔案讀取完成，正在解析…');
+    try {
+      if (name.endsWith('.json')) {
+        var parsed = JSON.parse(reader.result);
+        if (parsed && parsed.type === 'wo_import_snapshot') {
+          restoreImportSnapshot(parsed);
+        } else {
+          afterImportParsed(parseImportOwnJSON(parsed), { source: 'file', hasBottomWorkOrder: false });
+        }
+      } else {
+        /* 同一份工單也交給吸底工具原本的 WorkOrderImporter；如果使用者尚未開啟
+           「吸底」頁簽，先暫存在記憶體，第一次開啟時再自動帶入。 */
+        rememberBottomWorkOrder(file.name, reader.result);
+        parseImportXlsx(reader.result).then(function (raw) { afterImportParsed(raw, { source: 'file', hasBottomWorkOrder: true }); }).catch(function (err) {
+          importLog.innerHTML = '<span class="err">解析失敗：' + esc(err.message) + '</span>';
+          appLoadingFinish('工單解析失敗');
+        });
+      }
+    } catch (err) {
+      importLog.innerHTML = '<span class="err">解析失敗：' + esc(err.message) + '</span>';
+      appLoadingFinish('工單解析失敗');
+    }
+  };
+  reader.onerror = function () { importLog.innerHTML = '<span class="err">檔案讀取失敗</span>'; appLoadingFinish('檔案讀取失敗'); };
+  if (name.endsWith('.json')) reader.readAsText(file);
+  else reader.readAsArrayBuffer(file);
+}
+
+/* ══════════════════════════════════════════════════
+   下載圖片＋編輯暫存檔（左側工具列最下面的固定按鈕）
+   ──────────────────────────────────────────────────
+   1. 成品 PNG：把右側畫布目前渲染的整條版位，以「原始尺寸(scale=1)」
+      截圖下載，所見即所得（包含改過的文字、換過/去背過的圖、
+      滾輪縮放後的大小…全部照目前畫面輸出）。
+   2. 暫存 .json：把所有編輯狀態打包──每格的欄位資料（編輯器去背/
+      裁切/加影子後的結果是 dataURL，直接內含在裡面）、上傳的圖片
+      素材、每張圖的滾輪縮放權重。blob: 開頭的臨時網址會先轉成
+      dataURL 再寫入，確保換一台電腦/重開瀏覽器也能還原。
+      之後把這個 .json 拖回上方匯入區，就會完整還原。
+══════════════════════════════════════════════════ */
+function urlToDataUrl(url) {
+  return fetch(url).then(function (r) { return r.blob(); }).then(function (blob) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(fr.result); };
+      fr.onerror = function () { reject(new Error('讀取圖片失敗')); };
+      fr.readAsDataURL(blob);
+    });
+  });
+}
+
+/* 把一個欄位值裡所有 blob: 網址轉成 dataURL（欄位可能是逗號分隔多張圖）。
+   現在上傳的圖片一開始就是 dataURL，這裡只是保險：萬一還有殘留的 blob: 就盡力轉換 */
+function inlineBlobUrls(value) {
+  if (typeof value !== 'string' || value.indexOf('blob:') === -1) return Promise.resolve(value);
+  var parts = splitImageList(value);
+  return Promise.all(parts.map(function (p) {
+    return p.indexOf('blob:') === 0 ? urlToDataUrl(p).catch(function () { return p; }) : Promise.resolve(p);
+  })).then(function (converted) { return converted.join(','); });
+}
+
+function buildImportSnapshot() {
+  appLoadingUpdate(84, 'LOADING · 建立暫存檔', '正在轉換圖片與欄位資料…');
+  var columnJobs = currentImportColumns.map(function (col) {
+    var dataCopy = {};
+    var keys = Object.keys(col.data || {});
+    return Promise.all(keys.map(function (k) {
+      return inlineBlobUrls(col.data[k]).then(function (v) { dataCopy[k] = v; });
+    })).then(function () {
+      return {
+        blockId: col.blockId,
+        header: col.header,
+        band: col.band,
+        sourceKey: col.sourceKey || '',
+        imageOrder: Array.isArray(col._imageOrder) ? col._imageOrder.slice() : [],
+        imagePartLayerOrder: cloneImportImagePartLayerOrder(col._imagePartLayerOrder),
+        dollarExemptByKey: cloneImportDollarExemptByKey(col._dollarExemptByKey),
+        data: dataCopy
+      };
+    });
+  });
+  var imageJobs = uploadedImages.map(function (img) {
+    return (img.url.indexOf('blob:') === 0 ? urlToDataUrl(img.url).catch(function () { return img.url; }) : Promise.resolve(img.url))
+      .then(function (u) { return { name: img.name, url: u, baseUrl: img.baseUrl || '' }; }); /* baseUrl＝編輯前的原圖，之後再編輯可以從原圖重來 */
+  });
+  return Promise.all([Promise.all(columnJobs), Promise.all(imageJobs)]).then(function (res) {
+    appLoadingUpdate(94, 'LOADING · 建立暫存檔', '資料整理完成，正在輸出暫存檔…');
+    return {
+      type: 'wo_import_snapshot',
+      version: 2,
+      savedAt: new Date().toISOString(),
+      source: currentImportSource,
+      generatorSignature: currentGeneratorSignature,
+      columns: res[0],
+      uploadedImages: res[1],
+      theme: JSON.parse(JSON.stringify(importTheme)), /* 統一顏色也一起存，還原後顏色一模一樣 */
+      imageZoomWeights: (window.BNImageLayout && BNImageLayout.getWeights) ? BNImageLayout.getWeights() : {},
+      imageOffsets: (window.BNImageLayout && BNImageLayout.getOffsets) ? BNImageLayout.getOffsets() : {} /* 每張圖被拖曳過的位置 */
+    };
+  });
+}
+
+function downloadImportImage() {
+  appLoadingUpdate(22, 'LOADING · 輸出圖片', '正在準備成品 PNG…');
+  var strip = document.getElementById('imp-strip');
+  var wrap = document.getElementById('imp-strip-wrap');
+  if (!strip || !wrap) return Promise.resolve();
+  if (!window.htmlToImage || !htmlToImage.toPng) {
+    alert('截圖元件(html-to-image)沒載入成功，圖片下載不了，但暫存檔會照常下載。\n（需要網路連線載入 cdnjs 上的 html-to-image）');
+    return Promise.resolve();
+  }
+  /* 暫時還原成 1:1 原始尺寸再輸出，輸出完馬上復原目前的縮放。
+     html-to-image 是把畫面原封不動轉成 SVG 交給瀏覽器本身畫出來，
+     所以文字位置、字距、圓角、clip-path 三角形…全部跟預覽一模一樣，
+     不會有另外一套繪圖引擎的誤差。字型用 JS/fonts-embed.js 內嵌的
+     woff2 直接帶進 SVG，file:// 直接開啟也吃得到正確字型。 */
+  /* 「目前對到哪一格」的綠色框線只是操作用的提示，不能出現在成品圖裡，
+     截圖前先拿掉，截完再放回去 */
+  var activeSlots = Array.prototype.slice.call(strip.querySelectorAll('.imp-slot.is-active'));
+  activeSlots.forEach(function (s) { s.classList.remove('is-active'); });
+
+  var prevTransform = strip.style.transform;
+  var prevW = wrap.style.width, prevH = wrap.style.height;
+  var fullW = parseInt(wrap.getAttribute('data-total-width'), 10) || strip.offsetWidth;
+  var fullH = parseInt(wrap.getAttribute('data-max-height'), 10) || strip.offsetHeight;
+  strip.style.transform = 'scale(1)';
+  wrap.style.width = fullW + 'px';
+  wrap.style.height = fullH + 'px';
+  function restore() {
+    strip.style.transform = prevTransform;
+    wrap.style.width = prevW;
+    wrap.style.height = prevH;
+    activeSlots.forEach(function (s) { s.classList.add('is-active'); });
+  }
+  var opts = {
+    width: fullW,
+    height: fullH,
+    pixelRatio: 1,
+    backgroundColor: resolvedImportBg(), /* 底色跟畫布上的背景顏色一致，不要輸出黑邊 */
+    cacheBust: false
+  };
+  if (window.BN_FONTS_EMBED_CSS) opts.fontEmbedCSS = window.BN_FONTS_EMBED_CSS;
+  appLoadingUpdate(58, 'LOADING · 輸出圖片', '正在將畫布轉成 PNG…');
+  return htmlToImage.toPng(strip, opts)
+    .then(function (dataUrl) {
+      appLoadingUpdate(76, 'LOADING · 輸出圖片', 'PNG 已產生，正在下載…');
+      restore();
+      var a = document.createElement('a');
+      a.href = dataUrl; a.download = '版位成品_' + Date.now() + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+    })
+    .catch(function (err) {
+      restore();
+      alert('圖片輸出失敗：' + (err && err.message ? err.message : err) + '\n（外部網址圖片若不允許跨網域讀取就會失敗，改用「上傳圖片素材」的圖就沒問題）\n暫存檔仍會照常下載。');
+    });
+}
+
+function restoreImportSnapshot(snap) {
+  appLoadingUpdate(55, 'LOADING · 還原暫存檔', '正在整理圖片與版位資料…');
+  hideImportBottomPreview();
+  currentImportHasBottomWorkOrder = false;
+  var importLog = document.getElementById('import-log');
+  uploadedImages = (snap.uploadedImages || []).map(function (img) { return { name: img.name, url: img.url, baseUrl: img.baseUrl || '' }; })
+    .filter(function (img) { return img.url && img.url.indexOf('blob:') !== 0; }); /* blob: 是上個工作階段的死連結，直接剔除 */
+  renderImageGallery();
+  if (window.BNImageLayout && BNImageLayout.setWeights) BNImageLayout.setWeights(snap.imageZoomWeights || {});
+  if (window.BNImageLayout && BNImageLayout.setOffsets) BNImageLayout.setOffsets(snap.imageOffsets || {});
+  /* 檢查欄位裡有沒有殘留失效的 blob: 圖片網址（舊版暫存檔才會有） */
+  var hasDeadBlob = (snap.columns || []).some(function (c) {
+    var d = c.data || {};
+    return Object.keys(d).some(function (k) { return typeof d[k] === 'string' && d[k].indexOf('blob:') !== -1; });
+  });
+  /* 統一顏色一起還原（舊版暫存檔沒有這段就維持目前設定） */
+  if (snap.theme && typeof snap.theme === 'object') {
+    IMPORT_COLOR_ITEMS.forEach(function (it) {
+      if (typeof snap.theme[it.key] === 'string') importTheme[it.key] = snap.theme[it.key];
+    });
+    importTheme.bgAuto = snap.theme.bgAuto !== false;
+    saveImportTheme();
+    renderImportColorPanel();
+  }
+  ensureBlocksLoaded(function () {
+    /* 暫存檔是使用者明確載入的內容；即使它最初來自生成器，也不要在之後進頁時
+       被目前這台電腦的生成器選擇無聲覆蓋。 */
+    currentImportSource = 'snapshot';
+    currentGeneratorSignature = '';
+    var restoredColumns = (snap.columns || []).map(function (c) {
+      return {
+        blockId: c.blockId,
+        header: c.header,
+        band: c.band,
+        sourceKey: c.sourceKey || '',
+        _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
+        _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder),
+        _dollarExemptByKey: cloneImportDollarExemptByKey(c.dollarExemptByKey || c._dollarExemptByKey),
+        data: c.data || {}
+      };
+    });
+    return trimImportColumnImages(restoredColumns).then(function () {
+      currentImportColumns = restoredColumns;
+      renderImportColumns(currentImportColumns);
+      importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已從暫存檔還原 ' + currentImportColumns.length + ' 格（含編輯結果）</span>' +
+        (hasDeadBlob ? '<br><span class="err">' + lineIcon('warning') + ' 這個暫存檔是舊版本存的，部分圖片連結已失效，請重新上傳那些圖片素材後再存一次新的暫存檔。</span>' : '');
+      appLoadingFinish('暫存檔已還原');
+    });
+    currentImportColumns = (snap.columns || []).map(function (c) {
+      return {
+        blockId: c.blockId,
+        header: c.header,
+        band: c.band,
+        sourceKey: c.sourceKey || '',
+        _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
+        _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder),
+        _dollarExemptByKey: cloneImportDollarExemptByKey(c.dollarExemptByKey || c._dollarExemptByKey),
+        data: c.data || {}
+      };
+    });
+    renderImportColumns(currentImportColumns);
+    importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已從暫存檔還原 ' + currentImportColumns.length + ' 格（含編輯結果）</span>' +
+      (hasDeadBlob ? '<br><span class="err">' + lineIcon('warning') + ' 這個暫存檔是舊版本存的，部分圖片連結已失效，請重新上傳那些圖片素材後再存一次新的暫存檔。</span>' : '');
+    appLoadingFinish('暫存檔已還原');
+  });
+}
+
+document.getElementById('btn-upload-snapshot').addEventListener('click', function () {
+  document.getElementById('snapshot-file-input').click();
+});
+document.getElementById('snapshot-file-input').addEventListener('change', function () {
+  if (this.files && this.files[0]) handleImportFile(this.files[0]);
+  this.value = ''; /* 清掉才能重複選同一個檔 */
+});
+
+document.getElementById('btn-dl-image').addEventListener('click', function () {
+  if (!currentImportColumns.length) {
+    alert('畫布上還沒有內容，先匯入工單或按「直接預覽全部版位」');
+    appLoadingFinish('沒有可輸出的內容');
+    return;
+  }
+  var btn = this;
+  btn.disabled = true; btn.innerHTML = lineIcon('loading') + ' 輸出中…';
+  downloadImportImage()
+    .then(function () {
+      appLoadingUpdate(82, 'LOADING · 建立暫存檔', '正在整理編輯結果…');
+      return buildImportSnapshot();
+    })
+    .then(function (snap) {
+      appLoadingUpdate(96, 'LOADING · 建立暫存檔', '正在下載暫存檔…');
+      downloadJSON(snap, '匯入暫存_' + Date.now() + '.json');
+    })
+    .catch(function (err) { alert('輸出失敗：' + err.message); })
+    .then(function () {
+      btn.disabled = false; btn.innerHTML = lineIcon('download') + ' 下載圖片＋編輯暫存檔';
+      appLoadingFinish('圖片與暫存檔已下載');
+    });
+});
+
+/* state.group: null 或 'AB' / 'CDE' / 'F'（可混搭群組，不是單一系列）
+   state.slots: 陣列，長度依群組 maxPerRow 決定，每格是 {family,file,variant,combo,label} 或 null */
+var state = loadState() || { group: null, slots: [null, null, null, null] };
+if (!state.msbn) state.msbn = []; /* MSBN 區（接在副區下方），舊的暫存沒有這欄位就補上 */
+/* ── 等級：決定 MSBN 區可放幾顆 ────────────────────────────
+   下拉在左側素材庫（標題/說明 與 頁簽 之間），選擇會記在本機。 */
+/* msbnMax＝MSBN 區可放幾顆，數字來自 jbp/BOD A曝光資源版位詳情表.xlsx 的「MSBN張數」欄。
+   之後表格改了，這裡的數字也要跟著改（label 必須跟試算表 A 欄一字不差）。 */
+var LEVELS = [
+  { id: 'brand_star_mega',    label: 'A Brand star (Mega)',      msbnMax: 8 },
+  { id: 'brand_star_mega_zj', label: 'A Brand star (Mega) 資交', msbnMax: 4 },
+  { id: 'select_pkg',         label: 'A 精選套裝',                msbnMax: 4 },
+  { id: 'mdd',                label: 'A 品牌旗艦MDD',             msbnMax: 6 },
+  { id: 'mdd_zj',             label: 'A 品牌旗艦MDD 資交',        msbnMax: 0 },
+  { id: 'bod_a',              label: 'B+ BOD A',                 msbnMax: 6 },
+  { id: 'bod_a_zj',           label: 'B+ BOD A 資交',            msbnMax: 0 },
+  { id: 'bod_b_mega',         label: 'B+ BOD B (Mega)',          msbnMax: 6 },
+  { id: 'basic',              label: 'B+ 基礎套裝',               msbnMax: 6 },
+  { id: 'jbp_multi',          label: 'B JBP多店',                 msbnMax: 3 },
+  { id: 'gold_mega',          label: 'B 金牌 (Mega)',             msbnMax: 3 }
+];
+var LEVEL_KEY = 'wo_level_v1';
+var DEFAULT_LEVEL_ID = 'bod_a'; /* 沒選過時的預設等級 */
+function getLevel(id) {
+  for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].id === id) return LEVELS[i];
+  for (var j = 0; j < LEVELS.length; j++) if (LEVELS[j].id === DEFAULT_LEVEL_ID) return LEVELS[j];
+  return LEVELS[0];
+}
+var currentLevelId = (function () {
+  var saved = null;
+  try { saved = localStorage.getItem(LEVEL_KEY); } catch (e) {}
+  return getLevel(saved).id;
+})();
+function currentLevel() { return getLevel(currentLevelId); }
+function currentLevelLabel() { return currentLevel().label; }
+
+var MSBN_MAX = currentLevel().msbnMax; /* MSBN 合計最多幾顆（依等級） */
+
+/* MSBN 副區版配的紅字補充說明 */
+var MSBN_SUBAREA_NOTE = '※ MSBN 每一格都可以改用「副區」的版配。';
+
+/* MSBN 素材清單：圖片放在跟 index.html 同層的 msbn-img/ 資料夾，
+   依檔名裡的字母分成 A/B/C/D 四類。之後新增圖片，把檔名加進對應陣列即可。 */
+var MSBN_ITEMS = {
+  A: ['MSBN-A-1-1.jpg', 'MSBN-A-1-2.jpg', 'MSBN-A-2-1.jpg', 'MSBN-A-2-2.jpg',
+      'MSBN-A-2-3.jpg', 'MSBN-A-2-4.jpg', 'MSBN-A-3-1.jpg', 'MSBN-A-3-2.jpg'],
+  B: ['MSBN-B-1-1.jpg', 'MSBN-B-1-2.jpg', 'MSBN-B-1-3.jpg', 'MSBN-B-1-4.jpg',
+      'MSBN-B-2-1.jpg', 'MSBN-B-2-2.jpg', 'MSBN-B-2-3.jpg',
+      'MSBN-B-3-1.jpg', 'MSBN-B-3-2.jpg', 'MSBN-B-3-3.jpg', 'MSBN-B-3-4.jpg',
+      'MSBN-B-4-1.jpg', 'MSBN-B-4-2.jpg'],
+  C: ['MSBN-C-1-1.jpg', 'MSBN-C-1-2.jpg', 'MSBN-C-1-3.jpg', 'MSBN-C-1-4.jpg', 'MSBN-C-1-5.jpg'],
+  D: ['MSBN-D-1-1-1.jpg', 'MSBN-D-1-1-2.jpg', 'MSBN-D-1-2.jpg', 'MSBN-D-1-3.jpg',
+      'MSBN-D-2-1-1.jpg', 'MSBN-D-2-1-2.jpg', 'MSBN-D-2-2.jpg', 'MSBN-D-2-3.jpg', 'MSBN-D-3-1.jpg']
+};
+
+/* 每一款 MSBN 的工單欄位，依「一排幾個」分組（檔名第一個數字＝一排幾個；
+   欄位歸屬哪一組，是照該圖層在版位上的水平位置自動判斷）。
+   顏色類欄位比照副區不進工單。 */
+/* MSBN 版位的欄位資料改成跟副區（IMAGE_FIELDS）同一套邏輯：
+   從內嵌的 <script id="wo-msbn-fields"> JSON 讀取，不再把資料寫死成 JS 物件語法。
+   之後新增/修正版位，只要改那段 JSON，不用碰這裡的邏輯程式碼。 */
+var MSBN_FIELDS = JSON.parse(document.getElementById('wo-msbn-fields').textContent);
+
+/* 各欄位在工單上的「顯示名稱」與「限字/填法」提示
+   （照 BOD 模板「MSBN系統專用」「MSBN案例」頁簽的寫法） */
+var MSBN_FIELD_LABELS = {
+  '商品': '商品 (多圖用逗號分開)',
+  'CTA': 'CTA (放03字)'
+};
+var MSBN_FIELD_HINTS = {
+  '促標': '促標最多放08個字',
+  'LOGO圖': '(檔名/券名)',
+  '商品': '(圖檔名)',
+  '商品圖': '(圖檔名)',
+  '情境圖': '(檔名)',
+  '贈品圖': '(檔名)',
+  '代言人圖': '(圖檔名)',
+  '簽名圖': '(檔名)',
+  '信用卡圖': '(檔名)',
+  '品名': '品名放06個字',
+  '特色': '特色最多放8個字',
+  '警語': '警語最多只能放10個字',
+  '內文': '內文文字',
+  '文案': '文案文字',
+  '項目文字': '項目文字',
+  '圓標': '圓標05字內',
+  'CTA': '逛逛去',
+  '簽名小字': '每行限5字',
+  '代言人小字': '代言人小字'
+};
+var MSBN_POS_LABELS = { 1: ['左右'], 2: ['左', '右'], 3: ['左', '中', '右'], 4: ['左1', '左2', '左3', '左4'] };
+
+var selectedThumb = null; /* 點選模式：{family,file,variant,combo,label} */
+
+function loadState() {
+  try {
+    var s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (s && s.group === undefined && s.family !== undefined) {
+      /* 舊版資料格式遷移：以前存的是單一系列(state.family)，換成群組(state.group) */
+      s.group = s.family === null ? null : groupOf(s.family);
+      delete s.family;
+    }
+    return s;
+  } catch (e) { return null; }
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch (e) { /* 存不了就算了，不影響操作 */ }
+  refreshGeneratorImportButton();
+}
+
+function maxPerRow(fam) { return FAMILIES[fam] ? FAMILIES[fam].maxPerRow : 4; }
+function famWidth(fam) { return FAMILIES[fam] ? FAMILIES[fam].width : 300; }
+
+/* ════════════════════════════════════════
+   左側素材庫渲染（依可混搭群組分區塊呈現）
+════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   素材庫頁簽（副區 / MSBN / 吸底）
+   「副區」與「MSBN」切換左側素材並維持原畫布；「吸底」則載入同層 bottom/index.html，
+   以 iframe 隔離完整工具，三個頁簽可直接來回切換。
+══════════════════════════════════════════════════ */
+var teachingMode = new URLSearchParams(window.location.search).get('teaching');
+var currentPaletteTab = teachingMode === 'msbn' ? 'msbn' : 'subarea'; /* 'subarea' | 'msbn' | 'sticky' */
+var PALETTE_TAB_INFO = {
+  msbn: { label: 'MSBN', icon: '🧱' },
+  sticky: { label: '吸底', icon: '📌' }
+};
+var bottomToolLoaded = false;
+var bottomBridgeReady = false;
+var latestBottomWorkOrder = null;
+var bottomWorkOrderVersion = 0;
+var bottomLastAutoSentVersion = 0;
+var bottomPreviewToolLoaded = false;
+var bottomPreviewBridgeReady = false;
+var bottomPreviewLastSentVersion = 0;
+var importBottomPreviewResult = null; /* { dataUrl, width, height, workOrderVersion } */
+var standaloneBottomToolLoaded = false;
+var standaloneBottomBridgeReady = false;
+var standaloneBottomLastSentVersion = 0;
+var bottomGeneratorStateJson = '';
+var bottomStandaloneStateJson = '';
+var bottomSharedStateJson = ''; /* 兩個入口共用的唯一吸底編輯狀態來源 */
+var bottomLastEditedStateJson = '';
+var bottomExportRequestSeq = 0;
+var bottomExportPending = {};
+
+function extractEmbeddedBottomState(arrayBuffer) {
+  if (!arrayBuffer || typeof ExcelJS === 'undefined') return Promise.resolve('');
+  try {
+    var wb = new ExcelJS.Workbook();
+    return wb.xlsx.load(arrayBuffer.slice ? arrayBuffer.slice(0) : arrayBuffer).then(function () {
+      var ws = wb.getWorksheet('_BODA_BOTTOM_STATE');
+      if (!ws || String(ws.getCell('A1').value || '') !== 'BODA_BOTTOM_STATE_V1') return '';
+      var count = Number(ws.getCell('B1').value) || 0;
+      var chunks = [];
+      for (var i = 0; i < count; i++) chunks.push(String(ws.getCell(i + 3, 2).value || ''));
+      return chunks.join('');
+    }).catch(function () { return ''; });
+  } catch (e) {
+    return Promise.resolve('');
+  }
+}
+
+/* 主工具最近一次匯入的 xlsx 會保留在記憶體，切到吸底時交給 bottom 原本的
+   WorkOrderImporter 解析。只保留目前分頁生命週期，不把大型檔案塞進 localStorage。 */
+function rememberBottomWorkOrder(name, arrayBuffer) {
+  /* 換了新的匯入工單，上一份吸底成品不可沿用。 */
+  importBottomPreviewResult = null;
+  /* 新工單進來時，舊工單的吸底編輯不能沿用；等新工單／內嵌狀態完成同步後再重新記錄。 */
+  bottomGeneratorStateJson = '';
+  bottomStandaloneStateJson = '';
+  bottomSharedStateJson = '';
+  bottomLastEditedStateJson = '';
+  if (!arrayBuffer || !/\.(xlsx|xlsm)$/i.test(String(name || ''))) return;
+  try {
+    latestBottomWorkOrder = {
+      name: name || '工單.xlsx',
+      buffer: arrayBuffer.slice ? arrayBuffer.slice(0) : arrayBuffer,
+      savedAt: Date.now(),
+      version: ++bottomWorkOrderVersion
+    };
+  } catch (e) {
+    latestBottomWorkOrder = null;
+    return;
+  }
+  extractEmbeddedBottomState(latestBottomWorkOrder.buffer).then(function (stateJson) {
+    if (!latestBottomWorkOrder || latestBottomWorkOrder.version !== bottomWorkOrderVersion) return;
+    latestBottomWorkOrder.bottomState = stateJson || '';
+    bottomSharedStateJson = stateJson || '';
+    if (bottomBridgeReady && currentPaletteTab === 'sticky') sendLatestWorkOrderToBottom('state-ready');
+    if (bottomPreviewBridgeReady) sendLatestWorkOrderToBottomPreview('state-ready');
+    if (standaloneBottomBridgeReady && document.getElementById('view-bottom') &&
+        document.getElementById('view-bottom').classList.contains('active')) {
+      sendLatestWorkOrderToStandaloneBottom('state-ready');
+    }
+  });
+  if (bottomBridgeReady && currentPaletteTab === 'sticky') sendLatestWorkOrderToBottom('main-import');
+  if (standaloneBottomBridgeReady && document.getElementById('view-bottom') &&
+      document.getElementById('view-bottom').classList.contains('active')) {
+    sendLatestWorkOrderToStandaloneBottom('main-import');
+  }
+}
+
+
+/* 取得兩個吸底入口共用的唯一編輯結果；iframe 個別 state 僅作相容備援。 */
+function getBottomStateForSync() {
+  if (bottomSharedStateJson) return bottomSharedStateJson;
+  if (bottomLastEditedStateJson) return bottomLastEditedStateJson;
+  if (bottomGeneratorStateJson) return bottomGeneratorStateJson;
+  if (bottomStandaloneStateJson) return bottomStandaloneStateJson;
+  return latestBottomWorkOrder && latestBottomWorkOrder.bottomState
+    ? latestBottomWorkOrder.bottomState : '';
+}
+
+/* 匯入工單／demo 完成後，主動把最新工單與吸底編輯結果送到已開啟的入口。 */
+function syncBottomAfterImportAction(reason) {
+  var sent = false;
+  if (bottomBridgeReady && currentPaletteTab === 'sticky') {
+    if (latestBottomWorkOrder) sent = sendLatestWorkOrderToBottom(reason || 'import-sync') || sent;
+    else if (getBottomStateForSync()) {
+      sent = postToBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() }) || sent;
+    }
+  }
+  if (standaloneBottomBridgeReady) {
+    if (latestBottomWorkOrder) sent = sendLatestWorkOrderToStandaloneBottom(reason || 'import-sync') || sent;
+    else if (getBottomStateForSync()) {
+      sent = postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() }) || sent;
+    }
+  }
+  return sent;
+}
+
+function postToFrame(frameId, message, transfer) {
+  var frame = document.getElementById(frameId);
+  if (!frame || !frame.contentWindow) return false;
+  try {
+    frame.contentWindow.postMessage(message, '*', transfer || []);
+    return true;
+  } catch (e) {
+    try { frame.contentWindow.postMessage(message, '*'); return true; }
+    catch (e2) { return false; }
+  }
+}
+function postToBottom(message, transfer) {
+  return postToFrame('bottom-tool-frame', message, transfer);
+}
+function postToBottomPreview(message, transfer) {
+  return postToFrame('import-bottom-preview-frame', message, transfer);
+}
+function sendBottomHostLayout() {
+  var app = document.querySelector('#view-generator #app');
+  var palette = document.getElementById('palette');
+  var tabs = document.getElementById('palette-tabs');
+  var scroll = document.getElementById('palette-scroll');
+  if (!app || !palette || (!tabs && !scroll)) return;
+  var appRect = app.getBoundingClientRect();
+  /* 以三個頁簽的實際下緣當作吸底工具列起點。這會把素材庫標題、等級下拉、
+     等級說明小字與頁簽全部固定保留，切換頁簽時高度不會因內容顯示／隱藏而改變。 */
+  var anchorRect = tabs ? tabs.getBoundingClientRect() : scroll.getBoundingClientRect();
+  var panelTop = tabs ? anchorRect.bottom - appRect.top : anchorRect.top - appRect.top;
+  postToBottom({
+    source: 'BODA_PARENT',
+    type: 'HOST_LAYOUT',
+    panelTop: Math.max(0, Math.round(panelTop)),
+    panelWidth: Math.max(280, Math.round(palette.getBoundingClientRect().width || 340))
+  });
+}
+
+function sendLatestWorkOrderToBottom(reason, requestId) {
+  if (!latestBottomWorkOrder || !latestBottomWorkOrder.buffer) {
+    postToBottom({
+      source: 'BODA_PARENT', type: 'NO_WORKORDER',
+      requestId: requestId || '',
+      message: '主工具目前尚未匯入含吸底資料的 xlsx 工單。'
+    });
+    return false;
+  }
+  var isManual = !!requestId || reason === 'manual-request' || reason === 'state-ready' || reason === 'import-sync';
+  /* 自動同步每份工單只做一次，避免切離／切回吸底時把使用者已編輯的內容重置。
+     面板上的「同步主工具最近匯入的工單」屬於手動動作，不受此限制。 */
+  if (!isManual && latestBottomWorkOrder.version <= bottomLastAutoSentVersion) return false;
+  var copy = latestBottomWorkOrder.buffer.slice(0);
+  var sent = postToBottom({
+    source: 'BODA_PARENT', type: 'WORKORDER_FILE',
+    levelId: currentLevelId,
+    requestId: requestId || '',
+    reason: reason || 'sync',
+    name: latestBottomWorkOrder.name,
+    bottomState: getBottomStateForSync(),
+    buffer: copy
+  }, [copy]);
+  if (sent && (!isManual || reason === 'state-ready')) bottomLastAutoSentVersion = latestBottomWorkOrder.version;
+  return sent;
+}
+function showImportBottomPreview(show) {
+  var section = document.getElementById('import-bottom-preview');
+  if (section) section.classList.toggle('show', !!show);
+}
+function resetImportBottomPreviewImage() {
+  var wrap = document.getElementById('import-bottom-preview-frame-wrap');
+  var image = document.getElementById('import-bottom-preview-image');
+  if (wrap) wrap.classList.remove('has-image', 'missing');
+  if (image) { image.onload = null; image.onerror = null; image.removeAttribute('src'); }
+}
+function hideImportBottomPreview() {
+  showImportBottomPreview(false);
+  resetImportBottomPreviewImage();
+  importBottomPreviewResult = null;
+}
+
+function sendLatestWorkOrderToBottomPreview(reason) {
+  if (!latestBottomWorkOrder || !latestBottomWorkOrder.buffer) return false;
+  if (latestBottomWorkOrder.version <= bottomPreviewLastSentVersion && reason !== 'state-ready') return false;
+  var copy = latestBottomWorkOrder.buffer.slice(0);
+  var sent = postToBottomPreview({
+    source: 'BODA_PARENT',
+    type: 'WORKORDER_FILE',
+    levelId: currentLevelId,
+    reason: reason || 'sync',
+    name: latestBottomWorkOrder.name,
+    workOrderVersion: latestBottomWorkOrder.version,
+    bottomState: getBottomStateForSync(),
+    buffer: copy
+  }, [copy]);
+  if (sent) bottomPreviewLastSentVersion = latestBottomWorkOrder.version;
+  return sent;
+}
+
+function ensureBottomPreviewLoaded(forceReload) {
+  var frame = document.getElementById('import-bottom-preview-frame');
+  var wrap = document.getElementById('import-bottom-preview-frame-wrap');
+  if (!frame || !wrap) return;
+  if (forceReload) {
+    bottomPreviewToolLoaded = false;
+    bottomPreviewBridgeReady = false;
+    bottomPreviewLastSentVersion = 0;
+    wrap.classList.remove('missing'); frame.removeAttribute('src');
+  }
+  if (bottomPreviewToolLoaded && frame.getAttribute('src')) return;
+  bottomPreviewToolLoaded = true; wrap.classList.remove('missing');
+  frame.onload = function () {
+    setTimeout(function () {
+      try { var doc = frame.contentDocument; if (doc && !doc.getElementById('app')) wrap.classList.add('missing'); else wrap.classList.remove('missing'); }
+      catch (e) { wrap.classList.remove('missing'); }
+      if (bottomPreviewBridgeReady && latestBottomWorkOrder) sendLatestWorkOrderToBottomPreview('preview-loaded');
+    }, 80);
+  };
+
+  frame.onerror = function () { wrap.classList.add('missing'); };
+  frame.src = 'bottom/index.html?embed=import-preview&bridge=1&v=20260902-levelpreset1';
+}
+/* bottom/index.html 是一套完整的吸底編輯器，仍用 iframe 隔離 CSS、Konva 與狀態。
+   嵌入模式由 bottom 自己把面板排到左側，父頁只保留素材庫標題與三個頁簽。 */
+function ensureBottomToolLoaded(forceReload) {
+  var frame = document.getElementById('bottom-tool-frame');
+  var wrap = document.getElementById('bottom-tool-wrap');
+  if (!frame || !wrap) return;
+
+  if (forceReload) {
+    bottomToolLoaded = false;
+    bottomBridgeReady = false;
+    bottomLastAutoSentVersion = 0;
+    wrap.classList.remove('missing');
+    frame.removeAttribute('src');
+  }
+  if (bottomToolLoaded && frame.getAttribute('src')) {
+    requestAnimationFrame(sendBottomHostLayout);
+    return;
+  }
+
+  bottomToolLoaded = true;
+  wrap.classList.remove('missing');
+  frame.onload = function () {
+    setTimeout(function () {
+      try {
+        var doc = frame.contentDocument;
+        if (doc && !doc.getElementById('app')) wrap.classList.add('missing');
+        else wrap.classList.remove('missing');
+      } catch (e) {
+        /* file:// 有時不讓父頁讀 iframe；postMessage 仍可正常用。 */
+        wrap.classList.remove('missing');
+      }
+      sendBottomHostLayout();
+    }, 80);
+  };
+  frame.onerror = function () { wrap.classList.add('missing'); };
+  frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20260902-levelpreset1';
+}
+
+function requestGeneratorBottomExportAll() {
+  /* 吸底是 iframe，先確保它已掛載；若使用者目前不在吸底頁簽，
+     也仍要把最新 state 與圖片納入「下載全部」。 */
+  ensureBottomToolLoaded(false);
+  return new Promise(function (resolve) {
+    var startedAt = Date.now();
+    var requestId = 'bottom-export-' + Date.now() + '-' + (++bottomExportRequestSeq);
+    function waitReady() {
+      if (bottomBridgeReady) {
+        bottomExportPending[requestId] = resolve;
+        if (!postToBottom({
+          source: 'BODA_PARENT',
+          type: 'EXPORT_ALL',
+          requestId: requestId,
+          filenamePrefix: 'BODA工單_吸底圖'
+        })) {
+          delete bottomExportPending[requestId];
+          resolve({ ok: false, message: '無法連線到吸底匯出器' });
+        }
+        return;
+      }
+      if (Date.now() - startedAt >= 8000) {
+        resolve({ ok: false, message: '吸底匯出器尚未完成載入' });
+        return;
+      }
+      setTimeout(waitReady, 80);
+    }
+    waitReady();
+  });
+}
+function postToStandaloneBottom(message, transfer) {
+  return postToFrame('bottom-standalone-frame', message, transfer);
+}
+
+/* 吸底等級規格只同步兩個可編輯入口；匯入畫布預覽會跟著工單資料載入，不可回寫正式 state。 */
+function syncBottomLevelPreset() {
+  var message = { source: 'BODA_PARENT', type: 'BOTTOM_LEVEL', levelId: currentLevelId };
+  if (bottomBridgeReady) postToBottom(message);
+  if (standaloneBottomBridgeReady) postToStandaloneBottom(message);
+}
+function sendLatestWorkOrderToStandaloneBottom(reason, requestId) {
+  if (!latestBottomWorkOrder || !latestBottomWorkOrder.buffer) {
+    postToStandaloneBottom({
+      source: 'BODA_PARENT', type: 'NO_WORKORDER',
+      requestId: requestId || '',
+      message: '請先到「匯入工單」上傳含吸底資料的 xlsx 工單。'
+    });
+    return false;
+  }
+  var isManual = !!requestId || reason === 'manual-request' || reason === 'state-ready' || reason === 'import-sync';
+  if (!isManual && latestBottomWorkOrder.version <= standaloneBottomLastSentVersion) return false;
+  var copy = latestBottomWorkOrder.buffer.slice(0);
+  var sent = postToStandaloneBottom({
+    source: 'BODA_PARENT', type: 'WORKORDER_FILE',
+    levelId: currentLevelId,
+    requestId: requestId || '',
+    reason: reason || 'sync',
+    name: latestBottomWorkOrder.name,
+    bottomState: getBottomStateForSync(),
+    buffer: copy
+  }, [copy]);
+  if (sent && (!isManual || reason === 'state-ready')) standaloneBottomLastSentVersion = latestBottomWorkOrder.version;
+  return sent;
+}
+
+function ensureStandaloneBottomLoaded(forceReload) {
+  var frame = document.getElementById('bottom-standalone-frame');
+  var wrap = document.getElementById('bottom-standalone-wrap');
+  if (!frame || !wrap) return;
+  if (forceReload) {
+    standaloneBottomToolLoaded = false;
+    standaloneBottomBridgeReady = false;
+    standaloneBottomLastSentVersion = 0;
+    wrap.classList.remove('missing');
+    frame.removeAttribute('src');
+  }
+  if (standaloneBottomToolLoaded && frame.getAttribute('src')) return;
+  standaloneBottomToolLoaded = true;
+  wrap.classList.remove('missing');
+  frame.onload = function () {
+    setTimeout(function () {
+      try {
+        var doc = frame.contentDocument;
+        if (doc && !doc.getElementById('app')) wrap.classList.add('missing');
+        else wrap.classList.remove('missing');
+      } catch (e) {
+        wrap.classList.remove('missing');
+      }
+      if (standaloneBottomBridgeReady && latestBottomWorkOrder) {
+        sendLatestWorkOrderToStandaloneBottom('standalone-loaded');
+      } else if (standaloneBottomBridgeReady) {
+        postToStandaloneBottom({
+          source: 'BODA_PARENT', type: 'NO_WORKORDER',
+          message: '請先到「匯入工單」上傳含吸底資料的 xlsx 工單。'
+        });
+      }
+    }, 80);
+  };
+  frame.onerror = function () { wrap.classList.add('missing'); };
+  frame.src = 'bottom/index.html?embed=standalone&bridge=1&v=20260902-levelpreset1';
+}
+function syncGeneratorToolMode() {
+  var isSticky = currentPaletteTab === 'sticky';
+  var palette = document.getElementById('palette');
+  var canvas = document.getElementById('canvas-area');
+  var wrap = document.getElementById('bottom-tool-wrap');
+  var generatorView = document.getElementById('view-generator');
+  var generatorActive = !!(generatorView && generatorView.classList.contains('active'));
+
+  if (palette) palette.classList.toggle('sticky-tool-mode', isSticky);
+  if (canvas) canvas.classList.toggle('bottom-tool-mode', isSticky);
+  if (wrap) {
+    wrap.classList.toggle('active', isSticky);
+    wrap.setAttribute('aria-hidden', isSticky ? 'false' : 'true');
+  }
+  if (isSticky) {
+    ensureBottomToolLoaded(false);
+    requestAnimationFrame(function () {
+      sendBottomHostLayout();
+      if (bottomBridgeReady && latestBottomWorkOrder) sendLatestWorkOrderToBottom('open-sticky');
+    });
+  }
+
+  var lock = document.getElementById('lock-fab');
+  var banner = document.getElementById('edit-banner');
+  if (lock) lock.style.display = (generatorActive && !isSticky) ? '' : 'none';
+  if (banner) banner.classList.toggle('show', !!(generatorActive && !isSticky && typeof unlocked !== 'undefined' && unlocked));
+}
+
+/* 父頁與吸底 iframe 的同源/跨 file:// 安全橋：只接受目前這一個 iframe 的訊息。 */
+/* 任一入口編輯後都寫入同一份 state，再同步給另一個入口。 */
+function acceptBottomStateFromFrame(nextState, source) {
+  nextState = String(nextState || '');
+  if (!nextState) return;
+  if (nextState === bottomSharedStateJson) return; /* 同一份 state 不再重送，避免無效重繪 */
+  bottomSharedStateJson = nextState;
+  bottomLastEditedStateJson = nextState;
+  if (source === 'generator') {
+    bottomGeneratorStateJson = nextState;
+    if (bottomStandaloneStateJson !== nextState) {
+      bottomStandaloneStateJson = nextState;
+      if (standaloneBottomBridgeReady) {
+        postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: nextState });
+      }
+    }
+  } else if (source === 'standalone') {
+    bottomStandaloneStateJson = nextState;
+    if (bottomGeneratorStateJson !== nextState) {
+      bottomGeneratorStateJson = nextState;
+      if (bottomBridgeReady) {
+        postToBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: nextState });
+      }
+    }
+  }
+}
+window.addEventListener('message', function (event) {
+  var generatorFrame = document.getElementById('bottom-tool-frame');
+  var previewFrame = document.getElementById('import-bottom-preview-frame');
+  var standaloneFrame = document.getElementById('bottom-standalone-frame');
+  var fromGenerator = generatorFrame && event.source === generatorFrame.contentWindow;
+  var fromPreview = previewFrame && event.source === previewFrame.contentWindow;
+  var fromStandalone = standaloneFrame && event.source === standaloneFrame.contentWindow;
+  if (!fromGenerator && !fromPreview && !fromStandalone) return;
+  var msg = event.data || {};
+  if (msg.source !== 'BODA_BOTTOM') return;
+  if (fromGenerator && msg.type === 'EXPORT_RESULT') {
+    var exportResolver = bottomExportPending[msg.requestId || ''];
+    if (exportResolver) {
+      delete bottomExportPending[msg.requestId || ''];
+      exportResolver({
+        ok: msg.ok !== false,
+        message: msg.message || '',
+        imageCount: Number(msg.imageCount) || 0,
+        bannerCount: Number(msg.bannerCount) || 0
+      });
+    }
+    return;
+  }
+  if (fromPreview && msg.type === 'PREVIEW_IMAGE') {
+    var previewWrap = document.getElementById('import-bottom-preview-frame-wrap');
+    var previewImage = document.getElementById('import-bottom-preview-image');
+    var previewVersion = Number(msg.workOrderVersion) || 0;
+    if (latestBottomWorkOrder && previewVersion && previewVersion !== latestBottomWorkOrder.version) return;
+    if (previewImage && msg.dataUrl) {
+      previewImage.onload = function () {
+        if (previewWrap) previewWrap.classList.add('has-image');
+      };
+      previewImage.onerror = function () {
+        if (previewWrap) previewWrap.classList.remove('has-image');
+      };
+      previewImage.src = msg.dataUrl;
+    }
+    if (msg.dataUrl) {
+      importBottomPreviewResult = {
+        dataUrl: msg.dataUrl,
+        width: Number(msg.width) || 1200,
+        height: Number(msg.height) || 150,
+        workOrderVersion: previewVersion || (latestBottomWorkOrder ? latestBottomWorkOrder.version : 0)
+      };
+      if (currentImportHasBottomWorkOrder && currentImportColumns && currentImportColumns.length) {
+        renderImportColumns(currentImportColumns);
+      }
+    }
+    return;
+  }
+  if (fromPreview && msg.type === 'PREVIEW_IMAGE_ERROR') {
+    var previewErrorWrap = document.getElementById('import-bottom-preview-frame-wrap');
+    var previewErrorFallback = document.getElementById('import-bottom-preview-fallback');
+    if (previewErrorWrap) {
+      previewErrorWrap.classList.remove('has-image');
+      previewErrorWrap.classList.add('missing');
+    }
+    if (previewErrorFallback) {
+      previewErrorFallback.textContent = msg.message
+        ? '吸底成品預覽失敗：' + msg.message
+        : '吸底成品預覽失敗；請切到工單生成器的「吸底」頁簽檢查內容。';
+    }
+    return;
+  }
+  if (msg.type === 'READY') {
+    if (fromPreview) {
+      bottomPreviewBridgeReady = true;
+      if (latestBottomWorkOrder) sendLatestWorkOrderToBottomPreview('bridge-ready');
+      return;
+    }
+    if (fromStandalone) {
+      standaloneBottomBridgeReady = true;
+      if (latestBottomWorkOrder) sendLatestWorkOrderToStandaloneBottom('bridge-ready');
+      else if (getBottomStateForSync()) postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() });
+      else postToStandaloneBottom({
+        source: 'BODA_PARENT', type: 'NO_WORKORDER',
+        message: '請先到「匯入工單」上傳含吸底資料的 xlsx 工單。'
+      });
+      postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_LEVEL', levelId: currentLevelId });
+      return;
+    }
+    bottomBridgeReady = true;
+    sendBottomHostLayout();
+    if (currentPaletteTab === 'sticky' && latestBottomWorkOrder) {
+      sendLatestWorkOrderToBottom('bridge-ready');
+    } else if (currentPaletteTab === 'sticky' && getBottomStateForSync()) {
+      postToBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() });
+    }
+    postToBottom({ source: 'BODA_PARENT', type: 'BOTTOM_LEVEL', levelId: currentLevelId });
+  } else if (msg.type === 'REQUEST_LATEST_WORKORDER' && fromGenerator) {
+    sendLatestWorkOrderToBottom('manual-request', msg.requestId);
+  } else if (msg.type === 'REQUEST_LATEST_WORKORDER' && fromStandalone) {
+    sendLatestWorkOrderToStandaloneBottom('manual-request', msg.requestId);
+  } else if (msg.type === 'LEVEL_PRESET_STATE') {
+    if (fromPreview) return; /* 預覽 iframe 的等級套用不得回寫正式吸底 state */
+    acceptBottomStateFromFrame(String(msg.state || ''), fromGenerator ? 'generator' : (fromStandalone ? 'standalone' : ''));
+  } else if (msg.type === 'STATE') {
+    if (fromPreview) return; /* 預覽 iframe 不是編輯來源，不得覆蓋正式吸底 state */
+    var nextBottomState = String(msg.state || '');
+    var stateSource = fromGenerator ? 'generator' : (fromStandalone ? 'standalone' : '');
+    if (msg.changed) acceptBottomStateFromFrame(nextBottomState, stateSource);
+    else if (!bottomSharedStateJson && !latestBottomWorkOrder) {
+      /* 直接開啟吸底時，才接受 iframe 的初始預設 state；已有工單時不可覆蓋匯入資料。 */
+      bottomSharedStateJson = nextBottomState;
+      if (!bottomLastEditedStateJson) bottomLastEditedStateJson = nextBottomState;
+      if (fromGenerator) bottomGeneratorStateJson = nextBottomState;
+      if (fromStandalone) bottomStandaloneStateJson = nextBottomState;
+    }
+  }
+});
+
+window.addEventListener('resize', function () {
+  if (currentPaletteTab === 'sticky') requestAnimationFrame(sendBottomHostLayout);
+});
+
+function setPaletteTab(tab) {
+  if (['subarea', 'msbn', 'sticky'].indexOf(tab) === -1) tab = 'subarea';
+  var previousTab = currentPaletteTab;
+  currentPaletteTab = tab;
+  document.querySelectorAll('#palette-tabs .ptab').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-ptab') === tab);
+  });
+  renderPalette({ preservePosition: previousTab === tab });
+  syncGeneratorToolMode();
+}
+
+document.querySelectorAll('#palette-tabs .ptab').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var tab = btn.getAttribute('data-ptab');
+    console.log('[UX-SYNC] 點了頁簽：' + tab + '（目前 currentPaletteTab=' + currentPaletteTab + '）');
+    if (tab === currentPaletteTab) { console.log('[UX-SYNC] 跟目前頁簽一樣，不處理'); return; }
+    setPaletteTab(tab);
+    if (tab !== 'sticky') {
+      scrollCanvasToTab(tab); /* 副區／MSBN：頁簽切換 → 畫布跟著捲過去 */
+    }
+  });
+});
+
+/* ══════════════════════════════════════════════════
+   左右雙向同步：素材庫頁簽 ↔ 畫布捲動位置
+   - 畫布捲到「MSBN 區」下方 → 左側頁簽自動跳到 MSBN；捲回「副區」→ 頁簽跳回副區
+   - 點左側頁簽 → 畫布捲到對應區塊；但如果畫布本來就已經在那一區裡（不管在哪一張），
+     不吸回該區塊最頂端（第一格），維持使用者目前的捲動位置
+   - 「吸底」使用獨立 iframe，不參與副區／MSBN 畫布捲動同步
+══════════════════════════════════════════════════ */
+/* 真正會出現捲軸的其實是 #stage（那張白色照片卡片本身），不是 #canvas-area：
+   #stage 只設了 overflow-x:auto、沒設 overflow-y，瀏覽器會把沒設的那軸也一併變成 auto，
+   所以 flexbox 會把 #stage 壓縮到剩餘空間、由 #stage 自己長出捲軸，#canvas-area 反而永遠不會溢出。
+   一開始抓錯容器（抓成 #canvas-area）就是先前量到「怎麼測都不會捲動」的真正原因。 */
+var canvasArea = document.getElementById('stage');
+var SCROLL_SYNC_LINE = 72;      /* 判斷「捲到哪一區」的參考線，離畫布可視區頂端幾px */
+var suppressScrollSync = false;  /* 程式主動捲動時，暫停 scroll→tab 同步，避免兩邊互相打架 */
+var scrollSyncRAF = null;
+
+function getPaletteSectionEl(tab) {
+  if (tab === 'msbn') return document.getElementById('msbn-area');
+  if (tab === 'subarea') {
+    var inner = document.getElementById('stage-inner');
+    return inner ? inner.firstElementChild : null; /* #row 或 #empty-drop，固定是第一個子節點 */
+  }
+  return null; /* 吸底使用獨立 iframe，不參與副區／MSBN 畫布捲動同步 */
+}
+
+/* 參考線是否落在某個區塊範圍內（用來判斷畫布目前顯示哪一區） */
+function isSectionAtScrollLine(tab, line) {
+  var el = getPaletteSectionEl(tab);
+  if (!el) return false;
+  var areaTop = canvasArea.getBoundingClientRect().top;
+  var elTop = el.getBoundingClientRect().top - areaTop;
+  var elBottom = elTop + el.getBoundingClientRect().height;
+  return elTop <= line && elBottom > line;
+}
+
+/* 畫布內容還沒超過可視高度（例如一開始、或 MSBN 還沒放第一顆）＝沒有捲軸，
+   兩區其實同時都看得到，這時不該用「捲到哪裡」去搶／推翻使用者手動點的頁簽 */
+function canvasIsScrollable() {
+  return canvasArea.scrollHeight - canvasArea.clientHeight > 1;
+}
+
+var WO_DEBUG = true; /* 除錯用：Console 裡看得到 [UX-SYNC] 開頭的訊息，確認之後改成 false 或整段刪掉 */
+
+function syncTabFromScroll() {
+  if (currentPaletteTab === 'sticky') { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：目前是吸底 iframe'); return; }
+  if (suppressScrollSync) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：suppressScrollSync=true（程式自己正在捲）'); return; }
+  if (!document.getElementById('msbn-area')) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：找不到 #msbn-area'); return; }
+  if (!canvasIsScrollable()) { if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 跳過：canvasIsScrollable()=false，scrollHeight=' + canvasArea.scrollHeight + ' clientHeight=' + canvasArea.clientHeight); return; }
+  var nextTab = isSectionAtScrollLine('msbn', SCROLL_SYNC_LINE) ? 'msbn' : 'subarea';
+  if (WO_DEBUG) console.log('[UX-SYNC] syncTabFromScroll 判斷 nextTab=' + nextTab + '，目前 currentPaletteTab=' + currentPaletteTab + '，scrollTop=' + canvasArea.scrollTop);
+  if (nextTab === currentPaletteTab) return;
+  setPaletteTab(nextTab); /* 只切左側頁簽內容，完全不動畫布 */
+}
+
+canvasArea.addEventListener('scroll', function () {
+  if (WO_DEBUG) console.log('[UX-SYNC] 偵測到 #canvas-area 的 scroll 事件，scrollTop=' + canvasArea.scrollTop);
+  if (scrollSyncRAF) cancelAnimationFrame(scrollSyncRAF);
+  scrollSyncRAF = requestAnimationFrame(syncTabFromScroll);
+}, { passive: true });
+
+function scrollCanvasToTab(tab) {
+  var el = getPaletteSectionEl(tab);
+  if (WO_DEBUG) console.log('[UX-SYNC] scrollCanvasToTab(' + tab + ') 呼叫，對應區塊元素=' + (el ? ('#' + (el.id || '(第一個子節點)')) : 'null'));
+  if (!el) return; /* 這個頁簽在畫布上還沒有對應區塊（例如吸底） */
+
+  if (!canvasIsScrollable()) { if (WO_DEBUG) console.log('[UX-SYNC] scrollCanvasToTab 跳過：canvasIsScrollable()=false'); return; } /* 畫布內容還沒超過可視高度＝兩區本來就都看得到，不用捲，也不用怕頁簽被推回去 */
+  if (isSectionAtScrollLine(tab, SCROLL_SYNC_LINE)) { if (WO_DEBUG) console.log('[UX-SYNC] scrollCanvasToTab 跳過：判斷本來就已經在「' + tab + '」區塊視野內'); return; } /* 本來就在這一區＝不吸回頂端，維持原本位置 */
+  if (WO_DEBUG) console.log('[UX-SYNC] scrollCanvasToTab 執行捲動！目標 tab=' + tab);
+  suppressScrollSync = true;
+  var areaTop = canvasArea.getBoundingClientRect().top;
+  var targetTop = canvasArea.scrollTop + (el.getBoundingClientRect().top - areaTop) - 20;
+  canvasArea.scrollTo({ top: Math.max(targetTop, 0), behavior: 'smooth' });
+  clearTimeout(scrollCanvasToTab._t);
+  scrollCanvasToTab._t = setTimeout(function () {
+    /* 點頁簽後以使用者的選擇為準，不在捲動結束時立刻用邊界位置反推一次。
+       MSBN 位於畫布最下方時，瀏覽器可能因為底部空間不足而無法把區塊頂端
+       捲到參考線；舊邏輯會因此誤判成副區並把頁簽拉回去。之後使用者真的
+       手動捲動畫布時，scroll 事件仍會照實際位置同步頁簽。 */
+    suppressScrollSync = false;
+  }, 700);
+}
+
+/* 拖拉一張新的 MSBN 圖進畫布後，自動往下捲一點：
+   讓剛放進去的完整那一列留在可視範圍內，同時露出下一格可拖放的虛線區塊。
+   這是刻意的回饋動作（讓使用者感覺到「有放進去、還可以繼續放」），
+   所以就算目前其實還沒被擋到（overflow<=0）也至少意思意思往下挪一點 MIN_NUDGE，
+   純粹「必要時才捲」會在畫面夠大／東西還不多時完全沒反應，體感上就像沒做這個功能。
+   當然如果畫布整個連一點可捲動空間都沒有（scrollBy 會被瀏覽器直接吃掉），那本來就動不了。 */
+function revealNewMsbnRow() {
+  requestAnimationFrame(function () {
+    var rows = document.querySelectorAll('#msbn-stack .msbn-row');
+    var lastRow = rows[rows.length - 1];
+    var dropZone = document.getElementById('msbn-drop');
+    if (!lastRow || !dropZone) return;
+    var areaRect = canvasArea.getBoundingClientRect();
+    var dropRect = dropZone.getBoundingClientRect();
+    var PEEK = 90;      /* 讓下一個虛線格子露出一截，使用者才知道還能繼續拖 */
+    var MIN_NUDGE = 90; /* 就算已經看得到，也至少往下滑這麼多，確保有感覺、有動作 */
+    var wantBottom = Math.min(dropRect.top + PEEK, dropRect.bottom);
+    var overflow = wantBottom - areaRect.bottom; /* >0 代表新那格其實被擋住了，非捲不可 */
+    var scrollAmount = Math.max(overflow, MIN_NUDGE);
+    if (WO_DEBUG) console.log('[UX-SYNC] revealNewMsbnRow 觸發，overflow=' + overflow + '，實際捲動量=' + scrollAmount + '，canvasIsScrollable()=' + canvasIsScrollable());
+    suppressScrollSync = true;
+    canvasArea.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+    clearTimeout(revealNewMsbnRow._t);
+    revealNewMsbnRow._t = setTimeout(function () {
+      suppressScrollSync = false;
+      syncTabFromScroll();
+    }, 450);
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   一鍵清除本機暫存（測試/除錯用）：
+   把這個工具自己存在瀏覽器裡的東西（上次停在哪個畫面、畫布內容、
+   縮放比例、系列改名、匯入工單的暫存、解鎖狀態）清掉，重新整理回到全新狀態。
+   只清這個工具自己的 key（wo_ 開頭），不會動到同一個瀏覽器裡其他網站或工具的資料。
+══════════════════════════════════════════════════ */
+var WO_CACHE_KEYS = [
+  'wo_canvas_state_v1',  /* 畫布內容（副區＋MSBN） */
+  'wo_family_names_v1',  /* 系列改名 */
+  'wo_unlocked_v1',       /* 編輯解鎖狀態 */
+  'wo_import_state_v1',  /* 匯入工單頁的暫存 */
+  'wo_import_theme_v1',  /* 匯入工單頁的統一顏色 */
+  'wo_import_zoom_v1',   /* 匯入工單頁的預覽縮放比例 */
+  'wo_canvas_zoom',       /* 畫布顯示縮放比例 */
+  'wo_level_v1',          /* 等級（決定 MSBN 可放幾顆） */
+  'wo_last_view'          /* 上次停在哪個畫面（首頁／工單生成器／曝光資源／匯入工單） */
+];
+document.getElementById('btn-clear-cache').addEventListener('click', function () {
+  if (!confirm('確定要清除本機暫存嗎？\n\n會清掉：上次畫面、目前畫布內容、系列改名、匯入工單暫存、縮放比例、解鎖狀態。\n清完會立刻重新整理回到全新狀態。')) return;
+  WO_CACHE_KEYS.forEach(function (k) {
+    try { localStorage.removeItem(k); } catch (e) {}
+    try { sessionStorage.removeItem(k); } catch (e) {}
+  });
+  location.reload();
+});
+
+function renderPaletteContent() {
+  var wrap = document.getElementById('palette-scroll');
+
+  /* MSBN 頁簽：依檔名字母分 A/B/C/D 四類，可拖到右邊 MSBN 區或點一下直接加入 */
+  if (currentPaletteTab === 'msbn') {
+    /* 版位詳情表裡 MSBN 張數＝0 的等級（例：資交），這一頁直接停用 */
+    if (MSBN_MAX <= 0) {
+      wrap.innerHTML = '<div class="no-layouts" style="padding:18px 14px;line-height:1.8;">'
+        + '「<b>' + esc(currentLevelLabel()) + '</b>」這個等級不提供 MSBN。<br>'
+        + '要放 MSBN 請先在上方「等級」下拉切換成有 MSBN 額度的等級。</div>';
+      return;
+    }
+    var cats = Object.keys(MSBN_ITEMS);
+    wrap.innerHTML = cats.map(function (cat, ci) {
+      var files = MSBN_ITEMS[cat];
+      var thumbs = files.map(function (file) {
+        var label = file.replace(/^MSBN-/, '').replace(/\.(jpg|jpeg|png)$/i, '');
+        return '<div class="thumb msbn" draggable="true" data-file="' + esc(file) + '" data-cat="' + cat + '" data-label="' + esc(label) + '"' +
+          ' title="點一下直接加入畫布 MSBN 區，或拖曳到右邊">' +
+          '<img src="msbn-img/' + esc(file) + '" loading="lazy" alt="' + esc(label) + '">' +
+          '<div class="cap">' + esc(label) + '</div></div>';
+      }).join('');
+      return '<div class="fam-section' + (ci === 0 || teachingMode === 'msbn' ? ' open' : '') + '">' +
+        '<div class="fam-head">' +
+          '<div class="fam-badge">' + cat + '</div>' +
+          '<div class="fam-meta"><div class="t1">MSBN ' + cat + '</div>' +
+          '<div class="t2">寬1200・共 ' + files.length + ' 張・畫布合計最多 ' + MSBN_MAX + ' 顆</div></div>' +
+          '<div class="fam-caret">▶</div>' +
+        '</div>' +
+        '<div class="fam-grid msbn-grid">' + thumbs + '</div>' +
+      '</div>';
+    }).join('');
+
+    /* MSBN 頁簽底部也提供一份副區版配清單：點選或拖曳後，可套用到任一個 MSBN 格。 */
+    var msbnSubareaHtml = Object.keys(GROUPS).map(function (g) {
+      var group = GROUPS[g];
+      var famsHtml = group.families.map(function (fam) {
+        var f = FAMILIES[fam];
+        var shouldOpen = fam === 'A' || teachingMode === 'msbn';
+        var thumbs = f.items.map(function (item) {
+          return '<div class="thumb msbn-subarea" draggable="true" data-msbn-subarea="1" ' +
+            'data-fam="' + fam + '" data-file="' + item.file + '" data-variant="' + item.variant + '" data-combo="' + item.combo + '" data-label="' + esc(item.label) + '" ' +
+            'style="--ar:' + f.width + '/' + f.height + '" title="點一下加入下一個可用 MSBN 格，或拖曳到指定格">' +
+            '<img src="img/' + item.file + '" loading="lazy" alt="' + esc(item.label) + '">' +
+            '<div class="cap">' + esc(item.label) + '</div></div>';
+        }).join('');
+        return '<div class="fam-section' + (shouldOpen ? ' open' : '') + '" data-fam="' + fam + '" data-msbn-subarea="1">' +
+          '<div class="fam-head">' +
+            '<div class="fam-badge">' + fam + '</div>' +
+            '<div class="fam-meta"><div class="t1">' + esc(familyLabel(fam)) + '</div>' +
+            '<div class="t2">' + f.width + '×' + f.height + '　每排最多 ' + f.maxPerRow + ' 個</div></div>' +
+            '<div class="fam-caret">▶</div>' +
+          '</div>' +
+          '<div class="fam-grid">' + thumbs + '</div>' +
+        '</div>';
+      }).join('');
+      var isMixable = group.families.length > 1;
+      return '<div class="group-block' + (isMixable ? ' mixable' : ' solo') + '" data-msbn-subarea="1">' +
+        '<div class="group-label">' + (isMixable ? '🔗 可混搭・同排能混插' : '🚫 不可混搭') + '</div>' +
+        famsHtml +
+      '</div>';
+    }).join('');
+    wrap.innerHTML += '<div class="msbn-subarea-palette">' +
+      '<div class="msbn-subarea-title">副區版配</div>' +
+      '<div class="msbn-subarea-note">點選加入下一個可用 MSBN 格；也可拖曳到指定格替換版配</div>' +
+      msbnSubareaHtml +
+      '</div>';
+    /* 手風琴展開/收合 */
+    wrap.querySelectorAll('.fam-head').forEach(function (head) {
+      head.addEventListener('click', function () {
+        var section = head.closest('.fam-section');
+        var willOpen = !section.classList.contains('open');
+        wrap.querySelectorAll('.fam-section').forEach(function (s) { s.classList.remove('open'); });
+        if (willOpen) section.classList.add('open');
+      });
+    });
+
+    /* 縮圖：拖曳（用專屬的 application/x-msbn 資料型別，跟副區互不干擾）＋ 點一下直接加入 */
+    wrap.querySelectorAll('.thumb.msbn').forEach(function (el) {
+      var info = {
+        file: el.getAttribute('data-file'),
+        cat: el.getAttribute('data-cat'),
+        label: el.getAttribute('data-label')
+      };
+      el.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('application/x-msbn', JSON.stringify(info));
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      el.addEventListener('click', function () { addMsbn(info); });
+    });
+    /* MSBN 頁簽下方的副區版配：沿用 application/json，讓 MSBN 畫布可直接接收。 */
+    wrap.querySelectorAll('.thumb.msbn-subarea').forEach(function (el) {
+      var info = {
+        family: el.getAttribute('data-fam'),
+        file: el.getAttribute('data-file'),
+        variant: +el.getAttribute('data-variant'),
+        combo: +el.getAttribute('data-combo'),
+        label: el.getAttribute('data-label')
+      };
+      el.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('application/json', JSON.stringify(info));
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      el.addEventListener('click', function () { placeSubInMsbn(info, null); });
+    });
+    return;
+  }
+
+  /* 吸底工具的完整操作面板由全幅 iframe 的左欄提供；父層素材清單保持空白，
+     才不會在 iframe 下方再出現第二套說明或按鈕。 */
+  if (currentPaletteTab === 'sticky') {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  /* 其他未知頁簽保留保險佔位。 */
+  if (currentPaletteTab !== 'subarea') {
+    var info = PALETTE_TAB_INFO[currentPaletteTab] || { label: currentPaletteTab, icon: '🗂' };
+    wrap.innerHTML =
+      '<div class="ptab-placeholder">' +
+      '<span class="pp-icon">' + info.icon + '</span>' +
+      '<b>' + esc(info.label) + '</b> 尚未設定內容' +
+      '</div>';
+    return;
+  }
+
+  wrap.innerHTML = Object.keys(GROUPS).map(function (g) {
+    var group = GROUPS[g];
+    var isMixable = group.families.length > 1;
+    var isActiveGroup = state.group === g;
+
+    var famsHtml = group.families.map(function (fam) {
+      var f = FAMILIES[fam];
+      /* 副區頁簽在畫布尚未選擇任何系列時，預設展開 A：
+         「副區 一排3（帶LOGO圖版）」。使用者仍可手動收合；
+         切換回副區或重新渲染素材庫時，空白畫布會再次以這一類展開。 */
+      var isDefaultOpen = state.group === null && fam === 'A';
+      var shouldOpen = new URLSearchParams(window.location.search).get('teaching') === 'subarea' || isActiveGroup || isDefaultOpen;
+      var thumbs = f.items.map(function (item) {
+        var isSel = selectedThumb && selectedThumb.family === fam && selectedThumb.file === item.file;
+        return '<div class="thumb' + (isSel ? ' selected' : '') + '" draggable="true" ' +
+          'data-fam="' + fam + '" data-file="' + item.file + '" data-variant="' + item.variant + '" data-combo="' + item.combo + '" data-label="' + esc(item.label) + '" ' +
+          'style="--ar:' + f.width + '/' + f.height + '">' +
+          '<img src="img/' + item.file + '" loading="lazy" alt="' + esc(item.label) + '">' +
+          '<div class="cap">' + esc(item.label) + '</div>' +
+        '</div>';
+      }).join('');
+      return '<div class="fam-section' + (shouldOpen ? ' open' : '') + '" data-fam="' + fam + '">' +
+        '<div class="fam-head">' +
+          '<div class="fam-badge">' + fam + '</div>' +
+          '<div class="fam-meta"><div class="t1" data-fam="' + fam + '" title="點兩下改名">' + esc(familyLabel(fam)) + '</div>' +
+          '<div class="t2">' + f.width + '×' + f.height + '　每排最多 ' + f.maxPerRow + ' 個</div></div>' +
+          '<div class="fam-caret">▶</div>' +
+        '</div>' +
+        '<div class="fam-grid">' + thumbs + '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="group-block' + (isMixable ? ' mixable' : ' solo') +
+      (isActiveGroup ? ' active' : '') + '" data-group="' + g + '">' +
+      '<div class="group-label">' + (isMixable ? '🔗 可混搭・同排能混插' : '🚫 不可混搭') + '</div>' +
+      famsHtml +
+    '</div>';
+  }).join('');
+
+  /* 手風琴展開/收合（每個系列各自獨立展開） */
+  wrap.querySelectorAll('.fam-head').forEach(function (head) {
+    head.addEventListener('click', function (e) {
+      if (e.target.classList.contains('t1') || e.target.closest('.t1')) return; /* 改名時不要順便展開/收合 */
+      var section = head.closest('.fam-section');
+      var willOpen = !section.classList.contains('open');
+      wrap.querySelectorAll('.fam-section').forEach(function (s) { s.classList.remove('open'); });
+      if (willOpen) section.classList.add('open');
+    });
+  });
+
+  /* 名稱：解鎖後才能點兩下改名，Enter或失焦儲存，Esc取消 */
+  wrap.querySelectorAll('.t1').forEach(function (label) {
+    label.classList.toggle('editable', unlocked);
+    label.addEventListener('dblclick', function (e) {
+      e.stopPropagation();
+      if (!unlocked) { pulseLock(); return; }
+      var fam = label.getAttribute('data-fam');
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'fam-rename-input';
+      input.value = familyLabel(fam);
+      label.replaceWith(input);
+      input.focus();
+      input.select();
+
+      function commit() {
+        var v = input.value.trim();
+        familyNames[fam] = v || ('副區 ' + fam);
+        saveNames();
+        renderPalette();
+      }
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { commit(); }
+        else if (e.key === 'Escape') { renderPalette(); }
+      });
+      input.addEventListener('blur', commit);
+    });
+  });
+
+  /* 縮圖：拖曳 + 點選 */
+  wrap.querySelectorAll('.thumb').forEach(function (el) {
+    var info = {
+      family: el.getAttribute('data-fam'),
+      file: el.getAttribute('data-file'),
+      variant: +el.getAttribute('data-variant'),
+      combo: +el.getAttribute('data-combo'),
+      label: el.getAttribute('data-label')
+    };
+    el.addEventListener('dragstart', function (e) {
+      e.dataTransfer.setData('application/json', JSON.stringify(info));
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+    el.addEventListener('click', function () {
+      selectedThumb = (selectedThumb && selectedThumb.file === info.file) ? null : info;
+      renderPalette();
+    });
+  });
+}
+
+/* 重新渲染素材庫時保留使用者目前的頁簽捲動位置與手風琴展開狀態。
+   MSBN 下方副區版配拖曳完成會重畫素材庫；若直接替換 innerHTML，
+   瀏覽器會把原本正在看的位置帶回頂端，拖拉體驗就像頁簽被彈掉。
+   同時記住頁面本身的捲動位置，避免教學模式下被 hash／焦點重設推回頂端。 */
+function renderPalette(options) {
+  options = options || {};
+  var preservePosition = options.preservePosition !== false;
+  var wrap = document.getElementById('palette-scroll');
+  var paletteScrollTop = preservePosition && wrap ? wrap.scrollTop : 0;
+  var paletteScrollLeft = preservePosition && wrap ? wrap.scrollLeft : 0;
+  var pageX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+  var pageY = window.pageYOffset || document.documentElement.scrollTop || 0;
+  var openKeys = [];
+  if (preservePosition && wrap) {
+    wrap.querySelectorAll('.fam-section.open').forEach(function (section) {
+      var fam = section.getAttribute('data-fam') || '';
+      var isSubarea = section.hasAttribute('data-msbn-subarea');
+      openKeys.push((isSubarea ? 'sub:' : 'msbn:') + fam);
+    });
+  }
+
+  function restorePalettePosition() {
+    if (preservePosition && wrap) {
+      wrap.scrollTop = paletteScrollTop;
+      wrap.scrollLeft = paletteScrollLeft;
+      wrap.querySelectorAll('.fam-section').forEach(function (section) {
+        var fam = section.getAttribute('data-fam') || '';
+        var isSubarea = section.hasAttribute('data-msbn-subarea');
+        var key = (isSubarea ? 'sub:' : 'msbn:') + fam;
+        section.classList.toggle('open', openKeys.indexOf(key) !== -1);
+      });
+    } else if (wrap) {
+      wrap.scrollTop = 0;
+      wrap.scrollLeft = 0;
+    }
+    if (window.scrollTo) window.scrollTo(pageX, pageY);
+  }
+
+  renderPaletteContent();
+  restorePalettePosition();
+  if (window.requestAnimationFrame) requestAnimationFrame(restorePalettePosition);
+}
+function lineIcon(name) {
+  var paths = {
+    file: '<path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M9 12h6M9 16h6"/>',
+    grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/>',
+    preview: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m7 15 3-3 2.2 2.2 2.8-3.2 3 3"/>',
+    image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/>',
+    palette: '<circle cx="12" cy="12" r="8"/><circle cx="8.5" cy="10" r="1"/><circle cx="12" cy="7.8" r="1"/><circle cx="15.5" cy="10" r="1"/><path d="M16.5 16.5c-.8.8-1.8 1.2-3 1.2h-1.2"/>',
+    import: '<path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/>',
+    reset: '<path d="M5 8a8 8 0 1 1-.2 7.3"/><path d="M5 3.8v4.5h4.5"/>',
+    download: '<path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 20h16"/>',
+    upload: '<path d="M12 21V10"/><path d="m7.8 13.8 4.2-4.2 4.2 4.2"/><path d="M4 4h16v5"/>',
+    edit: '<path d="M4 16.5V20h3.5L18.8 8.7a2.1 2.1 0 0 0-3-3L4 16.5Z"/><path d="m14.5 7.5 2 2"/>',
+    refresh: '<path d="M20 11a8 8 0 0 0-14.9-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.9 4L21 14"/><path d="M21 19v-5h-5"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
+    up: '<path d="m6 14 6-6 6 6"/><path d="M12 8v11"/>',
+    down: '<path d="m6 10 6 6 6-6"/><path d="M12 5v11"/>',
+    warning: '<path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v5M12 17.5v.1"/>',
+    done: '<path d="m5 12 4 4L19 6"/>',
+    loading: '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 5v5h-5"/>'
+  };
+  return '<svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true">' + (paths[name] || paths.file) + '</svg>';
+}
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ════════════════════════════════════════
+   放置一張圖到畫布（統一入口：拖曳跟點選都走這裡）
+════════════════════════════════════════ */
+function placeImage(info, slotIndex) {
+  var g = groupOf(info.family);
+
+  if (g === 'F') {
+    /* F 群組特殊規則：選了就直接把 4 格全部套上同一張圖。 */
+    state.group = 'F';
+    var n = groupMaxPerRow('F');
+    state.slots = [];
+    for (var i = 0; i < n; i++) state.slots.push(Object.assign({}, info));
+    finishPlacement();
+    return;
+  }
+
+  if (state.group === null) {
+    state.group = g;
+    state.slots = new Array(groupMaxPerRow(g)).fill(null);
+    slotIndex = (slotIndex == null) ? 0 : slotIndex;
+  }
+  if (g !== state.group) {
+    /* 直接切換副區排數：拖入 1排2 版型時，立刻把畫布改成新群組的排版。 */
+    state.group = g;
+    var switchedCount = groupMaxPerRow(g);
+    var switchedSlots = new Array(switchedCount).fill(null);
+    var compatible = (state.slots || []).filter(function (slot) {
+      return slot && groupOf(slot.family) === g;
+    });
+    compatible.slice(0, switchedCount).forEach(function (slot, idx) {
+      switchedSlots[idx] = slot;
+    });
+    slotIndex = Number(slotIndex);
+    if (!isFinite(slotIndex) || slotIndex < 0 || slotIndex >= switchedCount) {
+      slotIndex = compatible.length ? Math.min(compatible.length, switchedCount - 1) : 0;
+    }
+    switchedSlots[slotIndex] = Object.assign({}, info);
+    state.slots = switchedSlots;
+    finishPlacement();
+    return;
+  }
+  if (slotIndex == null) {
+    /* 點選模式沒有指定格子：放進第一個空格 */
+    slotIndex = state.slots.findIndex(function (s) { return !s; });
+    if (slotIndex === -1) slotIndex = 0;
+  }
+  state.slots[slotIndex] = Object.assign({}, info);
+  finishPlacement();
+}
+
+function finishPlacement() {
+  selectedThumb = null;
+  saveState();
+  renderPalette();
+  renderCanvas();
+}
+
+function removeSlot(idx) {
+  state.slots[idx] = null;
+  if (state.slots.every(function (s) { return !s; })) {
+    state.group = null;
+    state.slots = [null, null, null, null];
+  }
+  saveState();
+  renderPalette();
+  renderCanvas();
+}
+
+function clearCanvas() {
+  state.group = null;
+  state.slots = [null, null, null, null];
+  state.msbn = [];
+  selectedThumb = null;
+  saveState();
+  renderPalette();
+  renderCanvas();
+}
+
+/* ════════════════════════════════════════
+   MSBN 區（接在副區下方，合計最多 MSBN_MAX 顆）
+════════════════════════════════════════ */
+function addMsbn(item) {
+  if (state.msbn.length >= MSBN_MAX) {
+    alert('MSBN 最多只能放 ' + MSBN_MAX + ' 顆，先移除一些再加入');
+    return;
+  }
+  state.msbn.push({ file: item.file, cat: item.cat, label: item.label });
+  saveState();
+  renderCanvas();
+  revealNewMsbnRow();
+}
+
+/* ────────────────────────────────────────
+   MSBN 任一格：可以改放「副區版配」
+   ────────────────────────────────────────
+   每一個 MSBN 格除了 MSBN 的圖，也可以從 MSBN 頁簽下方的「副區版配」清單選用，
+   這時候該格會變成一整排副區格子（寬度合計一樣是 1200），
+   規則跟上面副區那一排相同：同一排只能放同一群組、F 系列會直接鋪滿整排。
+──────────────────────────────────────── */
+function isSubRow(m) { return !!(m && m.kind === 'sub'); }
+
+function makeSubRow(info) {
+  var g = groupOf(info.family);
+  var n = groupMaxPerRow(g);
+  var slots = new Array(n).fill(null);
+  if (g === 'F') { for (var i = 0; i < n; i++) slots[i] = Object.assign({}, info); }
+  else { slots[0] = Object.assign({}, info); }
+  return { kind: 'sub', group: g, slots: slots };
+}
+
+/* 把副區的圖放進 MSBN。slotIndex 為 null＝放進指定排的第一個空格。 */
+/*
+ * 把副區的圖放進 MSBN。
+ * slotIndex 為 null＝放進該排第一個空格；rowIndex 為 null＝找同群組的可用副區排，
+ * 找不到才新增一個 MSBN 格。這樣點選副區版配時不會永遠改到第一格，
+ * 拖曳到指定 MSBN 格時也能直接把那一格改成副區版配。
+ */
+function placeSubInMsbn(info, slotIndex, rowIndex) {
+  if (!info || !info.family || !GROUPS[groupOf(info.family)]) return;
+  var g = groupOf(info.family);
+  var targetIndex = (rowIndex == null) ? -1 : rowIndex;
+  var target = targetIndex >= 0 ? state.msbn[targetIndex] : null;
+
+  /* 點選版配：優先填入同群組副區排的空格，避免每次都覆蓋第一個 MSBN。 */
+  if (targetIndex < 0) {
+    for (var ri = 0; ri < state.msbn.length; ri++) {
+      var candidate = state.msbn[ri];
+      if (!isSubRow(candidate) || candidate.group !== g) continue;
+      if ((candidate.slots || []).some(function (s) { return !s; })) {
+        targetIndex = ri;
+        target = candidate;
+        break;
+      }
+    }
+  }
+
+  if (isSubRow(target)) {
+    if (g === 'F' || target.group === 'F') {
+      /* F 不可混搭：指定到不相容的副區排時，整排換成這張。 */
+      if (g !== target.group) {
+        state.msbn[targetIndex] = makeSubRow(info);
+      } else {
+        var fn = groupMaxPerRow(g);
+        target.slots = [];
+        for (var fi = 0; fi < fn; fi++) target.slots.push(Object.assign({}, info));
+      }
+    } else if (g !== target.group) {
+      /* 指定格拖放不同群組時，依副區規則改成該群組的新排。 */
+      state.msbn[targetIndex] = makeSubRow(info);
+    } else {
+      var idx = slotIndex;
+      if (idx == null) {
+        idx = target.slots.findIndex(function (s) { return !s; });
+        if (idx === -1) idx = 0;
+      }
+      if (idx >= 0 && idx < target.slots.length) target.slots[idx] = Object.assign({}, info);
+    }
+  } else if (targetIndex >= 0 && targetIndex < state.msbn.length) {
+    /* 指定到原本是 MSBN 圖的格：直接替換成副區排。 */
+    state.msbn[targetIndex] = makeSubRow(info);
+  } else {
+    /* 點選版配且沒有可共用的副區排：新增到下一個 MSBN 格。 */
+    if (state.msbn.length >= MSBN_MAX) {
+      alert('MSBN 最多只能放 ' + MSBN_MAX + ' 顆，先移除一些再加入');
+      return;
+    }
+    state.msbn.push(makeSubRow(info));
+  }
+
+  selectedThumb = null;
+  saveState();
+  renderPalette();
+  renderCanvas();
+}
+/* 移除副區版配裡的一格；整排都空了就把這一格從 MSBN 區拿掉 */
+function removeMsbnSubSlot(rowIdx, slotIdx) {
+  var row = state.msbn[rowIdx];
+  if (!isSubRow(row)) return;
+  row.slots[slotIdx] = null;
+  if (row.slots.every(function (s) { return !s; })) state.msbn.splice(rowIdx, 1);
+  saveState();
+  renderPalette();
+  renderCanvas();
+}
+
+/* 副區那一排與 MSBN 之間固定夾的一張圖，下載範例圖時也會一起接進去 */
+var MID_BANNER_SRC = 'img/three.jpg';
+function appendMidBanner(stage) {
+  var img = document.createElement('img');
+  img.id = 'mid-banner';
+  img.src = MID_BANNER_SRC;
+  img.alt = '副區與 MSBN 之間的固定版位';
+  img.draggable = false;
+  stage.appendChild(img);
+}
+
+function appendMsbnArea(stage) {
+  var area = document.createElement('div');
+  area.id = 'msbn-area';
+  var count = state.msbn.length;
+
+  var head = document.createElement('div');
+  head.className = 'msbn-area-head';
+  head.innerHTML = '📐 MSBN 區（接在副區下方）　已放 <b>' + count + ' / ' + MSBN_MAX + '</b> 顆'
+    + '　等級：<b>' + esc(currentLevelLabel()) + '</b>';
+  area.appendChild(head);
+
+  /* 版位詳情表裡 MSBN 張數＝0 的等級：整區停用，不畫縮圖也不畫拖放格 */
+  if (MSBN_MAX <= 0) {
+    var off = document.createElement('div');
+    off.className = 'msbn-first-note';
+    off.textContent = '※「' + currentLevelLabel() + '」這個等級不提供 MSBN，此區停用。';
+    area.appendChild(off);
+    stage.appendChild(area);
+    return;
+  }
+
+  /* 有 MSBN 額度時保留至少兩格的畫布高度；空白格本身不進 state，也不占額度。 */
+  area.classList.add('msbn-enabled');
+
+  /* 副區版配的補充說明（紅字）：每一個 MSBN 格都可以改用副區版配 */
+  var firstNote = document.createElement('div');
+  firstNote.className = 'msbn-first-note';
+  firstNote.textContent = MSBN_SUBAREA_NOTE;
+  area.appendChild(firstNote);
+
+  var stack = document.createElement('div');
+  stack.id = 'msbn-stack';
+
+  state.msbn.forEach(function (it, i) {
+    var row = document.createElement('div');
+    row.className = 'msbn-row';
+
+    /* ── MSBN 任一格改放「副區版配」：畫成一整排副區格子 ── */
+    if (isSubRow(it)) {
+      row.className = 'msbn-row sub-row';
+      row.draggable = true; /* 副區版配也是 MSBN 的一格，可和其他列交換位置 */
+      var sw = groupWidth(it.group), sn = groupMaxPerRow(it.group);
+      var sLabel = GROUPS[it.group].families.join('/');
+      row.style.width = (sw * sn) + 'px';
+
+      for (var si = 0; si < sn; si++) {
+        (function (sIdx) {
+          var cell = it.slots[sIdx];
+          var sl = document.createElement('div');
+          sl.className = 'sub-slot';
+          sl.style.width = sw + 'px';
+          if (cell) {
+            sl.innerHTML =
+              '<img src="img/' + esc(cell.file) + '" alt="' + esc(cell.label) + '" draggable="false">' +
+              '<div class="tag">' + esc(cell.family) + '・' + esc(cell.label) + '</div>' +
+              '<button class="rm" title="移除">✕</button>';
+            sl.querySelector('.rm').addEventListener('click', function (e) {
+              e.stopPropagation();
+              removeMsbnSubSlot(i, sIdx);
+            });
+          } else {
+            sl.innerHTML = '<div class="hint"><span class="icon">➕</span>拖曳 ' + esc(sLabel) + ' 系列圖片<br>到這裡</div>';
+          }
+          sl.addEventListener('dragover', function (e) {
+            var types = e.dataTransfer.types;
+            if (!types || Array.prototype.indexOf.call(types, 'application/json') === -1) return; /* 只收副區的圖 */
+            e.preventDefault();
+            e.stopPropagation();
+            sl.classList.add('dragover-ok');
+          });
+          sl.addEventListener('dragleave', function () { sl.classList.remove('dragover-ok', 'dragover-bad'); });
+          sl.addEventListener('drop', function (e) {
+            var d = e.dataTransfer.getData('application/json');
+            if (!d) return;
+            e.preventDefault();
+            e.stopPropagation();
+            sl.classList.remove('dragover-ok', 'dragover-bad');
+            placeSubInMsbn(JSON.parse(d), sIdx, i);
+          });
+          sl.addEventListener('click', function () {
+            if (selectedThumb) placeSubInMsbn(selectedThumb, sIdx, i);
+          });
+          row.appendChild(sl);
+        })(si);
+      }
+
+      var stag = document.createElement('div');
+      stag.className = 'mtag';
+      stag.textContent = 'MSBN 第 ' + (i + 1) + ' 格：副區版配（' + sLabel + '）';
+      row.appendChild(stag);
+
+      var subCtl = document.createElement('div');
+      subCtl.className = 'mctl';
+      subCtl.innerHTML =
+        (i > 0 ? '<button data-act="up" title="上移">▲</button>' : '') +
+        (i < state.msbn.length - 1 ? '<button data-act="down" title="下移">▼</button>' : '') +
+        '<button data-act="rm" title="移除">✕</button>';
+      subCtl.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var act = b.getAttribute('data-act');
+          if (act === 'rm') state.msbn.splice(i, 1);
+          else if (act === 'up') { var st = state.msbn[i - 1]; state.msbn[i - 1] = state.msbn[i]; state.msbn[i] = st; }
+          else { var sb = state.msbn[i + 1]; state.msbn[i + 1] = state.msbn[i]; state.msbn[i] = sb; }
+          saveState();
+          renderCanvas();
+        });
+      });
+      row.appendChild(subCtl);
+
+      /* 副區排也能在 MSBN 區內拖曳交換位置。 */
+      row.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('application/x-msbn-move', String(i));
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragover', function (e) {
+        var types = e.dataTransfer.types;
+        var hasNew = types && Array.prototype.indexOf.call(types, 'application/x-msbn') !== -1;
+        var hasMove = types && Array.prototype.indexOf.call(types, 'application/x-msbn-move') !== -1;
+        var hasSub = types && Array.prototype.indexOf.call(types, 'application/json') !== -1;
+        if (!hasNew && !hasMove && !hasSub) return;
+        e.preventDefault();
+        row.classList.add('drag-target');
+      });
+      row.addEventListener('dragleave', function () { row.classList.remove('drag-target'); });
+      row.addEventListener('drop', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        row.classList.remove('drag-target');
+        var sub = e.dataTransfer.getData('application/json');
+        if (sub) { placeSubInMsbn(JSON.parse(sub), null, i); return; }
+        var mv = e.dataTransfer.getData('application/x-msbn-move');
+        if (mv !== '') {
+          var from = +mv;
+          if (from !== i && state.msbn[from]) {
+            var tmpSub = state.msbn[from];
+            state.msbn[from] = state.msbn[i];
+            state.msbn[i] = tmpSub;
+            saveState();
+            renderCanvas();
+          }
+          return;
+        }
+        var d = e.dataTransfer.getData('application/x-msbn');
+        if (!d) return;
+        state.msbn[i] = JSON.parse(d);
+        saveState();
+        renderCanvas();
+      });
+      stack.appendChild(row);
+      return;
+    }
+
+    row.draggable = true; /* 畫布內可以互相拖曳交換位置 */
+    /* 圖片 height:auto＝用原始高度顯示（例如75px的細條就維持75px），不強制拉到430 */
+    row.innerHTML =
+      '<img src="msbn-img/' + esc(it.file) + '" alt="' + esc(it.label) + '" draggable="false">' +
+      '<div class="mtag">MSBN ' + esc(it.cat) + '・' + esc(it.label) + '（拖曳可交換位置）</div>' +
+      '<div class="mctl">' +
+        (i > 0 ? '<button data-act="up" title="上移">▲</button>' : '') +
+        (i < state.msbn.length - 1 ? '<button data-act="down" title="下移">▼</button>' : '') +
+        '<button data-act="rm" title="移除">✕</button>' +
+      '</div>';
+    row.querySelectorAll('.mctl button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var act = b.getAttribute('data-act');
+        if (act === 'rm') state.msbn.splice(i, 1);
+        else if (act === 'up') { var t = state.msbn[i - 1]; state.msbn[i - 1] = state.msbn[i]; state.msbn[i] = t; }
+        else { var t2 = state.msbn[i + 1]; state.msbn[i + 1] = state.msbn[i]; state.msbn[i] = t2; }
+        saveState();
+        renderCanvas();
+      });
+    });
+
+    /* 從畫布拖起：帶自己的位置編號（交換位置用） */
+    row.addEventListener('dragstart', function (e) {
+      e.dataTransfer.setData('application/x-msbn-move', String(i));
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    /* 拖到這一列上：素材庫的圖＝覆蓋這一格；畫布別列拖來＝交換位置 */
+    row.addEventListener('dragover', function (e) {
+      var types = e.dataTransfer.types;
+      var hasNew = types && Array.prototype.indexOf.call(types, 'application/x-msbn') !== -1;
+      var hasMove = types && Array.prototype.indexOf.call(types, 'application/x-msbn-move') !== -1;
+      /* 任一 MSBN 格都收副區的圖（拖進來就把這一格換成副區版配） */
+      var hasSub = types && Array.prototype.indexOf.call(types, 'application/json') !== -1;
+      if (!hasNew && !hasMove && !hasSub) return;
+      e.preventDefault();
+      row.classList.add('drag-target');
+    });
+    row.addEventListener('dragleave', function () { row.classList.remove('drag-target'); });
+    row.addEventListener('drop', function (e) {
+      e.preventDefault();
+      row.classList.remove('drag-target');
+      var sub = e.dataTransfer.getData('application/json');
+      if (sub) { placeSubInMsbn(JSON.parse(sub), null, i); return; }
+      var mv = e.dataTransfer.getData('application/x-msbn-move');
+      if (mv !== '') {
+        var from = +mv;
+        if (from !== i && state.msbn[from]) { /* 交換位置 */
+          var tmp = state.msbn[from];
+          state.msbn[from] = state.msbn[i];
+          state.msbn[i] = tmp;
+          saveState();
+          renderCanvas();
+        }
+        return;
+      }
+      var d = e.dataTransfer.getData('application/x-msbn');
+      if (!d) return;
+      state.msbn[i] = JSON.parse(d); /* 素材庫拖來：直接覆蓋這一格 */
+      saveState();
+      renderCanvas();
+    });
+
+    stack.appendChild(row);
+  });
+  area.appendChild(stack);
+
+  var drop = document.createElement('div');
+  drop.id = 'msbn-drop';
+  var remaining = MSBN_MAX - count;
+  /* MSBN 尚未放滿時，這個拖放區可加入 MSBN 或副區版配。 */
+  var firstLine = '<div class="red-note">' + esc(MSBN_SUBAREA_NOTE) + '</div>';
+  if (count >= MSBN_MAX) {
+    drop.classList.add('full');
+    drop.innerHTML = firstLine + '<div>MSBN 已滿 ' + MSBN_MAX + ' 顆</div><div class="quota">剩餘 <b>0</b> 顆額度</div><div>先移除才能再放</div>';
+  } else {
+    drop.innerHTML = firstLine +
+      '<div class="red-note">（左側 MSBN 頁簽下方的「副區版配」可放入任一 MSBN 格）</div>' +
+      '<div><b>把 MSBN 圖片拖到這裡</b>（或在左側 MSBN 頁簽點一下圖片直接加入）</div>' +
+      '<div class="quota">剩餘 <b>' + remaining + '</b> 顆額度</div>' +
+      '<div>拖到上方已放的圖上＝覆蓋那一格；畫布內互拖＝交換位置</div>';
+  }
+  drop.addEventListener('dragover', function (e) {
+    var types = e.dataTransfer.types;
+    var hasNew = types && Array.prototype.indexOf.call(types, 'application/x-msbn') !== -1;
+    var hasMove = types && Array.prototype.indexOf.call(types, 'application/x-msbn-move') !== -1;
+    /* 副區版配也可從這個區域加入下一個可用 MSBN 格。 */
+    var hasSub = types && Array.prototype.indexOf.call(types, 'application/json') !== -1;
+    if (!hasNew && !hasMove && !hasSub) return;
+    e.preventDefault();
+    drop.classList.add((hasNew && count >= MSBN_MAX) ? 'dragover-bad' : 'dragover-ok');
+  });
+  drop.addEventListener('dragleave', function () { drop.classList.remove('dragover-ok', 'dragover-bad'); });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault();
+    drop.classList.remove('dragover-ok', 'dragover-bad');
+    var sub = e.dataTransfer.getData('application/json');
+    if (sub) { placeSubInMsbn(JSON.parse(sub), null); return; }
+    var mv = e.dataTransfer.getData('application/x-msbn-move');
+    if (mv !== '') { /* 畫布的列拖到底部拖放區＝移到最後 */
+      var moved = state.msbn.splice(+mv, 1)[0];
+      if (moved) { state.msbn.push(moved); saveState(); renderCanvas(); revealNewMsbnRow(); }
+      return;
+    }
+    var d = e.dataTransfer.getData('application/x-msbn');
+    if (!d) return;
+    addMsbn(JSON.parse(d));
+  });
+  area.appendChild(drop);
+
+  /* 尚未選任何 MSBN 時，畫布預設先顯示兩格。
+     第一格是上面的實際拖放區；第二格只補足畫布高度，避免點 MSBN 頁簽時，
+     因最下方空間不足無法捲到判斷線而被自動切回「副區」。第一張放入後，
+     實際版位＋下一個拖放區自然仍維持至少兩格。 */
+  if (count === 0 && MSBN_MAX > 1) {
+    var empty2 = document.createElement('div');
+    empty2.id = 'msbn-empty-slot-2';
+    empty2.setAttribute('aria-hidden', 'true');
+    empty2.innerHTML = '<div class="slot-no">MSBN 第 2 格</div>'
+      + '<div>加入第 1 格後，可繼續在這個位置放下一個版位</div>'
+      + '<div>此空格不計入已選數量，也不會匯出工單</div>';
+    area.appendChild(empty2);
+  }
+
+  stage.appendChild(area);
+}
+
+/* ════════════════════════════════════════
+   畫布渲染
+════════════════════════════════════════ */
+function renderCanvas() {
+  refreshGeneratorImportButton();
+  var stage = document.getElementById('stage');
+  var info = document.getElementById('canvas-info');
+
+  var inner = document.createElement('div');
+  inner.id = 'stage-inner';
+  applyCanvasZoom(inner);
+
+  if (state.group === null) {
+    inner.innerHTML =
+      '<div id="empty-drop">' +
+        '<div class="hint"><span class="icon">🗳️</span><b>把任意一張圖拖到這裡開始排版</b>' +
+        '選第一張圖之後，畫布會依照那個群組自動決定可以放幾格</div>' +
+      '</div>';
+    stage.innerHTML = '';
+    stage.appendChild(inner);
+    var dz = document.getElementById('empty-drop');
+    dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('dragover-ok'); });
+    dz.addEventListener('dragleave', function () { dz.classList.remove('dragover-ok'); });
+    dz.addEventListener('drop', function (e) {
+      e.preventDefault(); dz.classList.remove('dragover-ok');
+      var data = e.dataTransfer.getData('application/json');
+      if (!data) return;
+      placeImage(JSON.parse(data), 0);
+    });
+    appendMidBanner(inner);
+    appendMsbnArea(inner); /* MSBN 區固定接在副區（此時是空的拖放區）下方 */
+    info.innerHTML = '<span>尚未選擇系列，畫布是空的</span>' +
+      '<span>MSBN：<b>' + state.msbn.length + ' / ' + MSBN_MAX + '</b></span>';
+    return;
+  }
+
+  var g = state.group, w = groupWidth(g), n = groupMaxPerRow(g);
+  var groupLabel = GROUPS[g].families.join('/');
+  var rowEl = document.createElement('div');
+  rowEl.id = 'row';
+
+  for (var i = 0; i < n; i++) {
+    var item = state.slots[i];
+    var slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.style.width = w + 'px';
+
+    if (item) {
+      slot.innerHTML =
+        '<img src="img/' + item.file + '" alt="' + esc(item.label) + '">' +
+        '<div class="tag">' + item.family + '・' + esc(item.label) + '</div>' +
+        '<button class="rm" title="移除">✕</button>';
+      slot.querySelector('.rm').addEventListener('click', function (idx) {
+        return function () { removeSlot(idx); };
+      }(i));
+    } else {
+      slot.innerHTML = '<div class="hint"><span class="icon">➕</span>拖曳 ' + groupLabel + ' 系列圖片<br>到這裡</div>';
+    }
+
+    (function (idx) {
+      slot.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        slot.classList.add('dragover-ok');
+      });
+      slot.addEventListener('dragleave', function () {
+        slot.classList.remove('dragover-ok', 'dragover-bad');
+      });
+      slot.addEventListener('drop', function (e) {
+        e.preventDefault();
+        slot.classList.remove('dragover-ok', 'dragover-bad');
+        var data = e.dataTransfer.getData('application/json');
+        if (!data) return;
+        var dropped = JSON.parse(data);
+        placeImage(dropped, idx);
+      });
+      slot.addEventListener('click', function () {
+        if (selectedThumb) placeImage(selectedThumb, idx);
+      });
+    })(i);
+
+    rowEl.appendChild(slot);
+  }
+
+  stage.innerHTML = '';
+  inner.appendChild(rowEl);
+  appendMidBanner(inner);
+  appendMsbnArea(inner); /* MSBN 區固定接在副區那一排的下方 */
+  stage.appendChild(inner);
+
+  var filledCount = state.slots.filter(Boolean).length;
+  var usedFams = state.slots.filter(Boolean).map(function (s) { return s.family; })
+    .filter(function (v, idx, arr) { return arr.indexOf(v) === idx; });
+  var totalW = n * w;
+  info.innerHTML =
+    '<span>群組：<b>' + groupLabel + '</b>' + (GROUPS[g].families.length > 1 ? '（可混搭）' : '（不可混搭）') + '</span>' +
+    '<span>目前用到：<b>' + (usedFams.length ? usedFams.join('、') : '－') + '</b></span>' +
+    '<span>單格尺寸：<b>' + w + '×' + FAMILIES[GROUPS[g].families[0]].height + '</b></span>' +
+    '<span>已放：<b>' + filledCount + ' / ' + n + '</b></span>' +
+    '<span>MSBN：<b>' + state.msbn.length + ' / ' + MSBN_MAX + '</b></span>' +
+    '<span>整排寬度：<b>' + totalW + 'px</b>' + (totalW > 1200 ? ' ⚠ 超過1200' : '') + '</span>';
+}
+
+/* ════════════════════════════════════════
+   工具列
+════════════════════════════════════════ */
+/* 畫布顯示比例：預設 80%，選擇會記在本機，重開頁面沿用 */
+var CANVAS_ZOOM_KEY = 'wo_canvas_zoom';
+var canvasZoom = parseFloat(localStorage.getItem(CANVAS_ZOOM_KEY)) || 0.8;
+/* 套用縮放：zoom 縮小整個畫布，同時把 --zinv（=1/zoom）寫進去，
+   讓 CSS 裡用 calc(px * var(--zinv)) 的文字反向放大，視覺上維持 100% 的字級。 */
+function applyCanvasZoom(el) {
+  if (!el) return;
+  el.style.zoom = canvasZoom;
+  el.style.setProperty('--zinv', String(1 / (canvasZoom || 1)));
+}
+(function () {
+  var sel = document.getElementById('canvas-zoom');
+  sel.value = String(canvasZoom);
+  if (sel.value === '') { canvasZoom = 0.8; sel.value = '0.8'; } /* 存了奇怪的值就回到預設 */
+  sel.addEventListener('change', function () {
+    canvasZoom = parseFloat(sel.value) || 0.8;
+    try { localStorage.setItem(CANVAS_ZOOM_KEY, String(canvasZoom)); } catch (e) {}
+    applyCanvasZoom(document.getElementById('stage-inner')); /* 直接套用，不用整個重畫 */
+  });
+})();
+/* ════════════════════════════════════════
+   等級下拉：切換等級 → MSBN 可放數量跟著變
+════════════════════════════════════════ */
+(function () {
+  var sel = document.getElementById('level-select');
+  var hint = document.getElementById('level-hint');
+  if (!sel) return;
+
+  function paintHint() {
+    hint.innerHTML = (MSBN_MAX > 0)
+      ? 'MSBN 區可放 <b>' + MSBN_MAX + '</b> 顆（依等級自動調整）'
+      : '此等級<b>不提供 MSBN</b>（版位詳情表 MSBN 張數＝0）';
+  }
+
+  sel.value = currentLevelId;
+  if (sel.value === '') { currentLevelId = LEVELS[0].id; sel.value = currentLevelId; }
+  MSBN_MAX = getLevel(currentLevelId).msbnMax;
+  paintHint();
+
+  /* fromRemote＝曝光資源那頁改的，不再回傳訊息，避免兩邊互相通知形成迴圈 */
+  function applyLevelId(id, fromRemote) {
+    var next = getLevel(id);
+    var newMax = next.msbnMax;
+    if (next.id === currentLevelId) { sel.value = next.id; return; }
+
+    /* 新等級可放的數量變少、而且畫布上已經超過 → 問過再砍掉多的 */
+    if (state.msbn.length > newMax) {
+      var over = state.msbn.length - newMax;
+      if (!confirm('「' + next.label + '」的 MSBN 只能放 ' + newMax + ' 顆，\n'
+        + '目前畫布上有 ' + state.msbn.length + ' 顆，會移除最後 ' + over + ' 顆。\n\n確定要切換嗎？')) {
+        sel.value = currentLevelId; /* 取消就回到原本的選項 */
+        if (fromRemote) broadcastLevel();  /* 曝光資源那邊也要跟著退回原本的等級 */
+        return;
+      }
+      state.msbn = state.msbn.slice(0, newMax);
+    }
+
+    currentLevelId = next.id;
+    MSBN_MAX = newMax;
+    sel.value = currentLevelId;
+    try { localStorage.setItem(LEVEL_KEY, currentLevelId); } catch (e) {}
+    saveState();
+    paintHint();
+    renderPalette();  /* 素材庫上「畫布合計最多 N 顆」的字要跟著更新 */
+    renderCanvas();
+    syncBottomLevelPreset();
+    if (!fromRemote) broadcastLevel();
+  }
+
+  /* 把目前等級丟給「曝光資源」那個 iframe（兩邊的等級下拉連動） */
+  function broadcastLevel() {
+    var frame = document.getElementById('exposure-frame');
+    if (!frame || !frame.contentWindow) return;
+    try { frame.contentWindow.postMessage({ type: 'wo-level', level: currentLevelId }, '*'); } catch (e) {}
+  }
+  window.woBroadcastLevel = broadcastLevel;
+
+  sel.addEventListener('change', function () { applyLevelId(sel.value, false); });
+
+  /* 曝光資源那頁（iframe）改了等級 → 這邊跟著改 */
+  window.addEventListener('message', function (e) {
+    if (e.data && e.data.type === 'wo-level' && e.data.level) applyLevelId(e.data.level, true);
+  });
+})();
+
+document.getElementById('btn-clear').addEventListener('click', clearCanvas);
+document.getElementById('btn-json').addEventListener('click', exportWorkOrderJSON);
+document.getElementById('btn-upload-generator-snapshot').addEventListener('click', function () {
+  document.getElementById('generator-snapshot-input').click();
+});
+document.getElementById('generator-snapshot-input').addEventListener('change', function (e) {
+  if (e.target.files && e.target.files[0]) handleGeneratorSnapshotFile(e.target.files[0]);
+});
+document.getElementById('btn-sample').addEventListener('click', function () {
+  exportSampleImage().then(function () { appLoadingFinish('範例圖已下載'); });
+});
+function reportWorkOrderExportError(err) {
+  var message = err && err.message ? err.message : String(err || '未知錯誤');
+  console.error('BODA 工單試算表輸出失敗：', err);
+  appLoadingFail('工單試算表輸出失敗');
+  alert('工單試算表輸出失敗：' + message);
+}
+document.getElementById('btn-xlsx').addEventListener('click', function () {
+  Promise.resolve()
+    .then(function () { return exportWorkOrderXlsx(); })
+    .then(function () { appLoadingFinish('工單試算表已下載'); })
+    .catch(reportWorkOrderExportError);
+});
+document.getElementById('maint-download-all-xlsx').addEventListener('click', exportAllPlacementsXlsx);
+document.getElementById('btn-all').addEventListener('click', function () {
+  if (state.group === null && !state.msbn.length) {
+    alert('畫布是空的，先放幾張圖再下載');
+    appLoadingFinish('沒有可輸出的內容');
+    return;
+  }
+  var btn = this;
+  btn.disabled = true; btn.textContent = '⏳ 輸出中…';
+  var bottomExportResult = null;
+  requestGeneratorBottomExportAll().then(function (result) {
+    bottomExportResult = result || { ok: false };
+    return exportSampleImage();
+  }).then(function () {
+    exportWorkOrderJSON();          /* 排版暫存檔 */
+    return exportWorkOrderXlsx();   /* 工單（副區/MSBN 有哪個就出哪個工作表） */
+  }).then(function () {
+    btn.disabled = false; btn.textContent = '⬇ 下載全部';
+    appLoadingFinish(bottomExportResult && bottomExportResult.ok
+      ? '全部檔案已下載（含吸底試算表與圖片）'
+      : '主工具檔案已下載；吸底圖片未能輸出');
+  }).catch(function (err) {
+    btn.disabled = false; btn.textContent = '⬇ 下載全部';
+    reportWorkOrderExportError(err);
+  });
+});
+
+/* ════════════════════════════════════════
+   編輯權限鎖：鑰匙圖示 → 4碼密碼 → 解鎖後才能改名
+════════════════════════════════════════ */
+var lockFab = document.getElementById('lock-fab');
+var pinOverlay = document.getElementById('pin-overlay');
+var pinInput = document.getElementById('pin-input');
+var pinError = document.getElementById('pin-error');
+var editBanner = document.getElementById('edit-banner');
+
+function pulseLock() {
+  lockFab.classList.remove('pulse');
+  void lockFab.offsetWidth; /* 重觸發動畫 */
+  lockFab.classList.add('pulse');
+}
+
+function updateLockUI() {
+  lockFab.textContent = unlocked ? '🔓' : '🔒';
+  lockFab.classList.toggle('unlocked', unlocked);
+  editBanner.classList.toggle('show', unlocked);
+}
+
+function openPin() {
+  pinInput.value = '';
+  pinError.classList.remove('show');
+  pinOverlay.classList.add('show');
+  setTimeout(function () { pinInput.focus(); }, 50);
+}
+function closePin() { pinOverlay.classList.remove('show'); }
+
+function trySubmitPin() {
+  if (pinInput.value === EDIT_PIN) {
+    unlocked = true;
+    try { sessionStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {}
+    closePin();
+    updateLockUI();
+    renderPalette();
+  } else {
+    pinError.classList.add('show');
+    pinInput.value = '';
+    pinInput.focus();
+  }
+}
+
+lockFab.addEventListener('click', function () {
+  if (unlocked) { openRelockConfirm(); } else { openPin(); }
+});
+function openRelockConfirm() { relock(); }
+function relock() {
+  unlocked = false;
+  try { sessionStorage.removeItem(UNLOCK_KEY); } catch (e) {}
+  updateLockUI();
+  renderPalette();
+}
+
+document.getElementById('pin-cancel').addEventListener('click', closePin);
+document.getElementById('pin-submit').addEventListener('click', trySubmitPin);
+pinInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') trySubmitPin(); });
+pinOverlay.addEventListener('click', function (e) { if (e.target === pinOverlay) closePin(); });
+
+document.getElementById('btn-relock').addEventListener('click', relock);
+document.getElementById('btn-export-config').addEventListener('click', exportConfig);
+
+/* ════════════════════════════════════════
+   頁面切換：首頁 / 工單生成器 / 匯入工單
+════════════════════════════════════════ */
+var VIEW_STORAGE_KEY = 'wo_last_view';
+var VALID_VIEWS = ['home', 'generator', 'exposure', 'import', 'bottom', 'maint'];
+
+/* ════════════════════════════════════════
+   維修頁：把所有版位一次列出來測試
+   ────────────────────────────────────────
+   用途是「拿實際會跑的那條路徑」檢查每個版位：拖圖片進去、文字大小、
+   有沒有跑版或被裁切。所以它跟匯入工單共用同一份渲染與互動邏輯
+   （bindCanvasInteractions），只是資料放在自己的 maintColumns 裡、
+   不會寫進工單的 localStorage 暫存 —— 在這裡怎麼測都不會弄壞正在做的工單。
+
+   也會把 blocks/index.js 沒列到、但資料夾裡真的存在的版位一起載進來標示出來：
+   那些版位程式平常根本載不到，只有這一頁看得見。
+════════════════════════════════════════ */
+var maintColumns = [];
+var maintLoaded = false;
+var maintUnregistered = [];   /* 資料夾存在但 blocks/index.js 沒列到的 id */
+var maintDuplicates = {};     /* 未註冊 id → 內容完全相同的已註冊 id */
+
+/* 未註冊版位的 id 推法：已註冊的 id 砍掉最後一段就是候選
+   （subarea_A_1_1 → subarea_A_1）。抓不到的會 404，無害，靜靜跳過。 */
+function maintCandidateIds(registered) {
+  var seen = {};
+  var out = [];
+  registered.forEach(function (id) {
+    var base = id.replace(/_[^_]+$/, '');
+    if (base === id || base.indexOf('_') === -1) return;
+    if (registered.indexOf(base) !== -1 || seen[base]) return;
+    seen[base] = true;
+    out.push(base);
+  });
+  return out;
+}
+
+/* 把候選版位額外載進渲染引擎。全部嘗試完才回呼（成功或 404 都算完成）。 */
+function maintLoadExtraBlocks(candidates, onDone) {
+  var remain = candidates.length;
+  var total = candidates.length;
+  var completed = 0;
+  var found = [];
+  if (!remain) { onDone(found); return; }
+  candidates.forEach(function (id) {
+    fetch('blocks/' + id + '/block.json?t=' + Date.now())
+      .then(function (r) { if (!r.ok) throw new Error('404'); return r.json(); })
+      .then(function (schema) {
+        if (schema && schema.id) {
+          BNSchemaRenderer.registerFromSchema(schema);
+          found.push(schema.id);
+        }
+      })
+      .catch(function () { /* 這個候選不存在，正常情況 */ })
+      .then(function () {
+        completed++;
+        appLoadingUpdate(12 + Math.round((completed / Math.max(1, total)) * 78),
+          'LOADING · 維修區版位', '已檢查 ' + completed + '/' + total + ' 個額外版位');
+        if (--remain === 0) onDone(found);
+      });
+  });
+}
+
+/* 「字數上限」測試文字：用一二三四…排到剛好等於上限字數，
+   這樣可以直接用眼睛數 —— 少了一個字就是被裁掉了。 */
+var MAINT_COUNT_CHARS = '一二三四五六七八九十';
+function maintLimitText(n) {
+  var s = '';
+  for (var i = 0; i < n; i++) s += MAINT_COUNT_CHARS.charAt(i % MAINT_COUNT_CHARS.length);
+  return s;
+}
+
+/* 依「文字模式」產生一個版位的測試資料。圖片一律留空，才有空框可以拖圖進去測。
+
+   文字模式：
+     design（預設）＝PS 設計稿上原本寫的字，例如「品名一排最多8字」「逛逛去」。
+                    看得出這一欄是什麼、限幾個字，也跟設計稿參考圖直接對得起來。
+                    這是從新版 CSS 帶進 block.json 的 designText，
+                    沒有 designText 的欄位（副區）就退回「字數上限」那套。
+     limit         ＝一二三四…排到剛好等於上限字數，用來數有沒有被裁掉。
+     default       ＝版位自己的預設示意文字（匯入工單沒填時會看到的那個）。
+     empty         ＝全部留空，只看框。 */
+function maintDataFor(blockId, textMode) {
+  var def = BNCore.getBlock(blockId);
+  var data = BNCore.defaultData(blockId);
+  if (!def) return data;
+  def.fields.forEach(function (f) {
+    if (f.type === 'image') { data[f.key] = ''; return; }
+    if (f.type !== 'text') return;
+    if (textMode === 'empty') { data[f.key] = ''; return; }
+    if (textMode === 'design') {
+      if (f.designText) data[f.key] = f.designText;
+      else if (f.maxLength) data[f.key] = maintLimitText(f.maxLength);
+      return;
+    }
+    if (textMode === 'limit' && f.maxLength) data[f.key] = maintLimitText(f.maxLength);
+    /* 'default' 或沒有字數上限 → 保留 defaultData 帶進來的預設示意文字 */
+  });
+  return data;
+}
+
+function maintFamilyOf(id) {
+  if (id.indexOf('subarea') === 0) return 'subarea';
+  if (id.indexOf('msbn') === 0) return 'msbn';
+  return 'other';
+}
+
+var maintExposureLayouts = null;
+var maintExposureLoading = false;
+var maintExposureRequest = 0;
+
+function parseMaintExposureLayouts(source){
+  var m = String(source || '').match(/var\s+BN_LAYOUTS\s*=\s*\[([\s\S]*?)\]/);
+  if(!m) return [];
+  var out = [], seen = {};
+  m[1].replace(/["']([^"']+\.html)["']/g, function(_, file){
+    file = String(file || '').trim();
+    if(!file || seen[file]) return;
+    seen[file] = true;
+    out.push({file:file, name:file.replace(/\.html$/i,'')});
+  });
+  return out;
+}
+function applyMaintExposureFrameSize(frame, w, h){
+  if(!frame) return;
+  var zoom = parseFloat(document.getElementById('maint-zoom').value) || 1;
+  w = Math.max(100, parseFloat(w) || 1200);
+  h = Math.max(100, parseFloat(h) || 440);
+  frame.style.width = w + 'px';
+  frame.style.height = h + 'px';
+  frame.style.transform = 'scale(' + zoom + ')';
+  var wrap = frame.parentElement;
+  if(wrap){
+    wrap.style.width = Math.ceil(w * zoom) + 'px';
+    wrap.style.height = Math.ceil(h * zoom) + 'px';
+  }
+}
+function renderMaintExposureList(){
+  var listEl = document.getElementById('maint-list');
+  var statEl = document.getElementById('maint-stat');
+  var warnEl = document.getElementById('maint-warn');
+  if(!listEl) return;
+  if(warnEl) warnEl.innerHTML = '';
+  if(!maintExposureLayouts){
+    listEl.innerHTML = '<div class="maint-exposure-loading">正在載入曝光資源所有版位…</div>';
+    if(statEl) statEl.textContent = '正在載入曝光資源版位…';
+    if(!maintExposureLoading) ensureMaintExposureLoaded();
+    return;
+  }
+  var zoom = parseFloat(document.getElementById('maint-zoom').value) || 1;
+  var html = '<div class="mt-group">曝光資源所有版位（' + maintExposureLayouts.length + '）</div>';
+  maintExposureLayouts.forEach(function(layout, idx){
+    var frameId = 'maint-exposure-frame-' + idx;
+    var w = 1200, h = 440;
+    html += '<div class="mt-item maint-exposure-item">' +
+      '<div class="mt-head"><span class="mt-name">' + esc(layout.name) + '</span>' +
+      '<span class="mt-id">曝光資源</span></div>' +
+      '<div class="mt-stage-wrap maint-exposure-wrap" style="width:' + Math.ceil(w * zoom) + 'px;height:' + Math.ceil(h * zoom) + 'px;">' +
+        '<iframe id="' + frameId + '" class="maint-exposure-frame" title="' + esc(layout.name) + ' 維修預覽"' +
+          ' src="jbp/html/' + encodeURIComponent(layout.file) + '?bnid=' + (70000 + idx) + '"' +
+          ' style="width:' + w + 'px;height:' + h + 'px;transform:scale(' + zoom + ');"></iframe>' +
+      '</div></div>';
+  });
+  listEl.innerHTML = html;
+  if(statEl) statEl.textContent = '共 ' + maintExposureLayouts.length + ' 個曝光資源版位；目前顯示 ' + maintExposureLayouts.length + ' 個';
+  listEl.querySelectorAll('.maint-exposure-frame').forEach(function(frame){
+    frame.addEventListener('load', function(){
+      applyMaintExposureFrameSize(frame, frame.dataset.w || 1200, frame.dataset.h || 440);
+    });
+  });
+  renderMaintColorPanel();
+}
+function ensureMaintExposureLoaded(){
+  if(maintExposureLoading || maintExposureLayouts) return;
+  maintExposureLoading = true;
+  var request = ++maintExposureRequest;
+  fetch('jbp/js/index.js?t=' + Date.now(), {cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
+    .then(function(source){
+      if(request !== maintExposureRequest) return;
+      maintExposureLayouts = parseMaintExposureLayouts(source);
+      maintExposureLoading = false;
+      renderMaintExposureList();
+    })
+    .catch(function(){
+      if(request !== maintExposureRequest) return;
+      maintExposureLayouts = [];
+      maintExposureLoading = false;
+      var listEl = document.getElementById('maint-list');
+      var statEl = document.getElementById('maint-stat');
+      if(listEl) listEl.innerHTML = '<div class="maint-exposure-loading">讀不到曝光資源版位清單，請重新載入維修區。</div>';
+      if(statEl) statEl.textContent = '曝光資源版位清單載入失敗';
+    });
+}
+window.addEventListener('message', function(e){
+  if(!e.data || e.data.type !== 'bn-iframe-ready' || !e.source) return;
+  document.querySelectorAll('.maint-exposure-frame').forEach(function(frame){
+    if(frame.contentWindow !== e.source) return;
+    frame.dataset.w = e.data.w || 1200;
+    frame.dataset.h = e.data.h || 440;
+    applyMaintExposureFrameSize(frame, frame.dataset.w, frame.dataset.h);
+  });
+});
+
+function renderMaintList() {
+  var listEl = document.getElementById('maint-list');
+  var statEl = document.getElementById('maint-stat');
+  var warnEl = document.getElementById('maint-warn');
+  if (!listEl) return;
+
+  var textMode = document.getElementById('maint-text').value;
+  var filter = document.getElementById('maint-filter').value;
+  if(filter === 'exposure'){ renderMaintExposureList(); return; }
+  var zoom = parseFloat(document.getElementById('maint-zoom').value) || 1;
+
+  var ids = BNCore.getBlocks().map(function (b) { return b.id; }).sort();
+  var groups = { subarea: [], msbn: [], other: [] };
+  ids.forEach(function (id) { groups[maintFamilyOf(id)].push(id); });
+
+  /* 未註冊的說明框 */
+  if (maintUnregistered.length) {
+    var dupIds = Object.keys(maintDuplicates);
+    var identical = dupIds.filter(function (id) { return maintDuplicates[id].diff === 0; });
+    warnEl.innerHTML = '<div class="mw-box">⚠ 有 <b>' + maintUnregistered.length +
+      '</b> 個版位資料夾存在，但 <b>blocks/index.js 沒有列到</b>，' +
+      '所以平常程式完全載不到它們（只有這一頁會另外載進來）。' +
+      (dupIds.length ? '<br>這 <b>' + dupIds.length + '</b> 個都對得到一個同一張設計稿的已註冊版位，' +
+        '其中 <b>' + identical.length + '</b> 個內容完全一樣、其餘只差幾個圖層，' +
+        '看起來是舊命名留下來的殘檔：' +
+        '<div class="mw-ids">' + dupIds.map(function (id) {
+          var d = maintDuplicates[id];
+          return esc(id) + ' → ' + esc(d.twin) +
+            (d.diff === 0 ? '（完全相同）' : '（' + d.diff + ' 個圖層有差異）');
+        }).join('<br>') + '</div>' : '') +
+      '</div>';
+  } else {
+    warnEl.innerHTML = '';
+  }
+
+  var html = '';
+  var shown = 0;
+  [['subarea', '副區'], ['msbn', 'MSBN'], ['other', '其他']].forEach(function (g) {
+    var famKey = g[0];
+    var list = groups[famKey];
+    if (!list.length) return;
+    if (filter !== 'all' && filter !== 'unreg' && filter !== famKey) return;
+    var rows = '';
+    list.forEach(function (id) {
+      var isUnreg = maintUnregistered.indexOf(id) !== -1;
+      if (filter === 'unreg' && !isUnreg) return;
+      var def = BNCore.getBlock(id);
+      if (!def) return;
+      shown++;
+      rows += '<div class="mt-item' + (isUnreg ? ' is-unreg' : '') + '" data-block="' + esc(id) + '">' +
+        '<div class="mt-head">' +
+          '<span class="mt-name">' + esc(def.name || id) + '</span>' +
+          '<span class="mt-id">' + esc(id) + '</span>' +
+          '<span class="mt-size">' + def.width + '×' + def.height + '</span>' +
+          (isUnreg ? '<span class="mt-badge">未註冊' +
+            (maintDuplicates[id]
+              ? '・' + (maintDuplicates[id].diff === 0 ? '與 ' + esc(maintDuplicates[id].twin) + ' 完全相同'
+                : '近似 ' + esc(maintDuplicates[id].twin) + '（差 ' + maintDuplicates[id].diff + ' 層）')
+              : '') + '</span>' : '') +
+        '</div>' +
+        '<div class="mt-stage-wrap" style="width:' + Math.ceil(def.width * zoom) + 'px;height:' + Math.ceil(def.height * zoom) + 'px;">' +
+          '<div class="mt-stage" style="width:' + def.width + 'px;height:' + def.height + 'px;transform:scale(' + zoom + ');">' +
+            '<div class="mt-mount" style="width:' + def.width + 'px;height:' + def.height + 'px;"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    });
+    if (rows) html += '<div class="mt-group">' + g[1] + '（' + list.length + '）</div>' + rows;
+  });
+
+  maintColumns = [];
+  listEl.innerHTML = html;
+
+  /* 先把 HTML 一次寫進去，再依照實際畫出來的順序建立資料、補上 mount 的 id 並渲染。
+     這樣 index 一定跟 mnt-mount-<idx> 對得上（篩選條件會讓某些版位不畫出來，
+     如果在組 HTML 的時候就配 index，篩選後就會錯位）。 */
+  listEl.querySelectorAll('.mt-item').forEach(function (item, idx) {
+    var id = item.getAttribute('data-block');
+    var col = { blockId: id, data: maintDataFor(id, textMode), header: id };
+    /* D-3-1 的維修 Demo 要看得到完整的預設文字列。
+       它的示意字剛好等於圖層 default，動態列引擎會把這些列判定成未啟用；
+       維修頁只強制顯示，不改動實際資料，選「留空」時仍保持空白。 */
+    var maintDef = BNCore.getBlock(id);
+    var maintLayout = maintDef && maintDef.schema && maintDef.schema.dynamicRowLayout;
+    if (/^msbn_D_3_1$/i.test(id) && textMode !== 'empty' &&
+        maintLayout && Array.isArray(maintLayout.rows)) {
+      setDynamicRowUiState(col, maintLayout.rows.map(function (_, rowIndex) { return rowIndex; }));
+    }
+    maintColumns[idx] = col;
+    var mount = item.querySelector('.mt-mount');
+    if (!mount) return;
+    mount.id = 'mnt-mount-' + idx;
+  });
+
+  /* 所有維修資料先建立完，MSBN C／D 卡片背景色的取樣才會以可用版位為基準，
+     不會因為第一個版位先渲染而漏掉後面的 C／D 系列。 */
+  listEl.querySelectorAll('.mt-item').forEach(function (item, idx) {
+    var col = maintColumns[idx];
+    var mount = item.querySelector('.mt-mount');
+    if (!mount || !col) return;
+    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'maint', col));
+    applyDynamicStageSize(mount, col);
+    bindCanvasInteractions(mount, col, idx, 'maint');
+  });
+
+  statEl.textContent = '共 ' + ids.length + ' 個版位（副區 ' + groups.subarea.length +
+    '、MSBN ' + groups.msbn.length + (groups.other.length ? '、其他 ' + groups.other.length : '') +
+    '），未註冊 ' + maintUnregistered.length + ' 個；目前顯示 ' + shown + ' 個';
+  renderMaintColorPanel();
+}
+
+function ensureMaintLoaded() {
+  if (maintLoaded) {
+    renderMaintList();
+    appLoadingFinish('維修區已就緒');
+    return;
+  }
+  if (!APP_LOADING.active) appLoadingStart('LOADING · 維修區版位', 6, '正在載入維修區…');
+  var statEl = document.getElementById('maint-stat');
+  if (statEl) statEl.textContent = '載入版位模板中…';
+  ensureBlocksLoaded(function () {
+    var registered = BNCore.getBlocks().map(function (b) { return b.id; });
+    maintLoadExtraBlocks(maintCandidateIds(registered), function (found) {
+      maintUnregistered = found;
+      /* 幫每個未註冊的版位找出「對應的已註冊版位」，並算出差幾個圖層，
+         使用者才能判斷是可以直接刪的殘檔，還是真的有獨立內容。
+
+         配對用參考圖＋尺寸（同一張設計稿就是同一個版位），不用整份內容比對：
+         實測這 21 個都是舊命名的殘檔，跟對應的 _1 版差異都很小 ——
+         有的完全一樣，有的只差促標文字框的寬度、或整份 zIndex 差 1。
+         比對圖層時忽略底線開頭的鍵（_boxLeft、_refCenter…），
+         那些是工具算出來寫進去的輔助值，不是設計內容。 */
+      maintDuplicates = {};
+      var noUnderscore = function (k, v) { return k.charAt(0) === '_' ? undefined : v; };
+      var byRef = {};
+      registered.forEach(function (rid) {
+        var b = BNCore.getBlock(rid);
+        if (!b || !b.schema || !b.schema.refImage) return;
+        var k = b.schema.refImage + '|' + b.width + 'x' + b.height;
+        if (!byRef[k]) byRef[k] = rid;
+      });
+      found.forEach(function (id) {
+        var a = BNCore.getBlock(id);
+        if (!a || !a.schema) return;
+        var twin = byRef[a.schema.refImage + '|' + a.width + 'x' + a.height];
+        if (!twin) return;
+        var b = BNCore.getBlock(twin);
+        var la = a.schema.layers || [];
+        var lb = (b.schema && b.schema.layers) || [];
+        var diff = Math.abs(la.length - lb.length);
+        for (var i = 0; i < Math.min(la.length, lb.length); i++) {
+          if (JSON.stringify(la[i], noUnderscore) !== JSON.stringify(lb[i], noUnderscore)) diff++;
+        }
+        maintDuplicates[id] = { twin: twin, diff: diff };
+      });
+      maintLoaded = true;
+      renderMaintList();
+      appLoadingFinish('維修區版位已載入');
+    });
+  });
+}
+
+function bindMaintControls() {
+  var resetColors = document.getElementById('maint-reset-colors');
+  if (resetColors) resetColors.addEventListener('click', resetMaintTheme);
+  var toggleColors = document.getElementById('maint-toggle-colors');
+  var colorPanel = document.getElementById('maint-color-panel');
+  if (toggleColors && colorPanel) {
+    toggleColors.addEventListener('click', function () {
+      var open = colorPanel.style.display !== 'none';
+      colorPanel.style.display = open ? 'none' : '';
+      toggleColors.textContent = open ? '🎨 展開統一顏色' : '🎨 收起統一顏色';
+    });
+  }
+  ['maint-filter', 'maint-text', 'maint-zoom'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', renderMaintList);
+  });
+  var boxChk = document.getElementById('maint-show-box');
+  if (boxChk) boxChk.addEventListener('change', function () {
+    document.getElementById('maint-list').classList.toggle('show-box', boxChk.checked);
+  });
+  var unregChk = document.getElementById('maint-hide-unreg');
+  if (unregChk) {
+    var apply = function () {
+      document.getElementById('maint-list').classList.toggle('hide-unreg', unregChk.checked);
+    };
+    unregChk.addEventListener('change', apply);
+    apply();
+  }
+  var reload = document.getElementById('maint-reload');
+  if (reload) reload.addEventListener('click', function () { resetMaintTheme(); maintLoaded = false; ensureMaintLoaded(); });
+}
+
+/* 曝光資源＝同層 jbp/ 資料夾裡的 JBP 編輯器，第一次進到這一頁才載入 iframe（省資源）。
+   找不到檔案（或用 file:// 打開被瀏覽器擋）就顯示放檔說明。 */
+var EXPOSURE_SRC = 'jbp/jbpbn.html';
+var exposureLoaded = false;
+function ensureExposureLoaded() {
+  if (exposureLoaded) return;
+  if (!APP_LOADING.active) appLoadingStart('LOADING · 曝光資源', 8, '正在開啟曝光資源…');
+  exposureLoaded = true;
+  var wrap = document.getElementById('exposure-wrap');
+  var frame = document.getElementById('exposure-frame');
+  if (!frame) { appLoadingFinish('曝光資源元件不存在'); return; }
+  var settled = false;
+  frame.addEventListener('load', function () {
+    settled = true;
+    appLoadingUpdate(88, 'LOADING · 曝光資源', '曝光資源已載入，正在同步設定…');
+    wrap.classList.remove('missing');
+    /* 載好之後把目前的等級推過去，兩邊的等級下拉保持一致 */
+    if (typeof window.woBroadcastLevel === 'function') setTimeout(window.woBroadcastLevel, 300);
+    /* 背景色是曝光資源／匯入工單／MSBN D 共用值；iframe 一載入就推送目前共用色。 */
+    setTimeout(function () {
+      if (typeof resolvedImportBg === 'function') pushImportBgToExposure(colorToHex(resolvedImportBg()));
+      if (typeof pushExposureOverviewText === 'function') pushExposureOverviewText();
+      appLoadingFinish('曝光資源已載入');
+    }, 400);
+  });
+  frame.addEventListener('error', function () {
+    settled = true;
+    wrap.classList.add('missing');
+    appLoadingFinish('曝光資源載入失敗');
+  });
+  frame.src = EXPOSURE_SRC;
+  /* iframe 載入 404 頁面時不一定會觸發 error，補一個逾時保險 */
+  setTimeout(function () { if (!settled) { wrap.classList.add('missing'); appLoadingFinish('曝光資源載入逾時'); } }, 8000);
+}
+
+function isValidView(name) {
+  return VALID_VIEWS.indexOf(name) !== -1 && !!document.getElementById('view-' + name);
+}
+
+function getSavedView() {
+  var hashView = String(window.location.hash || '').replace(/^#/, '');
+  if (isValidView(hashView)) return hashView;
+
+  try {
+    var localView = localStorage.getItem(VIEW_STORAGE_KEY);
+    if (isValidView(localView)) return localView;
+  } catch (e) {}
+
+  try {
+    var sessionView = sessionStorage.getItem(VIEW_STORAGE_KEY);
+    if (isValidView(sessionView)) return sessionView;
+  } catch (e) {}
+
+  return 'home';
+}
+
+function showView(name, options) {
+  options = options || {};
+  if (!isValidView(name)) name = 'home';
+
+
+  document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.id === 'view-' + name); });
+  document.querySelectorAll('.nav-item').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-view') === name); });
+  if (name === 'generator' && typeof syncGeneratorToolMode === 'function') syncGeneratorToolMode();
+  /* 鎖頭跟編輯提示條只跟「工單生成器」的副區／MSBN 有關，吸底工具有自己的面板 */
+  if (name === 'exposure') ensureExposureLoaded();
+  /* 維修頁第一次進去才載入（要多抓未註冊的版位，不必在開頁時就做） */
+  if (name === 'maint') ensureMaintLoaded();
+  if (name === 'bottom') {
+    ensureStandaloneBottomLoaded(false);
+    requestAnimationFrame(function () {
+      if (standaloneBottomBridgeReady && latestBottomWorkOrder) {
+        sendLatestWorkOrderToStandaloneBottom('open-standalone');
+      }
+    });
+  }
+  /* 進到「匯入工單」時，把背景顏色跟曝光資源目前的背景色同步一次
+     （只有還沒手動改過背景色時才會動） */
+  if (name === 'import' && typeof syncImportBgFromExposure === 'function') syncImportBgFromExposure();
+  if (name === 'import') {
+    /* 版配載入只由「載入工單生成器版配」按鈕觸發；
+       切頁與工單生成器編輯期間不會自動覆蓋匯入工單畫布。 */
+    refreshGeneratorImportButton();
+    /* 隱藏頁籤裡的圖片框在第一次渲染時可能量不到尺寸；頁面真正顯示後再掃一次，
+       確保每一個圖片欄位立即恢復滾輪縮放、拖曳與雙擊復原。 */
+    requestAnimationFrame(function () {
+      var importView = document.getElementById('view-import');
+      if (importView && window.BNImageLayout && typeof BNImageLayout.scanAndProcess === 'function') {
+        BNImageLayout.scanAndProcess(importView);
+      }
+    });
+  }
+
+  var showLock = (name === 'generator' && currentPaletteTab !== 'sticky');
+  lockFab.style.display = showLock ? '' : 'none';
+  if (!showLock) editBanner.classList.remove('show');
+  else editBanner.classList.toggle('show', unlocked);
+
+  try { localStorage.setItem(VIEW_STORAGE_KEY, name); } catch (e) {}
+  try { sessionStorage.setItem(VIEW_STORAGE_KEY, name); } catch (e) {}
+
+  /* 將目前工具頁寫進網址；重新整理或網站檔案更新後仍可回到同一頁。 */
+  if (!options.skipHash && window.location.hash !== '#' + name) {
+    try { history.replaceState(null, '', '#' + name); }
+    catch (e) { window.location.hash = name; }
+  }
+}
+document.querySelectorAll('.nav-item').forEach(function (b) {
+  b.addEventListener('click', function () { showView(b.getAttribute('data-view')); });
+});
+document.querySelectorAll('.home-card').forEach(function (b) {
+  b.addEventListener('click', function () { showView(b.getAttribute('data-goto')); });
+});
+
+/* ════════════════════════════════════════
+   初始化
+════════════════════════════════════════ */
+updateLockUI();
+renderPalette();
+renderCanvas();
+syncGeneratorToolMode();
+loadRemoteConfig(function () { renderPalette(); }); /* 讀 config.json（file:// 或檔案不存在時安靜失敗，不影響其他功能） */
+/* ════════════════════════════════════════
+   匯入工單：拖放區域事件
+════════════════════════════════════════ */
+var importDrop = document.getElementById('import-drop');
+var importFileInput = document.getElementById('import-file-input');
+importDrop.addEventListener('click', function () { importFileInput.click(); });
+importFileInput.addEventListener('change', function (e) { if (e.target.files[0]) handleImportFile(e.target.files[0]); });
+importDrop.addEventListener('dragover', function (e) { e.preventDefault(); importDrop.classList.add('dragover'); });
+importDrop.addEventListener('dragleave', function () { importDrop.classList.remove('dragover'); });
+importDrop.addEventListener('drop', function (e) {
+  e.preventDefault(); importDrop.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) handleImportFile(e.dataTransfer.files[0]);
+});
+
+document.getElementById('import-generator-load').addEventListener('click', function () {
+  var changed = loadGeneratorSelectionIntoImport({ auto: false, fromGeneratorView: false });
+  if (!changed) appLoadingFinish('沒有需要同步的版位');
+});
+document.getElementById('btn-import-demo').addEventListener('click', function () {
+  loadDemoImport();
+});
+
+var importImgDrop = document.getElementById('import-img-drop');
+var importImgInput = document.getElementById('import-img-input');
+importImgDrop.addEventListener('click', function () { importImgInput.click(); });
+importImgInput.addEventListener('change', function (e) { handleImageFiles(e.target.files); e.target.value = ''; });
+importImgDrop.addEventListener('dragover', function (e) { e.preventDefault(); importImgDrop.classList.add('dragover'); });
+importImgDrop.addEventListener('dragleave', function () { importImgDrop.classList.remove('dragover'); });
+importImgDrop.addEventListener('drop', function (e) {
+  e.preventDefault(); importImgDrop.classList.remove('dragover');
+  handleImageFiles(e.dataTransfer.files);
+});
+/* 各版位卡片上「🔄 換圖」共用的檔案選擇器 */
+document.getElementById('imp-field-img-input').addEventListener('change', function (e) {
+  if (e.target.files && e.target.files[0]) applyPickedImportFieldImage(e.target.files[0]);
+  e.target.value = '';
+});
+
+renderImageGallery();
+bindMaintControls();
+probeImportMidBanner(); /* 量一次 img/three.jpg 的比例（副區與 MSBN 之間那張固定圖） */
+bindImportScrollSync();  /* 右邊工具列 ←→ 右邊畫布 捲動互相吸附 */
+
+/* 除錯用：不透過任何試算表/JSON，直接把目前所有已註冊的版位都畫出來，
+   純粹測試「載入版位模板 → 渲染」這條路徑本身是否正常。 */
+document.getElementById('btn-preview-all').addEventListener('click', function () {
+  var importLog = document.getElementById('import-log');
+  importLog.innerHTML = '<span class="ok">載入版位模板中…</span>';
+  ensureBlocksLoaded(function () {
+    var ids = BNCore.getBlocks().map(function (b) { return b.id; }).filter(function (id) { return id !== 'msbn3p'; }).sort();
+    var columns = ids.map(function (id) {
+      return { blockId: id, data: BNCore.defaultData(id), header: id };
+    });
+    renderPreviewAllStacked(columns);
+    importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 共 ' + ids.length + ' 個版位模板，全部畫在右邊了（實際載入成功的數量，如果少於19，代表確實有版位載入失敗）</span>';
+    appLoadingFinish('全部版位預覽已完成');
+  });
+});
+
+/* 先把上次匯入工單的內容與來源讀回記憶體，再決定要開哪個工具頁。
+   如此重新整理後停在匯入頁時，能分辨既有內容是 generator 還是檔案來源，
+   不會因為同步判斷太早而誤蓋資料。 */
+var savedImportState = loadImportState();
+if (savedImportState && savedImportState.columns && savedImportState.columns.length) {
+  currentImportSource = savedImportState.source || 'saved';
+  currentGeneratorSignature = savedImportState.generatorSignature || '';
+  currentImportColumns = savedImportState.columns.map(function (c) {
+    return {
+      blockId: c.blockId,
+      data: c.data || {},
+      header: c.header,
+      band: c.band,
+      sourceKey: c.sourceKey || '',
+      _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
+      _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder)
+    };
+  });
+}
+refreshGeneratorImportButton();
+
+/* 頁面重整時若已有匯入暫存，也要在禁用語清單載入完成後補跑一次規則。 */
+ensureImportTextRules(function (ruleLoad) {
+  if (!ruleLoad.ok || !currentImportColumns.length) return;
+  var savedRuleResult = normalizeImportColumnTexts(currentImportColumns);
+  if (!savedRuleResult.changed && !savedRuleResult.blocked) return;
+  saveImportState();
+  renderImportColumns(currentImportColumns);
+});
+
+var teachingModeActive = teachingMode === 'subarea' || teachingMode === 'msbn';
+if (teachingModeActive) document.body.classList.add('tutorial-' + teachingMode);
+var initialView = teachingModeActive ? 'generator' : getSavedView();
+showView(initialView); /* 還原上次所在工具頁，不再每次強制回首頁 */
+window.addEventListener('hashchange', function () {
+  var hashView = String(window.location.hash || '').replace(/^#/, '');
+  if (isValidView(hashView)) showView(hashView, { skipHash: true });
+});
+/* 背景預先載入全部版位。載完後若本機有匯入暫存，直接畫回來；
+   若 showView 已觸發 generator 同步，這裡會畫目前最新的 currentImportColumns。 */
+ensureBlocksLoaded(function () {
+  var initialImportColumns = currentImportColumns;
+  if (initialImportColumns.length) {
+    trimImportColumnImages(initialImportColumns).then(function () {
+      if (currentImportColumns === initialImportColumns) {
+        saveImportState();
+        renderImportColumns(currentImportColumns);
+      }
+      appLoadingFinish('初始版位載入完成');
+    });
+  } else {
+    appLoadingFinish('初始版位載入完成');
+  }
+});
+</script>
+
+
+</body>
+</html>

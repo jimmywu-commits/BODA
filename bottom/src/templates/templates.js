@@ -5,7 +5,7 @@
  *   - 上方 20px 為透明像素（匯出的 PNG 這一段是透明的，不是白的）
  *   - 下方 1200x130 白底齊下擺放
  *   - icon 距白底上緣 10px，icon 框 107x58（等比例縮放塞進框內，不拉伸變形）
- *   - icon 下緣到文字 14px，文字下緣距白底下緣 20px → 文字帶剛好 28px 高
+ *   - icon 與文字緊接；文字下緣距白底下緣 6px → 預留 56px 文字帶容納 35pt 字級
  *   - icon 與文字各自水平置中、視為一個整體
  *   - 每顆之間間距 > 60px，依顆數自動等距
  *
@@ -20,13 +20,14 @@ window.LAYOUT = {
   iconBoxWidth: 107,
   iconBoxHeight: 58,
   iconTopFromWhiteTop: 10,
-  iconToTextGap: 14,
-  textBottomFromWhiteBottom: 20,
+  iconToTextGap: 0,
+  textBottomFromWhiteBottom: 6,
 
   minUnitGap: 60,
   maxTextWidth: 200,
 
-  fontSize: 22,
+  // 吸底 icon 下方文字採畫布實際 35px。
+  fontSize: 35,
 
   /*
    * 用文字代替 icon 時（9.9 / 10.10 這類檔期數字）的排版。

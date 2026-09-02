@@ -181,7 +181,7 @@
       var aliases = [];
       if(/coin/i.test(norm)) aliases.push('Coinpage','coinpage','Coin_pageBN_APP','Coin_pageBN');
       if(/ddcard/i.test(norm)) aliases.push('ddcard','DDCard','DD Card');
-      if(/hbn/i.test(norm)) aliases.push('HBN','hbn');
+      if(/hbn/i.test(norm) || /^活動總覽/i.test(norm)) aliases.push('HBN','hbn');
       if(/fbpost|facebook|^fb/i.test(norm)) aliases.push('fbpost','FB_POST','FB','facebook');
       if(/ig|instagram/i.test(norm)) aliases.push('IG','ig','instagram');
       if(/lpbnapp/i.test(norm)) aliases.push('LPBN_APP','lpbn_app');
@@ -692,7 +692,7 @@
         (parseFloat(window.getComputedStyle(_logoZone).width) >
          parseFloat(window.getComputedStyle(_logoZone).height) * 1.5);
       /* HBN：檔名含 hbn，或已知左對齊版位 → 左對齊 absolute 並排 */
-      var _leftAlignNames = ['hbn','coin','fb_post','lpbn'];
+      var _leftAlignNames = ['hbn','活動總覽','coin','fb_post','lpbn'];
       var _isLeftAlign = _leftAlignNames.some(function(n){ return fnLow.indexOf(n) !== -1; });
       var isHBN = _isLeftAlign;
       /* 多張置中：logo範圍是橫條 且 不是左對齊版位 → flex 置中並排（ddcard橫、IG橫等）*/

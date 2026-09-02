@@ -3,17 +3,29 @@
    ★ 排版清單，BN編輯器從這裡讀取版位
 ══════════════════════════════════════ */
 var BN_LAYOUTS = [
+  "LPBN_APP.html",
+  "LPBN_PC.html",
   "IG橫logo排版.html",
   "IG方logo排版.html",
 
   "HBN_橫式LOGO.html",
   "HBN_方式LOGO.html",
 
+  "活動總覽_橫式LOGO.html",
+  "活動總覽_方式LOGO.html",
+
+  "首頁LOGO牆.html",
+
+  "AMS BN-橫logo.html",
+  "AMS BN-方logo.html",
+
   "ddcard方logo.html",
   "ddcard橫logo.html",
 
   "Coin_pageBN_APP方LOGO.html",
   "Coin_pageBN_APP橫LOGO.html",
+  "AR.html",
+  "AR_LOGO.html",
 
   "FB_POST_方LOGO.html",
   "FB_POST_橫LOGO.html",

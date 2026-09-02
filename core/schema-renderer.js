@@ -241,6 +241,26 @@
     return null;
   }
 
+  /*
+   * 同一種文案在不同版位的 block.json 可能有的寫 bold、有的沒寫 fontWeight，
+   * 造成「匯入工單」與「維修」看到相同欄位時粗細不一致。
+   * 這裡以欄位語意作最後統一，兩個畫面都經過同一個 renderer，因此不再各自漂移。
+   * 未辨識的特殊文字仍保留版位原本的設定，避免影響簽名檔或裝飾字的個別設計。
+   */
+  function semanticTextWeight(layer) {
+    if (!layer || layer.type !== 'text') return layer && layer.fontWeight;
+    var field = String(layer.field || '').replace(/[0-9]+$/, '').toLowerCase();
+    var label = String(layer.fieldLabel || '').replace(/[0-9]+$/, '').toLowerCase();
+
+    if (field === 'promo' || /促標/.test(label)) return '700';
+    if (field === 'name' || /品名/.test(label)) return '700';
+    if (field === 'warn' || /警語|警告|warning/.test(label)) return '500';
+    if (field === 'badge' || field === 'badgetext' || /圓標文字/.test(label)) return '500';
+    if (field === 'cta' || /cta文字/.test(label)) return '400';
+    if (field === 'brand' || field === 'main' || field === 'sub' || field === 'date' ||
+        /品牌|主標|副標|日期/.test(label)) return '400';
+    return layer.fontWeight;
+  }
   /* 這個圖層是不是「CTA 底色塊」（要套統一圓角的那個；三角形不算） */
   function isCtaBgLayer(layer) {
     if (layer.type !== 'rect' && layer.type !== 'circle') return false;
@@ -587,6 +607,19 @@
     return n <= 4 ? n : (n / layer.fontSize);
   }
 
+  /* MSBN C 系列的促標與「一排最多6字」文案，輸入範圍左右各放寬10px。
+     只放寬文字框，不改字數限制；左右各補10px可維持原本的文字中心。 */
+  function cSeriesTextWidthExtra(layer, opts) {
+    if (!layer || layer.type !== 'text') return 0;
+    var schemaId = String(opts && opts._schemaId || '');
+    if (!/^msbn_C_/i.test(schemaId)) return 0;
+    var field = String(layer.field || '');
+    var label = String(layer.fieldLabel || '');
+    var designText = String(layer.designText || '') + ' ' + String(layer.default || '');
+    if (/^promo\d*$/i.test(field) || /促標文字/.test(label)) return 20;
+    if (/^msbn_C_1_[123]$/i.test(schemaId) && /^copy\d*$/i.test(field) && /最多\$?6字/.test(designText)) return 20;
+    return 0;
+  }
   function renderLayer(layer, left, top, data, fieldPrefix, opts) {
     /* hidden:true ＝這一層完全不畫（也不會出現在欄位面板）。
        用來關掉 PS 稿上的示意圖層，例如 LOGO 框裡那個「LOGO」佔位字：
@@ -678,6 +711,8 @@
       left = layer._boxLeft + (layer._boxWidth - badgeWidthOverride) / 2;
     }
 
+    var cTextWidthExtra = cSeriesTextWidthExtra(layer, opts);
+    if (cTextWidthExtra && layer.width != null) left -= cTextWidthExtra / 2;
     /* ── 文字不要被上下裁掉 ────────────────────────────────────────
        所有文字圖層都有 overflow:hidden（避免字太多時橫向壓到隔壁圖層），
        但這個裁切是四個方向都裁的，而「行框」常常比字本身還矮：
@@ -718,7 +753,7 @@
        其他圖層仍直接使用原本的 zIndex。 */
     if (layer.type !== 'image' && layer.zIndex != null) style.push('z-index:' + layer.zIndex);
     if (badgeWidthOverride != null) style.push('width:' + px(badgeWidthOverride));
-    else if (layer.width != null) style.push('width:' + px(layer.width));
+    else if (layer.width != null) style.push('width:' + px(Number(layer.width) + cTextWidthExtra));
     if (isCenteredCtaText) style.push('height:' + px(layer._ctaBoxHeight));
     else if (isDynamicRowCentered) style.push('height:' + px(layer._dynamicRowHeight));
     else if (layer.height != null) style.push('height:' + px(layer.height));
@@ -842,7 +877,7 @@
         style.push('display:flex');
         style.push('align-items:center');
         style.push('justify-content:center');
-        style.push('overflow:' + (layer.clipImage ? 'hidden' : 'visible'));
+        style.push('overflow:' + (((opts && opts.imageClipToBounds) || layer.clipImage) ? 'hidden' : 'visible'));
         var scalePct;
         if (layer.id === 'logoBg') scalePct = CONFIG.image.logoInsetScalePercent;
         else if (layer.id === 'productArea' || layer.id === 'productArea1' || layer.id === 'productArea2' || layer.id === 'bg') scalePct = CONFIG.image.productImageInsetScalePercent;
@@ -855,10 +890,16 @@
           content = '<img src="' + esc(urls[0]) + '" onerror="this.style.display=\'none\'" ' +
             'style="width:' + scalePct + '%;height:' + scalePct + '%;object-fit:contain;display:block;pointer-events:none;">';
         } else {
-          var imgsHtml = urls.map(function (u) {
-            /* onerror：萬一是外部網址載不到，就把這張藏起來，不要留一個破圖圖示在版面上 */
+          var imgsHtml = urls.map(function (u, imageIndex) {
+            /* 多圖欄位：圖片來源與拖曳位置仍固定用原本的 imageIndex；
+               上下鍵只變更 imagePartLayerOrder 的 z-index，不交換圖或座標。 */
+            var partOrder = opts && opts.imagePartLayerOrder && fieldKey &&
+              Array.isArray(opts.imagePartLayerOrder[fieldKey]) ? opts.imagePartLayerOrder[fieldKey] : [];
+            var layerRank = partOrder.indexOf(imageIndex);
+            var imageZIndex = layerRank >= 0 ? (partOrder.length - layerRank) : (urls.length - imageIndex);
             return '<img src="' + esc(u) + '" class="bn-imggroup-img" onerror="this.style.display=\'none\'" ' +
-              'style="height:100%;width:auto;object-fit:contain;display:block;flex-shrink:0;">';
+              'style="height:100%;width:auto;object-fit:contain;display:block;flex-shrink:0;position:relative;z-index:' +
+              imageZIndex + '">';
           }).join('');
           content = '<div class="bn-imggroup" data-field-key="' + esc(fieldKey || '') + '" ' +
             'style="width:' + scalePct + '%;height:' + scalePct + '%;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
@@ -892,7 +933,8 @@
       if (layer.fontFamily) style.push('font-family:' + JSON.stringify(layer.fontFamily));
       var textColor = themeColorOf(layer, opts) || layer.color; /* 全站統一顏色（促標字色／圓標字色／CTA字色）優先 */
       if (textColor) style.push('color:' + textColor);
-      if (layer.fontWeight) style.push('font-weight:' + layer.fontWeight);
+      var textWeight = semanticTextWeight(layer);
+      if (textWeight) style.push('font-weight:' + textWeight);
       /* PS 有些文字層有自己的 tracking（例如有字 CTA 是 -0.025em，
          42px 時等於 -1.05px）。圖層自己的值優先，沒有才使用全站設定。 */
       var ls = layer.letterSpacing != null ? Number(layer.letterSpacing) : CONFIG.letterSpacing[layer.id];
@@ -1116,6 +1158,7 @@
     var layers = schema.layers || [];
     var byField = {};
     var forcedRows = [];
+    var protectedBottomRow = cfg.protectBottomRow ? cfg.rows.length - 1 : -1;
     (Array.isArray(opts && opts.dynamicRowRows) ? opts.dynamicRowRows : []).forEach(function (value) {
       var rowIndex = Number(value);
       if (isFinite(rowIndex) && rowIndex >= 0 && rowIndex < cfg.rows.length && forcedRows.indexOf(rowIndex) === -1) {
@@ -1129,6 +1172,9 @@
     var fieldRows = {};
     cfg.rows.forEach(function (fields, rowIndex) {
       (fields || []).forEach(function (key) { fieldRows[key] = rowIndex; });
+      /* protectBottomRow 是 D-1-3／D-2-3 的固定底列：它永遠存在，
+         不參與一般「有內容才顯示」的判斷，避免刪光後圓角底消失。 */
+      if (rowIndex === protectedBottomRow) return;
       var active = (fields || []).some(function (key) {
         var value = data && data[key];
         if (value == null || String(value).trim() === '') return false;
@@ -1138,11 +1184,20 @@
       });
       if (active) activeRows.push(rowIndex);
     });
+    if (protectedBottomRow >= 0) activeRows.push(protectedBottomRow);
     forcedRows.forEach(function (rowIndex) {
       if (activeRows.indexOf(rowIndex) === -1) activeRows.push(rowIndex);
     });
     activeRows.sort(function (a, b) { return a - b; });
     var originalHeight = Number(cfg.height) / cfg.rows.length;
+    var fixedRowHeight = !!cfg.fixedRowHeight;
+    var activeCount = activeRows.length;
+    var renderRowCount = Math.max(1, activeCount);
+    var rowHeight = fixedRowHeight ? originalHeight : Number(cfg.height) / Math.max(1, activeCount);
+    var dynamicHeight = fixedRowHeight ? originalHeight * renderRowCount : Number(cfg.height);
+    var cfgTop = Number(cfg.top || 0);
+    var trailingHeight = Math.max(0, Number(schema.height) - (cfgTop + Number(cfg.height)));
+    var totalHeight = fixedRowHeight ? cfgTop + dynamicHeight + trailingHeight : Number(schema.height);
     var shadeLayers = layers.filter(function (layer) {
       return layer.type === 'rect' && layer.opacity != null &&
         layer.width != null && Math.abs(Number(layer.width) - (Number(schema.width) - 40)) < 0.5 &&
@@ -1153,13 +1208,17 @@
       fieldRows: fieldRows,
       activeRows: activeRows,
       forcedRows: forcedRows,
-      activeCount: activeRows.length,
+      activeCount: activeCount,
+      editableCount: activeRows.filter(function (rowIndex) { return rowIndex !== protectedBottomRow; }).length,
+      protectedBottomRow: protectedBottomRow >= 0 ? protectedBottomRow : null,
       originalHeight: originalHeight,
-      rowHeight: Number(cfg.height) / Math.max(1, activeRows.length),
+      rowHeight: rowHeight,
+      dynamicHeight: dynamicHeight,
+      totalHeight: totalHeight,
+      fixedRowHeight: fixedRowHeight,
       shadeLayers: shadeLayers
     };
   }
-
   function dynamicRowSignatureOf(schema, data) {
     var layout = dynamicRowLayoutOf(schema, data);
     return layout ? layout.activeRows.join(',') : null;
@@ -1168,6 +1227,16 @@
   function dynamicRowLayerOf(layer, layout) {
     if (!layout) return layer;
     var cfg = layout.cfg;
+    /* fixedRowHeight 版位的滿版背景、分隔線也要跟著動態總高度縮短。 */
+    var fullHeightLayer = layout.fixedRowHeight && layer.height != null &&
+      Math.abs(Number(layer.height) - Number(cfg.height)) < 2 &&
+      layer.top != null && Math.abs(Number(layer.top) - Number(cfg.top || 0)) < 2;
+    if (fullHeightLayer) {
+      var resized = {};
+      Object.keys(layer).forEach(function (key) { resized[key] = layer[key]; });
+      resized.height = layout.dynamicHeight;
+      return resized;
+    }
     var rowIndex = layout.fieldRows[layer.field];
     if (layer.type === 'text' && rowIndex != null) {
       var activeIndex = layout.activeRows.indexOf(rowIndex);
@@ -1235,6 +1304,7 @@
 
       /* 外層容器本身是「整個版位的畫布邊界」，不是卡片，不需要圓角，維持直角矩形；
          真正看起來像卡片的圓角，是靠版位自己的「背景」「促標底」這些圖層各自的border-radius做出來的 */
+      var dynamicRows = dynamicRowLayoutOf(schema, data, renderOpts);
       var overflow = schema.cornerRadius ? 'hidden' : 'visible';
       /* 整個版位的底色（卡片與卡片之間、四周留白露出來的那個顏色）。
          canvasBg 專門控制畫布；舊呼叫端只有 theme.bg 時仍相容。 */
@@ -1242,12 +1312,11 @@
         || (renderOpts.theme && renderOpts.theme.bg && String(renderOpts.theme.bg).trim())
         || '#eee2cf';
       var html = '<div class="blk-' + schema.id + '" data-bn-schema-id="' + esc(schema.id) +
-        '" style="position:relative;width:' + schema.width + 'px;height:' + schema.height +
+        '" style="position:relative;width:' + schema.width + 'px;height:' + (dynamicRows ? dynamicRows.totalHeight : schema.height) +
         'px;overflow:' + overflow + ';background:' + canvasBg + ';font-family:sans-serif;">';
 
       /* 沒填的代言人／贈品空間讓給商品圖（範圍變大，被讓出來的圖層不畫） */
       var absorb = computeAbsorb(schema, data, renderOpts);
-      var dynamicRows = dynamicRowLayoutOf(schema, data, renderOpts);
       (schema.layers || []).forEach(function (layer) {
         var dynamicLayer = dynamicRowLayerOf(layer, dynamicRows);
         if (!dynamicLayer) return;

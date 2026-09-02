@@ -191,7 +191,7 @@
   function scanCopy(rows){
     var spec = findHeader(rows, '規範字數');
     var start = spec ? spec.row + 1 : 0;
-    var result = {brand:'', main:'', sub:'', date:''};
+    var result = {brand:'', main:'', sub:'', date:'', ar:''};
 
     for(var r = start; r < rows.length; r++){
       var row = rows[r] || [];
@@ -205,6 +205,8 @@
           result.main = getRightValue(row, c);
         } else if(!result.sub && n.indexOf('副標') !== -1){
           result.sub = getRightValue(row, c);
+        } else if(!result.ar && (n === 'ar' || n.indexOf('ar文案') !== -1 || n.indexOf('ar六字') !== -1 || n.indexOf('六字內') !== -1)){
+          result.ar = getRightValue(row, c);
         } else if(!result.date && (n.indexOf('日期警語') !== -1 || n.indexOf('日期') !== -1 || n.indexOf('警語') !== -1)){
           result.date = getRightValue(row, c);
         }
@@ -322,6 +324,7 @@
     if(copy && copy.main) n++;
     if(copy && copy.sub) n++;
     if(copy && copy.date) n++;
+    if(copy && copy.ar) n++;
     return n;
   }
 
@@ -476,6 +479,7 @@
     setInputValue('txt-main', copy.main);
     setInputValue('txt-sub', copy.sub);
     setInputValue('txt-date', copy.date);
+    setInputValue('txt-ar', copy.ar);
     if(typeof global.broadcastText === 'function') global.broadcastText();
     try{ document.dispatchEvent(new CustomEvent('bn-state-dirty')); }catch(_){}
   }
@@ -500,6 +504,7 @@
         if(copy.main) importedText.push('主標');
         if(copy.sub) importedText.push('副標');
         if(copy.date) importedText.push('日期/警語');
+        if(copy.ar) importedText.push('AR文案');
 
         var appeared = Object.keys(layoutResult.types).filter(function(k){ return layoutResult.types[k]; }).length;
         var bgMsg = publicCode ? ('，公版背景 ' + publicCode.code + ' 套用中') : '';

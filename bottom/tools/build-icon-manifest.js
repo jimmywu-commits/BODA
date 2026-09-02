@@ -19,6 +19,8 @@ const IMG_DIR = path.join(ROOT, "img");
 const OUT_FILE = path.join(ROOT, "src", "icons", "manifest.js");
 
 var MIME = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif" };
+/* 這兩個是吸底等級預設用的品牌 LOGO：保持原色，不套橘／紅色。 */
+var BRAND_LOGO_IDS = { "bod-logo": true, "mdd-logo": true };
 
 /*
  * 檔名 → id。
@@ -71,7 +73,7 @@ function main() {
       "  {",
       "    id: " + JSON.stringify(id) + ",",
       "    displayName: " + JSON.stringify(base) + ",",
-      "    type: \"icon\",",
+      "    type: " + (BRAND_LOGO_IDS[id] ? "\"logo\"" : "\"icon\"") + ",",
     ];
 
     if (ext === ".svg") {

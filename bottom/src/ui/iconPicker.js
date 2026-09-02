@@ -74,14 +74,28 @@
     var pw = panel.offsetWidth;
     var ph = panel.offsetHeight;
 
+    // 嵌入工單生成器時，主頁的素材庫標題、等級與頁簽會覆蓋 iframe 上緣。
+    // 彈窗不能放進這段保留區，否則吸底頁簽開啟 icon/logo 時第一排會被切掉。
+    var safeTop = 8;
+    if (document.documentElement.classList.contains("embed-generator")) {
+      var hostTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--host-panel-top"));
+      if (isFinite(hostTop)) safeTop = Math.max(safeTop, hostTop + 8);
+    }
+    var safeBottom = 8;
+    var availableHeight = Math.max(120, window.innerHeight - safeTop - safeBottom);
+    if (ph > availableHeight) {
+      panel.style.maxHeight = availableHeight + "px";
+      ph = panel.offsetHeight;
+    }
+
     var left = Math.min(r.left, window.innerWidth - pw - 8);
     if (left < 8) left = 8;
 
-    // 下方放不下就翻到上方；上下都放不下就貼齊視窗並讓面板自己捲動
+    // 下方放不下就翻到上方；上下都放不下就貼齊安全區並讓面板自己捲動
     var top = r.bottom + 6;
-    if (top + ph > window.innerHeight - 8) {
+    if (top + ph > window.innerHeight - safeBottom) {
       var above = r.top - ph - 6;
-      top = above >= 8 ? above : Math.max(8, window.innerHeight - ph - 8);
+      top = above >= safeTop ? above : Math.max(safeTop, window.innerHeight - ph - safeBottom);
     }
 
     panel.style.left = Math.round(left) + "px";

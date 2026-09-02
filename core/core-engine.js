@@ -88,6 +88,33 @@
    再依序動態載入每個 /blocks/{id}/block.js
 ════════════════════════════════════════ */
 function bnLoadAllBlocks(onDone, basePath, onProgress) {
+  /* 網路、檔案伺服器或單一版位檔異常時，不能讓整個匯入流程永遠等下去。
+     逾時後仍回報這次結果，使用者可以立即看到可用版位並按重試。 */
+  function fetchWithTimeout(url, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var finished = false;
+      var controller = typeof AbortController === 'function' ? new AbortController() : null;
+      var timer = setTimeout(function () {
+        if (finished) return;
+        finished = true;
+        if (controller) controller.abort();
+        reject(new Error('讀取逾時：' + url));
+      }, timeoutMs || 15000);
+      var options = { cache: 'no-store' };
+      if (controller) options.signal = controller.signal;
+      fetch(url, options).then(function (response) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+        resolve(response);
+      }).catch(function (err) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
+  }
   function report(loaded, total, succeeded) {
     if (typeof onProgress === 'function') onProgress({
       loaded: loaded, total: total, succeeded: succeeded
@@ -99,8 +126,11 @@ function bnLoadAllBlocks(onDone, basePath, onProgress) {
   report(0, 0, 0);
   basePath = basePath || '../blocks/'; /* core.html / canvas.html 放在 /core/ 下，往上一層找 blocks/；
                                            若頁面本身就在根目錄（如 index.html），呼叫時傳 'blocks/' */
-  fetch(basePath + 'index.js?t=' + Date.now())
-    .then(function (r) { return r.text(); })
+  fetchWithTimeout(basePath + 'index.js?t=' + Date.now(), 15000)
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
     .then(function (text) {
       /* blocks/index.js 內容是 window._bn_blocks_manifest_cb([...]);
          直接執行這段文字取得陣列，格式不變，沿用舊的 manifest 檔案即可 */
@@ -118,7 +148,7 @@ function bnLoadAllBlocks(onDone, basePath, onProgress) {
       var loaded = 0, succeeded = 0;
       report(0, ids.length, 0);
       ids.forEach(function (id) {
-        fetch(basePath + id + '/block.json?t=' + Date.now())
+        fetchWithTimeout(basePath + id + '/block.json?t=' + Date.now(), 15000)
           .then(function (r) {
             if (!r.ok) throw new Error('HTTP ' + r.status);
             return r.json();

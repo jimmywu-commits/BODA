@@ -174,10 +174,10 @@
     function autoSelectLogoVariant(logos){
       var seq=++_bnLogoVariantSeq;logos=Array.isArray(logos)?logos:[];
       if(!window.bnAutoSelectLogoVariant)return;
-      if(!logos.length){window.bnAutoSelectLogoVariant('all');return;}
-      if(logos.length!==1){window.bnAutoSelectLogoVariant('horizontal');return;}
+      if(!logos.length){window.bnAutoSelectLogoVariant('all',true);return;}
+      if(logos.length!==1){window.bnAutoSelectLogoVariant('horizontal',true);return;}
       var logo=logos[0],ratio=Number(logo.ratio);
-      function apply(r){if(seq===_bnLogoVariantSeq&&window._bnLogos&&window._bnLogos.length===1&&window._bnLogos[0].id===logo.id)window.bnAutoSelectLogoVariant(r<=1?'square':'horizontal');}
+      function apply(r){if(seq===_bnLogoVariantSeq&&window._bnLogos&&window._bnLogos.length===1&&window._bnLogos[0].id===logo.id)window.bnAutoSelectLogoVariant(r<=1?'square':'horizontal',true);}
       if(isFinite(ratio)&&ratio>0){apply(ratio);return;}
       loadImg(logo.src).then(function(img){logo.ratio=img.naturalWidth/img.naturalHeight;apply(logo.ratio);})['catch'](function(){});
     }
@@ -201,6 +201,22 @@
     function sampleCorner(d,w,h){function px(x,y){var i=(y*w+x)*4;return{r:d[i],g:d[i+1],b:d[i+2],a:d[i+3]};}var c=[px(0,0),px(w-1,0),px(0,h-1),px(w-1,h-1)].filter(function(p){return p.a>200;});if(!c.length)return{r:255,g:255,b:255};var r=0,g=0,b=0;c.forEach(function(p){r+=p.r;g+=p.g;b+=p.b;});return{r:r/c.length,g:g/c.length,b:b/c.length};}
     function autoTrim(img){var max=1200,sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));var w=Math.max(1,Math.round(img.naturalWidth*sc)),h=Math.max(1,Math.round(img.naturalHeight*sc));var c=document.createElement('canvas');c.width=w;c.height=h;var ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);var id=ctx.getImageData(0,0,w,h),d=id.data,bg=sampleCorner(d,w,h);var x0=w,y0=h,x1=-1,y1=-1;for(var y=0;y<h;y++)for(var x=0;x<w;x++){var i=(y*w+x)*4,a=d[i+3];if(a>18&&(a<245||Math.abs(d[i]-bg.r)+Math.abs(d[i+1]-bg.g)+Math.abs(d[i+2]-bg.b)>46)&&!(d[i]>246&&d[i+1]>246&&d[i+2]>246)){if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;}}if(x1<0)return{src:img.src,ratio:img.naturalWidth/img.naturalHeight};var pad=Math.round(Math.max(w,h)*.015);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(w-1,x1+pad);y1=Math.min(h-1,y1+pad);var tw=x1-x0+1,th=y1-y0+1;var o=document.createElement('canvas');o.width=tw;o.height=th;o.getContext('2d').drawImage(c,x0,y0,tw,th,0,0,tw,th);return{src:o.toDataURL('image/png'),ratio:tw/th};}
 
+    /*
+     * 暫存／匯入的舊素材也要走同一套白邊裁切。回傳新物件而不直接改原物件，
+     * 讓呼叫端可以在非同步完成前檢查使用者是否已經換圖或編輯，避免舊結果覆蓋新操作。
+     */
+    function trimImportedAsset(asset, kind){
+      if(!asset || !asset.src || String(asset.src).indexOf('data:image/') !== 0) return Promise.resolve(asset);
+      return loadImg(asset.src).then(function(img){
+        var trimmed = kind === 'logo' ? autoTrimWhiteLogo(img) : autoTrim(img);
+        var next = {};
+        Object.keys(asset).forEach(function(k){ next[k] = asset[k]; });
+        next.src = trimmed.src;
+        next.ratio = trimmed.ratio || asset.ratio;
+        return next;
+      })['catch'](function(){ return asset; });
+    }
+    window._bnTrimImportedAsset = trimImportedAsset;
     /* ── 廣播 ── */
     function broadcast(msg){document.querySelectorAll('.preview-block iframe').forEach(function(f){try{f.contentWindow.postMessage(msg,'*');}catch(e){}});if(msg&&msg.type==='bn-logos')autoSelectLogoVariant(msg.logos);}
     function broadcastTo(id,msg){var f=document.getElementById('iframe-'+id);if(f)try{f.contentWindow.postMessage(msg,'*');}catch(e){}}
@@ -217,6 +233,9 @@
         .replace(/[\s_\-()（）]+/g, '')
         .toLowerCase();
     }
+    function normalizeHbnActivityPairName(name){
+      return normalizePairName(name).replace(/^活動總覽/i, 'hbn');
+    }
     function getLayoutById(id){
       if(typeof window.loadLayouts !== 'function') return null;
       var layouts = window.loadLayouts() || [];
@@ -227,6 +246,19 @@
       var layouts = window.loadLayouts() || [];
       var src = layouts.find(function(l){ return String(l.id) === String(sourceId); });
       if(!src) return [];
+      /* LPBN_APP and LPBN_PC remain independent; only HBN／活動總覽 use this pairing path. */
+      var srcFile = String(src.file || src.name || '');
+      /* HBN 與活動總覽使用相同的商品排版規格：
+         同方向的方／橫版位，跨兩個系列共用商品位置、尺寸與排序。 */
+      if(/^(?:HBN|活動總覽)(?:_|$)/i.test(srcFile)){
+        var hbnKey = normalizeHbnActivityPairName(src.name || src.file);
+        return layouts.filter(function(l){
+          if(String(l.id) === String(sourceId) || l.enabled === false) return false;
+          var targetFile = String(l.file || l.name || '');
+          return /^(?:HBN|活動總覽)(?:_|$)/i.test(targetFile) &&
+            normalizeHbnActivityPairName(l.name || l.file) === hbnKey;
+        }).map(function(l){ return String(l.id); });
+      }
       var key = normalizePairName(src.name || src.file);
       if(!key) return [];
       return layouts.filter(function(l){
@@ -257,6 +289,11 @@
         broadcastTo(tid, {type:'bn-character-layout-apply', id:slot.id, layout:cloned});
       });
     }
+    /* LPBN_APP and LPBN_PC logo layout sync is intentionally disabled. */
+    function syncLogoLayoutToPairs(logo, sourceBnid, layout){
+      /* LPBN_APP／LPBN_PC 維持獨立，不同步 Logo 位置或尺寸。 */
+      return [];
+    }
     window.addEventListener('message', function(ev){
       var d = ev.data || {};
       if(d.type === 'bn-character-layout-update' && d.layout){
@@ -275,7 +312,23 @@
         markStateDirty();
         return;
       }
-      if(d.type !== 'bn-product-layout-update' || !d.id || !d.layout) return;
+      if(d.type === 'bn-logo-layout-update' && d.id && d.layout){
+        /* AR_LOGO 畫布拖曳／縮放：保存到 LOGO 本身，並同步所有 AR_LOGO 預覽。 */
+        if(window._bnSuppressProductLayoutWrite || window._bnExporting) return;
+        var logo = (window._bnLogos || []).find(function(x){ return x && x.id === d.id; });
+        if(!logo) return;
+        if(!logo.layouts) logo.layouts = {};
+        var logoKey = d.bnid ? String(d.bnid) : 'default';
+        logo.layouts[logoKey] = JSON.parse(JSON.stringify(d.layout));
+        logo.layout = JSON.parse(JSON.stringify(d.layout));
+        var logoPairIds = syncLogoLayoutToPairs(logo, logoKey, d.layout) || [];
+        broadcast({type:'bn-logos', logos:window._bnLogos});
+        logoPairIds.forEach(function(tid){
+          broadcastTo(tid,{type:'bn-logo-layout-apply',id:logo.id,layout:JSON.parse(JSON.stringify(d.layout))});
+        });
+        markStateDirty();
+        return;
+      }      if(d.type !== 'bn-product-layout-update' || !d.id || !d.layout) return;
       /* 下載圖片/同步 iframe 期間，iframe 可能因重送商品而回傳 layout-update。
          這些不是使用者拖曳，不能寫回 _bnProducts，也不能觸發本機暫存，
          否則下載會反過來覆蓋背景色、底圖或商品排版。 */
@@ -896,11 +949,34 @@
       /* 每個版位獨立的背景圖狀態 */
       var _bgStates = {}; /* { layoutId: {src,fit,scale,x,y} } */
       var _bgActiveId = null; /* 目前編輯的版位 id */
+      function isSearchIconId(id, ifrEl){
+        /* SearchICON、AR、AR_LOGO 都只允許背景色連動；背景圖不可保存、廣播或還原。 */
+        function isBgImageLockedName(value){
+          var s = String(value || '');
+          return /SearchICON/i.test(s) || /(?:^|[\/\\])AR(?:_|\.html(?:\?|$)|$)/i.test(s) || /^AR(?:_|$)/i.test(s);
+        }
+        try{
+          if(ifrEl && isBgImageLockedName(ifrEl.getAttribute('src') || '')) return true;
+          var layouts = typeof window.loadLayouts === 'function' ? (window.loadLayouts() || []) : [];
+          var rec = layouts.find(function(l){ return String(l.id) === String(id); });
+          if(rec) return isBgImageLockedName(String(rec.file || rec.name || ''));
+          var hit = false;
+          document.querySelectorAll('.preview-block iframe').forEach(function(frame){
+            if(hit) return;
+            try{
+              var fid = new URLSearchParams((frame.src || '').split('?')[1] || '').get('bnid');
+              if(String(fid) === String(id) && isBgImageLockedName(frame.getAttribute('src') || '')) hit = true;
+            }catch(_){ }
+          });
+          return hit;
+        }catch(_){ return false; }
+      }
 
       function cloneBgStates(){
         var out = {};
         var hasSrc = false;
         Object.keys(_bgStates).forEach(function(id){
+          if(isSearchIconId(id)) return;
           var st = _bgStates[id] || {};
           if(st.src && st.src !== '__BN_IDB__') hasSrc = true;
           out[id] = {
@@ -918,7 +994,7 @@
         if(!hasSrc && window._bgDataUrl){
           document.querySelectorAll('.preview-block iframe').forEach(function(ifrEl){
             var id = getIfrBnid(ifrEl);
-            if(!id) return;
+            if(!id || isSearchIconId(id, ifrEl)) return;
             out[id] = out[id] || (function(){ var _dp=getDefaultBgParamsForLayout(id, ifrEl); return {fit:_dp.fit,scale:_dp.scale,x:_dp.x,y:_dp.y,_initialized:true}; })();
             out[id].src = window._bgDataUrl;
             out[id].fit = out[id].fit || 'auto';
@@ -948,6 +1024,7 @@
         var hasRealSrc = false;
         if(nextStates && typeof nextStates === 'object'){
           Object.keys(nextStates).forEach(function(id){
+            if(isSearchIconId(id)) return;
             var st = nextStates[id] || {};
             var prev = prevStates[id] || {};
             /* __BN_IDB__ 是 localStorage 輕量備援的佔位符，不能當成 null 廣播，否則會洗掉畫布背景。 */
@@ -961,13 +1038,14 @@
               y: st.y !== undefined ? parseInt(st.y,10) : (prev.y !== undefined ? prev.y : 50),
               _initialized: st._initialized !== false
             };
+            normalizeBgStateForLayout(id, _bgStates[id]);
           });
         }
         /* 若載入的是舊版 JSON，只帶 legacySrc，補成每個 iframe 的背景狀態。 */
         if(!hasRealSrc && window._bgDataUrl){
           document.querySelectorAll('.preview-block iframe').forEach(function(ifrEl){
             var id = getIfrBnid(ifrEl);
-            if(!id) return;
+            if(!id || isSearchIconId(id, ifrEl)) return;
             _bgStates[id] = _bgStates[id] || (function(){ var _dp=getDefaultBgParamsForLayout(id, ifrEl); return {fit:_dp.fit,scale:_dp.scale,x:_dp.x,y:_dp.y,_initialized:true}; })();
             _bgStates[id].src = window._bgDataUrl;
           });
@@ -982,7 +1060,7 @@
 
       function getBgState(id){
         if(!_bgStates[id]) _bgStates[id] = {src:null,fit:'cover',scale:100,x:50,y:50};
-        return _bgStates[id];
+        return normalizeBgStateForLayout(id, _bgStates[id]);
       }
 
       /* 暴露給 bn-state-plugin：讓下載/上傳暫存能完整包含背景圖與各版位設定 */
@@ -993,7 +1071,7 @@
         if(window._bgDataUrl){
           document.querySelectorAll('.preview-block iframe').forEach(function(ifrEl){
             var id = getIfrBnid(ifrEl);
-            if(!id) return;
+            if(!id || isSearchIconId(id, ifrEl)) return;
             var st = getBgState(id);
             if(!st.src) st.src = window._bgDataUrl;
           });
@@ -1003,7 +1081,7 @@
       /* 精準同步單一 iframe 背景。下載圖片會用這個，避免廣播全部版位時
          把尚未 ready 或 id 取不到的 iframe 送成 null 背景。 */
       window._bnSendBgToIframe = function(ifrEl, id){
-        if(!ifrEl || !id) return;
+        if(!ifrEl || !id || isSearchIconId(id, ifrEl)) return;
         bgSendToIframe(ifrEl, String(id));
       };
       window._bnGetBgStateForId = function(id){
@@ -1025,6 +1103,7 @@
       }
 
       function bgSendToIframe(ifrEl, id){
+        if(isSearchIconId(id, ifrEl)) return;
         var st = getBgState(id);
         try{ ifrEl.contentWindow.postMessage(
           {type:'bn-bg', src:st.src, fit:st.fit, scale:st.scale, x:st.x, y:st.y}, '*');
@@ -1040,6 +1119,7 @@
       function bgBroadcastAll(){
         document.querySelectorAll('.preview-block iframe').forEach(function(ifrEl){
           var id = getIfrBnid(ifrEl);
+          if(id && isSearchIconId(id, ifrEl)) return;
           /* id 取不到時，用 _bgActiveId 的狀態廣播給所有 iframe */
           var st = id ? getBgState(id) : (_bgActiveId ? getBgState(_bgActiveId) : null);
           if(!st) return;
@@ -1117,7 +1197,7 @@
              舊函式，直接跳過即可。 */
           /* 把已有的狀態推給新 iframe */
           var st = getBgState(id);
-          if(st.src){
+          if(!isSearchIconId(id) && st.src){
             document.querySelectorAll('.preview-block iframe').forEach(function(ifrEl){
               var bnid = getIfrBnid(ifrEl);
               if(bnid && String(bnid)===String(id)){
@@ -1168,7 +1248,7 @@
           var ifrEl = block.querySelector('iframe');
           if(!ifrEl) return;
           /* SearchICON 系列版位不需要背景圖調整浮動面板（純色圓形背景，無背景圖可調） */
-          if(/SearchICON/i.test(ifrEl.getAttribute('src') || '')) return;
+          if(isSearchIconId(getIfrBnid(ifrEl), ifrEl)) return;
           var id = getIfrBnid(ifrEl);
           if(!id) return;
 
@@ -1335,6 +1415,32 @@
         }catch(_){ return ''; }
       }
 
+      /* AMS BN 的背景圖要完整呈現，不能沿用 cover 的裁切行為。
+         先用版位清單辨識乾淨檔名，再用 iframe src 作備援，避免中文檔名
+         尚未完成掃描時誤判。 */
+      function isAmsBn(id, ifrEl){
+        try{
+          var layoutName = getLayoutNameById(id);
+          if(/^AMS\s*BN(?:-|$)/i.test(layoutName)) return true;
+          var srcName = ifrEl && ifrEl.src ? String(ifrEl.src) : '';
+          try{ srcName = decodeURIComponent(srcName); }catch(_){ }
+          return /AMS\s*BN(?:-|%20|$)/i.test(srcName) || /^AMS\s*BN(?:-|$)/i.test(String(id || ''));
+        }catch(_){ return false; }
+      }
+
+      function normalizeBgStateForLayout(id, st, ifrEl){
+        if(!st || !isAmsBn(id, ifrEl)) return st;
+        /* 舊暫存可能保存 fit:cover；改成依寬度等比例呈現，避免右側被裁切。
+           舊 cover 的 scale/位置也一併回到完整呈現的中心預設。 */
+        if(st.fit === 'cover' || !st.fit){
+          st.fit = 'width100';
+          st.scale = 100;
+          st.x = 50;
+          st.y = 50;
+        }
+        return st;
+      }
+
       function getBgLayoutOrientation(id, ifrEl){
         /*
          * 背景套用方向改用版位實際寬高比判斷，不再用名稱裡的「橫 / 方 / 直」判斷。
@@ -1406,6 +1512,9 @@
 
 
       function getDefaultBgFitForLayout(id, ifrEl){
+        /* AMS BN 橫／方版都要求背景圖依寬度等比例呈現，完整保留右側內容；
+           使用 width100 取代 cover，避免比例不同時被裁切。 */
+        if(isAmsBn(id, ifrEl)) return 'width100';
         /* SCBN_APP 這個版位畫布是 1200x200 的長條形（很寬很扁）。
            改用「auto」模式，才能搭配下面的縮放160%、位置微調一起運作——
            「cover」模式雖然能保證自動填滿無留白，但完全不支援手動縮放數值
@@ -1447,6 +1556,7 @@
       }
       function getDefaultBgParamsForLayout(id, ifrEl){
         var fit = getDefaultBgFitForLayout(id, ifrEl);
+        if(isAmsBn(id, ifrEl)) return { fit: 'width100', scale: 100, x: 50, y: 50 };
         if(isScbnApp(id, ifrEl)){
           /* SCBN_APP 吃直式背景圖時：圖片寬度＝畫布寬度的 1/4（scale:25，
              畫布1200px寬 → 圖片顯示寬度300px，高度auto），位置放在
@@ -1482,10 +1592,11 @@
         window._bgDataUrl = h || v || single || null;
         document.querySelectorAll('.preview-block iframe').forEach(function(ifrEl){
           var id = getIfrBnid(ifrEl);
-          if(!id) return;
+          if(!id || isSearchIconId(id, ifrEl)) return;
           var st = getBgState(id);
           var nextSrc = single || (getBgLayoutOrientation(id, ifrEl) === 'vertical' ? v : h) || h || v;
           st.src = nextSrc;
+          normalizeBgStateForLayout(id, st, ifrEl);
           if(!st._initialized){
             var _dp = getDefaultBgParamsForLayout(id, ifrEl);
             st.scale = _dp.scale; st.x = _dp.x; st.y = _dp.y; st.fit = _dp.fit;
@@ -1598,7 +1709,7 @@
             /* 把所有版位的 src 都設成這張圖，各自保留自己的 scale/x/y/fit */
             document.querySelectorAll('.preview-block iframe').forEach(function(ifrEl){
               var id = getIfrBnid(ifrEl);
-              if(!id) return;
+              if(!id || isSearchIconId(id, ifrEl)) return;
               var st = getBgState(id);
               st.src = dataUrl;
               /* 只有第一次上傳才重設位置，已有設定則保留 */
@@ -2325,6 +2436,55 @@
       if(typeof window.broadcastColors === 'function') window.broadcastColors();
     }
 
+    /* 匯出前的座標快照：只有「下載暫存」會主動要求 iframe 回傳最新位置。
+       ZIP 使用目前已即時回寫的 state，避免為了附帶 JSON 重建/刷新畫布。 */
+    function applyIframeLayoutSnapshot(d){
+      var id = d && d.bnid ? String(d.bnid) : '', data = d && d.data || {};
+      if(!id) return;
+      (data.products || []).forEach(function(item){
+        var p=(window._bnProducts||[]).find(function(x){return x&&String(x.id)===String(item.id);});
+        if(!p || !item.layout) return;
+        p.layouts=p.layouts||{}; p.layouts[id]=_bnClone(item.layout); p.layout=_bnClone(item.layout);
+        p.x=item.layout.left; p.y=item.layout.top; p.width=item.layout.width; p.height=item.layout.height;
+      });
+      (data.characters || []).forEach(function(item){
+        var key=item.slot || (window._bnCharacter && window._bnCharacter.id===item.id ? '_bnCharacter' : '_bnCharacter2'), slot=key && window[key];
+        if(!slot || !item.layout) return;
+        slot.layouts=slot.layouts||{}; slot.layouts[id]=_bnClone(item.layout);
+      });
+      (data.logos || []).forEach(function(item){
+        var logo=(window._bnLogos||[]).find(function(x){return x&&String(x.id)===String(item.id);});
+        if(!logo || !item.layout) return;
+        logo.layouts=logo.layouts||{}; logo.layouts[id]=_bnClone(item.layout); logo.layout=_bnClone(item.layout);
+      });
+    }
+    window.addEventListener('message', function(e){
+      if(!e.data || e.data.type!=='bn-layout-snapshot') return;
+      applyIframeLayoutSnapshot(e.data);
+      var waiter=window._bnSnapshotWaiters && window._bnSnapshotWaiters[e.data.requestId];
+      if(waiter) waiter(e.data.requestId, e.data.bnid);
+    });
+    window._bnRequestIframePositionSnapshot=function(done){
+      var iframes=Array.from(document.querySelectorAll('.preview-block iframe'));
+      if(!iframes.length){ if(done) done(); return; }
+      var requestId='snap_'+Date.now()+'_'+Math.random().toString(36).slice(2), pending={};
+      if(!window._bnSnapshotWaiters) window._bnSnapshotWaiters={};
+      iframes.forEach(function(ifr){
+        var id=null; try{ id=new URLSearchParams((ifr.src||'').split('?')[1]||'').get('bnid'); }catch(_){} if(id) pending[String(id)]=true;
+      });
+      function finish(){
+        if(finish.done) return; finish.done=true; clearTimeout(timer); delete window._bnSnapshotWaiters[requestId]; if(done) done();
+      }
+      function arrived(_, bnid){
+        if(bnid && pending[String(bnid)] !== undefined) pending[String(bnid)] = false;
+        if(!Object.keys(pending).some(function(id){ return pending[id]; })) finish();
+      }
+      window._bnSnapshotWaiters[requestId]=arrived;
+      var timer=setTimeout(finish,1400);
+      iframes.forEach(function(ifr){
+        try{ ifr.contentWindow.postMessage({type:'bn-layout-snapshot-request',requestId:requestId},'*'); }catch(_){ }
+      });
+    };
     function downloadAll(){
       /* 字數硬擋：任何欄位（含系統補上 $ 與千分位後）超過上限就不給下載，
          跳提醒視窗請使用者先修改。 */
@@ -2352,6 +2512,7 @@
       var failedNames=[];
       var files=[];
       window._bnExporting = true;
+      window._bnExportLock = true;
       window._bnSuppressProductLayoutWrite = true;
       var _exportUnlockTimer = null;
 
@@ -2608,6 +2769,7 @@
         clearTimeout(_exportUnlockTimer);
         _exportUnlockTimer = setTimeout(function(){
           window._bnExporting = false;
+          window._bnExportLock = false;
           window._bnSuppressProductLayoutWrite = false;
           try{ document.dispatchEvent(new CustomEvent('bn-state-dirty')); }catch(_){ }
           setTimeout(function(){

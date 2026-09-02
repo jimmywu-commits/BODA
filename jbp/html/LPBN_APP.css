@@ -1,0 +1,15 @@
+/* LPBN 版位：依提供 JSON 建立；座標以畫布左上角為基準。 */
+*{transform-origin:0 0;}
+.bg{position:absolute;left:0;top:0;background:#3ecbff;z-index:2;}
+.logo範圍{background-color:rgba(235,104,119,.4);opacity:1;position:absolute;z-index:20;overflow:hidden;}
+.曝品、人物範圍{background-color:rgba(235,104,119,.4);opacity:1;position:absolute;z-index:20;overflow:visible;}
+.主標,.副標,.日期{position:absolute;white-space:nowrap;line-height:1;text-align:left;z-index:50;}
+.主標{font-size:51px;font-family:"ShopeeNotoSans (content)";font-weight:500;color:#2b79c4;transform:matrix(1.01696924104673,0,0,1.01752605654768,0,0);}
+.副標{font-size:81.599px;font-family:"ShopeeNotoSans (content)";font-weight:700;color:#2540b5;transform:matrix(.79613810971536,0,0,.79657401477767,0,0);}
+.日期{font-size:36px;font-family:"ShopeeNotoSans (content)";font-weight:500;color:#2540b5;transform:matrix(.83621996370985,0,0,.8366778145663,0,0);}
+.bg{width:1200px;height:550px;}
+.logo範圍{left:56px;top:184px;width:468px;height:52px;}
+.曝品、人物範圍{left:598px;top:14px;width:583px;height:537px;}
+.主標{left:59px;top:244px;}
+.副標{left:61px;top:305px;}
+.日期{left:59px;top:379px;}
