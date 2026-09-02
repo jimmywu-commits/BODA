@@ -249,6 +249,8 @@
    */
   function semanticTextWeight(layer) {
     if (!layer || layer.type !== 'text') return layer && layer.fontWeight;
+    /* 特定版型可明確覆寫共通語意字重，例如 D-2-1-1 的品名維持一般字。 */
+    if (layer.semanticWeight != null && String(layer.semanticWeight).trim()) return String(layer.semanticWeight).trim();
     var field = String(layer.field || '').replace(/[0-9]+$/, '').toLowerCase();
     var label = String(layer.fieldLabel || '').replace(/[0-9]+$/, '').toLowerCase();
 
@@ -391,6 +393,12 @@
       if (!/^msbn_[CD]_/i.test(cardSchemaId)) return '#ffffff';
     }
 
+    /* MSBN C（C-1-1～3 除外）的促標是淺色卡片上的標題，系統預設固定黑字；
+       只有使用者明確選過「促標字色」時才改套全域手動色。 */
+    if (role === 'promoText' && /^msbn_C_/i.test(String((opts && opts._schemaId) || '')) &&
+        !/^msbn_C_1_[123]$/i.test(String((opts && opts._schemaId) || '')) && theme.promoTextAuto) {
+      return '#000000';
+    }
     var v = theme[role];
     return (v && String(v).trim()) ? String(v).trim() : null;
   }

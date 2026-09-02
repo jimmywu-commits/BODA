@@ -66,7 +66,17 @@ Object.keys(MSBN_FIELDS).forEach((file) => {
   (spec.groups || []).forEach((group, gi) => {
     const suffix = gi === 0 ? '' : String(gi + 1);
     /* 同一個位置裡同名的欄位會被合併成多行文字（例如簽名小字兩行），所以只看種類 */
-    const types = [...new Set(group.map((g) => (typeof g === 'string' ? g : g.type)))];
+    const descriptors = group.map((g) => (typeof g === 'string' ? { type: g } : (g || {})));
+    /* 已明確指定 targetKey 的欄位（例如左右卡片色碼、圓圈色碼）
+       不依名稱猜測，直接驗證該 key 存在；匯入器也是優先用同一個 key 回寫。 */
+    descriptors.filter((d) => d.targetKey || d.fieldKey).forEach((d) => {
+      checked++;
+      const target = d.targetKey || d.fieldKey;
+      if (keys.indexOf(target) === -1) {
+        problems.push(`${file} 位置${gi + 1}：工單指定 targetKey「${target}」，但 block.json 沒有此欄位 → 匯入時內容會被丟掉`);
+      }
+    });
+    const types = [...new Set(descriptors.filter((d) => !(d.targetKey || d.fieldKey)).map((d) => d.type))];
     types.forEach((type) => {
       checked++;
       const base = LABEL_TO_FIELD_BASE[type];

@@ -86,6 +86,7 @@
       "lineHeight": "0.86",
       "fontWeight": "bold",
       "id": "promo",
+      "themeRole": "bodyText",
       "maxLength": 10,
       "designText": "文案最多10個字以內"
     },

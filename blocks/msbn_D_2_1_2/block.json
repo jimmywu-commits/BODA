@@ -108,7 +108,38 @@
       "fieldLabel": "右・圓形色塊3"
     },
     {
-      "zIndex": 1578,
+      "zIndex": 1581,
+      "type": "circle",
+      "left": 422.0,
+      "top": 270.0,
+      "width": 25.0,
+      "height": 25.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "field": "swatchColor10",
+      "fieldLabel": "左・圓形色塊4"
+    },
+    {
+      "zIndex": 1580,
+      "type": "circle",
+      "left": 745.0,
+      "top": 270.0,
+      "width": 25.0,
+      "height": 25.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "field": "swatchColor11",
+      "fieldLabel": "中・圓形色塊4"
+    },
+    {
+      "zIndex": 1579,
+      "type": "circle",
+      "left": 1069.0,
+      "top": 270.0,
+      "width": 25.0,
+      "height": 25.0,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "field": "swatchColor12",
+      "fieldLabel": "右・圓形色塊4"
+    },    {
       "type": "rect",
       "left": 1076.0,
       "top": 340.0,

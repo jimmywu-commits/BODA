@@ -3859,7 +3859,23 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           "type": "品名",
           "hint": "品名一排最多8字"
         },
-        "圓標"
+        "圓標",
+        {
+          "type": "色塊",
+          "label": "色塊(填色碼#)",
+          "targetKey": "bgColor2",
+          "value": "#ffbda9",
+          "noCheck": true,
+          "colorPreview": true
+        },
+        {
+          "type": "色塊",
+          "label": "色塊(填色碼#)",
+          "targetKey": "bgColor",
+          "value": "#a9c5ff",
+          "noCheck": true,
+          "colorPreview": true
+        }
       ],
       [
         {
@@ -3875,7 +3891,23 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           "type": "品名",
           "hint": "品名一排最多8字"
         },
-        "圓標"
+        "圓標",
+        {
+          "type": "色塊",
+          "label": "色塊(填色碼#)",
+          "targetKey": "bgColor2",
+          "value": "#ffbda9",
+          "noCheck": true,
+          "colorPreview": true
+        },
+        {
+          "type": "色塊",
+          "label": "色塊(填色碼#)",
+          "targetKey": "bgColor",
+          "value": "#a9c5ff",
+          "noCheck": true,
+          "colorPreview": true
+        }
       ]
     ]
   },
@@ -3938,6 +3970,12 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
   },
   "MSBN-B-1-1.jpg": {
     "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "右"],
+      "showHeaders": false,
+      "span": 8,
+      "groups": [[5, 6, 7], [0, 1, 2, 3, 4]]
+    },
     "groups": [
       [
         {
@@ -3971,6 +4009,12 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
   },
   "MSBN-B-1-2.jpg": {
     "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "右"],
+      "showHeaders": false,
+      "span": 8,
+      "groups": [[4, 5, 6], [0, 1, 2, 3]]
+    },
     "groups": [
       [
         {
@@ -4003,6 +4047,12 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
   },
   "MSBN-B-1-3.jpg": {
     "n": 1,
+    "workOrderColumns": {
+      "labels": ["左", "右"],
+      "showHeaders": false,
+      "span": 8,
+      "groups": [[3, 4, 5], [0, 1, 2]]
+    },
     "groups": [
       [
         "LOGO圖",
@@ -4025,6 +4075,12 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
   },
   "MSBN-B-1-4.jpg": {
     "n": 1,
+    "workOrderColumns": {
+      "labels": ["左"],
+      "showHeaders": false,
+      "span": 4,
+      "groups": [[3, 4, 5]]
+    },
     "groups": [
       [
         "LOGO圖",
@@ -4138,7 +4194,8 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     "workOrderColumns": {
       "labels": ["左", "右"],
       "showHeaders": false,
-      "groups": [[1], [0]]
+      "span": 8,
+      "groups": [[4, 5, 6, 7], [0, 1, 2, 3]]
     },
     "groups": [
       [
@@ -4697,6 +4754,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     "workOrderColumns": {
       "labels": ["左", "右"],
       "showHeaders": false,
+      "span": 10,
       "groups": [[3, 4, 5], [0, 1, 2]]
     },
     "labels": [
@@ -4727,6 +4785,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     "workOrderColumns": {
       "labels": ["左", "右"],
       "showHeaders": false,
+      "span": 10,
       "groups": [[2, 3], [0, 1]]
     },
     "labels": [
@@ -4893,6 +4952,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     "workOrderColumns": {
       "labels": ["左", "中", "右"],
       "showHeaders": false,
+      "span": 15,
       "groups": [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
     },
     "labels": [
@@ -4932,7 +4992,8 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     "workOrderColumns": {
       "labels": ["左", "中", "右"],
       "showHeaders": false,
-      "groups": [[4, 5], [2, 3], [0, 1]]
+      "span": 15,
+      "groups": [[12, 13, 14, 15, 16, 17], [6, 7, 8, 9, 10, 11], [0, 1, 2, 3, 4, 5]]
     },
     "labels": [
       "右",
@@ -4941,16 +5002,28 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     ],
     "groups": [
       [
-        "商品圖",
-        "CTA"
+        { "type": "商品圖", "targetKey": "productImg" },
+        { "type": "CTA", "targetKey": "cta" },
+        { "type": "色碼", "label": "顏色(#色號)", "targetKey": "swatchColor7", "value": "#ffffff", "noCheck": true, "colorPreview": true },
+        { "type": "色碼", "label": "顏色(#色號)", "targetKey": "swatchColor8", "value": "#8bbec0", "noCheck": true, "colorPreview": true },
+        { "type": "色碼", "label": "顏色(有的話)", "targetKey": "swatchColor9", "value": "#343337", "noCheck": true, "colorPreview": true },
+        { "type": "色碼", "label": "顏色(有的話)", "targetKey": "swatchColor12", "value": "#ffffff", "noCheck": true, "colorPreview": true }
       ],
       [
-        "商品圖",
-        "CTA"
+        { "type": "商品圖", "targetKey": "productImg2" },
+        { "type": "CTA", "targetKey": "cta2" },
+        { "type": "色碼", "label": "顏色(#色號)", "targetKey": "swatchColor4", "value": "#ffffff", "noCheck": true, "colorPreview": true },
+        { "type": "色碼", "label": "顏色(#色號)", "targetKey": "swatchColor5", "value": "#8bbec0", "noCheck": true, "colorPreview": true },
+        { "type": "色碼", "label": "顏色(有的話)", "targetKey": "swatchColor6", "value": "#343337", "noCheck": true, "colorPreview": true },
+        { "type": "色碼", "label": "顏色(有的話)", "targetKey": "swatchColor11", "value": "#ffffff", "noCheck": true, "colorPreview": true }
       ],
       [
-        "商品圖",
-        "CTA"
+        { "type": "商品圖", "targetKey": "productImg3" },
+        { "type": "CTA", "targetKey": "cta3" },
+        { "type": "色碼", "label": "顏色(#色號)", "targetKey": "swatchColor", "value": "#ffffff", "noCheck": true, "colorPreview": true },
+        { "type": "色碼", "label": "顏色(#色號)", "targetKey": "swatchColor2", "value": "#8bbec0", "noCheck": true, "colorPreview": true },
+        { "type": "色碼", "label": "顏色(有的話)", "targetKey": "swatchColor3", "value": "#343337", "noCheck": true, "colorPreview": true },
+        { "type": "色碼", "label": "顏色(有的話)", "targetKey": "swatchColor10", "value": "#ffffff", "noCheck": true, "colorPreview": true }
       ]
     ]
   },
@@ -5798,7 +5871,41 @@ function extractFieldCharLimit(fieldOrHint) {
   return extractCharLimit(fieldOrHint);
 }
 
+/*
+ * 工單匯出以使用者驗收的 XLSX 為唯一母版。這裡刻意不使用 ExcelJS 重寫，
+ * 因此欄寬、合併儲存格、下拉、格式與隱藏工作表都會原封不動保留。
+ * 如需緊急回到舊版動態產生器，可在 console 設定
+ * window.__BODA_USE_WORKORDER_TEMPLATE__ = false。
+ */
+var WORK_ORDER_TEMPLATE_URL = 'exl/BODA工單匯出母版.xlsx';
+function downloadWorkOrderTemplateXlsx(exportOptions) {
+  var opts = exportOptions && exportOptions.__bodaExportOptions === true ? exportOptions : {};
+  var isAllPlacementsExport = !!opts.allPlacements;
+  var downloadPrefix = opts.filenamePrefix ||
+    (isAllPlacementsExport ? 'BODA全版位試算表' : ('BODA工單_' + currentLevelId));
+  appLoadingUpdate(18, 'LOADING · 下載工單母版', '正在讀取已驗收的試算表版型…');
+  return fetch(WORK_ORDER_TEMPLATE_URL, { cache: 'no-store' })
+    .then(function (response) {
+      if (!response.ok) throw new Error('找不到工單母版（' + response.status + '）');
+      return response.arrayBuffer();
+    })
+    .then(function (buffer) {
+      appLoadingUpdate(92, 'LOADING · 下載工單母版', '正在下載原始母版…');
+      var blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = downloadPrefix + '_' + Date.now() + '.xlsx';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    });
+}
 function exportWorkOrderXlsx(exportOptions) {
+  if (window.__BODA_USE_WORKORDER_TEMPLATE__ !== false) {
+    return downloadWorkOrderTemplateXlsx(exportOptions);
+  }
   appLoadingUpdate(12, 'LOADING · 輸出試算表', '正在建立工作表與欄位…');
   /* 一般按鈕的 click 事件會把 MouseEvent 當成第一個參數傳進來；
      只有內部呼叫明確帶上 __bodaExportOptions 才視為匯出設定。 */
@@ -6184,6 +6291,7 @@ function exportWorkOrderXlsx(exportOptions) {
       var workOrderColumns = spec.workOrderColumns || null;
       var labels = spec.labels || MSBN_POS_LABELS[spec.n] || ['左右'];
       var positions = [];
+      var groupedFields = [];
       for (var gi = 0; gi < spec.n; gi++) {
         var gFields = [];
         (spec.groups[gi] || []).forEach(function (t) {
@@ -6192,55 +6300,67 @@ function exportWorkOrderXlsx(exportOptions) {
           var hint = descriptor.hint != null ? descriptor.hint : (MSBN_FIELD_HINTS[ftype] || '');
           gFields.push({
             type: ftype,
-            label: MSBN_FIELD_LABELS[ftype] || ftype,
-            metaLabel: ftype,
+            label: descriptor.label || MSBN_FIELD_LABELS[ftype] || ftype,
+            metaLabel: descriptor.metaLabel || ftype,
             hint: hint,
             targetKey: descriptor.targetKey || descriptor.fieldKey || '',
-            value: '',
-            locked: false
+            value: descriptor.value != null ? descriptor.value : '',
+            locked: !!descriptor.locked,
+            noCheck: !!descriptor.noCheck,
+            colorPreview: !!descriptor.colorPreview
           });
         });
-        if (workOrderColumns && spec.n === 1) {
-          var columnFields = (workOrderColumns.groups || []).map(function (indices) {
-            return (indices || []).map(function (fieldIndex) {
-              return gFields[fieldIndex];
-            }).filter(Boolean);
-          });
-          var commonFields = (workOrderColumns.common || []).map(function (fieldIndex) {
-            return gFields[fieldIndex];
+        groupedFields.push(gFields);
+      }
+      /* workOrderColumns 的索引一律以所有原始位置依序攤平後計算。
+         因此二／三欄的 MSBN 也能像 C 系列一樣安排共用欄、左／中／右欄，
+         而不是被限制在只支援單一版位。 */
+      if (workOrderColumns) {
+        var allFields = [];
+        groupedFields.forEach(function (fields) { allFields = allFields.concat(fields); });
+        var columnFields = (workOrderColumns.groups || []).map(function (indices) {
+          return (indices || []).map(function (fieldIndex) {
+            return allFields[fieldIndex];
           }).filter(Boolean);
-          positions.push({
-            label: labels[gi] || '左右',
-            fields: gFields,
-            sideFields: columnFields,
-            commonFields: commonFields,
-            innerCount: workOrderColumns.showHeaders === false ? 1 : columnFields.length,
-            innerLabels: workOrderColumns.labels || columnFields.map(function (_, index) {
-              return '位置' + (index + 1);
-            })
-          });
-        } else if (workOrderLayout && spec.n === 1) {
-          var textFields = gFields.filter(function (field) {
-            return ['促標', '品名', '警語'].indexOf(field.type) !== -1;
-          });
-          var imageFields = gFields.filter(function (field) {
-            return ['促標', '品名', '警語'].indexOf(field.type) === -1;
-          });
-          var imageOrder = ['商品', '代言人圖', '圓標', '簽名小字', '簽名圖', 'CTA'];
-          imageFields.sort(function (a, b) {
-            return imageOrder.indexOf(a.type) - imageOrder.indexOf(b.type);
-          });
-          var leftFields = workOrderLayout === 'text-right' ? imageFields : textFields;
-          var rightFields = workOrderLayout === 'text-right' ? textFields : imageFields;
-          positions.push({
-            label: labels[gi] || '左右',
-            fields: gFields,
-            sideFields: [leftFields, rightFields],
-            sideLabels: workOrderLayout === 'text-right' ? ['圖', '文'] : ['文', '圖']
-          });
-        } else {
-          positions.push({ label: labels[gi] || ('位置' + (gi + 1)), fields: gFields });
-        }
+        });
+        var commonFields = (workOrderColumns.common || []).map(function (fieldIndex) {
+          return allFields[fieldIndex];
+        }).filter(Boolean);
+        positions.push({
+          label: labels[0] || '左右',
+          fields: allFields,
+          sideFields: columnFields,
+          commonFields: commonFields,
+          innerCount: workOrderColumns.showHeaders === false ? 1 : columnFields.length,
+          innerLabels: workOrderColumns.labels || columnFields.map(function (_, index) {
+            return '位置' + (index + 1);
+          })
+        });
+      } else {
+        groupedFields.forEach(function (gFields, gi) {
+          if (workOrderLayout && spec.n === 1) {
+            var textFields = gFields.filter(function (field) {
+              return ['促標', '品名', '警語'].indexOf(field.type) !== -1;
+            });
+            var imageFields = gFields.filter(function (field) {
+              return ['促標', '品名', '警語'].indexOf(field.type) === -1;
+            });
+            var imageOrder = ['商品', '代言人圖', '圓標', '簽名小字', '簽名圖', 'CTA'];
+            imageFields.sort(function (a, b) {
+              return imageOrder.indexOf(a.type) - imageOrder.indexOf(b.type);
+            });
+            var leftFields = workOrderLayout === 'text-right' ? imageFields : textFields;
+            var rightFields = workOrderLayout === 'text-right' ? textFields : imageFields;
+            positions.push({
+              label: labels[gi] || '左右',
+              fields: gFields,
+              sideFields: [leftFields, rightFields],
+              sideLabels: workOrderLayout === 'text-right' ? ['圖', '文'] : ['文', '圖']
+            });
+          } else {
+            positions.push({ label: labels[gi] || ('位置' + (gi + 1)), fields: gFields });
+          }
+        });
       }
       out.push({
         order: ++seq, kind: 'msbn', sourceKey: 'msbn:' + rowIndex, band: band,
@@ -6250,6 +6370,7 @@ function exportWorkOrderXlsx(exportOptions) {
         specText: row.file.replace(/\.(jpg|jpeg|png)$/i, ''),
         positions: positions,
         previewSrc: 'msbn-img/' + row.file,
+        layoutSpan: workOrderColumns ? (Number(workOrderColumns.span) || 16) : ((workOrderLayout && spec.n === 1) ? 8 : 0),
         layoutColumns: (workOrderColumns || (workOrderLayout && spec.n === 1)) ? 1 : 4
       });
     });
@@ -6264,18 +6385,22 @@ function exportWorkOrderXlsx(exportOptions) {
   layoutWs.properties.tabColor = { argb: COLORS.tealDark };
   /* A／B 欄比照參考檔 MS Layout 的緊湊寬度：
      A 只放「MSBN／副區」，B 的版位名稱與規格採自動換行，不再佔掉大片橫向空間。 */
-  layoutWs.getColumn(1).width = 10.63;
-  layoutWs.getColumn(2).width = 10.5;
-  for (var gc = 0; gc < 4; gc++) {
-    var baseCol = 3 + gc * 4;
-    layoutWs.getColumn(baseCol).width = 15;
-    layoutWs.getColumn(baseCol + 1).width = 12;
-    layoutWs.getColumn(baseCol + 2).width = 12;
-    layoutWs.getColumn(baseCol + 3).width = 10;
-  }
-  layoutWs.getColumn(19).width = 2.5;
-  for (var pc = 20; pc <= 33; pc++) layoutWs.getColumn(pc).width = 6.8;
-
+  /* 欄寬比照核定範例表：欄位緊湊，仍保留輸入、檢核與版位分欄所需空間。 */
+  layoutWs.getColumn(1).width = 10.29;
+  layoutWs.getColumn(2).width = 10.43;
+  layoutWs.getColumn(3).width = 10.43;
+  for (var narrow = 4; narrow <= 6; narrow++) layoutWs.getColumn(narrow).width = 9;
+  layoutWs.getColumn(7).width = 10.43;
+  layoutWs.getColumn(8).width = 10.43;
+  for (var mid = 9; mid <= 11; mid++) layoutWs.getColumn(mid).width = 9;
+  layoutWs.getColumn(12).width = 10.43;
+  layoutWs.getColumn(13).width = 10.43;
+  for (var compact = 14; compact <= 17; compact++) layoutWs.getColumn(compact).width = 6.71;
+  layoutWs.getColumn(18).width = 10.43;
+  layoutWs.getColumn(19).width = 2.43;
+  for (var pc = 20; pc <= 23; pc++) layoutWs.getColumn(pc).width = 5.29;
+  for (var pc2 = 24; pc2 <= 28; pc2++) layoutWs.getColumn(pc2).width = 4.43;
+  for (var pc3 = 29; pc3 <= 33; pc3++) layoutWs.getColumn(pc3).width = 5.29;
   mergeSafe(layoutWs, 1, 1, 2, 1).value = '素材名稱';
   mergeSafe(layoutWs, 1, 2, 2, 2).value = '版位／規格';
   mergeSafe(layoutWs, 1, 3, 1, 18).value = 'Layout（綠色欄位可填；固定欄位與規則已鎖定）';
@@ -6309,6 +6434,11 @@ function exportWorkOrderXlsx(exportOptions) {
       ? Math.max(1, Math.min(4, item.positions.length || 1))
       : (item.layoutColumns || 4);
     var ranges = [];
+    if (count === 1 && item.layoutSpan) {
+      var spanEnd = Math.max(3, Math.min(18, 2 + Number(item.layoutSpan)));
+      ranges.push({ start: 3, end: spanEnd, label: 3, inputStart: 4, inputEnd: spanEnd - 1, check: spanEnd });
+      return ranges;
+    }
     for (var i = 0; i < count; i++) {
       var start = 3 + Math.floor(i * 16 / count);
       var end = 3 + Math.floor((i + 1) * 16 / count) - 1;
@@ -6378,7 +6508,7 @@ function exportWorkOrderXlsx(exportOptions) {
       }
       return (p.fields || []).length;
     }).concat([0]));
-    var fieldRows = Math.max(maxFields, 6);
+    var fieldRows = item.kind === 'subarea' ? Math.max(maxFields, 6) : Math.max(maxFields, 1);
     var innerHeaderRows = hasInnerPositions ? 1 : 0;
     var displayRows = fieldRows + innerHeaderRows + commonRows;
     var headerRow = layoutRow;
@@ -6451,7 +6581,7 @@ function exportWorkOrderXlsx(exportOptions) {
       }
 
       function normalizeWorkOrderExportText(field) {
-        if (!field || field.locked || isImageFilenameField(field)) return field ? field.value : '';
+        if (!field || field.locked || isImageFilenameField(field) || field.colorPreview) return field ? field.value : '';
         var raw = field.value == null ? '' : String(field.value);
         var role = importFieldRuleRole(field, field.metaLabel || field.label || field.type);
         if (IMPORT_TEXT_RULES_STATE.status === 'ready' && window.banwordEngine &&
@@ -6464,8 +6594,10 @@ function exportWorkOrderXlsx(exportOptions) {
       function renderLayoutField(field, rowNo, fieldRange, labelText, showLabel) {
         var labelColumn = fieldRange.label != null ? fieldRange.label : posRange.label;
         var labelCell = layoutWs.getCell(rowNo, labelColumn);
-        var inputCell = mergeSafe(layoutWs, rowNo, fieldRange.inputStart, rowNo, fieldRange.inputEnd);
-        var checkCell = layoutWs.getCell(rowNo, fieldRange.check);
+        var suppressCheck = !!field.noCheck;
+        var inputEnd = suppressCheck ? fieldRange.end : fieldRange.inputEnd;
+        var inputCell = mergeSafe(layoutWs, rowNo, fieldRange.inputStart, rowNo, inputEnd);
+        var checkCell = suppressCheck ? null : layoutWs.getCell(rowNo, fieldRange.check);
         setBorder(layoutWs, rowNo, posRange.label, rowNo, posRange.label);
         setBorder(layoutWs, rowNo, fieldRange.start, rowNo, fieldRange.end);
         layoutWs.getRow(rowNo).height = 22;
@@ -6481,14 +6613,18 @@ function exportWorkOrderXlsx(exportOptions) {
         }
         inputCell.note = inputNote;
         setInputStyle(inputCell, field.locked, { fitText: isCSeriesTicketCopyField(field) });
-        setProtection(layoutWs, rowNo, fieldRange.inputStart, rowNo, fieldRange.inputEnd, field.locked);
-        setStaticStyle(checkCell, {
+        setProtection(layoutWs, rowNo, fieldRange.inputStart, rowNo, inputEnd, field.locked);
+        if (field.colorPreview && /^#[0-9a-f]{6}$/i.test(String(inputCell.value || ''))) {
+          inputCell.fill = solid(hexToArgb(String(inputCell.value)));
+          inputCell.font = { name: 'Arial', size: 10, color: { argb: COLORS.black } };
+        }
+        if (!suppressCheck) setStaticStyle(checkCell, {
           fill: field.locked ? COLORS.gray : COLORS.white, horizontal: 'center', size: 9
         });
 
-        if (field.locked) {
+        if (!suppressCheck && field.locked) {
           checkCell.value = '鎖定';
-        } else {
+        } else if (!suppressCheck) {
           if (isImageFilenameField(field)) {
             applyImageFilenameGuard(layoutWs, inputCell, checkCell);
           } else {
@@ -8892,6 +9028,16 @@ function colorToHex(v) {
   }
   return '#000000';
 }
+/* MSBN C／D 的卡片底：先取得同步色，再加亮 60%，形成一致的淺、淡色。 */
+function limitCardBackgroundColor(v) {
+  var hex = String(v == null ? '' : v).trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex;
+  var channels = [1, 3, 5].map(function (offset) { return parseInt(hex.slice(offset, offset + 2), 16); });
+  return '#' + channels.map(function (channel) {
+    var out = Math.round(channel + (255 - channel) * 0.6).toString(16);
+    return out.length === 1 ? '0' + out : out;
+  }).join('');
+}
 /* 將色彩與白色各混合一半：保留背景色相性，同時明確提高文字亮度。 */
 function lightenColorBy50(v) {
   var hex = colorToHex(v);
@@ -9682,6 +9828,7 @@ function sampledRoleColors(columns) {
 
 /* 匯入工單的連動預設：未手動覆寫時，促標底色跟曝光副標、促標字色跟背景，
    MSBN C／D 卡片底色跟圓標底；一旦使用者手動指定，外層呼叫端會優先使用手動色。 */
+var A23_CARD_DEFAULTS = { left: '#a9c5ff', right: '#ffbda9' };
 function importLinkedDefaultColors(colorState, sampled, sharedBg) {
   colorState = colorState || {};
   sampled = sampled || {};
@@ -9690,8 +9837,9 @@ function importLinkedDefaultColors(colorState, sampled, sharedBg) {
     promoBg: getExposureSubTextColor(),
     promoText: lightenColorBy50(sharedBg),
     cardBg: badgeBg || sampled.cardBg || '',
-    cardBgA23Left: badgeBg || sampled.cardBgA23Left || '',
-    cardBgA23Right: badgeBg || sampled.cardBgA23Right || ''
+    /* A-2-3 左右卡片有固定的設計預設，不隨圓標底色連動。 */
+    cardBgA23Left: A23_CARD_DEFAULTS.left,
+    cardBgA23Right: A23_CARD_DEFAULTS.right
   };
 }
 /* 手動換背景色代表配色情境已改變：促標不保留先前的手動覆寫，
@@ -9711,15 +9859,17 @@ function importRenderOpts(editable, mode, col) {
   var sharedBg = isMaint ? (colorState.bg || resolvedImportBg()) : resolvedImportBg();
   var sampled = sampledRoleColors(columns);
   var linkedDefaults = importLinkedDefaultColors(colorState, sampled, sharedBg);
-  var sharedCardBg = colorState.cardBg || linkedDefaults.cardBg;
+  var sharedCardBg = limitCardBackgroundColor(colorState.cardBg || linkedDefaults.cardBg);
   var a23LeftCardBg = colorState.cardBgA23Left || linkedDefaults.cardBgA23Left;
   var a23RightCardBg = colorState.cardBgA23Right || linkedDefaults.cardBgA23Right;
   var theme = { canvasBg: sharedBg, bg: sharedBg, cardBg: sharedCardBg,
     cardBgA23Left: a23LeftCardBg, cardBgA23Right: a23RightCardBg,
     promoBg: colorState.promoBg || linkedDefaults.promoBg,
-    promoText: colorState.promoText || linkedDefaults.promoText, bgScope: 'msbn-d' };
+    promoText: colorState.promoText || linkedDefaults.promoText,
+    /* C 系列促標未手動選色時固定黑字；有手動色才套用統一促標字色。 */
+    promoTextAuto: !colorState.promoText, bgScope: 'msbn-d' };
   IMPORT_COLOR_ITEMS.forEach(function (it) {
-    if (it.key === 'bg') return;
+    if (it.key === 'bg' || it.key === 'cardBg') return;
     if (colorState[it.key]) theme[it.key] = colorState[it.key];
   });
   return {
@@ -9761,6 +9911,23 @@ function releaseImportColorPicker(delay) {
     renderImportColorPanel();
   }, typeof delay === 'number' ? delay : 0);
 }
+/* 維修色盤同樣不能在拖曳中重建 DOM，否則原生選色視窗會立刻被關掉。 */
+var maintColorPickerEditing = false;
+var maintColorPanelRefreshPending = false;
+var maintColorPickerReleaseTimer = null;
+function holdMaintColorPicker() {
+  clearTimeout(maintColorPickerReleaseTimer);
+  maintColorPickerEditing = true;
+}
+function releaseMaintColorPicker(delay) {
+  clearTimeout(maintColorPickerReleaseTimer);
+  maintColorPickerReleaseTimer = setTimeout(function () {
+    maintColorPickerEditing = false;
+    if (!maintColorPanelRefreshPending) return;
+    maintColorPanelRefreshPending = false;
+    renderMaintColorPanel();
+  }, typeof delay === 'number' ? delay : 0);
+}
 
 function renderImportColorPanel() {
   if (importColorPickerEditing) {
@@ -9773,6 +9940,7 @@ function renderImportColorPanel() {
   var sampled = sampledRoleColors(); /* 畫布上目前實際的色號 */
   var hasEligibleCardBg = currentImportColumns.some(function (col) { return isCardBgThemeEligible(col.blockId); });
   var hasA23 = currentImportColumns.some(function (col) { return /^msbn_A_2_3$/i.test(String(col.blockId || '')); });
+  var hasMsbnC = currentImportColumns.some(function (col) { return /^msbn_C_/i.test(String(col.blockId || '')); });
   var linkedDefaults = importLinkedDefaultColors(importTheme, sampled, bgNow);
   var colorItems = IMPORT_COLOR_ITEMS.filter(function (it) {
     if (it.key === 'cardBg') return hasEligibleCardBg;
@@ -9790,11 +9958,11 @@ function renderImportColorPanel() {
     var note = isBg ? '與曝光資源、畫布留白連動' : (it.key === 'promoBg'
       ? (overridden ? '' : '預設跟曝光資源副標文字色')
       : (it.key === 'promoText'
-        ? (overridden ? '' : '預設為背景色加亮 50%')
+        ? (overridden ? '' : (hasMsbnC ? 'MSBN C（C-1-1～3 除外）預設黑字；其他版位為背景色加亮 50%' : '預設為背景色加亮 50%'))
         : (isCardBg
-          ? (overridden ? '只同步 MSBN C／D 卡片' : '預設跟圓標底色相同')
+          ? (overridden ? '只同步 MSBN C／D 卡片；同步後加亮 60%' : '預設跟圓標底色相同，再加亮 60%')
           : (isA23CardBg
-            ? (overridden ? '只同步 MSBN A-2-3 的左／右卡片' : '預設跟圓標底色相同')
+            ? (overridden ? '只同步 MSBN A-2-3 的左／右卡片' : '預設左 #a9c5ff／右 #ffbda9')
             : (overridden ? '' : (sampled[it.key] ? '畫布實際色' : '這批版位沒有這個顏色'))))));
     return '<div class="ic-color-row' + (overridden ? '' : ' is-off') + '" data-key="' + it.key + '">' +
       '<span class="icc-label">' + esc(it.label) +
@@ -9815,6 +9983,7 @@ function renderImportColorPanel() {
     /* 拖色盤時 input 事件會連續狂發，每一發都重畫整個畫布會頓，
        所以畫布這邊延遲一點再套用，資料本身是即時更新的。 */
     function setValue(v, rebuildPanel) {
+
       if (key === 'bg') {
         var normalized = /^#[0-9a-fA-F]{6}$/.test(v || '') ? colorToHex(v) : v;
         importTheme.bg = normalized;
@@ -9900,7 +10069,11 @@ function applyMaintTheme() {
     applyDynamicStageSize(mount, col);
     bindCanvasInteractions(mount, col, idx, 'maint');
   });
-  renderMaintColorPanel();
+  if (maintColorPickerEditing) {
+    maintColorPanelRefreshPending = true;
+  } else {
+    renderMaintColorPanel();
+  }
 }
 
 function renderMaintColorPanel() {
@@ -9909,6 +10082,7 @@ function renderMaintColorPanel() {
   var sampled = sampledRoleColors(maintColumns);
   var hasEligibleCardBg = maintColumns.some(function (col) { return isCardBgThemeEligible(col.blockId); });
   var hasA23 = maintColumns.some(function (col) { return /^msbn_A_2_3$/i.test(String(col.blockId || '')); });
+  var hasMsbnC = maintColumns.some(function (col) { return /^msbn_C_/i.test(String(col.blockId || '')); });
   var maintBg = maintTheme.bg || resolvedImportBg();
   var linkedDefaults = importLinkedDefaultColors(maintTheme, sampled, maintBg);
   var colorItems = IMPORT_COLOR_ITEMS.filter(function (it) {
@@ -9925,11 +10099,11 @@ function renderMaintColorPanel() {
     var note = isBg ? (overridden ? '維修測試背景色' : '目前共用背景色') : (it.key === 'promoBg'
       ? (overridden ? '' : '預設跟曝光資源副標文字色')
       : (it.key === 'promoText'
-        ? (overridden ? '' : '預設為背景色加亮 50%')
+        ? (overridden ? '' : (hasMsbnC ? 'MSBN C（C-1-1～3 除外）預設黑字；其他版位為背景色加亮 50%' : '預設為背景色加亮 50%'))
         : (isCardBg
-          ? (overridden ? '只同步 MSBN C／D 卡片' : '預設跟圓標底色相同')
+          ? (overridden ? '只同步 MSBN C／D 卡片；同步後加亮 60%' : '預設跟圓標底色相同，再加亮 60%')
           : (isA23CardBg
-            ? (overridden ? '只同步 MSBN A-2-3 的左／右卡片' : '預設跟圓標底色相同')
+            ? (overridden ? '只同步 MSBN A-2-3 的左／右卡片' : '預設左 #a9c5ff／右 #ffbda9')
             : (overridden ? '' : (sampled[it.key] ? '維修頁實際色' : '目前沒有這個顏色'))))));
     return '<div class="ic-color-row' + (overridden ? '' : ' is-off') + '" data-key="' + it.key + '">' +
       '<span class="icc-label">' + esc(it.label) +
@@ -9946,6 +10120,7 @@ function renderMaintColorPanel() {
     var hex = row.querySelector('.icc-hex');
     var autoTag = row.querySelector('.icc-auto');
     function setValue(v, rebuildPanel) {
+
       maintTheme[key] = v;
       row.classList.toggle('is-off', !v);
       if (autoTag) autoTag.style.display = v ? 'none' : '';
@@ -9955,21 +10130,21 @@ function renderMaintColorPanel() {
       }
       applyMaintThemeSoon();
     }
-    picker.addEventListener('pointerdown', holdImportColorPicker);
-    picker.addEventListener('focus', holdImportColorPicker);
+    picker.addEventListener('pointerdown', holdMaintColorPicker);
+    picker.addEventListener('focus', holdMaintColorPicker);
     picker.addEventListener('input', function () {
-      holdImportColorPicker();
+      holdMaintColorPicker();
       hex.value = this.value;
       setValue(this.value, false);
     });
     picker.addEventListener('change', function () {
       setValue(this.value, false);
-      applyImportTheme(); /* 色盤確認時，不等待防抖，畫布立即完成最後一幀。 */
-      importColorPanelRefreshPending = true;
-      releaseImportColorPicker(0);
+      applyMaintTheme(); /* 色盤確認時，不等待防抖，畫布立即完成最後一幀。 */
+      maintColorPanelRefreshPending = true;
+      releaseMaintColorPicker(0);
     });
     /* 有些瀏覽器打開原生色盤時會短暫 blur，延後釋放可避免拖曳一開始就被重建。 */
-    picker.addEventListener('blur', function () { releaseImportColorPicker(250); });
+    picker.addEventListener('blur', function () { releaseMaintColorPicker(250); });
     hex.addEventListener('input', function () {
       var v = this.value.trim();
       setValue(v, false);
@@ -10427,9 +10602,20 @@ function renderImportColumns(columns, skipPreviewRerender) {
       var colorPicker = fieldEl.querySelector('.local-color-picker');
       var colorText = fieldEl.querySelector('.local-color-text');
       if (colorPicker && colorText) {
+        /* 原生色盤拖曳時不重建畫布；部分瀏覽器只要 DOM 有重畫就會把色盤關掉。
+           因此拖曳期間只更新旁邊的色碼，確認選色（change）後才套用到畫布。 */
+        var pendingPickerColor = colorPicker.value;
+        colorPicker.addEventListener('pointerdown', function () { pendingPickerColor = colorPicker.value; });
+        colorPicker.addEventListener('focus', function () { pendingPickerColor = colorPicker.value; });
         colorPicker.addEventListener('input', function () {
+          pendingPickerColor = this.value;
           colorText.value = this.value;
-          updateAndRerender(key, this.value);
+        });
+        colorPicker.addEventListener('change', function () {
+          var v = pendingPickerColor || this.value;
+          pendingPickerColor = '';
+          colorText.value = v;
+          updateAndRerender(key, v);
         });
         colorText.addEventListener('input', function () {
           var v = this.value.trim();

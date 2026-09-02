@@ -219,7 +219,7 @@
       "top": 170.0,
       "width": 17,
       "height": 81.0,
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     {
       "zIndex": 1318,
@@ -228,7 +228,7 @@
       "top": 202,
       "width": 79.0,
       "height": 17,
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     {
       "zIndex": 1319,
