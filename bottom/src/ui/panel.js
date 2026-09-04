@@ -511,6 +511,54 @@
     return form;
   }
 
+
+  /*
+   * 圖片的來源可以是面板「上傳」按鈕，也可以是畫布上的「未選圖」框拖入。
+   * 兩條路徑共用這個入口，才不會一邊有去白邊／型別確認、另一邊漏掉。
+   */
+  function stageImageUpload(file, index, ui, rerender, fromDrop) {
+    if (!file || !(/\.(svg|png|jpe?g)$/i.test(file.name || "") || /^image\//.test(file.type || ""))) {
+      ui.uploadMessage = "請拖入 SVG、PNG 或 JPG 圖片。";
+      rerender();
+      return;
+    }
+
+    var baseName = (file.name || "未命名").replace(/\.[^.]+$/, "");
+    var isSvg = /\.svg$/i.test(file.name || "") || file.type === "image/svg+xml";
+    var reader = new FileReader();
+
+    reader.onload = function (ev) {
+      var originalSrc = ev.target.result;
+      function stage(src) {
+        ui.pendingUpload = {
+          slotIndex: index,
+          displayName: baseName,
+          svg: isSvg ? originalSrc : null,
+          src: isSvg ? null : src,
+        };
+        ui.uploadMessage = fromDrop
+          ? "已放入第 " + (index + 1) + " 格，請選擇要作為一般 icon 或廠商 LOGO。"
+          : "";
+        rerender();
+      }
+
+      /* 點陣圖先裁掉外圍透明／白邊；彩色底圖由裁切器判定為非白底，會完整保留。 */
+      if (!isSvg && window.ImageEditor && typeof window.ImageEditor.trimWhiteBorder === "function") {
+        window.ImageEditor.trimWhiteBorder(originalSrc)
+          .then(function (result) { stage(result && result.src ? result.src : originalSrc); })
+          .catch(function () { stage(originalSrc); });
+      } else {
+        stage(originalSrc);
+      }
+    };
+    reader.onerror = function () {
+      ui.uploadMessage = "讀取檔案失敗。";
+      rerender();
+    };
+
+    if (isSvg) reader.readAsText(file);
+    else reader.readAsDataURL(file);
+  }
   /* ---------------- 每一顆的內容卡 ---------------- */
 
   function buildSlotCard(state, banner, store, Actions, ui, rerender, slot, index) {
@@ -593,41 +641,7 @@
     hiddenFile.addEventListener("change", function (e) {
       var file = e.target.files && e.target.files[0];
       if (!file) return;
-
-      var baseName = file.name.replace(/\.[^.]+$/, "");
-      var isSvg = /\.svg$/i.test(file.name) || file.type === "image/svg+xml";
-      var reader = new FileReader();
-
-      reader.onload = function (ev) {
-        var originalSrc = ev.target.result;
-        function stage(src) {
-          // 沒有 type 欄位：型別由確認表單上按了哪一顆按鈕當場決定，不需要預設值
-          ui.pendingUpload = {
-            slotIndex: index,
-            displayName: baseName,
-            svg: isSvg ? originalSrc : null,
-            src: isSvg ? null : src,
-          };
-          ui.uploadMessage = "";
-          rerender();
-        }
-
-        /* 點陣圖先裁掉外圍透明／白邊；彩色底圖由裁切器判定為非白底，會完整保留。 */
-        if (!isSvg && window.ImageEditor && typeof window.ImageEditor.trimWhiteBorder === "function") {
-          window.ImageEditor.trimWhiteBorder(originalSrc)
-            .then(function (result) { stage(result && result.src ? result.src : originalSrc); })
-            .catch(function () { stage(originalSrc); });
-        } else {
-          stage(originalSrc);
-        }
-      };
-      reader.onerror = function () {
-        ui.uploadMessage = "讀取檔案失敗。";
-        rerender();
-      };
-
-      if (isSvg) reader.readAsText(file);
-      else reader.readAsDataURL(file);
+      stageImageUpload(file, index, ui, rerender, false);
       hiddenFile.value = "";
     });
     iconRow.appendChild(hiddenFile);
@@ -818,6 +832,21 @@
 
   function buildExportSection(state, banner, store, ui, rerender) {
     var node = el("div", { class: "panel-section export-section" });
+
+    /* 工單生成器的「吸底」頁簽不另開一套「匯出變體」流程；
+       一律回到主工具的下載全部，才會與副區、MSBN、工單試算表一起輸出。 */
+    var isGeneratorEmbed = new URLSearchParams(window.location.search).get("embed") === "generator";
+    if (isGeneratorEmbed) {
+      var parentExportBtn = el("button", { class: "primary block" }, ["⬇ 下載全部"]);
+      parentExportBtn.addEventListener("click", function () {
+        if (window.BottomParentBridge && window.BottomParentBridge.requestGeneratorDownloadAll) {
+          window.BottomParentBridge.requestGeneratorDownloadAll();
+        }
+      });
+      node.appendChild(parentExportBtn);
+      return node;
+    }
+
     var n = banner.slots.length;
     var bannerCount = state.banners.length;
 
@@ -1107,6 +1136,9 @@
       },
       loadProject: function (file, onDone) {
         loadProjectFile(store, Actions, ui, renderAll, file, onDone);
+      },
+      stageImageUpload: function (file, index) {
+        stageImageUpload(file, index, ui, renderAll, true);
       },
     };
   }

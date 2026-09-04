@@ -31,6 +31,8 @@
       }
     );
 
+    /* 給主工具嵌入模式的「顯示」下拉使用；只控制檢視倍率，不影響匯出尺寸。 */
+    window.BottomViewport = mounted.viewport;
     onScaleChange = window.ZoomBar.mount(
       document.getElementById("zoom-bar"),
       mounted.viewport
@@ -38,6 +40,31 @@
     onScaleChange(mounted.viewport.getScale());
 
     var panel = window.PanelUI.mount(document.getElementById("panel"), window.store, window.Actions);
+    var isStandaloneEmbed = new URLSearchParams(location.search).get("embed") === "standalone";
+    if (isStandaloneEmbed) {
+      var panelEl = document.getElementById("panel");
+      var hostLevel = document.createElement("div");
+      hostLevel.id = "bottom-host-level";
+      hostLevel.innerHTML = '<label for="bottom-host-level-select">等級</label><select id="bottom-host-level-select" aria-label="吸底等級"></select>';
+      panelEl.insertBefore(hostLevel, panelEl.firstChild);
+      var hostLevelSelect = hostLevel.querySelector("select");
+      window.BottomHostLevel = {
+        setOptions: function (items) {
+          var current = hostLevelSelect.value;
+          hostLevelSelect.innerHTML = (items || []).map(function (item) {
+            return '<option value="' + String(item.id || "").replace(/"/g, "&quot;") + '">' + String(item.label || item.id || "") + '</option>';
+          }).join("");
+          if (current) hostLevelSelect.value = current;
+        },
+        setValue: function (id) { if (id != null) hostLevelSelect.value = String(id); }
+      };
+      hostLevelSelect.addEventListener("change", function () {
+        if (window.BottomParentBridge && window.BottomParentBridge.requestLevelChange) window.BottomParentBridge.requestLevelChange(hostLevelSelect.value);
+      });
+
+    }
+    // 畫布「未選圖」框拖放與面板上傳共用同一套圖片處理流程。
+    window.BottomImageUpload = panel && panel.stageImageUpload ? panel.stageImageUpload : null;
 
     /* 嵌入主工具時先啟動 postMessage 橋；父頁送來的 xlsx 仍走 panel.importWorkOrder，
        因此和手動匯入共用完全相同的解析、核對訊息與 undo 行為。 */

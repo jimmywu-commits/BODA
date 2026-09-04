@@ -15,9 +15,23 @@
       ["itemText4", "content4", "content9"],
       ["itemText5", "content5", "content10"]
     ],
-    "shadeStart": 0,
     "topRadius": 15,
-    "bottomRadius": 15
+    "bottomRadius": 15,
+    "gridLines": {
+      "outerBorder": false,
+      "left": 20,
+      "width": 1160,
+      "verticalDividers": [505, 695],
+      "lineWidth": 3,
+      "zIndex": 1664,
+      "derivedColor": {
+        "fromField": "bgColor",
+        "fromThemeRole": "bg",
+        "mode": "darken",
+        "amount": 0.12,
+        "fallback": "rgb(236, 155, 31)"
+      }
+    }
   },
   "layers": [
     {
@@ -336,59 +350,6 @@
       "letterSpacing": -1.3
     },
     {
-      "zIndex": 1664,
-      "type": "rect",
-      "left": 20.0,
-      "top": 15.0,
-      "width": 1160.0,
-      "height": 74.0,
-      "backgroundColor": "rgb(246, 208, 149)",
-      "opacity": 0.502,
-      "borderRadius": "15px 15px 0px 0px",
-      "derivedColor": {
-        "fromField": "bgColor",
-        "fromThemeRole": "bg",
-        "mode": "darken",
-        "fallback": "rgb(246, 208, 149)",
-        "amount": 0.2
-      }
-    },
-    {
-      "zIndex": 1662,
-      "type": "rect",
-      "left": 20.0,
-      "top": 163.0,
-      "width": 1160.0,
-      "height": 74.0,
-      "backgroundColor": "rgb(246, 208, 149)",
-      "opacity": 0.502,
-      "derivedColor": {
-        "fromField": "bgColor",
-        "fromThemeRole": "bg",
-        "mode": "darken",
-        "fallback": "rgb(246, 208, 149)",
-        "amount": 0.2
-      }
-    },
-    {
-      "zIndex": 1660,
-      "type": "rect",
-      "left": 20.0,
-      "top": 311.0,
-      "width": 1160.0,
-      "height": 74.0,
-      "backgroundColor": "rgb(246, 208, 149)",
-      "opacity": 0.502,
-      "borderRadius": "0px 0px 15px 15px",
-      "derivedColor": {
-        "fromField": "bgColor",
-        "fromThemeRole": "bg",
-        "mode": "darken",
-        "fallback": "rgb(246, 208, 149)",
-        "amount": 0.2
-      }
-    },
-    {
       "zIndex": 1659,
       "type": "rect",
       "left": 505.0,
@@ -400,7 +361,7 @@
         "fromField": "bgColor",
         "fromThemeRole": "bg",
         "mode": "darken",
-        "amount": 0.2,
+        "amount": 0.08,
         "fallback": "rgb(246, 208, 149)"
       }
     },

@@ -21,6 +21,7 @@ var BN_LAYOUTS = [
 
   "ddcard方logo.html",
   "ddcard橫logo.html",
+  "ddcard無logo.html",
 
   "Coin_pageBN_APP方LOGO.html",
   "Coin_pageBN_APP橫LOGO.html",

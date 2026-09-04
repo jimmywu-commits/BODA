@@ -743,6 +743,11 @@
         nextColors = Object.assign(nextColors, clone(global._bnLastUserColorState));
       }
       nextColors = applyLockedCanvasBg(nextColors, options);
+      /* 舊暫存未記錄 CTA 自動模式：自訂彩色字保留手動；黑／白沿用自動對比。 */
+      if(!Object.prototype.hasOwnProperty.call(nextColors, 'ctaTextAuto')) {
+        var legacyCtaText = String(nextColors.ctaText || '').trim().toLowerCase();
+        nextColors.ctaTextAuto = !(legacyCtaText && legacyCtaText !== '#ffffff' && legacyCtaText !== '#000000');
+      }
       Object.assign(global.colorState,nextColors);
       if(typeof global._bnNormalizeColorStateRules === 'function') global._bnNormalizeColorStateRules();
       global._bnLastUserColorState = clone(global.colorState);
@@ -1072,7 +1077,7 @@
         if(global.colorState){
           Object.assign(global.colorState, {
             mainText:'#2b79c4', subText:'#2540b5', dateText:'#2540b5',
-            brandText:'#2b79c4', canvasBg:'#6bc0ec', ctaText:'#ffffff', ctaBg:'#2540b5'
+            brandText:'#2b79c4', canvasBg:'#6bc0ec', ctaText:'#ffffff', ctaTextAuto:true, ctaBg:'#2540b5'
           });
           if(typeof global.renderColorPickers==='function') global.renderColorPickers();
           if(typeof global.broadcastColors==='function') global.broadcastColors();

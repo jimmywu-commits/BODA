@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+<script>if(window.parent!==window)document.documentElement.classList.add('boda-hosted');</script>
 <meta charset="UTF-8">
 <title>曝光資源</title>
 <style>
@@ -278,6 +279,14 @@ html, body { height: 100%; background: var(--bg0); color: var(--text);
 /* 系統補上 $ 與千分位後才超字：紅框常駐，不截斷文字 */
 .s-field-row.fmt-over input,
 .s-field-row.fmt-over textarea { border-color:#ef4444 !important; box-shadow:0 0 0 2px rgba(239,68,68,.32) !important; background:rgba(239,68,68,.10) !important; }
+/* 內容警語：深色底＋黃橘框，對照畫布下方警語；既有超字紅框仍優先顯示。 */
+.s-field-inline.content-warning .s-field-row input { border-color:#ffb000; box-shadow:0 0 0 2px rgba(255,176,0,.18); }
+#bn-content-warning { display:none; margin:2px 14px 8px; padding:7px 9px; border:1px solid #ffb000; border-radius:6px; color:#ffbc1f; background:#111820; font-size:11px; font-weight:700; line-height:1.55; box-shadow:0 3px 10px rgba(0,0,0,.22); }
+#bn-content-warning.show { display:block; }
+#bn-content-warning .bn-content-warning-message { display:inline; }
+#bn-content-warning .bn-content-warning-message + .bn-content-warning-message::before { content:'　'; }
+#bn-content-warning button { display:inline-block; margin:0 0 0 8px; padding:3px 9px; border:0; border-radius:999px; background:#ffae00; color:#382400; font-size:11px; font-weight:800; cursor:pointer; vertical-align:baseline; }
+#bn-content-warning button:hover { background:#ffc21c; }
 #bnLimitAlert{position:fixed;left:50%;transform:translateX(-50%);top:12px;z-index:99998;background:#dc2626;color:#fff;font-size:13px;line-height:1.6;padding:10px 16px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);display:none;max-width:80vw;}
 #bnLimitModal{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;}
 #bnLimitModal.show{display:flex;}
@@ -331,13 +340,14 @@ html, body { height: 100%; background: var(--bg0); color: var(--text);
 </style>
 
 <style>
+html.boda-hosted #manual-btn,html.boda-hosted #feedback-btn{display:none!important;}
 #manual-btn,#feedback-btn{
 position:fixed;z-index:100001;padding:10px 16px;border-radius:8px;
 background:#161b22;color:#e6edf3;border:1px solid #30363d;
 cursor:pointer;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.35);
 }
 #manual-btn{right:18px;bottom:18px;}
-#feedback-btn{right:18px;top:54px;}
+#feedback-btn{right:18px;bottom:76px;}
 #manual-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);
 z-index:100002;align-items:center;justify-content:center;padding:24px;}
 #manual-modal.show{display:flex;}
@@ -409,6 +419,15 @@ box-shadow:0 3px 12px rgba(0,0,0,.24);}
         <div style="color:var(--text3);font-size:12px">點「掃描底圖資料夾」載入</div>
       </div>
     </div>
+    <div class="card" id="help-links-admin-card">
+      <h3>🔗 全站支援按鈕連結</h3>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">會套用到首頁、工單生成器、匯入工單、曝光資源、吸底與維修頁右下角的浮動按鈕。<br>這裡可先預覽；要讓 GitHub 部署後的所有設備共用，請下載 <code>config.json</code>、覆蓋專案根目錄同名檔案後 commit / push。使用反饋表連結留白時，維持 Firebase 浮動反饋表。</p>
+      <label style="display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px" for="help-feedback-url">使用反饋表連結（選填）</label>
+      <input id="help-feedback-url" type="url" placeholder="https://…（留白＝使用 Firebase 浮動反饋表）" style="width:100%;margin-bottom:12px">
+      <label style="display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px" for="help-manual-url">使用說明書連結（選填）</label>
+      <input id="help-manual-url" type="url" placeholder="https://…（留白＝專案內建說明書）" style="width:100%;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" id="help-links-save">套用目前頁面預覽</button><button class="btn" type="button" id="help-links-download-config">⬇ 下載 GitHub 設定檔</button><span id="help-links-status" style="font-size:11px;color:var(--text3)"></span></div>
+    </div>
   </div>
 
   <!-- ══════════════════════════════
@@ -423,13 +442,6 @@ box-shadow:0 3px 12px rgba(0,0,0,.24);}
 
         <!-- 文字 + 顏色 inline -->
         <div class="s-section">文字內容</div>
-        <div class="s-field-inline">
-          <label>品牌名</label>
-          <div class="s-field-row">
-            <input type="text" id="txt-brand" data-limit="9" placeholder="品牌名稱" value="品牌名不放圖9字內" oninput="broadcastText()">
-            <span class="char-count-badge" id="badge-品牌名"></span><div class="color-dot" id="dot-brandText" title="品牌名文字色"></div>
-          </div>
-        </div>
         <div class="s-field-inline">
           <label>主標</label>
           <div class="s-field-row">
@@ -449,6 +461,13 @@ box-shadow:0 3px 12px rgba(0,0,0,.24);}
           <div class="s-field-row">
             <input type="text" id="txt-date" data-limit="14" placeholder="日期文字" value="5/18 - 5/25 期間限定" oninput="broadcastText()">
             <span class="char-count-badge" id="badge-日期"></span><div class="color-dot" id="dot-dateText" title="日期文字色"></div>
+          </div>
+        </div>
+        <div class="s-field-inline">
+          <label>品牌名</label>
+          <div class="s-field-row">
+            <input type="text" id="txt-brand" data-limit="9" placeholder="品牌名稱" value="品牌名不放圖9字內" oninput="broadcastText()">
+            <span class="char-count-badge" id="badge-品牌名"></span><div class="color-dot" id="dot-brandText" title="品牌名文字色"></div>
           </div>
         </div>
         <div class="s-field-inline">
@@ -1083,6 +1102,29 @@ document.addEventListener('DOMContentLoaded',function(){ setTimeout(bnRefreshLim
 window.addEventListener('message', function (e) {
   if (!e.data) return;
 
+  /* 內容警語是純提示，不得進入 bnCanDownload 或阻擋任何輸出流程。 */
+  if (e.data.type === 'bn-content-warning-dismiss') {
+    bnDismissContentWarnings();
+    return;
+  }
+  if (e.data.type === 'bn-content-warning-bounds') {
+    var warningId = e.data.id || 0;
+    var warningIframe = document.getElementById('iframe-' + warningId);
+    if (!warningIframe || (e.source && warningIframe.contentWindow !== e.source)) return;
+    var warningW = Number(e.data.w) || Number(warningIframe.dataset.bnCanvasW) || 0;
+    var warningH = Number(e.data.h) || Number(warningIframe.dataset.bnCanvasH) || 0;
+    var warningScale = Number(warningIframe.dataset.bnPreviewScale) || 1;
+    if (!warningW || !warningH) return;
+    warningIframe.style.width = warningW + 'px';
+    warningIframe.style.height = warningH + 'px';
+    var warningBody = document.getElementById('pbody-' + warningId);
+    if (warningBody) {
+      warningBody.style.width = Math.round(warningW * warningScale) + 'px';
+      warningBody.style.height = Math.round(warningH * warningScale) + 'px';
+    }
+    return;
+  }
+
   /* iframe 就緒，回傳畫布尺寸 */
   /* 畫布文字直接編輯後同步回左側輸入框（含 banword 轉換） */
   if (e.data.type === 'bn-text-update') {
@@ -1209,6 +1251,9 @@ window.addEventListener('message', function (e) {
     iframe.style.height     = H + 'px';
     iframe.style.transform  = 'scale(' + scale + ')';
     iframe.style.visibility = 'visible';
+    iframe.dataset.bnCanvasW = W;
+    iframe.dataset.bnCanvasH = H;
+    iframe.dataset.bnPreviewScale = scale;
 
     var body = document.getElementById('pbody-' + id);
     if (body) { body.style.width = dispW + 'px'; body.style.height = dispH + 'px'; }
@@ -1231,6 +1276,7 @@ window.addEventListener('message', function (e) {
     if (iframe) {
       iframe.contentWindow.postMessage({ type: 'bn-text',  data: getTextData() }, '*');
       iframe.contentWindow.postMessage({ type: 'bn-color', data: getColorData() }, '*');
+      bnSendContentWarningsToIframe(iframe, bnGetVisibleContentWarnings(getTextData()));
     }
 
     /* 通知 plugin（logo 推送） */
@@ -1276,6 +1322,7 @@ function getColorData() {
     brandText: colorState.brandText,
     canvasBg:  lockedCanvasBg || colorState.canvasBg,
     ctaText:   colorState.ctaText,
+    ctaTextAuto: colorState.ctaTextAuto !== false,
     ctaBg:     colorState.ctaBg,
     searchImageCtaBg: colorState.searchImageCtaBg,
     tagColor: colorState.tagColor || 'red',
@@ -1291,7 +1338,12 @@ function getColorData() {
   if(!isColorAllowedForKey('ctaBg', data.ctaBg)) data.ctaBg = getAllowedCtaBg(data.subText || data.mainText);
   if(!isColorAllowedForKey('searchImageCtaBg', data.searchImageCtaBg)) data.searchImageCtaBg = getAllowedCtaBg(data.ctaBg);
   var broadcastCtaText = normalizePickerHex(data.ctaText);
-  data.ctaText = broadcastCtaText || getCtaContrastColor(data.ctaBg || data.subText || data.canvasBg);
+  if(typeof data.ctaTextAuto !== 'boolean') {
+    data.ctaTextAuto = !(broadcastCtaText && broadcastCtaText !== '#ffffff' && broadcastCtaText !== '#000000');
+  }
+  data.ctaText = data.ctaTextAuto
+    ? getCtaContrastColor(data.ctaBg || data.subText || data.canvasBg)
+    : (broadcastCtaText || getCtaContrastColor(data.ctaBg || data.subText || data.canvasBg));
   /* 掛標顏色必須以目前工具列狀態為準，不讓色彩 guard 的舊暫存值覆蓋，避免畫布先閃一下又跳回紅色。 */
   data.tagColor = (colorState && colorState.tagColor === 'white') ? 'white' : 'red';
   /* 蝦皮LOGO顏色同理，以目前工具列狀態為準，不被舊暫存值回灌。 */
@@ -1314,10 +1366,103 @@ function bnSyncArTextDefault(){
 }
 
 
+/* ════════════════════════════════════════
+   內容警語（曝光資源限定）
+   - 只依主標＋副標判斷，永不阻擋下載。
+   - 關閉只對目前內容簽章有效；任一標題修改後自動重新顯示。
+════════════════════════════════════════ */
+var bnContentWarningLastSignature = '';
+var bnContentWarningDismissedSignature = '';
+
+function bnContentWarningSignature(data) {
+  return String((data || {}).主標 || '') + '\n' + String((data || {}).副標 || '');
+}
+function bnGetContentWarningMessages(data) {
+  var copy = (String((data || {}).主標 || '') + ' ' + String((data || {}).副標 || '')).replace(/\s+/g, ' ').trim();
+  var messages = [];
+  if (/回饋|滿額/.test(copy)) messages.push('提醒您回饋若有門檻/上限，需於日期後方補充警語。如「單筆須滿$X,XXX」、「最高折$XXX」(若無上限則可不寫)。');
+  if (/蝦幣/.test(copy)) messages.push('提醒您若蝦幣需領券，可於標題補充「領券」關鍵字，例如「領券享10%蝦幣」。');
+  return messages;
+}
+function bnGetVisibleContentWarnings(data) {
+  data = data || getTextData();
+  var signature = bnContentWarningSignature(data);
+  if (signature !== bnContentWarningLastSignature) {
+    bnContentWarningLastSignature = signature;
+    bnContentWarningDismissedSignature = '';
+  }
+  var messages = bnGetContentWarningMessages(data);
+  if (!messages.length) {
+    bnContentWarningDismissedSignature = '';
+    return [];
+  }
+  return signature === bnContentWarningDismissedSignature ? [] : messages;
+}
+function bnRenderContentWarningSidebar(messages) {
+  var dateInput = document.getElementById('txt-date');
+  var field = dateInput && dateInput.closest ? dateInput.closest('.s-field-inline') : null;
+  if (field) field.classList.toggle('content-warning', !!(messages && messages.length));
+  var panel = document.getElementById('bn-content-warning');
+  if (!panel && field) {
+    panel = document.createElement('div');
+    panel.id = 'bn-content-warning';
+    panel.setAttribute('role', 'status');
+    panel.setAttribute('aria-live', 'polite');
+    field.insertAdjacentElement('afterend', panel);
+  }
+  if (!panel) return;
+  panel.textContent = '';
+  (messages || []).forEach(function(message) {
+    var item = document.createElement('span');
+    item.className = 'bn-content-warning-message';
+    item.textContent = message;
+    panel.appendChild(item);
+  });
+  if (messages && messages.length) {
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = '我已了解/已補充▶';
+    button.addEventListener('click', bnDismissContentWarnings);
+    panel.appendChild(button);
+    panel.classList.add('show');
+  } else {
+    panel.classList.remove('show');
+  }
+}
+function bnSendContentWarningsToIframe(iframe, messages) {
+  if (!iframe || !iframe.contentWindow) return;
+  try {
+    iframe.contentWindow.postMessage({
+      type: 'bn-content-warning',
+      messages: messages || [],
+      previewScale: Number(iframe.dataset.bnPreviewScale) || 1
+    }, '*');
+  } catch (_) {}
+}
+function bnBroadcastContentWarnings(messages) {
+  document.querySelectorAll('.preview-block iframe').forEach(function(iframe) {
+    bnSendContentWarningsToIframe(iframe, messages);
+  });
+}
+function bnRefreshContentWarnings(data) {
+  var messages = bnGetVisibleContentWarnings(data || getTextData());
+  bnRenderContentWarningSidebar(messages);
+  bnBroadcastContentWarnings(messages);
+  return messages;
+}
+function bnDismissContentWarnings() {
+  var data = getTextData();
+  bnContentWarningLastSignature = bnContentWarningSignature(data);
+  bnContentWarningDismissedSignature = bnContentWarningLastSignature;
+  bnRenderContentWarningSidebar([]);
+  bnBroadcastContentWarnings([]);
+}
+
 /* 廣播文字給所有已勾選的 iframe */
 function broadcastText() {
   bnSyncArTextDefault();
   var data = getTextData();
+  bnRefreshContentWarnings(data);
   document.querySelectorAll('.preview-block iframe').forEach(function(iframe) {
     try { iframe.contentWindow.postMessage({ type: 'bn-text', data: data }, '*'); }
     catch(e) {}
@@ -1335,7 +1480,7 @@ function getTextData() {
   };
 }
 
-/* 外層 BODA 匯入工單會把「工單總覽」B12／B13／B14 寫入此共用資料。
+/* 外層 BODA 匯入工單會把「工單總覽」B11～B15 寫入此共用資料。
    ts 用來和曝光資源自己的本機暫存比較：只有較新的工單匯入才覆蓋舊狀態，
    使用者在曝光資源後續手動修改並儲存後，重新整理不會又被舊工單蓋回去。 */
 var BODA_WORKORDER_OVERVIEW_TEXT_KEY = 'wo_shared_exposure_text_v1';
@@ -1343,9 +1488,11 @@ function bnNormalizeWorkorderOverviewText(raw) {
   raw = raw && typeof raw === 'object' ? raw : {};
   var ts = Number(raw.ts);
   return {
+    brand: raw.brand == null ? '' : String(raw.brand),
     main: raw.main == null ? '' : String(raw.main),
     sub: raw.sub == null ? '' : String(raw.sub),
     date: raw.date == null ? '' : String(raw.date),
+    icon: raw.icon == null ? '' : String(raw.icon),
     ts: isFinite(ts) && ts > 0 ? ts : 0
   };
 }
@@ -1367,15 +1514,17 @@ function bnApplyWorkorderOverviewText(raw, options) {
   if (options.onlyIfNewer && payload.ts && payload.ts <= (Number(options.stateTs) || 0)) return false;
 
   var fields = [
+    ['txt-brand', payload.brand],
     ['txt-main', payload.main],
     ['txt-sub', payload.sub],
-    ['txt-date', payload.date]
+    ['txt-date', payload.date],
+    ['txt-icon', payload.icon]
   ];
   fields.forEach(function (pair) {
     var el = document.getElementById(pair[0]);
     if (el) el.value = pair[1];
   });
-  /* 三格先一次設好再觸發事件，畫布收到的每次廣播都是完整的一組資料。 */
+  /* 五格先一次設好再觸發事件，畫布收到的每次廣播都是完整的一組資料。 */
   fields.forEach(function (pair) {
     var el = document.getElementById(pair[0]);
     if (!el) return;
@@ -1419,6 +1568,7 @@ var colorState = {
   brandText: '#2b79c4',
   canvasBg:  '#6bc0ec',
   ctaText:   '#ffffff',
+  ctaTextAuto: true,
   ctaBg:     '#2540b5',
   searchImageCtaBg: '#d0021b',
   tagColor: 'red',
@@ -1456,8 +1606,21 @@ function getCtaContrastColor(bgHex){
     return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
   }
   var lum = 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-  /* CTA 預設優先白字；只有真正偏淡的底色才改黑字，避免中深色 CTA 被黑字吃掉。 */
+  /* 預設優先白字；只有真正偏淡的 CTA 底色才改黑字。 */
   return lum >= 0.72 ? '#000000' : '#ffffff';
+}
+function resolveCtaTextAutoMode(){
+  /* 舊暫存未記錄模式時：非黑白的 CTA 字色視為手動；黑／白回到自動對比。 */
+  if(typeof colorState.ctaTextAuto !== 'boolean'){
+    var legacyCtaText = normalizePickerHex(colorState.ctaText);
+    colorState.ctaTextAuto = !(legacyCtaText && legacyCtaText !== '#ffffff' && legacyCtaText !== '#000000');
+  }
+  return colorState.ctaTextAuto !== false;
+}
+function syncAutoCtaText(){
+  if(!resolveCtaTextAutoMode()) return colorState.ctaText;
+  colorState.ctaText = getCtaContrastColor(colorState.ctaBg || colorState.subText || colorState.canvasBg);
+  return colorState.ctaText;
 }
 function isColorAllowedForKey(key, value){
   var c = normalizePickerHex(value);
@@ -1470,18 +1633,39 @@ function isColorAllowedForKey(key, value){
   return true;
 }
 function colorRestrictionText(key){
-  if(key === 'ctaText') return 'CTA 文字可選任意有效色碼；預設白色，只有很淡的 CTA 底色才改黑色，箭頭會同步套用。';
-  if(key === 'ctaBg' || key === 'searchImageCtaBg') return 'CTA 底色不可使用黑色、白色或接近灰色；選到限制色會自動改為深藍色。';
+  if(key === 'ctaText') return 'CTA 文字可選任意有效色碼；預設自動依 CTA 底色切換白／黑字，箭頭會同步套用。';
+  if(key === 'ctaBg' || key === 'searchImageCtaBg') return 'CTA 底色不可使用黑色、白色、接近灰色或與畫布背景相近的顏色；系統會自動改為安全色。';
   if(BASIC_TEXT_COLOR_KEYS.indexOf(key) !== -1) return '品牌、主標、副標、日期文字不可使用黑色或白色。';
   return '';
 }
+function ctaColorDistance(a, b){
+  a = normalizePickerHex(a); b = normalizePickerHex(b);
+  if(!a || !b) return Infinity;
+  var an = parseInt(a.slice(1), 16), bn = parseInt(b.slice(1), 16);
+  var dr = ((an >> 16) & 255) - ((bn >> 16) & 255);
+  var dg = ((an >> 8) & 255) - ((bn >> 8) & 255);
+  var db = (an & 255) - (bn & 255);
+  return Math.sqrt(dr * dr + dg * dg + db * db);
+}
+function isCtaBgTooCloseToCanvas(ctaBg, canvasBg){
+  /* RGB 色距小於 96 時，實務上會和 1200px 版位的底色混在一起，視為不可辨識。 */
+  return ctaColorDistance(ctaBg, canvasBg) < 96;
+}
 function getAllowedCtaBg(preferred){
-  var candidates = [preferred, colorState.subText, colorState.mainText, '#2540b5', '#163b8f', '#0f7db6', '#ee4d2d'];
+  var canvasBg = colorState.canvasBg;
+  /* 暖色候選放在同色系藍色之前：背景本身是深藍時，CTA 要立刻跳出來。 */
+  var candidates = [preferred, colorState.subText, colorState.mainText, '#ee4d2d', '#ff6b35', '#d0021b', '#00a0a0', '#2540b5', '#163b8f', '#0f7db6'];
   for(var i=0;i<candidates.length;i++){
     var c = normalizePickerHex(candidates[i]);
-    if(c && isColorAllowedForKey('ctaBg', c)) return c;
+    if(c && isColorAllowedForKey('ctaBg', c) && !isCtaBgTooCloseToCanvas(c, canvasBg)) return c;
   }
-  return '#2540b5';
+  /* 候選色理論上至少會有一個可用；最後仍保證回傳不會與背景相同的色。 */
+  return isCtaBgTooCloseToCanvas('#ee4d2d', canvasBg) ? '#0f7db6' : '#ee4d2d';
+}
+function ensureCtaBgContrastAgainstCanvas(){
+  if(!colorState || !isCtaBgTooCloseToCanvas(colorState.ctaBg, colorState.canvasBg)) return false;
+  colorState.ctaBg = getAllowedCtaBg(colorState.ctaBg);
+  return true;
 }
 function getTextColorFallback(key){
   return (key === 'subText' || key === 'dateText') ? '#2540b5' : '#2b79c4';
@@ -1492,9 +1676,11 @@ function normalizeColorStateRules(){
     if(!isColorAllowedForKey(key, colorState[key])) colorState[key] = getTextColorFallback(key);
   });
   if(!isColorAllowedForKey('ctaBg', colorState.ctaBg)) colorState.ctaBg = getAllowedCtaBg(colorState.subText);
+  ensureCtaBgContrastAgainstCanvas();
   if(!isColorAllowedForKey('searchImageCtaBg', colorState.searchImageCtaBg)) colorState.searchImageCtaBg = getAllowedCtaBg(colorState.ctaBg);
   var ctaText = normalizePickerHex(colorState.ctaText);
-  colorState.ctaText = ctaText || getCtaContrastColor(colorState.ctaBg || colorState.subText || colorState.canvasBg);
+  if(resolveCtaTextAutoMode()) colorState.ctaText = getCtaContrastColor(colorState.ctaBg || colorState.subText || colorState.canvasBg);
+  else colorState.ctaText = ctaText || getCtaContrastColor(colorState.ctaBg || colorState.subText || colorState.canvasBg);
   return colorState;
 }
 window._bnNormalizeColorStateRules = normalizeColorStateRules;
@@ -1941,13 +2127,20 @@ function applyColor(color) {
       /* CTA 底色遇到黑／灰／近灰，直接落到安全的深藍色，避免畫面吃色。 */
       color = '#2540b5';
       colorState[cpActiveKey] = color;
+      var fallbackCtaAdjusted = cpActiveKey === 'ctaBg' && ensureCtaBgContrastAgainstCanvas();
+      if (cpActiveKey === 'ctaBg') {
+        color = colorState.ctaBg;
+        syncAutoCtaText();
+      }
+      var autoTextDot = document.getElementById('dot-ctaText');
+      if (autoTextDot) autoTextDot.style.background = colorState.ctaText;
       var fallbackDot = document.getElementById('dot-' + cpActiveKey);
       if(fallbackDot) fallbackDot.style.background = color;
       var fallbackHex = document.getElementById('cp-hex-input');
       var fallbackNative = document.getElementById('cp-native');
       if(fallbackHex) fallbackHex.value = color;
       if(fallbackNative) fallbackNative.value = color;
-      showColorRestrictionHint('CTA 底色不可使用黑色或灰色，已自動改為深藍色 #2540b5。');
+      showColorRestrictionHint('CTA 底色不可使用黑色、灰色或與背景吃色的顏色，已自動改為安全色 ' + color + '。');
       rememberCurrentColorState();
       broadcastColors();
       try { document.dispatchEvent(new CustomEvent('bn-state-dirty')); } catch(_) {}
@@ -1962,14 +2155,34 @@ function applyColor(color) {
   }
   color = normalized;
   colorState[cpActiveKey] = color;
+  var ctaBgAutoAdjusted = false;
+  if (cpActiveKey === 'ctaText') colorState.ctaTextAuto = false;
+  if (cpActiveKey === 'ctaBg') {
+    ctaBgAutoAdjusted = ensureCtaBgContrastAgainstCanvas();
+    color = colorState.ctaBg;
+    syncAutoCtaText();
+  }
   if (cpActiveKey === 'canvasBg' && /^#[0-9a-fA-F]{6}$/.test(color || '')) {
     setAuthoritativeCanvasBg(color);
+    ctaBgAutoAdjusted = ensureCtaBgContrastAgainstCanvas() || ctaBgAutoAdjusted;
+    syncAutoCtaText();
   }
   rememberCurrentColorState();
 
   /* 更新圓點（sidebar 和 inline 共用同一個 id） */
   var dot = document.getElementById('dot-' + cpActiveKey);
   if (dot) dot.style.background = color;
+  if (ctaBgAutoAdjusted) {
+    var adjustedCtaBgDot = document.getElementById('dot-ctaBg');
+    if (adjustedCtaBgDot) adjustedCtaBgDot.style.background = colorState.ctaBg;
+    var adjustedCtaTextDot = document.getElementById('dot-ctaText');
+    if (adjustedCtaTextDot) adjustedCtaTextDot.style.background = colorState.ctaText;
+    showColorRestrictionHint('CTA 底色與畫布背景太接近，已自動改為安全色 ' + colorState.ctaBg + '。');
+  }
+  if (cpActiveKey === 'ctaBg') {
+    var linkedCtaTextDot = document.getElementById('dot-ctaText');
+    if (linkedCtaTextDot) linkedCtaTextDot.style.background = colorState.ctaText;
+  }
 
   /* ICON文案色點是 mainText 的鏡射，改主標顏色時這顆也要跟著變 */
   if (cpActiveKey === 'mainText') {
@@ -2383,9 +2596,21 @@ document.addEventListener("DOMContentLoaded",function(){
 });
 </script>
 
-<!-- Firebase 使用反饋：按鈕事件與浮動視窗由 feedback-plugin.js 建立 -->
+<!-- 全站使用說明／反饋按鈕共用設定與 Firebase 使用反饋。 -->
+<script src="js/help-settings.js"></script>
 <script src="js/feedback-config.js"></script>
 <script src="js/feedback-plugin.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var api=window.BODAHelpSettings,feedbackInput=document.getElementById('help-feedback-url'),manualInput=document.getElementById('help-manual-url'),saveButton=document.getElementById('help-links-save'),downloadButton=document.getElementById('help-links-download-config'),status=document.getElementById('help-links-status');
+  if(!api||!feedbackInput||!manualInput||!saveButton||!downloadButton)return;
+  function values(){return {feedbackUrl:feedbackInput.value.trim(),manualUrl:manualInput.value.trim()};}
+  function paint(){var settings=api.get();feedbackInput.value=settings.feedbackUrl||'';manualInput.value=settings.manualUrl||'';}
+  Promise.resolve(api.ready).then(paint);
+  saveButton.addEventListener('click',function(){api.set(values());status.textContent='已套用目前頁面預覽；下載 config.json 並 push 後才會同步所有設備。';if(window.parent&&window.parent!==window)window.parent.postMessage({type:'BODA_HELP_SETTINGS_UPDATED'},'*');setTimeout(function(){if(status.textContent)status.textContent='';},4000);});
+  downloadButton.addEventListener('click',function(){api.downloadConfig(values()).then(function(){status.textContent='已下載 config.json：覆蓋專案根目錄同名檔案後 commit / push 即可全站同步。';}).catch(function(){status.textContent='設定檔產生失敗，請稍後再試。';});});
+});
+</script>
 
 <!-- ══════════════════════════════════════════════════════════════
      等級 × 版位詳情表外掛
@@ -2819,7 +3044,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var _logoVariantSignature = '';
   function isLogoVariantLayout(layout) {
     var s = String((layout && (layout.name || layout.file)) || '');
-    return /(方式logo|方(?:式|版)?logo|方logo|square|vertical|portrait|橫(?:式|版)?logo|橫logo|horizontal|landscape)/i.test(s);
+    return /(無logo|no[-_ ]?logo|方式logo|方(?:式|版)?logo|方logo|square|vertical|portrait|橫(?:式|版)?logo|橫logo|horizontal|landscape)/i.test(s);
   }
   function logoVariantSignature() {
     return (window._bnLogos || []).map(function (l) {
@@ -2847,7 +3072,7 @@ document.addEventListener("DOMContentLoaded",function(){
      - 正方形／直式 LOGO：方版；橫式或多個 LOGO：橫版。
   */
   window.bnAutoSelectLogoVariant = function (variant, fromLogoAuto) {
-    variant = variant === 'all' ? 'all' : (variant === 'square' ? 'square' : 'horizontal');
+    variant = variant === 'none' ? 'none' : (variant === 'all' ? 'all' : (variant === 'square' ? 'square' : 'horizontal'));
     if (fromLogoAuto) {
       var signature = logoVariantSignature();
       if (signature !== _logoVariantSignature) {
@@ -2859,22 +3084,27 @@ document.addEventListener("DOMContentLoaded",function(){
     var groups = {}, rows = planForLevel().rows || [];
     function layoutVariant(layout) {
       var s = String((layout && (layout.name || layout.file)) || '');
+      if (/(無logo|no[-_ ]?logo)/i.test(s)) return 'none';
       if (/(方式logo|方(?:式|版)?logo|方logo|square|vertical|portrait)/i.test(s)) return 'square';
       if (/(橫(?:式|版)?logo|橫logo|horizontal|landscape)/i.test(s)) return 'horizontal';
       return '';
     }
-    function pairKey(layout) { return normKey(String((layout && (layout.name || layout.file)) || '').replace(/\.html$/i, '').replace(/方式logo|方(?:式|版)?logo|方logo|橫(?:式|版)?logo|橫logo|square|vertical|portrait|horizontal|landscape/gi, '')); }
+    function pairKey(layout) { return normKey(String((layout && (layout.name || layout.file)) || '').replace(/\.html$/i, '').replace(/無logo|no[-_ ]?logo|方式logo|方(?:式|版)?logo|方logo|橫(?:式|版)?logo|橫logo|square|vertical|portrait|horizontal|landscape/gi, '')); }
     rows.forEach(function (r) { var v = r.layout && layoutVariant(r.layout), k = r.layout && pairKey(r.layout); if (!v || !k) return; if (!groups[k]) groups[k] = {}; groups[k][v] = r.layout; });
     var checked = window.checked || (window.checked = {}), changed = false;
     Object.keys(groups).forEach(function (k) {
-      var pair = groups[k]; if (!pair.square || !pair.horizontal) return;
-      [pair.square, pair.horizontal].forEach(function (layout) {
-        var next = variant === 'all' || layoutVariant(layout) === variant;
+      var pair = groups[k];
+      /* DDCARD 無 LOGO 版：未上傳 LOGO 時只勾無 LOGO；上傳後改由方／橫版接手。 */
+      var variants = [pair.none, pair.square, pair.horizontal].filter(Boolean);
+      if (!variants.length || (!pair.none && (!pair.square || !pair.horizontal))) return;
+      variants.forEach(function (layout) {
+        var currentVariant = layoutVariant(layout);
+        var next = variant === 'none' ? (pair.none ? currentVariant === 'none' : true) :
+          (variant === 'all' ? currentVariant !== 'none' : currentVariant === variant);
         if (checked[layout.id] !== next) { checked[layout.id] = next; changed = true; }
         userTouched[layout.id] = true;
       });
-    });
-    if (changed) { myRenderChecks(); if (typeof window.renderPreviews === 'function') window.renderPreviews(); }
+    });    if (changed) { myRenderChecks(); if (typeof window.renderPreviews === 'function') window.renderPreviews(); }
     return changed;
   };
   function hook() {
@@ -2896,6 +3126,9 @@ document.addEventListener("DOMContentLoaded",function(){
     if (e.data && e.data.type === 'wo-workorder-overview-text') {
       var overviewPayload = bnStoreWorkorderOverviewText(Object.assign({}, e.data.data || {}, { ts: e.data.ts || Date.now() }));
       bnApplyWorkorderOverviewText(overviewPayload);
+    }
+    if (e.data && e.data.type === 'wo-workorder-overview-assets' && typeof window._bnApplyWorkorderAssets === 'function') {
+      Promise.resolve(window._bnApplyWorkorderAssets(e.data.assets || {})).catch(function (err) { console.warn('工單曝光資源素材訊息處理失敗', err); });
     }
     if (e.data && e.data.type === 'wo-bg' && isHexCanvasBg(e.data.color)) {
       applySharedCanvasBg(e.data.color, true); /* 外層推送，不再回傳造成循環 */

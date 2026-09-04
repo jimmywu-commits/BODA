@@ -138,10 +138,20 @@
    * 場景座標就等於 PNG 的像素座標，整條路徑變成像素對齊。
    * 取整會讓長寬比最多變 0.5px（107 上是 0.5%），肉眼看不出來，換到像素對齊很划算。
    */
-  function fitIntoBox(naturalWidth, naturalHeight, slotLayout) {
+  /* BOD／MDD LOGO 的 PNG 自帶上下透明留白；此處存的是完整 PNG 的繪製寬度，
+     換算後畫面中可見的「今日旗艦店」為 186px、「品牌旗艦」為 151px。 */
+  var SPECIAL_LOGO_CANVAS_WIDTHS = {
+    "bod-logo": 191,
+    "mdd-logo": 152,
+  };
+
+  function fitIntoBox(naturalWidth, naturalHeight, slotLayout, iconId) {
     var natW = naturalWidth || 1;
     var natH = naturalHeight || 1;
-    var scale = Math.min(slotLayout.iconBoxWidth / natW, slotLayout.iconBoxHeight / natH);
+    var preferredWidth = SPECIAL_LOGO_CANVAS_WIDTHS[iconId];
+    var scale = preferredWidth
+      ? preferredWidth / natW
+      : Math.min(slotLayout.iconBoxWidth / natW, slotLayout.iconBoxHeight / natH);
     var w = Math.max(1, Math.round(natW * scale));
     var h = Math.max(1, Math.round(natH * scale));
     return {
@@ -231,7 +241,7 @@
         return;
       }
 
-      var box = fitIntoBox(img.naturalWidth || img.width, img.naturalHeight || img.height, slotLayout);
+      var box = fitIntoBox(img.naturalWidth || img.width, img.naturalHeight || img.height, slotLayout, libraryIcon.id);
 
       /*
        * 關鍵一步：先自己把來源圖降到最終要用的像素數，再交給 Konva。
@@ -403,6 +413,56 @@
         draw(store.getState());
       });
 
+      function slotIndexAtClientPoint(clientX, clientY) {
+        var rect = container.getBoundingClientRect();
+        var scale = stage.scaleX() || 1;
+        var point = {
+          x: (clientX - rect.left - stage.x()) / scale,
+          y: (clientY - rect.top - stage.y()) / scale,
+        };
+        var view = window.Selectors.viewState(store.getState());
+        for (var i = 0; i < view.slots.length; i++) {
+          var slot = view.slots[i];
+          // 只有未選圖片的框可接收拖放；已有圖片或文字的格不會被覆蓋。
+          if (slot.iconId || slot.iconText) continue;
+          var slotLayout = LayoutEngine.getSlotLayout(view.slots.length, i);
+          if (!slotLayout) continue;
+          if (point.x >= slotLayout.iconX && point.x <= slotLayout.iconX + slotLayout.iconBoxWidth &&
+              point.y >= slotLayout.iconY && point.y <= slotLayout.iconY + slotLayout.iconBoxHeight) {
+            return i;
+          }
+        }
+        return -1;
+      }
+
+      function draggedImageFile(event) {
+        var files = event.dataTransfer && event.dataTransfer.files;
+        return files && files.length ? files[0] : null;
+      }
+
+      container.addEventListener("dragover", function (event) {
+        var file = draggedImageFile(event);
+        if (!file) return;
+        // 即使游標不在空框上也攔住瀏覽器預設的「直接開啟圖片」行為。
+        event.preventDefault();
+        if (slotIndexAtClientPoint(event.clientX, event.clientY) < 0) {
+          container.classList.remove("image-drop-target");
+          return;
+        }
+        event.dataTransfer.dropEffect = "copy";
+        container.classList.add("image-drop-target");
+      });
+      container.addEventListener("dragleave", function () {
+        container.classList.remove("image-drop-target");
+      });
+      container.addEventListener("drop", function (event) {
+        var file = draggedImageFile(event);
+        var index = slotIndexAtClientPoint(event.clientX, event.clientY);
+        container.classList.remove("image-drop-target");
+        if (!file) return;
+        event.preventDefault();
+        if (index >= 0 && typeof window.BottomImageUpload === "function") window.BottomImageUpload(file, index);
+      });
       // 畫面上的 stage 才是預覽模式（會畫假字）
       store.subscribe(draw);
       draw(store.getState());

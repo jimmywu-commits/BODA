@@ -8,6 +8,11 @@
 (function () {
   var urlId = parseInt(new URLSearchParams(location.search).get('bnid')) || 0;
   var fname = decodeURIComponent(location.pathname.split('/').pop().replace(/\.html$/i, ''));
+  /* 父層傳入的內容警語。提示固定放在畫布之外，絕不屬於輸出圖片。 */
+  var _bnContentWarningMessages = [];
+  var _bnContentWarningCanvasW = 0;
+  var _bnContentWarningCanvasH = 0;
+  var _bnContentWarningStageH = 0;
 
   /* 這個版位（依檔名判斷）只能顯示「目前最上層（z-index最高）」的一張商品圖，
      人物圖完全不顯示——不管人物圖數量或商品可見度規則怎麼變，都要蓋掉。
@@ -75,6 +80,9 @@
     var H = parseFloat(root.getPropertyValue('--canvas-h')) || parseFloat(document.body.dataset.fh) || 600;
     canvas.style.width  = W + 'px';
     canvas.style.height = H + 'px';
+    _bnContentWarningCanvasW = W;
+    _bnContentWarningCanvasH = H;
+    _bnContentWarningStageH = H;
 
     var bgRaw = root.getPropertyValue('--bg-img').trim();
     if (!_bnSearchIconTemplate && !_bnArTemplate && bgRaw && bgRaw !== 'none' && bgRaw !== '') {
@@ -176,14 +184,14 @@
       if (window.parent !== window) {
         canvas.style.transform = 'none';
         var st = document.getElementById('stage');
-        if (st) { st.style.width = W+'px'; st.style.height = H+'px'; }
+        if (st) { st.style.width = W+'px'; st.style.height = Math.max(H, _bnContentWarningStageH || H)+'px'; }
         return;
       }
       var sc = Math.min(window.innerWidth/W, window.innerHeight/H);
       var st = document.getElementById('stage');
       canvas.style.transform = 'scale('+sc+')';
       st.style.width  = (W*sc)+'px';
-      st.style.height = (H*sc)+'px';
+      st.style.height = (Math.max(H, _bnContentWarningStageH || H)*sc)+'px';
     }
     window.addEventListener('resize', fit);
     fit();
@@ -463,8 +471,66 @@
     attachEditableToAll();
   }
 
+  function bnEnsureContentWarningStyles(){
+    if(document.getElementById('bn-content-warning-runtime-style')) return;
+    var style=document.createElement('style');
+    style.id='bn-content-warning-runtime-style';
+    style.textContent=' .bn-content-warning-target{outline:2px solid #ffb000 !important;outline-offset:2px;} .bn-content-warning-tip{position:absolute;left:0;box-sizing:border-box;border:1px solid #ffb000;border-radius:6px;background:#111820;color:#ffbc1f;padding:7px 10px;font-family:Arial,"Noto Sans TC",sans-serif;font-weight:700;line-height:1.45;white-space:normal;overflow-wrap:anywhere;z-index:2147483000;box-shadow:0 4px 12px rgba(0,0,0,.28)} .bn-content-warning-tip span{display:inline} .bn-content-warning-tip span+span:before{content:"　"} .bn-content-warning-tip button{display:inline-block;margin-left:8px;padding:3px 9px;border:0;border-radius:999px;background:#ffae00;color:#382400;font:inherit;font-weight:800;cursor:pointer;vertical-align:baseline} .bn-content-warning-tip button:hover{background:#ffc21c} ';
+    (document.head || document.documentElement).appendChild(style);
+  }
+  function bnReportContentWarningBounds(){
+    try{ window.parent && window.parent.postMessage({type:'bn-content-warning-bounds',id:urlId,w:_bnContentWarningCanvasW,h:_bnContentWarningStageH || _bnContentWarningCanvasH},'*'); }catch(_){}
+  }
+  function bnClearContentWarning(){
+    document.querySelectorAll('.bn-content-warning-target').forEach(function(el){ el.classList.remove('bn-content-warning-target'); });
+    document.querySelectorAll('.bn-content-warning-tip').forEach(function(el){ el.remove(); });
+  }
+  function bnRenderContentWarning(messages, previewScale){
+    _bnContentWarningMessages = Array.isArray(messages) ? messages.filter(function(m){return String(m||'').trim();}) : [];
+    bnClearContentWarning();
+    var stage=document.getElementById('stage');
+    var H=_bnContentWarningCanvasH;
+    if(!stage || !H){ return; }
+    if(!_bnContentWarningMessages.length){
+      _bnContentWarningStageH=H;
+      stage.style.height=H+'px';
+      bnReportContentWarningBounds();
+      return;
+    }
+    bnEnsureContentWarningStyles();
+    document.querySelectorAll('.日期').forEach(function(el){ el.classList.add('bn-content-warning-target'); });
+    stage.style.position='relative';
+    stage.style.overflow='visible';
+    document.documentElement.style.overflow='visible';
+    document.body.style.overflow='visible';
+    var tip=document.createElement('div');
+    tip.className='bn-content-warning-tip';
+    tip.style.top=(H+8)+'px';
+    tip.style.width=_bnContentWarningCanvasW+'px';
+    var scale=Number(previewScale)||1;
+    var fontSize=Math.max(18,Math.min(30,Math.ceil(13/Math.max(scale,0.01))));
+    tip.style.fontSize=fontSize+'px';
+    _bnContentWarningMessages.forEach(function(message){ var text=document.createElement('span'); text.textContent=String(message); tip.appendChild(text); });
+    var button=document.createElement('button');
+    button.type='button'; button.textContent='我已了解/已補充▶';
+    button.addEventListener('click',function(){ try{ window.parent.postMessage({type:'bn-content-warning-dismiss',id:urlId},'*'); }catch(_){} });
+    tip.appendChild(button);
+    stage.appendChild(tip);
+    requestAnimationFrame(function(){
+      var tipH=Math.ceil(tip.getBoundingClientRect().height || tip.offsetHeight || 0);
+      _bnContentWarningStageH=H+8+tipH;
+      stage.style.height=_bnContentWarningStageH+'px';
+      bnReportContentWarningBounds();
+    });
+  }
+
   window.addEventListener('message', function(e) {
     if (!e.data) return;
+
+    if (e.data.type === 'bn-content-warning') {
+      bnRenderContentWarning(e.data.messages || [], e.data.previewScale);
+      return;
+    }
 
     if (e.data.type === 'bn-text') {
       var d = e.data.data||{};
@@ -1604,6 +1670,16 @@
     if (e.data.type === 'bn-capture') {
       var _cv = document.getElementById('canvas');
 
+      /* 截圖前隱藏內容警語的日期橘框與畫布外提示；下載檔只保留設計本體。 */
+      var _warningTargetEls = [];
+      var _warningTipEls = [];
+      document.querySelectorAll('.bn-content-warning-target').forEach(function(el){
+        _warningTargetEls.push(el); el.classList.remove('bn-content-warning-target');
+      });
+      document.querySelectorAll('.bn-content-warning-tip').forEach(function(el){
+        _warningTipEls.push({el:el, disp:el.style.display}); el.style.display='none';
+      });
+
       /* 保險：截圖前先拿掉超字紅框，避免紅框被畫進圖裡 */
       var _overEls = [];
       if(_cv){
@@ -1761,6 +1837,8 @@
       _bnFixObjectFitForCapture('.bn-logo-box img, .bn-prod-box img, .bn-char-box img, .logo範圍_左 img.bn-logo-img, .logo範圍_中 img.bn-logo-img, .logo範圍_右 img.bn-logo-img');
 
       captureCanvas(function(dataUrl){
+        _warningTargetEls.forEach(function(el){ el.classList.add('bn-content-warning-target'); });
+        _warningTipEls.forEach(function(o){ o.el.style.display = o.disp; });
         _editEls.forEach(function(o){ o.el.style.display = o.disp; });
         _previewOnlyEls.forEach(function(o){ o.el.style.display = o.disp; });
         _captureAdjustEls.forEach(function(o){ o.el.style.setProperty('top', o.top, o.priority || ''); });

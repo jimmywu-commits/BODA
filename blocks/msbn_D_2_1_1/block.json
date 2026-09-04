@@ -210,7 +210,7 @@
         "fromField": "bgColor",
         "fromThemeRole": "bg",
         "mode": "darken",
-        "amount": 0.2,
+        "amount": 0.08,
         "fallback": "rgb(246, 208, 149)"
       }
     },

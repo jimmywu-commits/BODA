@@ -35,6 +35,12 @@
     }
   }
 
+  function syncHostLevelControl(levelId, options) {
+    var control = window.BottomHostLevel;
+    if (!control) return;
+    if (options && control.setOptions) control.setOptions(options);
+    if (levelId != null && control.setValue) control.setValue(levelId);
+  }
   function serializeStateForBridge(state) {
     if (window.ProjectFile && typeof window.ProjectFile.serializeForSync === "function") {
       return window.ProjectFile.serializeForSync(state);
@@ -192,12 +198,22 @@
     if (msg.type === "HOST_LAYOUT") {
       var top = Math.max(0, Number(msg.panelTop) || 0);
       var width = Math.max(280, Number(msg.panelWidth) || 340);
+      var toolbarHeight = Math.max(0, Number(msg.canvasToolbarHeight) || 0);
       document.documentElement.style.setProperty("--host-panel-top", top + "px");
       document.documentElement.style.setProperty("--host-panel-width", width + "px");
+      document.documentElement.style.setProperty("--host-canvas-toolbar-height", toolbarHeight + "px");
+    } else if (msg.type === "VIEWPORT_ZOOM") {
+      var scale = Number(msg.scale);
+      if (isFinite(scale) && window.BottomViewport && typeof window.BottomViewport.zoomTo === "function") {
+        window.BottomViewport.zoomTo(scale);
+      }
     } else if (msg.type === "WORKORDER_FILE") {
       importFromParent(msg);
+    } else if (msg.type === "BOTTOM_LEVEL_OPTIONS") {
+      syncHostLevelControl(null, msg.levels || []);
     } else if (msg.type === "BOTTOM_LEVEL") {
-      applyLevelPreset(msg.levelId);
+      syncHostLevelControl(msg.levelId);
+      if (applyLevelPreset(msg.levelId) && isImportPreview()) sendPreviewImage(msg);
     } else if (msg.type === "BOTTOM_STATE") {
       applyStateFromParent(msg);
     } else if (msg.type === "EXPORT_ALL") {
@@ -256,6 +272,8 @@
   window.BottomParentBridge = {
     mount: mount,
     isEmbedded: isEmbedded,
-    requestLatestWorkOrder: requestLatestWorkOrder
+    requestLatestWorkOrder: requestLatestWorkOrder,
+    requestLevelChange: function (levelId) { return post({ type: "LEVEL_CHANGE_REQUEST", levelId: String(levelId || "") }); },
+    requestGeneratorDownloadAll: function () { return post({ type: "REQUEST_GENERATOR_DOWNLOAD_ALL" }); }
   };
 })();

@@ -174,7 +174,7 @@
     function autoSelectLogoVariant(logos){
       var seq=++_bnLogoVariantSeq;logos=Array.isArray(logos)?logos:[];
       if(!window.bnAutoSelectLogoVariant)return;
-      if(!logos.length){window.bnAutoSelectLogoVariant('all',true);return;}
+      if(!logos.length){window.bnAutoSelectLogoVariant('none',true);return;}
       if(logos.length!==1){window.bnAutoSelectLogoVariant('horizontal',true);return;}
       var logo=logos[0],ratio=Number(logo.ratio);
       function apply(r){if(seq===_bnLogoVariantSeq&&window._bnLogos&&window._bnLogos.length===1&&window._bnLogos[0].id===logo.id)window.bnAutoSelectLogoVariant(r<=1?'square':'horizontal',true);}
@@ -604,7 +604,7 @@
       readFile(file).then(function(s){
         return loadImg(s).then(function(img){
           var trimmed=autoTrimWhiteLogo(img),id='logo_'+Date.now();
-          window._bnLogos.push({id:id,src:trimmed.src,ratio:trimmed.ratio});
+          window._bnLogos.push({id:id,src:trimmed.src,ratio:trimmed.ratio,name:file.name || ''});
           window._bnLogoDataUrl=window._bnLogos[0].src;
           renderLogoList();
           broadcast({type:'bn-logos',logos:window._bnLogos});
@@ -1208,21 +1208,23 @@
         }, 300);
       };
 
-      /* 吸取圖片左上角 5x5px 平均色 */
+      /* 背景吸色只讀原圖左上角的 1×1 px，絕不縮放或平均整張圖片。
+         PNG 左上角若是透明，代表沒有可用的底色；保留既有畫布色，避免吸到 LOGO 主體或變成黑色。 */
       function sampleTopLeftColor(dataUrl, cb){
         var img = new Image();
         img.onload = function(){
-          var c = document.createElement('canvas');
-          c.width = 5; c.height = 5;
-          var ctx = c.getContext('2d');
-          ctx.drawImage(img, 0, 0, 5, 5);
-          var d = ctx.getImageData(0, 0, 5, 5).data;
-          var r=0,g=0,b=0;
-          for(var i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; }
-          var n=d.length/4;
-          r=Math.round(r/n); g=Math.round(g/n); b=Math.round(b/n);
-          cb('#'+[r,g,b].map(function(v){ return ('0'+v.toString(16)).slice(-2); }).join(''));
+          try {
+            var c = document.createElement('canvas');
+            c.width = 1; c.height = 1;
+            var ctx = c.getContext('2d', { willReadFrequently:true });
+            /* 九參數 drawImage：裁切來源左上角 1×1，而非把整張圖縮成 1×1。 */
+            ctx.drawImage(img, 0, 0, 1, 1, 0, 0, 1, 1);
+            var d = ctx.getImageData(0, 0, 1, 1).data;
+            if(!d[3]) return cb(null);
+            cb('#'+[d[0], d[1], d[2]].map(function(v){ return ('0'+v.toString(16)).slice(-2); }).join(''));
+          } catch (_) { cb(null); }
         };
+        img.onerror = function(){ cb(null); };
         img.src = dataUrl;
       }
 
@@ -1612,6 +1614,7 @@
         markStateDirty();
         setTimeout(buildBgPanels, 100);
         sampleTopLeftColor(h || v, function(hex){
+          if(!hex) return;
           if(window.colorState && window.applyColor){
             window.colorState.canvasBg = hex;
             window._bnCanvasBgHardLock = hex;
@@ -1729,6 +1732,7 @@
             setTimeout(buildBgPanels, 100);
             /* 吸左上角顏色→自動套用背景色 */
             sampleTopLeftColor(dataUrl, function(hex){
+              if(!hex) return;
               if(window.colorState && window.applyColor){
                 window.colorState.canvasBg = hex;
                 window._bnCanvasBgHardLock = hex;
@@ -2998,18 +3002,69 @@
       },200);
     };
 
+    /* 匯入工單：依「工單總覽」填寫的檔名，把同次上傳的 LOGO／曝品套回曝光資源。
+       素材只接受已解析完成的 data URL；重複 postMessage 會用簽章略過，避免畫布重複重置。 */
+    var _bnWorkorderAssetsSignature = '';
+    window._bnApplyWorkorderAssets = async function(payload){
+      payload = payload || {};
+      var logos = Array.isArray(payload.logos) ? payload.logos.filter(function(item){ return item && item.src; }).slice(0, MAX_LOGOS) : [];
+      var products = Array.isArray(payload.products) ? payload.products.filter(function(item){ return item && item.src; }).slice(0, MAX_PROD) : [];
+      var signature = [
+        payload.replaceLogos ? 'L' : '',
+        logos.map(function(item){ return String(item.name || '') + ':' + String(item.src || '').length; }).join('|'),
+        payload.replaceProducts ? 'P' : '',
+        products.map(function(item){ return String(item.name || '') + ':' + String(item.src || '').length; }).join('|')
+      ].join('~');
+      if (!signature || signature === _bnWorkorderAssetsSignature) return;
+      _bnWorkorderAssetsSignature = signature;
+      try {
+        if (payload.replaceLogos && logos.length) {
+          (window._bnLogos || []).forEach(function(logo){ broadcast({type:'bn-logo-remove', id:logo.id}); });
+          var importedLogos = [];
+          for (var li = 0; li < logos.length; li++) {
+            var logoAsset = logos[li];
+            var logoImage = await loadImg(logoAsset.src);
+            var trimmedLogo = autoTrimWhiteLogo(logoImage);
+            importedLogos.push({
+              id: 'logo_workorder_' + Date.now() + '_' + li,
+              src: trimmedLogo.src,
+              ratio: trimmedLogo.ratio,
+              name: logoAsset.name || ''
+            });
+          }
+          window._bnLogos = importedLogos;
+          window._bnLogoDataUrl = importedLogos.length ? importedLogos[0].src : null;
+          renderLogoList();
+          broadcast({type:'bn-logos', logos:window._bnLogos});
+        }
+        if (payload.replaceProducts && products.length) {
+          await applyWithOrder(products.map(function(item){
+            return { src:item.src, baseSrc:item.baseSrc || item.src, name:item.name || '', fromExisting:false };
+          }), false);
+        }
+        markStateDirty();
+      } catch (err) {
+        _bnWorkorderAssetsSignature = '';
+        console.warn('工單曝光資源素材套用失敗', err);
+      }
+    };
+
     /* ── init ── */
     function init(){
-      if(document.getElementById('sidebar-scroll')){insertLogoUI();insertProductUI();insertDownloadBar();}
+      if(document.getElementById('sidebar-scroll')){insertLogoUI();insertProductUI();insertDownloadBar();autoSelectLogoVariant(window._bnLogos || []);}
       else setTimeout(init,200);
     }
     init();
+    /* 版型是非同步掃描；掃描完成後再跑一次，確保初次進入無 LOGO 時 DDCARD 已切到無 LOGO 版。 */
+    document.addEventListener('bn-layouts-ready', function(){ autoSelectLogoVariant(window._bnLogos || []); });
 
     /* 暴露給 bn-state-plugin 使用 */
     window._bnRenderLogoList = function(){ renderLogoList(); };
     window._bnBroadcastLogos = function(){
       if(window._bnLogos && window._bnLogos.length){
         broadcast({type:'bn-logos', logos:window._bnLogos});
+      } else {
+        autoSelectLogoVariant([]);
       }
     };
     window._bnRenderProdList = function(){ renderProdList(); };

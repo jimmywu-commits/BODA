@@ -392,11 +392,29 @@
       var cardSchemaId = String((opts && opts._schemaId) || '');
       if (!/^msbn_[CD]_/i.test(cardSchemaId)) return '#ffffff';
     }
+    /* MSBN 品名依實際承接底色的明暗選擇兩組字色：指定的 A／B 版型直接讀曝光背景；
+       其餘白卡讀白底，C／D 讀卡片底色。使用者未手動選色時，自動選黑／白高對比字。 */
+    var themeSchemaId = String((opts && opts._schemaId) || '');
+    var themeField = String((layer && layer.field) || '');
+    var isMsbnProductName = /^msbn_/i.test(themeSchemaId) && layer && layer.type === 'text' &&
+      (/^name\d*$/i.test(themeField) || String(layer.fieldLabel || '') === '品名');
+    if (isMsbnProductName) {
+      var usesExposureBg = /^msbn_(?:B_3_[12]|A_(?:3_1|2_[12]|1_[12]))$/i.test(themeSchemaId);
+      var nameSurface = usesExposureBg ? (theme.canvasBg || theme.bg || '#ffffff') :
+        (/^msbn_[AB]_/.test(themeSchemaId) ? '#ffffff' :
+          ((/^msbn_[CD]_/.test(themeSchemaId) && (theme.cardBg || theme.bg)) || theme.canvasBg || theme.bg || '#ffffff'));
+      var surfaceRgb = parseCssColor(nameSurface);
+      var surfaceLuma = surfaceRgb ? (0.2126 * surfaceRgb.r + 0.7152 * surfaceRgb.g + 0.0722 * surfaceRgb.b) / 255 : 1;
+      var nameThemeKey = surfaceLuma >= 0.52 ? 'nameOnLightBg' : 'nameOnDarkBg';
+      var linkedNameColor = theme[nameThemeKey];
+      if (linkedNameColor && String(linkedNameColor).trim()) return String(linkedNameColor).trim();
+      return nameThemeKey === 'nameOnLightBg' ? '#111827' : '#ffffff';
+    }
 
     /* MSBN C（C-1-1～3 除外）的促標是淺色卡片上的標題，系統預設固定黑字；
        只有使用者明確選過「促標字色」時才改套全域手動色。 */
-    if (role === 'promoText' && /^msbn_C_/i.test(String((opts && opts._schemaId) || '')) &&
-        !/^msbn_C_1_[123]$/i.test(String((opts && opts._schemaId) || '')) && theme.promoTextAuto) {
+    if (role === 'promoText' && /^msbn_C_/i.test(themeSchemaId) &&
+        !/^msbn_C_1_[123]$/i.test(themeSchemaId) && theme.promoTextAuto) {
       return '#000000';
     }
     var v = theme[role];
@@ -1284,6 +1302,47 @@
     return layer;
   }
 
+  /* D 系列清單版位可指定「淺底＋色線」：不再用交錯深淺色塊，
+     而是保留卡片底色、以背景色衍生的線條切出每一格。動態增減列時，
+     線條與項目欄會一起重新計算位置，不會留下固定高度的空白格。 */
+  function dynamicRowGridHtml(layout, data, opts) {
+    if (!layout || !layout.cfg || !layout.cfg.gridLines) return '';
+    var cfg = layout.cfg;
+    var grid = cfg.gridLines;
+    var color = derivedColorOf({ derivedColor: grid.derivedColor || {} }, data, null, opts) ||
+      grid.color || 'rgba(0,0,0,.16)';
+    var lineWidth = Math.max(1, Number(grid.lineWidth || 2));
+    var left = Number(grid.left != null ? grid.left : 20);
+    var width = Number(grid.width != null ? grid.width : 1160);
+    var top = Number(cfg.top || 0);
+    var height = Number(layout.dynamicHeight || 0);
+    var html = '';
+    function line(x, y, w, h) {
+      html += '<div class="bn-dynamic-grid-line" aria-hidden="true" style="position:absolute;left:' + x +
+        'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;z-index:' +
+        Number(grid.zIndex != null ? grid.zIndex : 1) + ';background:' + color +
+        ';pointer-events:none;"></div>';
+    }
+    /* 外框讓第一列、最後一列也完整；再依實際可見列補水平分隔。 */
+    if (grid.outerBorder !== false) {
+      line(left, top, width, lineWidth);
+      line(left, top + Math.max(0, height - lineWidth), width, lineWidth);
+      line(left, top, lineWidth, height);
+      line(left + Math.max(0, width - lineWidth), top, lineWidth, height);
+    }
+    var verticalDividers = Array.isArray(grid.verticalDividers)
+      ? grid.verticalDividers
+      : [grid.itemDivider, grid.contentDivider];
+    verticalDividers.forEach(function (divider) {
+      if (divider == null) return;
+      line(Number(divider) - lineWidth / 2, top, lineWidth, height);
+    });
+    for (var i = 1; i < layout.activeCount; i++) {
+      line(left, top + i * layout.rowHeight - lineWidth / 2, width, lineWidth);
+    }
+    return html;
+  }
+
   function buildRender(schema) {
     return function (data, opts) {
       /* 每次渲染都把目前 schema id 帶進 opts，讓顏色覆寫能判斷「這是不是 MSBN D」。
@@ -1337,6 +1396,7 @@
         }
         html += renderLayer(dynamicLayer, dynamicLayer.left, dynamicLayer.top, data, null, renderOpts);
       });
+      html += dynamicRowGridHtml(dynamicRows, data, renderOpts);
 
       (schema.repeats || []).forEach(function (repeat) {
         repeat.instances.forEach(function (inst) {
