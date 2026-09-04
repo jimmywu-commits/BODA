@@ -203,9 +203,9 @@ html, body { height: 100%; background: var(--bg0); color: var(--text);
 }
 #bn-download-overlay.show { display: flex; }
 .bn-loading-card {
-  width: min(420px, 86vw); background: #161b22; border: 1px solid #30363d;
-  border-radius: 14px; box-shadow: 0 22px 70px rgba(0,0,0,.55);
-  padding: 24px 26px; text-align: center;
+  width: min(420px, 86vw); background: rgba(22,27,34,.84); border: 1px solid rgba(139,148,158,.48);
+  border-radius: 16px; box-shadow: 0 22px 70px rgba(0,0,0,.48),0 2px 9px rgba(0,0,0,.28);
+  backdrop-filter: blur(14px); padding: 24px 26px; text-align: center;
 }
 .bn-loading-spinner {
   width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 16px;
@@ -840,6 +840,14 @@ var PREVIEW_MAX = 800;   /* 寬或高最多 Npx，可在後台調整 */
 
 /* 預覽載入狀態：bn-iframe-ready 會在 iframe 內 CSS + 字型 ready 後才回報 */
 var bnPreviewLoading = { expected: {}, ready: {}, total: 0, timer: null };
+/* 嵌入主工具時同步載入狀態，獨立開啟曝光資源時仍只顯示本頁浮動視窗。 */
+function bnNotifyHostLoading(phase, percent, label, note) {
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ source: 'BODA_EXPOSURE_LOADING', phase: phase, percent: percent, label: label, note: note }, '*');
+    }
+  } catch (e) {}
+}
 
 function bnStartPreviewLoading(layouts) {
   var overlay = document.getElementById('bn-loading-overlay');
@@ -852,6 +860,7 @@ function bnStartPreviewLoading(layouts) {
   if (bnPreviewLoading.timer) clearTimeout(bnPreviewLoading.timer);
   if (!layouts.length) { bnHidePreviewLoading(); return; }
   overlay.classList.add('show');
+  bnNotifyHostLoading('start', 5, 'LOADING · 曝光資源', '正在載入已勾選版位的畫布與字體…');
   bnUpdatePreviewLoading();
   bnPreviewLoading.timer = setTimeout(function(){
     var ov = document.getElementById('bn-loading-overlay');
@@ -877,6 +886,7 @@ function bnUpdatePreviewLoading() {
   var count = document.getElementById('bn-loading-count');
   if (bar) bar.style.width = pct + '%';
   if (count) count.textContent = ready + ' / ' + total + ' 個版型已完成';
+  bnNotifyHostLoading('update', pct, 'LOADING · 曝光資源', ready + ' / ' + total + ' 個版型已完成，正在等待字體與畫布…');
 }
 
 function bnHidePreviewLoading(manual) {
@@ -887,6 +897,7 @@ function bnHidePreviewLoading(manual) {
     overlay.classList.remove('show');
     if (!manual) overlay.classList.remove('slow');
   }
+  bnNotifyHostLoading('finish', 100, '曝光資源已就緒', manual ? '已略過等待畫面' : '畫布與字體已完成載入');
 }
 
 /* 下載/打包中的浮動遮罩：跟預覽載入遮罩共用同一種毛玻璃卡片風格。
@@ -901,6 +912,7 @@ function bnShowDownloadOverlay(desc) {
   if (bar) bar.style.width = '0%';
   if (count) count.textContent = '';
   overlay.classList.add('show');
+  bnNotifyHostLoading('start', 5, 'LOADING · 曝光資源下載', desc || '正在截圖並打包下載…');
 }
 
 function bnUpdateDownloadOverlay(text, done, total) {
@@ -911,11 +923,13 @@ function bnUpdateDownloadOverlay(text, done, total) {
     bar.style.width = pct + '%';
   }
   if (count) count.textContent = text || '';
+  bnNotifyHostLoading('update', total ? Math.round((done || 0) / total * 100) : 45, 'LOADING · 曝光資源下載', text || '正在打包下載…');
 }
 
 function bnHideDownloadOverlay() {
   var overlay = document.getElementById('bn-download-overlay');
   if (overlay) overlay.classList.remove('show');
+  bnNotifyHostLoading('finish', 100, '曝光資源下載完成', '檔案已準備完成');
 }
 window.bnShowDownloadOverlay = bnShowDownloadOverlay;
 window.bnUpdateDownloadOverlay = bnUpdateDownloadOverlay;
@@ -1915,6 +1929,21 @@ var TEXT_COLOR_KEYS = BASIC_TEXT_COLOR_KEYS;
 
 /* 目前開啟面板對應的 key */
 var cpActiveKey = null;
+/* 原生選色器（作業系統視窗）回傳的 click 有時 target 會是 document；
+   用這段鎖定期間避免被「點面板外關閉」誤判。 */
+var cpNativePickerEditing = false;
+var cpNativePickerReleaseTimer = null;
+function holdCpNativePicker() {
+  if (cpNativePickerReleaseTimer) clearTimeout(cpNativePickerReleaseTimer);
+  cpNativePickerEditing = true;
+}
+function releaseCpNativePicker(delay) {
+  if (cpNativePickerReleaseTimer) clearTimeout(cpNativePickerReleaseTimer);
+  cpNativePickerReleaseTimer = setTimeout(function () {
+    cpNativePickerEditing = false;
+    cpNativePickerReleaseTimer = null;
+  }, typeof delay === 'number' ? delay : 420);
+}
 
 function renderColorPickers() {
   var wrap = document.getElementById('color-rows');
@@ -2040,11 +2069,26 @@ function renderColorPickers() {
   var nativeEl = document.getElementById('cp-native');
   if(nativeEl && !nativeEl.dataset.bound){
     nativeEl.dataset.bound = '1';
+    ['pointerdown', 'mousedown', 'focus'].forEach(function(type){
+      nativeEl.addEventListener(type, holdCpNativePicker, true);
+    });
     nativeEl.addEventListener('input', function(){
+      holdCpNativePicker();
       applyColor(this.value);
     });
     nativeEl.addEventListener('change', function(){
       applyColor(this.value);
+      releaseCpNativePicker(520);
+    });
+    nativeEl.addEventListener('blur', function(){
+      releaseCpNativePicker(620);
+    });
+  }
+  var cpPanelEl = document.getElementById('cp-panel');
+  if(cpPanelEl && !cpPanelEl.dataset.closeGuardBound){
+    cpPanelEl.dataset.closeGuardBound = '1';
+    ['pointerdown', 'mousedown', 'click'].forEach(function(type){
+      cpPanelEl.addEventListener(type, function(event){ event.stopPropagation(); }, true);
     });
   }
   if(cpActiveKey) updateColorPanelForKey(cpActiveKey);
@@ -2218,7 +2262,8 @@ function applyColor(color) {
 /* 點面板外關閉 */
 document.addEventListener('click', function(e) {
   var panel = document.getElementById('cp-panel');
-  if (panel && !panel.contains(e.target)) panel.classList.remove('open');
+  if (!panel || cpNativePickerEditing || panel.contains(e.target)) return;
+  panel.classList.remove('open');
 });
 
 /* EyeDropper 吸管 */

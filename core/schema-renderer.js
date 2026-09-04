@@ -433,6 +433,13 @@
       if (linkedNameColor && String(linkedNameColor).trim()) return String(linkedNameColor).trim();
       return nameThemeKey === 'nameOnLightBg' ? '#111827' : '#ffffff';
     }
+    /* C 系列的 copy／copy2 是固定白底券內的文案，不管外層背景怎麼變，
+       都必須以白底檢查對比；白字一律會被攔下，確保券字永遠可讀。 */
+    if (role === 'bodyText' && /^msbn_C_/i.test(themeSchemaId) && /^copy\d*$/i.test(themeField)) {
+      var couponTextColor = (theme.bodyText && String(theme.bodyText).trim()) || layer.color || '';
+      return readableTextColor(couponTextColor, '#ffffff');
+    }
+
     /* C／D 卡片會依背景色自動加亮，若仍沿用全站白色一般文字，會幾乎看不見。
        因此一般文字最後一定依卡片實際底色驗證對比；使用者的自訂色夠清楚就保留，
        不夠清楚則自動切換深色／白色，避免淡色背景出現白字。 */
