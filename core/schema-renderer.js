@@ -370,7 +370,23 @@
       }
     });
   }
-  function themeColorOf(layer, opts) {
+  function subareaProductNameSurface(data, opts, fieldPrefix) {
+    /* 副區品名必須看「同一張卡片」的實際底色，而不是整個版位的 canvasBg。
+       這樣白卡與工單帶入的有色卡，都會選到正確的高對比品名字色。 */
+    var layers = (opts && opts._schemaLayers) || [];
+    var cardLayer = null;
+    layers.some(function (candidate) {
+      if (!candidate || candidate.type !== 'rect') return false;
+      if (themeRoleOf(candidate, opts && opts._schemaId) !== 'cardBg') return false;
+      cardLayer = candidate;
+      return true;
+    });
+    if (!cardLayer) return null;
+    var cardFieldKey = resolveFieldKey(cardLayer, fieldPrefix);
+    return (cardFieldKey && data && data[cardFieldKey]) || cardLayer.backgroundColor || null;
+  }
+
+  function themeColorOf(layer, opts, data, fieldPrefix) {
     var theme = opts && opts.theme;
     if (!theme) return null;
     var role = themeRoleOf(layer, opts && opts._schemaId);
@@ -390,7 +406,10 @@
 
     if (role === 'cardBg') {
       var cardSchemaId = String((opts && opts._schemaId) || '');
-      if (!/^msbn_[CD]_/i.test(cardSchemaId)) return '#ffffff';
+      /* 副區卡片預設仍由 block.json 的白底決定；但若工單／畫布實際帶入有色卡，
+         不再強制覆寫為白色，讓品名可依真正底色選擇深／淺字。 */
+      if (/^subarea_/i.test(cardSchemaId)) return null;
+      if (!/^msbn_[CD]_/.test(cardSchemaId)) return '#ffffff';
     }
     /* MSBN 品名依實際承接底色的明暗選擇兩組字色：指定的 A／B 版型直接讀曝光背景；
        其餘白卡讀白底，C／D 讀卡片底色。使用者未手動選色時，自動選黑／白高對比字。 */
@@ -398,17 +417,29 @@
     var themeField = String((layer && layer.field) || '');
     var isMsbnProductName = /^msbn_/i.test(themeSchemaId) && layer && layer.type === 'text' &&
       (/^name\d*$/i.test(themeField) || String(layer.fieldLabel || '') === '品名');
-    if (isMsbnProductName) {
+    var isSubareaProductName = /^subarea_/i.test(themeSchemaId) && layer && layer.type === 'text' &&
+      (/^name\d*$/i.test(themeField) || /^品名(?:\s*\d+)?$/.test(String(layer.fieldLabel || '')));
+    if (isMsbnProductName || isSubareaProductName) {
       var usesExposureBg = /^msbn_(?:B_3_[12]|A_(?:3_1|2_[12]|1_[12]))$/i.test(themeSchemaId);
-      var nameSurface = usesExposureBg ? (theme.canvasBg || theme.bg || '#ffffff') :
-        (/^msbn_[AB]_/.test(themeSchemaId) ? '#ffffff' :
-          ((/^msbn_[CD]_/.test(themeSchemaId) && (theme.cardBg || theme.bg)) || theme.canvasBg || theme.bg || '#ffffff'));
+      var nameSurface = isSubareaProductName
+        ? (subareaProductNameSurface(data, opts, fieldPrefix) || theme.canvasBg || theme.bg || '#ffffff')
+        : (usesExposureBg ? (theme.canvasBg || theme.bg || '#ffffff') :
+          (/^msbn_[AB]_/.test(themeSchemaId) ? '#ffffff' :
+            ((/^msbn_[CD]_/.test(themeSchemaId) && (theme.cardBg || theme.bg)) || theme.canvasBg || theme.bg || '#ffffff')));
       var surfaceRgb = parseCssColor(nameSurface);
       var surfaceLuma = surfaceRgb ? (0.2126 * surfaceRgb.r + 0.7152 * surfaceRgb.g + 0.0722 * surfaceRgb.b) / 255 : 1;
       var nameThemeKey = surfaceLuma >= 0.52 ? 'nameOnLightBg' : 'nameOnDarkBg';
       var linkedNameColor = theme[nameThemeKey];
       if (linkedNameColor && String(linkedNameColor).trim()) return String(linkedNameColor).trim();
       return nameThemeKey === 'nameOnLightBg' ? '#111827' : '#ffffff';
+    }
+    /* C／D 卡片會依背景色自動加亮，若仍沿用全站白色一般文字，會幾乎看不見。
+       因此一般文字最後一定依卡片實際底色驗證對比；使用者的自訂色夠清楚就保留，
+       不夠清楚則自動切換深色／白色，避免淡色背景出現白字。 */
+    if (role === 'bodyText' && /^msbn_[CD]_/.test(themeSchemaId)) {
+      var bodySurface = theme.cardBg || theme.canvasBg || theme.bg || '#ffffff';
+      var requestedBodyColor = (theme.bodyText && String(theme.bodyText).trim()) || layer.color || '';
+      return readableTextColor(requestedBodyColor, bodySurface);
     }
 
     /* MSBN C（C-1-1～3 除外）的促標是淺色卡片上的標題，系統預設固定黑字；
@@ -486,6 +517,28 @@
     var out = { r: channel(parts[0]), g: channel(parts[1]), b: channel(parts[2]), a: a };
     return [out.r, out.g, out.b, out.a].every(function (v) { return isFinite(v); }) ? out : null;
   }
+  function relativeLuminance(color) {
+    if (!color) return null;
+    function channel(value) {
+      var c = Number(value) / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+    return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
+  }
+  function contrastRatio(foreground, background) {
+    var fg = parseCssColor(foreground), bg = parseCssColor(background);
+    if (!fg || !bg) return null;
+    var fgLum = relativeLuminance(fg), bgLum = relativeLuminance(bg);
+    return (Math.max(fgLum, bgLum) + 0.05) / (Math.min(fgLum, bgLum) + 0.05);
+  }
+  function readableTextColor(candidate, surface) {
+    var surfaceRgb = parseCssColor(surface);
+    if (!surfaceRgb) return candidate || null;
+    /* 以 WCAG 一般文字 4.5:1 做最後防線；淡色卡不會再被白字吃掉。 */
+    if (candidate && contrastRatio(candidate, surface) >= 4.5) return candidate;
+    return relativeLuminance(surfaceRgb) >= 0.52 ? '#121827' : '#ffffff';
+  }
+
   function rgbToHsl(c) {
     var r = c.r / 255, g = c.g / 255, b = c.b / 255;
     var max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -867,7 +920,7 @@
          （不然使用者在匯入頁改卡片顏色時，這一塊會變成改不到的死白）。 */
       var bgFieldKey = layer.bgField ? resolveFieldKey({ field: layer.bgField }, fieldPrefix) : null;
       var imgBgColor = derivedColorOf(layer, data, fieldPrefix, opts)
-        || themeColorOf(layer, opts)
+        || themeColorOf(layer, opts, data, fieldPrefix)
         || (bgFieldKey && data[bgFieldKey])
         || layer.backgroundColor;
       /* 有 bgField 的圖片框，本身就是設計稿上一塊看得到的色塊（曝品範圍就是這種），
@@ -935,7 +988,7 @@
     } else if (layer.type === 'rect') {
       var rectColor = derivedColorOf(layer, data, fieldPrefix, opts)
         || ((fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor);
-      rectColor = themeColorOf(layer, opts) || rectColor; /* 全站統一顏色（促標底／CTA底…）優先 */
+      rectColor = themeColorOf(layer, opts, data, fieldPrefix) || rectColor; /* 全站統一顏色（促標底／CTA底…）優先 */
       renderedColorValue = rectColor || '';
       if (rectColor) style.push('background-color:' + rectColor);
       if (layer.backgroundImage) style.push('background-image:' + layer.backgroundImage); /* 漸層等裝飾底 */
@@ -950,14 +1003,14 @@
       if (!isCtaBgLayer(layer)) style.push('border-radius:50%'); /* CTA 底色塊上面已經套過統一圓角了 */
       var color = derivedColorOf(layer, data, fieldPrefix, opts)
         || ((fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor);
-      color = themeColorOf(layer, opts) || color; /* 全站統一顏色（圓標底／CTA底…）優先 */
+      color = themeColorOf(layer, opts, data, fieldPrefix) || color; /* 全站統一顏色（圓標底／CTA底…）優先 */
       renderedColorValue = color || '';
       if (color) style.push('background-color:' + color);
       if (layer.border) style.push('border:' + layer.border);
     } else if (layer.type === 'text') {
       if (layer.fontSize != null) style.push('font-size:' + layer.fontSize + 'px');
       if (layer.fontFamily) style.push('font-family:' + JSON.stringify(layer.fontFamily));
-      var textColor = themeColorOf(layer, opts) || layer.color; /* 全站統一顏色（促標字色／圓標字色／CTA字色）優先 */
+      var textColor = themeColorOf(layer, opts, data, fieldPrefix) || layer.color; /* 全站統一顏色（促標字色／圓標字色／CTA字色）優先 */
       if (textColor) style.push('color:' + textColor);
       var textWeight = semanticTextWeight(layer);
       if (textWeight) style.push('font-weight:' + textWeight);
@@ -1350,6 +1403,10 @@
       var renderOpts = {};
       Object.keys(opts || {}).forEach(function (k) { renderOpts[k] = opts[k]; });
       renderOpts._schemaId = schema.id;
+      renderOpts._schemaLayers = (schema.layers || []).slice();
+      (schema.repeats || []).forEach(function (repeat) {
+        renderOpts._schemaLayers = renderOpts._schemaLayers.concat(repeat.layers || []);
+      });
       var layerFields = (schema.layers || []).map(function (l) {
         return String(l.field || '');
       });

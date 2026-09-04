@@ -389,6 +389,19 @@
     canvas.width = canvas.height = 2;
     try {
       var ctx = canvas.getContext('2d');
+      /* 匯入工單會先裁掉圖片外緣，透明 PNG 常只剩 1px 透明留白；
+         原本從 2px 開始多點取樣會直接落到 LOGO 本體（例如 SAMPO 的紅字）。
+         依規則優先看裁切後左上 1×1：只要仍透明，就代表沒有可吸的背景，固定白底。 */
+      ctx.clearRect(0, 0, 2, 2);
+      ctx.drawImage(img, 0, 0, 1, 1, 0, 0, 1, 1);
+      var topLeftAlpha = ctx.getImageData(0, 0, 1, 1).data[3];
+      if (topLeftAlpha < 32) {
+        target.style.backgroundColor = '#ffffff';
+        target.setAttribute('data-logo-bg-sampled', '#ffffff');
+        target.setAttribute('data-logo-bg-transparent', 'true');
+        return;
+      }
+      target.removeAttribute('data-logo-bg-transparent');
       var bins = {};
       positions.forEach(function (pos) {
         ctx.clearRect(0, 0, 2, 2);

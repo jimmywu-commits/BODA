@@ -8130,41 +8130,10 @@ function detectCombo(fam, entries) {
    圖片素材：可以一次上傳多張，供 LOGO/商品 這類圖片欄位選用
 ════════════════════════════════════════ */
 var DEMO_IMPORT_FOLDER = '測試工單與圖片';
-var DEMO_IMPORT_WORKORDER_FILE = 'BODA工單_brand_star_mega_zj_1787896948520.xlsx';
-/* 瀏覽器無法直接列出靜態資料夾內容，因此這裡明確列出 demo 資料夾內的圖片；
-   之後若替換 demo 素材，保留檔名或同步更新這份清單即可。 */
-var DEMO_IMPORT_IMAGE_FILES = [
-  '1-(4)-(1).jpg',
-  '1.png',
-  '2-(4)-Photoroom.png',
-  '2-(4).jpg',
-  '2.png',
-  '2023 NATGEO LOGO_640x360.jpg',
-  '2026-05-19 11 49 59-Photoroom.png',
-  '2026-05-19 11 49 59.png',
-  '2026-05-19 11 50 16-Photoroom.png',
-  '2026-05-19 11 50 16.png',
-  '3.png',
-  '代言人照片.png',
-  '範例圖_AB_1787881078770.jpg',
-  '簽名檔.png',
-  'apple.png',
-  'Copy of SF_logo_596x596.png',
-  'Dyson_Logo480x360去背版.png',
-  'GIGASTONE_LOGO.png',
-  'iphone17.png',
-  'iPhone19 PLUS.png',
-  'iPhone20 PRO.png',
-  'KI60415GG-1.JPG',
-  'Logitech G.png',
-  'Logo.jpg',
-  'Plainme_YOBI 連帽外套 _1-Photoroom.png',
-  'Plainme_YOBI 連帽外套 _1.jpg',
-  'POLYWELL logo new.png',
-  'SAMPO 640X360-Photoroom.png',
-  'vivo 标志（RGB).jpg',
-  'WB_MATIN KIM.png'
-];
+var DEMO_IMPORT_MANIFEST_FILE = 'demo-manifest.json';
+/* 靜態網站不能直接列出資料夾；此索引由 tools/generate-demo-manifest.ps1
+   從資料夾「唯一試算表＋全部圖片」自動產生，因此本頁不保存 demo 檔名。 */
+var demoImportRunId = 0;
 
 var uploadedImages = []; /* { name, url }，url 一律是 dataURL */
 
@@ -10001,8 +9970,9 @@ function resolvedImportBg() {
 
 /* 沒有手動改過的顏色，把「畫面上目前實際的色號」吸進來顯示（不再只寫「版位原色」）。
    來源是畫布上第一個有這個角色的版位圖層，所以看到的就是眼前那個顏色。 */
-var maintTheme = {};
-IMPORT_COLOR_ITEMS.forEach(function (it) { maintTheme[it.key] = ''; });
+/* 維修與匯入工單共用完全相同的色彩狀態：背景、促標、CTA、卡片與品名字色
+   都只保留一份來源，任一頁手動調整都會同步到另一頁與曝光資源。 */
+var maintTheme = importTheme;
 
 function sampledRoleColors(columns) {
   var out = {};
@@ -10138,9 +10108,10 @@ function renderImportColorPanel() {
   var hasA23 = currentImportColumns.some(function (col) { return /^msbn_A_2_3$/i.test(String(col.blockId || '')); });
   var hasMsbnC = currentImportColumns.some(function (col) { return /^msbn_C_/i.test(String(col.blockId || '')); });
   var hasMsbn = currentImportColumns.some(function (col) { return /^msbn_/i.test(String(col.blockId || '')); });
+  var hasProductNameBlock = currentImportColumns.some(function (col) { return /^(?:msbn|subarea)_/i.test(String(col.blockId || '')); });
   var linkedDefaults = importLinkedDefaultColors(importTheme, sampled, bgNow);
   var colorItems = IMPORT_COLOR_ITEMS.filter(function (it) {
-    if ((it.key === 'nameOnLightBg' || it.key === 'nameOnDarkBg') && !hasMsbn) return false;
+    if ((it.key === 'nameOnLightBg' || it.key === 'nameOnDarkBg') && !hasProductNameBlock) return false;
     if (it.key === 'cardBg') return hasEligibleCardBg;
     if (it.key === 'cardBgA23Left' || it.key === 'cardBgA23Right') return hasA23;
     return true;
@@ -10200,6 +10171,7 @@ function renderImportColorPanel() {
       saveImportTheme();
       if (rebuildPanel) {
         applyImportTheme();
+        if (maintColumns.length) applyMaintTheme();
         renderImportColorPanel(); /* 重畫這一區，讓提示文字（版位原色／跟著曝光資源）跟著更新 */
         return;
       }
@@ -10207,6 +10179,7 @@ function renderImportColorPanel() {
       row.classList.toggle('is-off', key === 'bg' ? false : !v);
       if (autoTag) autoTag.style.display = (key === 'bg' || !v) ? '' : 'none';
       applyImportThemeSoon();
+      if (maintColumns.length) applyMaintThemeSoon();
     }
 
     picker.addEventListener('pointerdown', holdImportColorPicker);
@@ -10219,6 +10192,7 @@ function renderImportColorPanel() {
     picker.addEventListener('change', function () {
       setValue(this.value, false);
       applyImportTheme(); /* 色盤確認時，不等待防抖，畫布立即完成最後一幀。 */
+      if (maintColumns.length) applyMaintTheme();
       importColorPanelRefreshPending = true;
       releaseImportColorPicker(0);
     });
@@ -10260,7 +10234,7 @@ function applyMaintThemeSoon() {
   maintThemeApplyTimer = setTimeout(applyMaintTheme, 60);
 }
 
-/* 維修頁的統一顏色工具：只改 maintTheme，不寫 localStorage，方便反覆測試。 */
+/* 維修頁使用匯入工單共用色彩狀態；調色會立即同步回匯入畫布、曝光資源與暫存。 */
 function applyMaintTheme() {
   maintColumns.forEach(function (col, idx) {
     var mount = document.getElementById('mnt-mount-' + idx);
@@ -10284,10 +10258,11 @@ function renderMaintColorPanel() {
   var hasA23 = maintColumns.some(function (col) { return /^msbn_A_2_3$/i.test(String(col.blockId || '')); });
   var hasMsbnC = maintColumns.some(function (col) { return /^msbn_C_/i.test(String(col.blockId || '')); });
   var hasMsbn = maintColumns.some(function (col) { return /^msbn_/i.test(String(col.blockId || '')); });
+  var hasProductNameBlock = maintColumns.some(function (col) { return /^(?:msbn|subarea)_/i.test(String(col.blockId || '')); });
   var maintBg = maintTheme.bg || resolvedImportBg();
   var linkedDefaults = importLinkedDefaultColors(maintTheme, sampled, maintBg);
   var colorItems = IMPORT_COLOR_ITEMS.filter(function (it) {
-    if ((it.key === 'nameOnLightBg' || it.key === 'nameOnDarkBg') && !hasMsbn) return false;
+    if ((it.key === 'nameOnLightBg' || it.key === 'nameOnDarkBg') && !hasProductNameBlock) return false;
     if (it.key === 'cardBg') return hasEligibleCardBg;
     if (it.key === 'cardBgA23Left' || it.key === 'cardBgA23Right') return hasA23;
     return true;
@@ -10324,14 +10299,28 @@ function renderMaintColorPanel() {
     var hex = row.querySelector('.icc-hex');
     var autoTag = row.querySelector('.icc-auto');
     function setValue(v, rebuildPanel) {
-
-      maintTheme[key] = v;
-      row.classList.toggle('is-off', !v);
-      if (autoTag) autoTag.style.display = v ? 'none' : '';
+      if (key === 'bg') {
+        var normalized = /^#[0-9a-fA-F]{6}$/.test(v || '') ? colorToHex(v) : v;
+        importTheme.bg = normalized;
+        importTheme.bgAuto = false;
+        if (/^#[0-9a-fA-F]{6}$/.test(normalized || '')) {
+          relinkImportPromoColorsToBackground();
+          writeSharedCanvasBg(normalized);
+          pushImportBgToExposure(normalized);
+        }
+      } else {
+        importTheme[key] = v;
+      }
+      saveImportTheme();
+      row.classList.toggle('is-off', key === 'bg' ? false : !v);
+      if (autoTag) autoTag.style.display = (key === 'bg' || !v) ? '' : 'none';
       if (rebuildPanel) {
+        applyImportTheme();
         applyMaintTheme();
+        renderImportColorPanel();
         return;
       }
+      applyImportThemeSoon();
       applyMaintThemeSoon();
     }
     picker.addEventListener('pointerdown', holdMaintColorPicker);
@@ -10343,7 +10332,9 @@ function renderMaintColorPanel() {
     });
     picker.addEventListener('change', function () {
       setValue(this.value, false);
+      applyImportTheme();
       applyMaintTheme(); /* 色盤確認時，不等待防抖，畫布立即完成最後一幀。 */
+      renderImportColorPanel();
       maintColorPanelRefreshPending = true;
       releaseMaintColorPicker(0);
     });
@@ -10362,8 +10353,15 @@ function renderMaintColorPanel() {
 }
 
 function resetMaintTheme() {
-  IMPORT_COLOR_ITEMS.forEach(function (it) { maintTheme[it.key] = ''; });
+  IMPORT_COLOR_ITEMS.forEach(function (it) { importTheme[it.key] = ''; });
+  importTheme.bg = EXPOSURE_DEFAULT_BG;
+  importTheme.bgAuto = false;
+  writeSharedCanvasBg(importTheme.bg);
+  pushImportBgToExposure(importTheme.bg);
+  saveImportTheme();
+  applyImportTheme();
   applyMaintTheme();
+  renderImportColorPanel();
 }
 
 /* 跟曝光資源對一次背景色（兩邊連動）。
@@ -10382,6 +10380,8 @@ function syncImportBgFromExposure() {
   renderImportColorPanel();
   if (currentImportColumns.length) applyImportTheme();
   else applyImportStripBg();
+  if (maintColumns.length) applyMaintTheme();
+  else renderMaintColorPanel();
 }
 
 function refreshImportAndMaintColorLinks() {
@@ -10414,9 +10414,8 @@ window.addEventListener('message', function (e) {
   relinkImportPromoColorsToBackground();
   writeSharedCanvasBg(hex);
   saveImportTheme();
-  renderImportColorPanel();
-  if (currentImportColumns.length) applyImportTheme();
-  else applyImportStripBg();
+  refreshImportAndMaintColorLinks();
+  if (!currentImportColumns.length) applyImportStripBg();
 });
 
 /* 其他分頁／視窗變更共用背景色時也跟著更新。 */
@@ -10426,9 +10425,8 @@ window.addEventListener('storage', function (e) {
   importTheme.bgAuto = false;
   relinkImportPromoColorsToBackground();
   saveImportTheme();
-  renderImportColorPanel();
-  if (currentImportColumns.length) applyImportTheme();
-  else applyImportStripBg();
+  refreshImportAndMaintColorLinks();
+  if (!currentImportColumns.length) applyImportStripBg();
 });
 
 document.getElementById('btn-color-reset-all').addEventListener('click', function () {
@@ -10439,6 +10437,8 @@ document.getElementById('btn-color-reset-all').addEventListener('click', functio
   pushImportBgToExposure(importTheme.bg);
   saveImportTheme();
   applyImportTheme();
+  if (maintColumns.length) applyMaintTheme();
+  else renderMaintColorPanel();
   renderImportColorPanel();
 });
 
@@ -11546,7 +11546,31 @@ function encodeDemoAssetPath(fileName) {
   }).join('/');
 }
 
-function fetchDemoImage(fileName, index, total, onError) {
+function normalizeDemoImportManifest(raw) {
+  var data = raw && typeof raw === 'object' ? raw : {};
+  var workorder = String(data.workorder || data.workOrder || data.workorderFile || '').trim();
+  var images = Array.isArray(data.images) ? data.images : [];
+  images = images.map(function (name) { return String(name || '').trim(); }).filter(function (name) {
+    return /\.(png|jpe?g|webp|gif|bmp)$/i.test(name);
+  });
+  if (!/\.xlsx?$/i.test(workorder)) throw new Error('demo-manifest.json 未設定有效的試算表檔案');
+  if (!images.length) throw new Error('demo-manifest.json 未設定圖片檔案');
+  return { workorder: workorder, images: images };
+}
+
+function loadDemoImportManifest() {
+  return fetch(encodeDemoAssetPath(DEMO_IMPORT_MANIFEST_FILE), { cache: 'no-store' })
+    .then(function (response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
+    })
+    .then(normalizeDemoImportManifest)
+    .catch(function (err) {
+      throw new Error('讀取 demo 資料夾索引失敗：' + (err && err.message ? err.message : err) + '。請先執行 tools/generate-demo-manifest.ps1。');
+    });
+}
+
+function fetchDemoImage(fileName, index, total, onError, runId) {
   return fetch(encodeDemoAssetPath(fileName), { cache: 'no-store' })
     .then(function (response) {
       if (!response.ok) throw new Error('HTTP ' + response.status);
@@ -11557,8 +11581,11 @@ function fetchDemoImage(fileName, index, total, onError) {
         var reader = new FileReader();
         reader.onload = function () {
           trimImportImageWhiteBorder(reader.result).then(function (trimmed) {
-            appLoadingUpdate(8 + Math.round(((index + 1) / total) * 40),
-              'LOADING · 匯入 demo 工單', '已讀取圖片 ' + (index + 1) + '/' + total);
+            /* 已失敗或已開始下一次 Demo 匯入時，不可再把舊作業的進度蓋回畫面。 */
+            if (runId === demoImportRunId) {
+              appLoadingUpdate(12 + Math.round(((index + 1) / Math.max(total, 1)) * 40),
+                'LOADING · 匯入 demo 工單', '已讀取圖片 ' + (index + 1) + '/' + total);
+            }
             resolve({ name: fileName, url: trimmed, baseUrl: reader.result });
           });
         };
@@ -11576,6 +11603,7 @@ function loadDemoImport() {
   var button = document.getElementById('btn-import-demo');
   var importLog = document.getElementById('import-log');
   if (!button || button.disabled) return;
+  var runId = ++demoImportRunId;
   var originalHtml = button.innerHTML;
   var missingImages = [];
   button.disabled = true;
@@ -11583,31 +11611,38 @@ function loadDemoImport() {
   importLog.innerHTML = '<span class="ok">正在讀取「測試工單與圖片」中的工單與圖片…</span>';
   appLoadingStart('LOADING · 匯入 demo 工單', 5, '正在讀取 demo 工單與圖片…');
 
-  var imageJobs = DEMO_IMPORT_IMAGE_FILES.map(function (fileName, index) {
-    return fetchDemoImage(fileName, index, DEMO_IMPORT_IMAGE_FILES.length, function (name) {
-      missingImages.push(name);
-    });
-  });
-
-  Promise.all([
-    fetch(encodeDemoAssetPath(DEMO_IMPORT_WORKORDER_FILE), { cache: 'no-store' })
+  /* 先確認 manifest 與試算表存在，再開始圖片轉檔；找不到工單時不會留下背景進度工作。 */
+  loadDemoImportManifest().then(function (manifest) {
+    if (runId !== demoImportRunId) throw new Error('__DEMO_IMPORT_CANCELLED__');
+    appLoadingUpdate(8, 'LOADING · 匯入 demo 工單', '已找到工單與 ' + manifest.images.length + ' 張圖片，正在讀取工單…');
+    return fetch(encodeDemoAssetPath(manifest.workorder), { cache: 'no-store' })
       .then(function (response) {
-        if (!response.ok) throw new Error('找不到工單檔：' + DEMO_IMPORT_WORKORDER_FILE);
+        if (!response.ok) throw new Error('找不到工單檔：' + manifest.workorder);
         return response.arrayBuffer();
-      }),
-    Promise.all(imageJobs)
-  ]).then(function (result) {
-    var workOrderBuffer = result[0];
-    var images = result[1].filter(function (item) { return item && item.url; });
-    uploadedImages = images;
+      })
+      .then(function (workOrderBuffer) {
+        if (runId !== demoImportRunId) throw new Error('__DEMO_IMPORT_CANCELLED__');
+        var imageJobs = manifest.images.map(function (fileName, index) {
+          return fetchDemoImage(fileName, index, manifest.images.length, function (name) {
+            missingImages.push(name);
+          }, runId);
+        });
+        return Promise.all(imageJobs).then(function (loadedImages) {
+          return { manifest: manifest, workOrderBuffer: workOrderBuffer, images: loadedImages.filter(function (item) { return item && item.url; }) };
+        });
+      });
+  }).then(function (result) {
+    if (runId !== demoImportRunId) throw new Error('__DEMO_IMPORT_CANCELLED__');
+    uploadedImages = result.images;
     renderImageGallery();
-    rememberBottomWorkOrder(DEMO_IMPORT_WORKORDER_FILE, workOrderBuffer);
+    rememberBottomWorkOrder(result.manifest.workorder, result.workOrderBuffer);
     appLoadingUpdate(54, 'LOADING · 匯入 demo 工單', '圖片素材已載入，正在解析工單…');
-    return parseImportXlsx(workOrderBuffer, { filename: DEMO_IMPORT_WORKORDER_FILE }).then(function (rawColumns) {
+    return parseImportXlsx(result.workOrderBuffer, { filename: result.manifest.workorder }).then(function (rawColumns) {
+      if (runId !== demoImportRunId) throw new Error('__DEMO_IMPORT_CANCELLED__');
       afterImportParsed(rawColumns, {
         source: 'demo',
         hasBottomWorkOrder: true,
-        demoImageCount: images.length
+        demoImageCount: result.images.length
       });
       syncBottomAfterImportAction('import-sync');
       if (missingImages.length) {
@@ -11615,11 +11650,16 @@ function loadDemoImport() {
       }
     });
   }).catch(function (err) {
-    importLog.innerHTML = '<span class="err">demo 工單匯入失敗：' + esc(err.message || err) + '</span>';
-    appLoadingFinish('demo 工單匯入失敗');
+    if (String(err && err.message || err) === '__DEMO_IMPORT_CANCELLED__') return;
+    if (runId === demoImportRunId) {
+      importLog.innerHTML = '<span class="err">demo 工單匯入失敗：' + esc(err.message || err) + '</span>';
+      appLoadingFinish('demo 工單匯入失敗');
+    }
   }).then(function () {
-    button.disabled = false;
-    button.innerHTML = originalHtml;
+    if (runId === demoImportRunId) {
+      button.disabled = false;
+      button.innerHTML = originalHtml;
+    }
   });
 }
 
