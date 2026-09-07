@@ -386,6 +386,36 @@
     return (cardFieldKey && data && data[cardFieldKey]) || cardLayer.backgroundColor || null;
   }
 
+  /* MSBN B 的「文案」也要跟品名使用同一個實際承接面判斷。
+     B-1-3 的文案位於右側卡片色上，不能只看全版背景；B-1-4 沒有獨立卡片色，
+     才回到它原本的白色內容面。 */
+  function msbnProductNameSurface(data, opts, fieldPrefix, themeSchemaId, theme, preferCardSurface) {
+    var usesExposureBg = /^msbn_(?:B_3_[12]|A_(?:3_1|2_[12]|1_[12]))$/i.test(themeSchemaId);
+    if (usesExposureBg) return (theme && (theme.canvasBg || theme.bg)) || '#ffffff';
+
+    /* 原本品名在 MSBN A／B（除指定的曝光背景版）以白底判斷；只有 B 系列「文案」
+       明確要求比照品名時，才優先讀同版位的卡片底色。 */
+    if (!preferCardSurface && /^msbn_[AB]_/.test(themeSchemaId)) return '#ffffff';
+
+    var layers = (opts && opts._schemaLayers) || [];
+    var cardLayer = null;
+    layers.some(function (candidate) {
+      if (!candidate || candidate.type !== 'rect') return false;
+      if (themeRoleOf(candidate, opts && opts._schemaId) !== 'cardBg') return false;
+      cardLayer = candidate;
+      return true;
+    });
+    if (cardLayer) {
+      var cardFieldKey = resolveFieldKey(cardLayer, fieldPrefix);
+      return (cardFieldKey && data && data[cardFieldKey]) || cardLayer.backgroundColor || '#ffffff';
+    }
+
+    if (/^msbn_[CD]_/.test(themeSchemaId)) {
+      return (theme && (theme.cardBg || theme.bg)) || '#ffffff';
+    }
+    return '#ffffff';
+  }
+
   function themeColorOf(layer, opts, data, fieldPrefix) {
     var theme = opts && opts.theme;
     if (!theme) return null;
@@ -419,13 +449,15 @@
       (/^name\d*$/i.test(themeField) || String(layer.fieldLabel || '') === '品名');
     var isSubareaProductName = /^subarea_/i.test(themeSchemaId) && layer && layer.type === 'text' &&
       (/^name\d*$/i.test(themeField) || /^品名(?:\s*\d+)?$/.test(String(layer.fieldLabel || '')));
-    if (isMsbnProductName || isSubareaProductName) {
-      var usesExposureBg = /^msbn_(?:B_3_[12]|A_(?:3_1|2_[12]|1_[12]))$/i.test(themeSchemaId);
+    /* MSBN B-1-3／B-1-4 的欄位名稱仍是 promo，但語意是「文案」而非促標；
+       它要跟品名共用深／淺底配色，不跟全站 promoText 白字規則走。 */
+    var isMsbnBCopy = /^msbn_B_/i.test(themeSchemaId) && layer && layer.type === 'text' &&
+      (String(layer.fieldLabel || '').trim() === '文案' ||
+       (/^promo$/i.test(themeField) && String(layer.themeRole || '') === 'bodyText'));
+    if (isMsbnProductName || isSubareaProductName || isMsbnBCopy) {
       var nameSurface = isSubareaProductName
         ? (subareaProductNameSurface(data, opts, fieldPrefix) || theme.canvasBg || theme.bg || '#ffffff')
-        : (usesExposureBg ? (theme.canvasBg || theme.bg || '#ffffff') :
-          (/^msbn_[AB]_/.test(themeSchemaId) ? '#ffffff' :
-            ((/^msbn_[CD]_/.test(themeSchemaId) && (theme.cardBg || theme.bg)) || theme.canvasBg || theme.bg || '#ffffff')));
+        : msbnProductNameSurface(data, opts, fieldPrefix, themeSchemaId, theme, isMsbnBCopy);
       var surfaceRgb = parseCssColor(nameSurface);
       var surfaceLuma = surfaceRgb ? (0.2126 * surfaceRgb.r + 0.7152 * surfaceRgb.g + 0.0722 * surfaceRgb.b) / 255 : 1;
       var nameThemeKey = surfaceLuma >= 0.52 ? 'nameOnLightBg' : 'nameOnDarkBg';
