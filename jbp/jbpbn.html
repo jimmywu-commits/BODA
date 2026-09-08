@@ -1339,7 +1339,7 @@ function getColorData() {
     ctaTextAuto: colorState.ctaTextAuto !== false,
     ctaBg:     colorState.ctaBg,
     searchImageCtaBg: colorState.searchImageCtaBg,
-    tagColor: colorState.tagColor || 'red',
+    tagColor: (colorState.tagColor === 'white' || colorState.tagColor === 'red' || colorState.tagColor === 'auto') ? colorState.tagColor : 'auto',
     logoColor: colorState.logoColor || 'white'
   };
   /* ZIP 匯出期間或剛匯出後，以最後一次使用者實際色票為準，避免舊暫存預設藍回灌。 */
@@ -1359,7 +1359,8 @@ function getColorData() {
     ? getCtaContrastColor(data.ctaBg || data.subText || data.canvasBg)
     : (broadcastCtaText || getCtaContrastColor(data.ctaBg || data.subText || data.canvasBg));
   /* 掛標顏色必須以目前工具列狀態為準，不讓色彩 guard 的舊暫存值覆蓋，避免畫布先閃一下又跳回紅色。 */
-  data.tagColor = (colorState && colorState.tagColor === 'white') ? 'white' : 'red';
+  var currentTagColor = colorState && (colorState.tagColor === 'auto' || colorState.tagColor === 'white' || colorState.tagColor === 'red') ? colorState.tagColor : 'auto';
+  data.tagColor = currentTagColor;
   /* 蝦皮LOGO顏色同理，以目前工具列狀態為準，不被舊暫存值回灌。 */
   data.logoColor = (colorState && colorState.logoColor === 'orange') ? 'orange' : 'white';
   lockedCanvasBg = getCanvasBgHardLock();
@@ -1585,7 +1586,7 @@ var colorState = {
   ctaTextAuto: true,
   ctaBg:     '#2540b5',
   searchImageCtaBg: '#d0021b',
-  tagColor: 'red',
+  tagColor: 'auto',
   logoColor: 'white'
 };
 
@@ -1785,7 +1786,7 @@ var COLOR_FIELDS = [
 ];
 
 function applyTagColor(mode) {
-  mode = (mode === 'white') ? 'white' : 'red';
+  mode = (mode === 'auto' || mode === 'white') ? mode : 'red';
   colorState.tagColor = mode;
   window._bnTagColor = mode;
   /* 先更新最後使用者色彩快照，避免 broadcastColors() 被舊快照回灌成預設紅色。 */
@@ -1903,6 +1904,7 @@ function renderTagColorRow(afterRow) {
   box.style.cssText = 'display:flex;gap:8px;align-items:center;';
 
   [
+    {mode:'auto', color:'linear-gradient(135deg,#d0021b 0 50%,#ffffff 50% 100%)', title:'自動依背景切換'},
     {mode:'red', color:'#d0021b', title:'紅色掛標'},
     {mode:'white', color:'#ffffff', title:'白色掛標'}
   ].forEach(function(item){
@@ -1921,7 +1923,7 @@ function renderTagColorRow(afterRow) {
 
   row.appendChild(box);
   afterRow.parentNode.insertBefore(row, afterRow.nextSibling);
-  applyTagColor(colorState.tagColor || 'red');
+  applyTagColor((colorState.tagColor === 'auto' || colorState.tagColor === 'white' || colorState.tagColor === 'red') ? colorState.tagColor : 'auto');
 }
 
 /* 文字色 dot（inline，和輸入框同行） */
@@ -3165,12 +3167,47 @@ document.addEventListener('DOMContentLoaded',function(){
     }
   }
 
+  /* 0908V2 工單總覽的曝光資源選擇同步：匯入工單後，
+     曝光資源頁簽的版位勾選以試算表中的「張數／Check」為準。 */
+  function applyWorkorderExposureSpec(spec) {
+    if (!spec || !Array.isArray(spec.resources) || !spec.resources.length) return false;
+    var resources = spec.resources.map(function (r) {
+      return {
+        key: normKey(String(r && r.key || '')),
+        count: Number(r && r.count) || 0,
+        selected: Number(r && r.count) > 0 && String(r && r.check || '') !== '未選'
+      };
+    }).filter(function (r) { return !!r.key; });
+    if (!resources.length) return false;
+    var layouts = typeof window.loadLayouts === 'function' ? window.loadLayouts() : [];
+    var changed = false;
+    layouts.forEach(function (layout) {
+      var layoutKey = normKey(String(layout && (layout.file || layout.name) || ''));
+      if (!layoutKey) return;
+      var hit = resources.filter(function (resource) {
+        return layoutKey.indexOf(resource.key) !== -1 || resource.key.indexOf(layoutKey) !== -1;
+      })[0];
+      if (!hit) return;
+      var next = !!hit.selected;
+      if (window.checked[layout.id] !== next) { window.checked[layout.id] = next; changed = true; }
+      userTouched[layout.id] = true;
+    });
+    if (changed) {
+      myRenderChecks();
+      if (typeof window.renderPreviews === 'function') window.renderPreviews();
+    }
+    return changed;
+  }
+  window._bnApplyWorkorderExposureSpec = applyWorkorderExposureSpec;
   /* ── 跟工單生成器（外層 index.html）連動 ─────────────── */
   window.addEventListener('message', function (e) {
     if (e.data && e.data.type === 'wo-level' && e.data.level) applyLevel(e.data.level, false);
     if (e.data && e.data.type === 'wo-workorder-overview-text') {
       var overviewPayload = bnStoreWorkorderOverviewText(Object.assign({}, e.data.data || {}, { ts: e.data.ts || Date.now() }));
       bnApplyWorkorderOverviewText(overviewPayload);
+    }
+    if (e.data && e.data.type === 'wo-workorder-exposure-spec' && typeof window._bnApplyWorkorderExposureSpec === 'function') {
+      applyWorkorderExposureSpec(e.data.spec || {});
     }
     if (e.data && e.data.type === 'wo-workorder-overview-assets' && typeof window._bnApplyWorkorderAssets === 'function') {
       Promise.resolve(window._bnApplyWorkorderAssets(e.data.assets || {})).catch(function (err) { console.warn('工單曝光資源素材訊息處理失敗', err); });
