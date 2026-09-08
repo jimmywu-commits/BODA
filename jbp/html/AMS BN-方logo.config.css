@@ -4,10 +4,14 @@
   --canvas-h:264px;
   --canvas-bg:#4DB5EC;
   --bg-img:;
-  --layers:"bg|,logo範圍|,商品範圍|,主標|主標$1023起,副標|副標$1023起,日期|5/18 - 5/25 期間限定,cta圓底|,cta白線|,cta三角箭頭|";
+  --layers:"bg|,文案保護|,漸層左|,logo範圍|,商品範圍|,主標|主標$1023起,副標|副標$1023起,日期|5/18 - 5/25 期間限定,cta圓底|,cta白線|,cta三角箭頭|";
 }
 *{transform-origin:0 0;}
+/* 與 HBN 相同的背景保護：左側純色、中央漸層逐步露出右側背景圖。
+   z-index 低於文字、LOGO、曝品與 CTA，只遮背景圖本身。 */
 .bg{position:absolute;left:0;top:0;width:1077px;height:264px;background:var(--canvas-bg,#4DB5EC);z-index:2;}
+.文案保護{position:absolute;left:0;top:0;width:538px;height:264px;background:var(--canvas-bg,#4DB5EC);pointer-events:none;z-index:3;}
+.漸層左{position:absolute;left:536px;top:0;width:70px;height:264px;background:linear-gradient(to right,var(--canvas-bg,#4DB5EC) 0%,transparent 100%);pointer-events:none;z-index:3;--grad-dir:to right;}
 .logo範圍{position:absolute;left:38px;top:58px;width:99px;height:100px;background:rgba(235,104,119,.4);opacity:1;z-index:20;overflow:hidden;}
 .商品範圍{position:absolute;left:536px;top:11px;width:426px;height:205px;background:rgba(235,104,119,.4);opacity:1;z-index:20;overflow:visible;}
 .主標{position:absolute;left:147px;top:54px;font-size:39.311px;font-family:"NotoSansCJKtc-Medium","ShopeeNotoSans (content)",sans-serif;font-weight:500;color:rgb(37,112,190);line-height:1.2;white-space:nowrap;transform:matrix(.9246,0,0,.9232,0,0);z-index:50;}
