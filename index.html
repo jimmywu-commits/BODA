@@ -14187,8 +14187,6 @@ var bottomGeneratorStateJson = '';
 var bottomStandaloneStateJson = '';
 var bottomSharedStateJson = ''; /* 兩個入口共用的唯一吸底編輯狀態來源 */
 var bottomLastEditedStateJson = '';
-var bottomExportRequestSeq = 0;
-var bottomExportPending = {};
 
 function extractEmbeddedBottomState(arrayBuffer) {
   if (!arrayBuffer || typeof ExcelJS === 'undefined') return Promise.resolve('');
@@ -14440,36 +14438,6 @@ function ensureBottomToolLoaded(forceReload) {
   frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20260902-levelpreset1';
 }
 
-function requestGeneratorBottomExportAll() {
-  /* 吸底是 iframe，先確保它已掛載；若使用者目前不在吸底頁簽，
-     也仍要把最新 state 與圖片納入「下載全部」。 */
-  ensureBottomToolLoaded(false);
-  return new Promise(function (resolve) {
-    var startedAt = Date.now();
-    var requestId = 'bottom-export-' + Date.now() + '-' + (++bottomExportRequestSeq);
-    function waitReady() {
-      if (bottomBridgeReady) {
-        bottomExportPending[requestId] = resolve;
-        if (!postToBottom({
-          source: 'BODA_PARENT',
-          type: 'EXPORT_ALL',
-          requestId: requestId,
-          filenamePrefix: 'BODA工單_吸底圖'
-        })) {
-          delete bottomExportPending[requestId];
-          resolve({ ok: false, message: '無法連線到吸底匯出器' });
-        }
-        return;
-      }
-      if (Date.now() - startedAt >= 8000) {
-        resolve({ ok: false, message: '吸底匯出器尚未完成載入' });
-        return;
-      }
-      setTimeout(waitReady, 80);
-    }
-    waitReady();
-  });
-}
 function postToStandaloneBottom(message, transfer) {
   return postToFrame('bottom-standalone-frame', message, transfer);
 }
@@ -14607,19 +14575,6 @@ window.addEventListener('message', function (event) {
   if (!fromGenerator && !fromPreview && !fromStandalone) return;
   var msg = event.data || {};
   if (msg.source !== 'BODA_BOTTOM') return;
-  if (fromGenerator && msg.type === 'EXPORT_RESULT') {
-    var exportResolver = bottomExportPending[msg.requestId || ''];
-    if (exportResolver) {
-      delete bottomExportPending[msg.requestId || ''];
-      exportResolver({
-        ok: msg.ok !== false,
-        message: msg.message || '',
-        imageCount: Number(msg.imageCount) || 0,
-        bannerCount: Number(msg.bannerCount) || 0
-      });
-    }
-    return;
-  }
   if (fromPreview && msg.type === 'PREVIEW_IMAGE') {
     var previewWrap = document.getElementById('import-bottom-preview-frame-wrap');
     var previewImage = document.getElementById('import-bottom-preview-image');
@@ -15922,18 +15877,12 @@ document.getElementById('btn-all').addEventListener('click', function () {
   }
   var btn = this;
   btn.disabled = true; btn.textContent = '⏳ 輸出中…';
-  var bottomExportResult = null;
-  requestGeneratorBottomExportAll().then(function (result) {
-    bottomExportResult = result || { ok: false };
-    return exportSampleImage();
-  }).then(function () {
+  exportSampleImage().then(function () {
     exportWorkOrderJSON();          /* 排版暫存檔 */
     return exportWorkOrderXlsx();   /* 工單（副區/MSBN 有哪個就出哪個工作表） */
   }).then(function () {
     btn.disabled = false; btn.textContent = '⬇ 下載全部';
-    appLoadingFinish(bottomExportResult && bottomExportResult.ok
-      ? '全部檔案已下載（含吸底試算表與圖片）'
-      : '主工具檔案已下載；吸底圖片未能輸出');
+    appLoadingFinish('全部檔案已下載');
   }).catch(function (err) {
     btn.disabled = false; btn.textContent = '⬇ 下載全部';
     reportWorkOrderExportError(err);
