@@ -16349,9 +16349,13 @@ function bindMaintControls() {
   if (reload) reload.addEventListener('click', function () { resetMaintTheme(); maintLoaded = false; ensureMaintLoaded(); });
 }
 
-/* 曝光資源＝同層 jbp/ 資料夾裡的 JBP 編輯器，第一次進到這一頁才載入 iframe（省資源）。
-   找不到檔案（或用 file:// 打開被瀏覽器擋）就顯示放檔說明。 */
-var EXPOSURE_SRC = 'shopee/jbpbn.html?host=boda&pluginBase=../jbp/js/';
+/* 曝光資源＝shopee/jbpbn.html，用 iframe 載入（第一次進到這一頁才載）。
+   本機開發（localhost）透過 junction 用 shopee/ 路徑；
+   GitHub Pages 兩個 repo 在同一個 domain 下，用 ../shopee/ 路徑。 */
+var EXPOSURE_SRC_LOCAL  = 'shopee/jbpbn.html?host=boda&pluginBase=../jbp/js/';
+var EXPOSURE_SRC_REMOTE = '../shopee/jbpbn.html?host=boda&pluginBase=../BODA/jbp/js/';
+var EXPOSURE_SRC = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
+  ? EXPOSURE_SRC_LOCAL : EXPOSURE_SRC_REMOTE;
 var exposureLoaded = false;
 var exposureChildLoading = false; /* iframe 內仍在載入字體／畫布時，父頁不可提早收起提示。 */
 function ensureExposureLoaded() {
@@ -16362,13 +16366,20 @@ function ensureExposureLoaded() {
   var frame = document.getElementById('exposure-frame');
   if (!frame) { appLoadingFinish('曝光資源元件不存在'); return; }
   var settled = false;
+  var triedFallback = false;
   frame.addEventListener('load', function () {
+    try {
+      var doc = frame.contentDocument || frame.contentWindow.document;
+      if (doc && doc.title && /404|not found/i.test(doc.title) && !triedFallback) {
+        triedFallback = true;
+        frame.src = (EXPOSURE_SRC === EXPOSURE_SRC_LOCAL) ? EXPOSURE_SRC_REMOTE : EXPOSURE_SRC_LOCAL;
+        return;
+      }
+    } catch (e) {}
     settled = true;
     appLoadingUpdate(88, 'LOADING · 曝光資源', '曝光資源已載入，正在同步設定…');
     wrap.classList.remove('missing');
-    /* 載好之後把目前的等級推過去，兩邊的等級下拉保持一致 */
     if (typeof window.woBroadcastLevel === 'function') setTimeout(window.woBroadcastLevel, 300);
-    /* 背景色是曝光資源／匯入工單／MSBN D 共用值；iframe 一載入就推送目前共用色。 */
     setTimeout(function () {
       if (typeof resolvedImportBg === 'function') pushImportBgToExposure(colorToHex(resolvedImportBg()));
       if (typeof pushExposureOverviewText === 'function') pushExposureOverviewText();
@@ -16376,13 +16387,17 @@ function ensureExposureLoaded() {
     }, 400);
   });
   frame.addEventListener('error', function () {
+    if (!triedFallback) {
+      triedFallback = true;
+      frame.src = (EXPOSURE_SRC === EXPOSURE_SRC_LOCAL) ? EXPOSURE_SRC_REMOTE : EXPOSURE_SRC_LOCAL;
+      return;
+    }
     settled = true;
     wrap.classList.add('missing');
     appLoadingFinish('曝光資源載入失敗');
   });
   frame.src = EXPOSURE_SRC;
-  /* iframe 載入 404 頁面時不一定會觸發 error，補一個逾時保險 */
-  setTimeout(function () { if (!settled) { wrap.classList.add('missing'); appLoadingFinish('曝光資源載入逾時'); } }, 8000);
+  setTimeout(function () { if (!settled) { wrap.classList.add('missing'); appLoadingFinish('曝光資源載入逾時'); } }, 12000);
 }
 
 function isValidView(name) {
