@@ -95,7 +95,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;}
 @keyframes appLoadingSpin{to{transform:rotate(360deg);}}
 
-/* ══════════════ 曝光資源（iframe 載入 jbp/jbpbn.html） ══════════════ */
+/* ══════════════ 曝光資源（iframe 載入 shopee/jbpbn.html） ══════════════ */
 #view-exposure.active{display:block;}
 #exposure-wrap{position:relative;width:100%;height:100%;background:#0d1117;}
 #exposure-frame{width:100%;height:100%;border:none;display:block;background:#0d1117;}
@@ -906,7 +906,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           <div class="ef-title">找不到「曝光資源」的程式檔</div>
           <div class="ef-desc">請把整包 JBP 編輯器（jbpbn.html、js/、html/、bgimg/、fonts/、bn測底圖/、banwords.xlsx …）<br>
             放到跟這個 index.html 同一層的 <b>jbp/</b> 資料夾裡，重新整理即可。</div>
-          <div class="ef-desc">目前找的路徑：<b>jbp/jbpbn.html</b></div>
+          <div class="ef-desc">目前找的路徑：<b>shopee/jbpbn.html</b></div>
         </div>
       </div>
     </div>
@@ -16351,7 +16351,7 @@ function bindMaintControls() {
 
 /* 曝光資源＝同層 jbp/ 資料夾裡的 JBP 編輯器，第一次進到這一頁才載入 iframe（省資源）。
    找不到檔案（或用 file:// 打開被瀏覽器擋）就顯示放檔說明。 */
-var EXPOSURE_SRC = 'jbp/jbpbn.html';
+var EXPOSURE_SRC = 'shopee/jbpbn.html?host=boda&pluginBase=../jbp/js/';
 var exposureLoaded = false;
 var exposureChildLoading = false; /* iframe 內仍在載入字體／畫布時，父頁不可提早收起提示。 */
 function ensureExposureLoaded() {
