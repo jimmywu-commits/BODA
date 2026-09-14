@@ -16350,11 +16350,11 @@ function bindMaintControls() {
 }
 
 /* 曝光資源＝shopee/jbpbn.html，用 iframe 載入（第一次進到這一頁才載）。
-   本機開發（localhost）透過 junction 用 shopee/ 路徑；
-   GitHub Pages 兩個 repo 在同一個 domain 下，用 ../shopee/ 路徑。 */
+   file:// 和 GitHub Pages 用 ../shopee/（可跨目錄）；
+   localhost dev server 透過 junction 用 shopee/（不能 ../）。 */
 var EXPOSURE_SRC_LOCAL  = 'shopee/jbpbn.html?host=boda&pluginBase=../jbp/js/';
 var EXPOSURE_SRC_REMOTE = '../shopee/jbpbn.html?host=boda&pluginBase=../BODA/jbp/js/';
-var EXPOSURE_SRC = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
+var EXPOSURE_SRC = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? EXPOSURE_SRC_LOCAL : EXPOSURE_SRC_REMOTE;
 var exposureLoaded = false;
 var exposureChildLoading = false; /* iframe 內仍在載入字體／畫布時，父頁不可提早收起提示。 */
