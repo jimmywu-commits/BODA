@@ -576,7 +576,6 @@
         [isActive ? "● 反白中" : "○ 設為反白"]
       )
     );
-    head.appendChild(el("span", { class: "slot-no" }, ["#" + (index + 1)]));
     card.appendChild(head);
 
     var iconRow = el("div", { class: "icon-row" });

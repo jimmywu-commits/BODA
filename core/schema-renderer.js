@@ -139,14 +139,27 @@
   function hasRenderableImageValue(v) {
     return splitImageList(v).some(isRenderableImageUrl);
   }
-  /* 圓角 logo 的底色由原圖左上角多個內縮區域自動取樣。 */
+  /* 商品／贈品／人物／簽名的預設圖片框可以是分開的；在匯入工單與維修
+     編輯模式中，image-layout.js 會把它們視為同一個編號區域的聯集。
+     這些外層框不能各自 overflow:hidden，否則即使算出聯集邊界，圖片仍
+     會被原本的小框裁住，無法跨到相鄰的預設範圍。 */
+  function isSharedMovableImageField(fieldKey) {
+    return /^(.*?)(?:productImg|giftImg|endorserImg|signImg)[0-9]*$/i.test(String(fieldKey || ''));
+  }
+  /* MSBN B-1-1～B-1-4 的商品圖要留在白底圓角框內；
+     這些版位的底色矩形只是整張卡片背景，不能被當成商品圖可移動範圍。 */
+  function isMsbnB1WhiteProductBoundary(schemaId, fieldKey) {
+    return /^msbn_B_1_[1-4]$/i.test(String(schemaId || '')) &&
+      /^productImg$/i.test(String(fieldKey || ''));
+  }
+  function msbnB1WhiteProductClipPath(schemaId, layer) {
+    if (!isMsbnB1WhiteProductBoundary(schemaId, 'productImg')) return null;
+    var radius = layer && layer.borderRadius != null ? String(layer.borderRadius).trim() : '15px';
+    return 'inset(0 round ' + radius + ')';
+  }
+  /* LOGO 圖層固定白底，不取原圖左上角顏色。 */
   function shouldSampleLogoBackground(layer, imageCount) {
-    if (!layer || layer.type !== 'image') return false;
-    if (imageCount != null && imageCount > 1) return false;
-    if (layer.sampleTopLeftBackground != null) return !!layer.sampleTopLeftBackground;
-    if (!/^logoImg\d*$/i.test(String(layer.field || ''))) return false;
-    if (!layer.keepBgWithImage || !layer.clipImage) return false;
-    return !!layer.borderRadius;
+    return false;
   }
 
   /* 尚未上傳圖片時的佔位卡：柔和的底色＋淡淡的虛線框＋小圖示，
@@ -213,6 +226,8 @@
     /* 三角形跟著 CTA 的「字色」走，不是底色（不然改底色時三角形會跟底色融成一塊看不見） */
     if (isCtaTriangle(layer)) return 'ctaText';
     if (layer.type === 'text') {
+      if (isEndorserNoteLayer(layer)) return 'endorserText';
+      if (/^itemtext\d*$/i.test(fld) || /^content\d*$/i.test(fld) || /項目文字|內文/.test(String(layer.fieldLabel || ''))) return 'itemText';
       if (id === 'promo' || fld === 'promo') return 'promoText';
       if (id === 'badgeText' || fld === 'badge') return 'badgeText';
       if (id === 'ctaText' || fld === 'cta') return 'ctaText';
@@ -241,6 +256,12 @@
     return null;
   }
 
+  function isEndorserNoteLayer(layer) {
+    if (!layer || layer.type !== 'text') return false;
+    var field = String(layer.field || '').replace(/[0-9]+$/, '');
+    return /^endorserNote$/i.test(field) || /代言人小字/.test(String(layer.fieldLabel || ''));
+  }
+
   /*
    * 同一種文案在不同版位的 block.json 可能有的寫 bold、有的沒寫 fontWeight，
    * 造成「匯入工單」與「維修」看到相同欄位時粗細不一致。
@@ -249,18 +270,21 @@
    */
   function semanticTextWeight(layer) {
     if (!layer || layer.type !== 'text') return layer && layer.fontWeight;
-    /* 特定版型可明確覆寫共通語意字重，例如 D-2-1-1 的品名維持一般字。 */
-    if (layer.semanticWeight != null && String(layer.semanticWeight).trim()) return String(layer.semanticWeight).trim();
+    /* 特定版型仍可明確覆寫未列入共通規則的特殊文字；品名與圓標則以目前
+       匯入工單／維修的統一規格為準，不再被舊版 semanticWeight 蓋回去。 */
+    var explicitWeight = layer.semanticWeight != null && String(layer.semanticWeight).trim()
+      ? String(layer.semanticWeight).trim() : '';
     var field = String(layer.field || '').replace(/[0-9]+$/, '').toLowerCase();
     var label = String(layer.fieldLabel || '').replace(/[0-9]+$/, '').toLowerCase();
 
     if (field === 'promo' || /促標/.test(label)) return '700';
-    if (field === 'name' || /品名/.test(label)) return '700';
+    if (field === 'name' || /品名/.test(label)) return '500';
     if (field === 'warn' || /警語|警告|warning/.test(label)) return '500';
-    if (field === 'badge' || field === 'badgetext' || /圓標文字/.test(label)) return '500';
+    if (field === 'badge' || field === 'badgetext' || /圓標文字/.test(label)) return '700';
     if (field === 'cta' || /cta文字/.test(label)) return '400';
     if (field === 'brand' || field === 'main' || field === 'sub' || field === 'date' ||
         /品牌|主標|副標|日期/.test(label)) return '400';
+    if (explicitWeight) return explicitWeight;
     return layer.fontWeight;
   }
   /* 這個圖層是不是「CTA 底色塊」（要套統一圓角的那個；三角形不算） */
@@ -440,6 +464,27 @@
          不再強制覆寫為白色，讓品名可依真正底色選擇深／淺字。 */
       if (/^subarea_/i.test(cardSchemaId)) return null;
       if (!/^msbn_[CD]_/.test(cardSchemaId)) return '#ffffff';
+    }
+    /* 代言人小字預設黑色；實際圖片明暗由匯入／維修畫布在圖片載入後再取樣，
+       若圖片偏深會把這個自動色切換成白色。使用者手動選色時不走自動切換。 */
+    if (role === 'endorserText') {
+      if (theme.endorserTextAuto) return '#111827';
+      var endorserTextColor = theme.endorserText;
+      return (endorserTextColor && String(endorserTextColor).trim()) ? String(endorserTextColor).trim() : '#111827';
+    }
+    if (role === 'itemText') {
+      var itemTextColor = theme.itemText;
+      return (itemTextColor && String(itemTextColor).trim()) ? String(itemTextColor).trim() : (layer.color || null);
+    }
+    /* 警語預設深灰；深色卡片／畫布上改用淡灰，手動選色時保留使用者設定。 */
+    if (role === 'warnText' && theme.warnTextAuto) {
+      var warningSchemaId = String((opts && opts._schemaId) || '');
+      var warningSurface = /^msbn_[CD]_/.test(warningSchemaId)
+        ? (theme.cardBg || theme.canvasBg || theme.bg || '#ffffff')
+        : (theme.canvasBg || theme.bg || '#ffffff');
+      var warningRgb = parseCssColor(warningSurface);
+      var warningLuma = warningRgb ? (0.2126 * warningRgb.r + 0.7152 * warningRgb.g + 0.0722 * warningRgb.b) / 255 : 1;
+      return warningLuma < 0.45 ? '#d1d5db' : '#4b5563';
     }
     /* MSBN 品名依實際承接底色的明暗選擇兩組字色：指定的 A／B 版型直接讀曝光背景；
        其餘白卡讀白底，C／D 讀卡片底色。使用者未手動選色時，自動選黑／白高對比字。 */
@@ -751,10 +796,9 @@
       if (data[hideKey]) return '';
     }
 
-    /* requiresImageField：文字必須跟某張實際已上傳的圖片一起出現。
-       主要用在「代言人小字」：只有檔名、空白或尚未上傳圖片時都不顯示；
-       圖片一放進去，文字才跟著恢復。repeat 圖層同樣會套上實例前綴。 */
-    if (layer.requiresImageField) {
+    /* requiresImageField：其他附屬文字可跟著圖片顯示；代言人小字例外，
+       它本身就是畫布上的可編輯欄位，沒有圖片時也要保留黑字預設文字。 */
+    if (layer.requiresImageField && !isEndorserNoteLayer(layer)) {
       var requiredImageKey = fieldPrefix ? fieldPrefix + layer.requiresImageField : layer.requiresImageField;
       if (!hasRenderableImageValue(data && data[requiredImageKey])) return '';
     }
@@ -995,7 +1039,15 @@
         style.push('display:flex');
         style.push('align-items:center');
         style.push('justify-content:center');
-        style.push('overflow:' + (((opts && opts.imageClipToBounds) || layer.clipImage) ? 'hidden' : 'visible'));
+        var forceOwnImageClip = isMsbnB1WhiteProductBoundary(opts && opts._schemaId, fieldKey);
+        var clipImage = forceOwnImageClip || (((opts && opts.imageClipToBounds) || layer.clipImage) &&
+          !(opts && opts.imageClipToBounds && isSharedMovableImageField(fieldKey)));
+        style.push('overflow:' + (clipImage ? 'hidden' : 'visible'));
+        if (forceOwnImageClip) {
+          /* overflow:hidden 在圖片使用 transform 放大時，部分瀏覽器／縮放容器
+             仍可能讓子層視覺溢出；再加同形狀的 clip-path，確保只露出白底圓角框。 */
+          style.push('clip-path:' + msbnB1WhiteProductClipPath(opts && opts._schemaId, layer));
+        }
         var scalePct;
         if (layer.id === 'logoBg') scalePct = CONFIG.image.logoInsetScalePercent;
         else if (layer.id === 'productArea' || layer.id === 'productArea1' || layer.id === 'productArea2' || layer.id === 'bg') scalePct = CONFIG.image.productImageInsetScalePercent;
@@ -1063,9 +1115,11 @@
       if (lhOut != null) style.push('line-height:' + lhOut);
       if (layer.textAlign) style.push('text-align:' + layer.textAlign);
       if (layer.textDecoration) style.push('text-decoration:' + layer.textDecoration);
-      /* 有字 CTA 永遠是單行；中文字瀏覽器預設可在任意字之間斷行，
-         因此即使只差 1px 也會把第三個字折到下一行。 */
-      var dynamicWhiteSpace = isDynamicRowCentered ? 'pre-line' : (layer.whiteSpace || 'nowrap');
+      /* 可編輯文字保留使用者手動輸入的換行，但禁止瀏覽器依寬度自動折行。
+         這樣字數限制才真的能阻止超出範圍，而不是把多出的字偷偷折到下一行。 */
+      var editableTextNoWrap = !!(fieldKey && opts && opts.editable && layer.type === 'text');
+      var dynamicWhiteSpace = editableTextNoWrap ? 'pre'
+        : (isDynamicRowCentered ? 'pre-line' : (layer.whiteSpace || 'nowrap'));
       style.push('white-space:' + (isCenteredCtaText ? 'nowrap' : dynamicWhiteSpace));
       if (layer.transform) style.push('transform:matrix(' + layer.transform.join(',') + ')');
       /* 一般文字仍裁在自己的框內；CTA 的框是定位參考，文字必須保持單行，
@@ -1101,7 +1155,17 @@
          沒關掉的話，圖片拖到那個位置會落在文字圖層上，圖片框的 drop 事件根本收不到，
          看起來就是「這個框拖不進去」。 */
       if (!fieldKey) style.push('pointer-events:none');
-      var text = fieldKey ? (data[fieldKey] != null ? data[fieldKey] : layer.default) : layer.default;
+      var dataText = fieldKey ? data[fieldKey] : null;
+      var designDefaultText = opts && opts.designTextDefaults && layer.designText != null &&
+        String(layer.designText).trim() ? layer.designText : layer.default;
+      var useDesignDefault = opts && opts.designTextDefaults && layer.designText != null &&
+        (dataText == null || String(dataText).trim() === '' ||
+         (layer.default != null && String(dataText).trim() === String(layer.default).trim()));
+      var text = fieldKey
+        ? (useDesignDefault
+          ? designDefaultText
+          : dataText)
+        : designDefaultText;
       content = esc(text || '');
     }
 
@@ -1137,6 +1201,10 @@
         attrs = ' contenteditable="true" spellcheck="false" data-field="' + esc(fieldKey) + '"';
       }
     }
+    if (layer.type === 'text' && fieldKey && opts && opts.theme && opts.theme.endorserTextAuto &&
+        themeRoleOf(layer, opts && opts._schemaId) === 'endorserText') {
+      attrs += ' data-auto-text-role="endorserText"';
+    }
     if (directColorEditable) {
       attrs += ' data-color-field="' + esc(fieldKey) + '"' +
         ' data-color-label="' + esc(layer.fieldLabel || '色塊') + '"' +
@@ -1152,6 +1220,9 @@
     if (layer.type === 'image' && fieldKey && !layer.fixedImage) {
       attrs += ' data-img-field="' + esc(fieldKey) + '"' +
         ' data-img-label="' + esc(layer.fieldLabel || '圖片') + '"';
+      if (isMsbnB1WhiteProductBoundary(opts && opts._schemaId, fieldKey)) {
+        attrs += ' data-image-boundary="own"';
+      }
       if (shouldSampleLogoBackground(layer, urls.length)) attrs += ' data-logo-bg-sample="adaptive"';
 
       /* aspectSource + aspectBoxes：同一組曝品／贈品範圍會依曝品原圖方向一起切換。
@@ -1187,7 +1258,7 @@
   var ABSORB_GROUPS = [
     /* 每一種可選圖片各自歸還空間，不綁成同一大組：
        只補簽名圖時只還簽名範圍；代言人仍空白時，那一塊仍可由曝品使用。 */
-    { target: 'productImg', donors: ['endorserImg', 'endorserNote'] },
+    { target: 'productImg', donors: ['endorserImg'] },
     { target: 'productImg', donors: ['signImg', 'signNote'] },
     { target: 'productImg', donors: ['giftImg'] }
   ];
@@ -1521,8 +1592,158 @@
     function addField(key, label, type, def, maxLength, designText) {
       if (seen[key]) return;
       seen[key] = true;
+      var lineMaxLength = null;
+      if (type === 'text' && /圓標/.test(String(label || ''))) {
+        maxLength = 7;
+        designText = String(designText == null ? '' : designText).replace(/5字內/g, '7字內');
+      }
+      /* 副區 C／D 系列的字數契約由版位編號決定：一般版位與 C4／D4
+         的兩排品名、警語限制不同。這裡是匯入畫布與 renderer 的共同入口，
+         讓畫布編輯器不會只吃到 block.json 的舊 maxLength。 */
+      var subareaCD = /^subarea_([CD])_(\d+)(?:_(\d+))?$/i.exec(String(schema && schema.id || ''));
+      if (type === 'text' && subareaCD) {
+        var cdFamily = String(subareaCD[1]).toUpperCase();
+        var cdVariant = parseInt(subareaCD[2], 10);
+        var cdCombo = subareaCD[3] ? parseInt(subareaCD[3], 10) : 0;
+        var fieldName = String(key || '').toLowerCase();
+        if (/^promo\d*$/.test(fieldName) || /促標/.test(String(label || ''))) {
+          maxLength = cdFamily === 'C' ? 8 : 12;
+        } else if (/^name\d*$/.test(fieldName) || /品名/.test(String(label || ''))) {
+          maxLength = 12;
+          lineMaxLength = cdVariant === 4 ? 6 : null;
+        } else if (/^warn\d*$/.test(fieldName) || /警語|警告/.test(String(label || ''))) {
+          maxLength = cdVariant === 4 ? 8 : 16;
+        } else if (/^cta\d*$/.test(fieldName) && cdVariant === 4 && cdCombo === 4) {
+          maxLength = 3;
+        }
+      }
+      /* 副區 A 系列的促標統一限制 5 字；只鎖定 promo 欄位，其他系列不連動。 */
+      if (type === 'text' && /^subarea_A(?:_|$)/i.test(String(schema && schema.id || '')) &&
+          (/^promo\d*$/i.test(String(key || '')) || /促標/.test(String(label || '')))) {
+        maxLength = 5;
+        designText = String(designText == null ? '' : designText).replace(/(?:8|7|6|5)字內/g, '5字內');
+      }
+      /* 其餘可編輯文字欄位的規則也集中在這裡，避免只修到促標／品名／警語／圓標，
+         卻漏掉簽名小字、券文案、CTA、MSBN D 內文等欄位。
+         lineMaxLength 代表每一排上限；maxLength 代表整個欄位上限。
+         這份規則由 buildFields 產生，維修與匯入畫布會拿到完全相同的欄位契約。 */
+      if (type === 'text') {
+        var schemaId = String(schema && schema.id || '');
+        var keyText = String(key || '').toLowerCase();
+        var labelText = String(label || '');
+        var ruleSource = labelText + ' ' + String(designText == null ? '' : designText);
+        var isMsbn = /^msbn_/i.test(schemaId);
+        var isSubareaAB = /^subarea_([AB])_(\d+)(?:_(\d+))?$/i.exec(schemaId);
+
+        function setTextRule(total, perLine) {
+          if (total != null) maxLength = total;
+          if (perLine != null) lineMaxLength = perLine;
+        }
+
+        /* 所有副區／MSBN CTA 都是三字；部分舊 block.json 曾遺漏或誤寫成 6 字。 */
+        if ((/^cta\d*$/i.test(keyText) || /CTA/.test(labelText)) &&
+            (/^subarea_/i.test(schemaId) || isMsbn)) {
+          setTextRule(3, null);
+        }
+
+        /* MSBN A-1 的簽名小字：兩排，每排 5 字。 */
+        if (/^msbn_A_1_[12]$/i.test(schemaId) && /^signnote\d*$/i.test(keyText)) {
+          setTextRule(10, 5);
+        }
+
+        /* MSBN B-1 的代言人小字：兩排，每排 8 字。 */
+        if (/^msbn_B_1_[1-4]$/i.test(schemaId) && /^endorsernote\d*$/i.test(keyText)) {
+          setTextRule(16, 8);
+        }
+
+        /* MSBN C-1-1～3：兩側券文案各兩排、每排 6 字；警語 10 字。 */
+        if (/^msbn_C_1_[1-3]$/i.test(schemaId)) {
+          if (/^copy\d*$/i.test(keyText)) setTextRule(12, 6);
+          if (/^warn\d*$/i.test(keyText) || /警語/.test(labelText)) setTextRule(10, null);
+        }
+
+        /* MSBN C-1-4／5：促標兩排每排 6 字、券文案兩排每排 4 字。 */
+        if (/^msbn_C_1_[45]$/i.test(schemaId)) {
+          if (/^promo\d*$/i.test(keyText) || /促標/.test(labelText)) setTextRule(12, 6);
+          if (/^copy\d*$/i.test(keyText) || /文案/.test(labelText)) setTextRule(8, 4);
+        }
+
+        /* MSBN D 清單版：項目文字 4 字；內文依版型為 9 或 6 字。 */
+        if (/^msbn_D_1_[23]$/i.test(schemaId) || /^msbn_D_3_1$/i.test(schemaId)) {
+          if (/^itemtext\d*$/i.test(keyText) || /項目文字/.test(labelText)) setTextRule(4, null);
+          if (/^content\d*$/i.test(keyText) || /內文/.test(labelText)) setTextRule(9, null);
+        }
+        if (/^msbn_D_2_[23]$/i.test(schemaId)) {
+          if (/^itemtext\d*$/i.test(keyText) || /項目文字/.test(labelText)) setTextRule(4, null);
+          if (/^content\d*$/i.test(keyText) || /內文/.test(labelText)) setTextRule(6, null);
+        }
+
+        /* 副區 A/B-4、A/B-5 的品名是兩排，每排 4 字；單排版本仍限 8 字。 */
+        if (isSubareaAB && /^name\d*$/i.test(keyText) && maxLength == null) {
+          var abVariant = parseInt(isSubareaAB[2], 10);
+          var abCombo = isSubareaAB[3] ? parseInt(isSubareaAB[3], 10) : 0;
+          if (abVariant === 5 || (abVariant === 4 && (abCombo === 0 || abCombo === 1))) setTextRule(8, 4);
+          else if (abVariant === 4 && abCombo === 2) setTextRule(8, null);
+        }
+
+        /* 三品比對的品名標示本身已寫明一排 7 字。 */
+        if (/^msbn3p$/i.test(schemaId) && /品名/.test(labelText) && maxLength == null) {
+          setTextRule(7, 7);
+        }
+        if (/^msbn3p$/i.test(schemaId) && /活動價文字/.test(labelText) && maxLength == null) {
+          setTextRule(3, null);
+        }
+
+        /* 對帶有明確「N字」設計註記的欄位做最後補漏。
+           設計註記優先於 block.json 舊 maxLength，因為舊值常只代表其中一排；
+           但副區 C/D、A 促標與圓標已有更高優先的共通契約，不能被舊註記覆蓋。 */
+        var hasProtectedContract = /圓標/.test(labelText) || /^subarea_[CD]/i.test(schemaId) ||
+          (/^subarea_A(?:_|$)/i.test(schemaId) && (/^promo\d*$/i.test(keyText) || /促標/.test(labelText)));
+        if (!hasProtectedContract && String(designText == null ? '' : designText).trim() !== '') {
+          function ruleNumber(value) {
+            value = String(value == null ? '' : value).trim();
+            if (/^\d+$/.test(value)) return parseInt(value, 10);
+            var digits = { '零': 0, '〇': 0, '一': 1, '二': 2, '三': 3, '四': 4,
+              '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10, '百': 100 };
+            if (digits[value] != null) return digits[value];
+            if (/^十[一二三四五六七八九]$/.test(value)) return 10 + digits[value.charAt(1)];
+            if (/^[一二三四五六七八九]十$/.test(value)) return digits[value.charAt(0)] * 10;
+            if (/^[一二三四五六七八九]十[一二三四五六七八九]$/.test(value)) {
+              return digits[value.charAt(0)] * 10 + digits[value.charAt(2)];
+            }
+            return null;
+          }
+          var numberPattern = '([0-9零〇一二三四五六七八九十百]+)';
+          var perLineMatch = ruleSource.match(new RegExp('一排(?:最多)?\\$?' + numberPattern + '字'));
+          var totalMatch = ruleSource.match(new RegExp('(?:最多(?:可|可以)?(?:放)?|限)\\$?' + numberPattern + '(?:個)?字'));
+          var itemMatch = ruleSource.match(new RegExp('項目(?:文字)?\\$?' + numberPattern + '字'));
+          var noteMatch = ruleSource.match(new RegExp('(?:簽名|代言人)\\$?' + numberPattern + '小字'));
+          var simpleMatch = ruleSource.match(new RegExp('(?:促標|品名|警語|文案|特色)\\$?' + numberPattern + '(?:個)?字'));
+          var parsedRule = null;
+          if (perLineMatch) {
+            var perLine = ruleNumber(perLineMatch[1]);
+            var lineCount = Math.max(1, String(designText || '').split('\n').length);
+            if (perLine != null) parsedRule = { total: perLine * lineCount, perLine: perLine };
+          } else if (itemMatch) {
+            var itemLimit = ruleNumber(itemMatch[1]);
+            if (itemLimit != null) parsedRule = { total: itemLimit, perLine: null };
+          } else if (noteMatch) {
+            var noteLine = ruleNumber(noteMatch[1]);
+            var noteLines = Math.max(1, String(designText || '').split('\n').length);
+            if (noteLine != null) parsedRule = { total: noteLine * noteLines, perLine: noteLine };
+          } else if (totalMatch) {
+            var totalLimit = ruleNumber(totalMatch[1]);
+            if (totalLimit != null) parsedRule = { total: totalLimit, perLine: null };
+          } else if (simpleMatch) {
+            var simpleLimit = ruleNumber(simpleMatch[1]);
+            if (simpleLimit != null) parsedRule = { total: simpleLimit, perLine: null };
+          }
+          if (parsedRule) setTextRule(parsedRule.total, parsedRule.perLine);
+        }
+      }
       var f = { key: key, label: label, type: type, default: def != null ? def : '' };
       if (maxLength != null) f.maxLength = maxLength;
+      if (lineMaxLength != null) f.lineMaxLength = lineMaxLength;
       /* designText＝PS 設計稿上原本寫的示意字（「品名一排最多8字」「逛逛去」…）。
          維修頁拿它當預覽文字，一眼就看得出這一欄是什麼、限幾個字。
          跟 default 分開放，所以匯入工單頁「沒填欄位時顯示什麼」完全不受影響。 */
@@ -1633,15 +1854,13 @@
     return out;
   }
 
-  /* 自動把「代言人小字」綁到同位置的代言人圖片。
-     有獨立 endorserImg 就優先用它；B-1 系列是「商品／人物／情境」共用 productImg，
-     則退回綁 productImg。這樣所有現有與後續版位都不用各自重寫相同規則。 */
+  /* 代言人小字不再依賴圖片欄位；沒有圖片時也要顯示，圖片上傳後只更新它的明暗配色。 */
   function assignImageTextDependencies(schema) {
     function apply(layers) {
       var fields = {};
       (layers || []).forEach(function (l) { if (l.field) fields[l.field] = true; });
       (layers || []).forEach(function (l) {
-        if (l.requiresImageField || l.type !== 'text') return;
+        if (l.type !== 'text' || l.requiresImageField || isEndorserNoteLayer(l)) return;
         var m = /^endorserNote(\d*)$/.exec(String(l.field || ''));
         if (!m) return;
         var suffix = m[1] || '';

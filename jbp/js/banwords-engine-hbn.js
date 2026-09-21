@@ -631,8 +631,11 @@
       changed = true;
     }
 
-    /* 先保護蝦幣金額，避免 Excel 的正規式替換把數字整段吃掉。 */
-    const shopeeCoinProtected = protectShopeeCoinAmounts(out);
+    /* 匯入工單可要求只套用禁用語，不改寫原始數字格式。 */
+    const skipNumericFormatting = !!(options && options.skipNumericFormatting);
+    const shopeeCoinProtected = skipNumericFormatting
+      ? { text: out, protectedMap: [] }
+      : protectShopeeCoinAmounts(out);
     out = shopeeCoinProtected.text;
 
     /* 再保護全域永遠允許的詞（例如「百搭」），避免被單字禁用語誤傷。 */
@@ -679,7 +682,7 @@
     /* 還原已正規化的蝦幣金額，再執行其他一般數字規則。 */
     out = restoreProtectedMap(out, shopeeCoinProtected.protectedMap);
 
-    const adjusted = applyNumericRules(out, role, options);
+    const adjusted = skipNumericFormatting ? out : applyNumericRules(out, role, options);
     if (adjusted !== out) {
       out = adjusted;
       changed = true;

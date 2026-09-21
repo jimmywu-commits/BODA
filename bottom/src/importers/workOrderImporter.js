@@ -125,22 +125,56 @@
     if (!workbook || !workbook.Sheets || !workbook.Sheets._BODA_BOTTOM) return null;
     var meta = workbook.Sheets._BODA_BOTTOM;
     var marker = str(meta.A1 && (meta.A1.w !== undefined ? meta.A1.w : meta.A1.v));
-    if (marker !== 'BODA_BOTTOM_V1') return null;
+    if (marker !== 'BODA_BOTTOM_V1' && marker !== 'BODA_BOTTOM_V2') return null;
     var sheetName = str(meta.B1 && (meta.B1.w !== undefined ? meta.B1.w : meta.B1.v)) || 'MS Layout';
     var target = workbook.Sheets[sheetName];
     if (!target) return null;
+
+    /* 0918V3 參考表可能仍帶著舊版 V1 隱藏對照表；若可見 MS Layout 已是
+       「一顆一行」，不要誤讀舊地址，直接依可見欄位建立吸底資料。 */
+    if (marker === 'BODA_BOTTOM_V1') {
+      var visibleRows = window.XLSX.utils.sheet_to_json(target, { header: 1, defval: '', blankrows: true, raw: false });
+      var visibleGroups = [];
+      visibleRows.forEach(function (visibleRow) {
+        var titleIndex = -1, assetLabelIndex = -1;
+        for (var vi = 0; vi < visibleRow.length; vi++) {
+          var vv = str(visibleRow[vi]);
+          if (/^第[1-5]顆$/.test(vv)) titleIndex = vi;
+          if (/icon圖或品牌logo圖/i.test(vv)) assetLabelIndex = vi;
+        }
+        if (titleIndex < 0 || assetLabelIndex < 0) return;
+        var ai = assetLabelIndex + 1, ti = -1;
+        for (var tj = ai + 1; tj < visibleRow.length; tj++) {
+          if (/文案|案型/i.test(str(visibleRow[tj]))) { ti = tj + 1; break; }
+        }
+        var assetValue = cleanTemplateValue(visibleRow[ai]);
+        var textValue = ti >= 0 ? cleanTemplateValue(visibleRow[ti]) : '';
+        visibleGroups.push({ index: parseInt(str(visibleRow[titleIndex]).replace(/\D/g, ''), 10) - 1, columns: [], type: /logo/i.test(assetValue) ? 'logo' : 'icon', iconName: /logo/i.test(assetValue) ? '' : assetValue, logoName: /logo/i.test(assetValue) ? assetValue : '', name: assetValue, iconChecked: assetValue ? true : null, logoChecked: /logo/i.test(assetValue) ? true : null, text: textValue, assetPath: '', bothProvided: false });
+      });
+      if (visibleGroups.length >= MIN_GROUPS) {
+        return { sheetName: sheetName, iconRow: null, logoRow: null, pathRow: null, textRow: null, score: 110, signals: ['0918V3 可見吸底一行一顆'], groups: visibleGroups };
+      }
+    }
 
     var metaRows = window.XLSX.utils.sheet_to_json(meta, {
       header: 1, defval: '', blankrows: true, raw: false
     });
     var groups = [];
+    var headers = (metaRows[1] || []).map(function (v) { return str(v); });
+    var assetIndex = headers.indexOf('assetAddress');
+    var textIndex = headers.indexOf('textAddress');
+    var iconIndex = headers.indexOf('iconAddress');
+    var logoIndex = headers.indexOf('logoAddress');
     for (var r = 2; r < metaRows.length; r++) {
       var row = metaRows[r] || [];
       var index = parseInt(str(row[0]), 10);
       if (!index) continue;
-      var iconName = sheetCellValue(target, row[2]);
-      var logoName = sheetCellValue(target, row[3]);
-      var text = sheetCellValue(target, row[4]);
+      var assetName = assetIndex >= 0 ? sheetCellValue(target, row[assetIndex]) : '';
+      var iconName = iconIndex >= 0 ? sheetCellValue(target, row[iconIndex]) : assetName;
+      var logoName = logoIndex >= 0 ? sheetCellValue(target, row[logoIndex]) : '';
+      var text = textIndex >= 0 ? sheetCellValue(target, row[textIndex]) : sheetCellValue(target, row[4]);
+      if (!logoName && assetName && /logo/i.test(assetName)) logoName = assetName;
+      if (logoName) iconName = '';
       groups.push({
         index: index - 1,
         columns: [],

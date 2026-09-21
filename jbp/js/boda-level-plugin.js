@@ -478,6 +478,15 @@
   }
   window._bnApplyWorkorderExposureSpec = applyWorkorderExposureSpec;
 
+  /* 外層 BODA 可能在本外掛完成載入前就送出工單勾選規則；
+     先套用一次，並在版位詳情表載入完成後再補套用，確保 layout 清單已就緒。 */
+  function applyPendingWorkorderExposureSpec() {
+    var pending = window._bnPendingWorkorderExposureSpec;
+    if (!pending) return;
+    delete window._bnPendingWorkorderExposureSpec;
+    applyWorkorderExposureSpec(pending);
+  }
+
   function boot() {
     var sharedBg = typeof readSharedCanvasBg === 'function' ? readSharedCanvasBg() : null;
     if (sharedBg && typeof applySharedCanvasBg === 'function') applySharedCanvasBg(sharedBg, true);
@@ -488,6 +497,7 @@
     loadSheet(function () {
       paintNote();
       myRenderChecks();
+      applyPendingWorkorderExposureSpec();
       if (typeof window.renderPreviews === 'function') window.renderPreviews();
     });
   }

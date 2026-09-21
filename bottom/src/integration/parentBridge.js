@@ -216,6 +216,9 @@
       if (applyLevelPreset(msg.levelId) && isImportPreview()) sendPreviewImage(msg);
     } else if (msg.type === "BOTTOM_STATE") {
       applyStateFromParent(msg);
+      /* 預覽 iframe 沒有收到 XLSX 時也要能以目前吸底狀態輸出縮圖；
+         工單生成器的「下載全部」會先等這張圖，再寫入 MS Layout 右側。 */
+      if (isImportPreview()) setTimeout(function () { sendPreviewImage(msg); }, 0);
     } else if (msg.type === "EXPORT_ALL") {
       exportAllForParent(msg);
     } else if (msg.type === "NO_WORKORDER") {

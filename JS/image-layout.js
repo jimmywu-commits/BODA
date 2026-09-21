@@ -40,7 +40,7 @@
      當識別碼，只要那個祖先容器的id沒變(例如 imp-mount-0)，
      重新渲染後還是能對回同一張圖之前調整過的權重。 */
   var weightStore = {};
-  /* 同檔名 LOGO 共用縮放權重；不同版位重新渲染時也能套用同一個縮放結果。 */
+  /* 副區同檔名 LOGO 共用縮放權重；MSBN 會在 imageSyncKey 中停用這個連動。 */
   var linkedWeightStore = {};
   /* 每張圖被拖曳過的位移，跟權重一樣用同一組識別碼記住：{ groupKey: { index: {x,y} } } */
   var offsetStore = {};
@@ -63,7 +63,27 @@
     while (el && !el.id) el = el.parentElement;
     var anchorId = el ? el.id : 'global';
     var fieldKey = group.getAttribute('data-field-key') || '';
+    /* MSBN 同一個 field 可能在同一張版位中出現多個獨立圖片區。
+       不能只用 mount + field，否則其中一張的縮放會套到另一張；
+       用同 field 在 schema 內的 DOM 順序作為穩定 instance key，重繪後仍可還原。 */
+    if (isMsbnGroup(group)) {
+      var root = schemaRootOf(group);
+      var groups = root ? root.querySelectorAll('.bn-imggroup') : [];
+      var ordinal = 0;
+      for (var i = 0; i < groups.length; i++) {
+        var candidate = groups[i];
+        if ((candidate.getAttribute('data-field-key') || '') !== fieldKey) continue;
+        if (candidate === group) break;
+        ordinal++;
+      }
+      return anchorId + '::msbn::' + fieldKey + '::' + ordinal;
+    }
     return anchorId + '::' + fieldKey;
+  }
+
+  function isMsbnGroup(group) {
+    var root = schemaRootOf(group);
+    return !!(root && /^msbn_/i.test(root.getAttribute('data-bn-schema-id') || ''));
   }
 
   function getImgs(group) {
@@ -74,6 +94,8 @@
     if (!img) return '';
     var group = img;
     while (group && group.nodeType === 1 && !(group.classList && group.classList.contains('bn-imggroup'))) group = group.parentElement;
+    /* MSBN 每張圖片都要獨立縮放；不要使用副區的同檔名 LOGO 連動。 */
+    if (isMsbnGroup(group)) return '';
     var field = group ? group.getAttribute('data-field-key') : '';
     if (!/^logoImg\d*$/i.test(String(field || ''))) return '';
     var src = img.getAttribute('src') || img.src || '';
@@ -189,6 +211,17 @@
   function imageBoundaryOfGroup(group) {
     var zone = closestImageZone(group);
     if (!zone) return null;
+    /* MSBN B-1-3／B-1-4 的商品圖只能在白底圓角框內移動與縮放；
+       不要把同版位的整張卡片底色算進來。 */
+    if (zone.getAttribute('data-image-boundary') === 'own') {
+      var ownBoundary = zone.getBoundingClientRect();
+      if (!ownBoundary.width || !ownBoundary.height) return null;
+      return {
+        left: ownBoundary.left, top: ownBoundary.top,
+        right: ownBoundary.right, bottom: ownBoundary.bottom,
+        width: ownBoundary.width, height: ownBoundary.height
+      };
+    }
     var field = zone.getAttribute('data-img-field') || '';
     var family = imageBoundaryFamily(field);
     var scope = schemaRootOf(zone);
@@ -362,6 +395,11 @@
     var target = group;
     while (target && target.nodeType === 1 && !target.hasAttribute('data-logo-bg-sample')) target = target.parentElement;
     if (!target) return;
+    /* LOGO 區固定白底，不再取圖片左上角像素色。 */
+    target.style.backgroundColor = '#ffffff';
+    target.removeAttribute('data-logo-bg-sampled');
+    target.removeAttribute('data-logo-bg-transparent');
+    return;
     var imgs = getImgs(group), img = null;
     if (imgs.length > 1) return; /* 多顆 Logo 不共用單一吸色結果 */
     for (var i = 0; i < imgs.length; i++) {
@@ -639,4 +677,3 @@
     }
   };
 })();
-
