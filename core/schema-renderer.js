@@ -60,7 +60,8 @@
   var CONFIG = {
     textVerticalCorrection: { promo: 0, name: 0, warn: 0, badgeText: 0, ctaText: -3, logoText: 0 },
     letterSpacing: { promo: 0, name: 0, warn: 0, badgeText: 0, ctaText: 0, logoText: 0 },
-    badge: { maxWidth: 80, lineHeight: 53 },
+    /* 7 字圓標固定最多兩行：四字那一行保留足夠寬度，不讓瀏覽器再折出第三行。 */
+    badge: { maxWidth: 112, lineHeight: 53 },
     /* 特定文字的行距覆寫（數字＝倍數，1 就是貼在一起）。
        代言人／簽名小字本來是 1.667，兩行之間太開，這裡壓緊一點。 */
     textLineHeight: { signNote: 1.15, endorserNote: 1.15 },
@@ -145,6 +146,37 @@
      會被原本的小框裁住，無法跨到相鄰的預設範圍。 */
   function isSharedMovableImageField(fieldKey) {
     return /^(.*?)(?:productImg|giftImg|endorserImg|signImg)[0-9]*$/i.test(String(fieldKey || ''));
+  }
+  function isContentImageField(fieldKey) {
+    return /^(?:productImg|giftImg|endorserImg)[0-9]*$/i.test(String(fieldKey || ''));
+  }
+  function isMsbnC15ProductBoundary(schemaId, fieldKey) {
+    return /^msbn_C_1_5$/i.test(String(schemaId || '')) && /^productImg$/i.test(String(fieldKey || ''));
+  }
+  /* 曝品／贈品／代言人圖要在底層，但仍須位於卡片背景之上；促標、圓標、
+     CTA、品名與其他資訊則全部壓在它們上方。以每個 schema 的背景與資訊層
+     找出中間的安全 z-index，避免用固定數字破壞不同版位的原始座標。 */
+  function contentImageZIndexOf(schema) {
+    var layers = (schema && schema.layers || []).slice();
+    (schema && schema.repeats || []).forEach(function (repeat) {
+      layers = layers.concat(repeat.layers || []);
+    });
+    var maxBase = -Infinity;
+    var minInfo = Infinity;
+    layers.forEach(function (layer) {
+      if (!layer || layer.zIndex == null || layer.type === 'image' && isContentImageField(layer.field)) return;
+      var z = Number(layer.zIndex);
+      if (!isFinite(z)) return;
+      var role = themeRoleOf(layer, schema && schema.id);
+      var isBase = role === 'bg' || (role === 'cardBg' && layer.type === 'rect') ||
+        (layer.type === 'rect' && /^bgColor$/i.test(String(layer.field || '')));
+      if (isBase) maxBase = Math.max(maxBase, z);
+      else minInfo = Math.min(minInfo, z);
+    });
+    if (maxBase === -Infinity && minInfo === Infinity) return 1;
+    if (minInfo === Infinity) return maxBase + 1;
+    if (maxBase === -Infinity) return minInfo - 1;
+    return maxBase < minInfo ? maxBase + (minInfo - maxBase) / 2 : maxBase + 1;
   }
   /* MSBN B-1-1～B-1-4 的商品圖要留在白底圓角框內；
      這些版位的底色矩形只是整張卡片背景，不能被當成商品圖可移動範圍。 */
@@ -419,7 +451,8 @@
 
     /* 原本品名在 MSBN A／B（除指定的曝光背景版）以白底判斷；只有 B 系列「文案」
        明確要求比照品名時，才優先讀同版位的卡片底色。 */
-    if (!preferCardSurface && /^msbn_[AB]_/.test(themeSchemaId)) return '#ffffff';
+    if (!preferCardSurface && /^msbn_[AB]_/.test(themeSchemaId) &&
+        !/^msbn_B_3_[34]$/i.test(themeSchemaId)) return '#ffffff';
 
     var layers = (opts && opts._schemaLayers) || [];
     var cardLayer = null;
@@ -434,7 +467,7 @@
       return (cardFieldKey && data && data[cardFieldKey]) || cardLayer.backgroundColor || '#ffffff';
     }
 
-    if (/^msbn_[CD]_/.test(themeSchemaId)) {
+    if (/^msbn_[CD]_/.test(themeSchemaId) || /^msbn_B_3_[34]$/i.test(themeSchemaId)) {
       return (theme && (theme.cardBg || theme.bg)) || '#ffffff';
     }
     return '#ffffff';
@@ -463,7 +496,7 @@
       /* 副區卡片預設仍由 block.json 的白底決定；但若工單／畫布實際帶入有色卡，
          不再強制覆寫為白色，讓品名可依真正底色選擇深／淺字。 */
       if (/^subarea_/i.test(cardSchemaId)) return null;
-      if (!/^msbn_[CD]_/.test(cardSchemaId)) return '#ffffff';
+      if (!/^msbn_[CD]_/.test(cardSchemaId) && !/^msbn_B_3_[34]$/i.test(cardSchemaId)) return '#ffffff';
     }
     /* 代言人小字預設黑色；實際圖片明暗由匯入／維修畫布在圖片載入後再取樣，
        若圖片偏深會把這個自動色切換成白色。使用者手動選色時不走自動切換。 */
@@ -479,7 +512,7 @@
     /* 警語預設深灰；深色卡片／畫布上改用淡灰，手動選色時保留使用者設定。 */
     if (role === 'warnText' && theme.warnTextAuto) {
       var warningSchemaId = String((opts && opts._schemaId) || '');
-      var warningSurface = /^msbn_[CD]_/.test(warningSchemaId)
+      var warningSurface = (/^msbn_[CD]_/.test(warningSchemaId) || /^msbn_B_3_[34]$/i.test(warningSchemaId))
         ? (theme.cardBg || theme.canvasBg || theme.bg || '#ffffff')
         : (theme.canvasBg || theme.bg || '#ffffff');
       var warningRgb = parseCssColor(warningSurface);
@@ -528,10 +561,6 @@
 
     /* MSBN C（C-1-1～3 除外）的促標是淺色卡片上的標題，系統預設固定黑字；
        只有使用者明確選過「促標字色」時才改套全域手動色。 */
-    if (role === 'promoText' && /^msbn_C_/i.test(themeSchemaId) &&
-        !/^msbn_C_1_[123]$/i.test(themeSchemaId) && theme.promoTextAuto) {
-      return '#000000';
-    }
     var v = theme[role];
     return (v && String(v).trim()) ? String(v).trim() : null;
   }
@@ -783,6 +812,43 @@
     if (/^msbn_C_1_[123]$/i.test(schemaId) && /^copy\d*$/i.test(field) && /最多\$?6字/.test(designText)) return 20;
     return 0;
   }
+
+  /* MSBN D-1-1-2／D-2-1-2 的圓圈色不是固定靠左起算：每個左／中／右群組
+     都要依「目前有顏色的顆數」重新排在該群組幾何中心。原稿的欄位位置保留
+     作為群組中心與間距基準，因此 2、3、4 顆都不會因為只從第一顆開始畫而偏移。 */
+  function localCircleLayoutOf(schema, data) {
+    if (!/^msbn_D_(?:1_1_2|2_1_2)$/i.test(String(schema && schema.id || ''))) return null;
+    var groups = {};
+    (schema.layers || []).forEach(function (layer) {
+      if (layer.type !== 'circle' || !layer.optionalColor || !/^swatchColor\d*$/i.test(String(layer.field || ''))) return;
+      var m = /^(左|中|右)・/.exec(String(layer.fieldLabel || ''));
+      var groupName = m ? m[1] : '圓圈';
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push(layer);
+    });
+    var overrides = {};
+    Object.keys(groups).forEach(function (groupName) {
+      var layers = groups[groupName].slice().sort(function (a, b) {
+        var am = /(\d+)\s*$/.exec(String(a.fieldLabel || a.field || ''));
+        var bm = /(\d+)\s*$/.exec(String(b.fieldLabel || b.field || ''));
+        return (am ? Number(am[1]) : 99) - (bm ? Number(bm[1]) : 99);
+      });
+      var active = layers.filter(function (layer) {
+        return String(data && data[layer.field] == null ? '' : data[layer.field]).trim() !== '';
+      });
+      if (!active.length) return;
+      var centers = layers.map(function (layer) { return Number(layer.left || 0) + Number(layer.width || 0) / 2; });
+      var center = centers.reduce(function (sum, value) { return sum + value; }, 0) / centers.length;
+      var gaps = [];
+      for (var i = 1; i < centers.length; i++) if (isFinite(centers[i] - centers[i - 1])) gaps.push(centers[i] - centers[i - 1]);
+      var spacing = gaps.length ? gaps.reduce(function (sum, value) { return sum + value; }, 0) / gaps.length : Number(layers[0].width || 25) + 8;
+      var start = center - spacing * (active.length - 1) / 2;
+      active.forEach(function (layer, index) {
+        overrides[layer.field] = start + spacing * index - Number(layer.width || 0) / 2;
+      });
+    });
+    return overrides;
+  }
   function renderLayer(layer, left, top, data, fieldPrefix, opts) {
     /* hidden:true ＝這一層完全不畫（也不會出現在欄位面板）。
        用來關掉 PS 稿上的示意圖層，例如 LOGO 框裡那個「LOGO」佔位字：
@@ -966,8 +1032,21 @@
     /* 匯入工單畫布可直接點顏色圖層叫出色盤。
        圓形色塊預設可點；其他形狀只有明確標 canvasColorEditable:true 才開啟，
        避免一般底色矩形擋住底下的圖片拖放區。 */
-    var directColorEditable = !!(opts && opts.editable && fieldKey &&
-      (layer.type === 'circle' || layer.canvasColorEditable));
+    var directColorRole = themeRoleOf(layer, opts && opts._schemaId);
+    var forceBadgeCenter = layer.type === 'text' && directColorRole === 'badgeText';
+    var forcePromoHitPassthrough = layer.type === 'text' && directColorRole === 'promoText';
+    var colorFieldKey = fieldKey;
+    if (!colorFieldKey && layer.type === 'rect') {
+      var fallbackColorFields = {
+        bg: 'bgColor', cardBg: 'bgColor', cardBgA23Left: 'bgColor', cardBgA23Right: 'bgColor2',
+        promoBg: 'promoColor', badgeBg: 'badgeColor', ctaBg: 'ctaColor'
+      };
+      colorFieldKey = fallbackColorFields[directColorRole] || null;
+    }
+    var directColorEditable = !!(opts && opts.editable && colorFieldKey &&
+      (layer.type === 'circle' || layer.canvasColorEditable ||
+       (layer.type === 'rect' && ['bg', 'cardBg', 'cardBgA23Left', 'cardBgA23Right',
+        'promoBg', 'badgeBg', 'ctaBg'].indexOf(directColorRole) !== -1)));
     var renderedColorValue = null;
 
     if (layer.type === 'image') {
@@ -987,8 +1066,34 @@
       /* imageOrder 是匯入工單每一格自己的圖片欄位順序。
          這裡把排序後的欄位對應到原 schema 的圖片 z-index 槽位，
          所以商品圖與人物圖可以互換上下層，而文字／背景仍維持原本層級。 */
-      if (opts && Array.isArray(opts.imageOrder) && Array.isArray(opts._imageZSlots) && fieldKey) {
-        var orderedImageIndex = opts.imageOrder.indexOf(fieldKey);
+      var isSignatureImage = /^signImg\d*$/i.test(String(layer.field || ''));
+      var isContentImage = isContentImageField(layer.field);
+      /* 簽名圖是設計稿指定的最上層物件，不能被右側工具列的圖片排序覆蓋。
+         一般圖片仍可依 imageOrder 互換前後；簽名圖則永遠使用註冊版位時
+         算出的頂層 z-index。 */
+      /* 副區的商品框本身就是可見的曝品上傳範圍；保留 schema 原始層級，
+         只在 MSBN 套用「曝品／贈品／代言人圖位於資訊下方」的排序，
+         避免副區圖片框被新的統一 z-index 計算壓到看不見。 */
+      var isSubareaSchema = /^subarea_/i.test(String(opts && opts._schemaId || ''));
+      /* 空白上傳框必須保留 schema 原始層級，否則像 A-2-3、D-1-1 這種
+         多商品版位會被卡片背景蓋住，看起來像欄位整個消失。只有真的已載入
+         商品／贈品／代言人圖片後，才把內容圖移到資訊圖層下方。fixedLayerOrder
+         則用於信用卡圖等必須完整覆蓋自己票券範圍的特殊圖片。 */
+      if (layer.fixedLayerOrder) {
+        stateZIndex = url && layer.imageZIndex != null ? layer.imageZIndex
+          : (!url && layer.placeholderZIndex != null ? layer.placeholderZIndex : layer.zIndex);
+      } else if (isContentImage && url && !isSubareaSchema && opts && opts._contentImageZIndex != null) {
+        stateZIndex = opts._contentImageZIndex;
+      } else if (isSignatureImage && opts && opts._signatureImageZByField &&
+          opts._signatureImageZByField[layer.field] != null) {
+        stateZIndex = opts._signatureImageZByField[layer.field];
+      } else if (!isSignatureImage && url && isSharedMovableImageField(fieldKey) &&
+          opts && Array.isArray(opts.imageOrder) &&
+          Array.isArray(opts._imageZSlots) && fieldKey) {
+        var normalImageOrder = opts.imageOrder.filter(function (key) {
+          return !/^signImg\d*$/i.test(String(key || ''));
+        });
+        var orderedImageIndex = normalImageOrder.indexOf(fieldKey);
         if (orderedImageIndex >= 0 && orderedImageIndex < opts._imageZSlots.length) {
           stateZIndex = opts._imageZSlots[orderedImageIndex];
         }
@@ -1039,14 +1144,16 @@
         style.push('display:flex');
         style.push('align-items:center');
         style.push('justify-content:center');
-        var forceOwnImageClip = isMsbnB1WhiteProductBoundary(opts && opts._schemaId, fieldKey);
+        var forceOwnImageClip = isMsbnB1WhiteProductBoundary(opts && opts._schemaId, fieldKey) ||
+          isMsbnC15ProductBoundary(opts && opts._schemaId, fieldKey);
         var clipImage = forceOwnImageClip || (((opts && opts.imageClipToBounds) || layer.clipImage) &&
           !(opts && opts.imageClipToBounds && isSharedMovableImageField(fieldKey)));
         style.push('overflow:' + (clipImage ? 'hidden' : 'visible'));
-        if (forceOwnImageClip) {
+        var ownImageClipPath = msbnB1WhiteProductClipPath(opts && opts._schemaId, layer);
+        if (ownImageClipPath) {
           /* overflow:hidden 在圖片使用 transform 放大時，部分瀏覽器／縮放容器
              仍可能讓子層視覺溢出；再加同形狀的 clip-path，確保只露出白底圓角框。 */
-          style.push('clip-path:' + msbnB1WhiteProductClipPath(opts && opts._schemaId, layer));
+          style.push('clip-path:' + ownImageClipPath);
         }
         var scalePct;
         if (layer.id === 'logoBg') scalePct = CONFIG.image.logoInsetScalePercent;
@@ -1092,12 +1199,23 @@
       style.push('pointer-events:' + (directColorEditable ? 'auto' : 'none'));
       if (directColorEditable) style.push('cursor:pointer');
       if (!isCtaBgLayer(layer)) style.push('border-radius:50%'); /* CTA 底色塊上面已經套過統一圓角了 */
+      var rawCircleColor = fieldKey ? data[fieldKey] : null;
       var color = derivedColorOf(layer, data, fieldPrefix, opts)
-        || ((fieldKey && data[fieldKey]) ? data[fieldKey] : layer.backgroundColor);
+        || ((fieldKey && rawCircleColor) ? rawCircleColor : layer.backgroundColor);
+      /* D-1-1-2／D-2-1-2 的小圓圈可各自增減。這類圖層若欄位被設成空白，
+         空白代表「隱藏這一顆」，不能再自動回退成 block.json 的原始底色。 */
+      if (layer.optionalColor && fieldKey && String(rawCircleColor == null ? '' : rawCircleColor).trim() === '') {
+        color = '';
+        style.push('display:none');
+      }
       color = themeColorOf(layer, opts, data, fieldPrefix) || color; /* 全站統一顏色（圓標底／CTA底…）優先 */
       renderedColorValue = color || '';
       if (color) style.push('background-color:' + color);
       if (layer.border) style.push('border:' + layer.border);
+      /* 圓圈色選白色時仍要看得到輪廓；若模板本身沒有邊框，補一條細灰線。 */
+      if (color && !layer.border && /^(?:#fff(?:fff)?|white|rgba?\(\s*255\s*,\s*255\s*,\s*255(?:\s*,\s*(?:1|1\.0))?\s*\))$/i.test(String(color).replace(/\s+/g, ' '))) {
+        style.push('border:1px solid #c9c9c9');
+      }
     } else if (layer.type === 'text') {
       if (layer.fontSize != null) style.push('font-size:' + layer.fontSize + 'px');
       if (layer.fontFamily) style.push('font-family:' + JSON.stringify(layer.fontFamily));
@@ -1124,7 +1242,7 @@
       if (layer.transform) style.push('transform:matrix(' + layer.transform.join(',') + ')');
       /* 一般文字仍裁在自己的框內；CTA 的框是定位參考，文字必須保持單行，
          所以允許極小的字型量測差異溢出，不會因此換行。 */
-      style.push('overflow:' + (isCenteredCtaText ? 'visible' : 'hidden'));
+      style.push('overflow:' + (isCenteredCtaText || layer.verticalCenter || forceBadgeCenter ? 'visible' : 'hidden'));
       if (isCenteredCtaText) {
         /* 高度與 CTA 底色塊完全相同；align-items:center 讓文字行框中心
            永遠落在底色塊中心，不再依賴不同電腦的字型 top/baseline。 */
@@ -1141,7 +1259,7 @@
         style.push('justify-content:center');
         style.push('box-sizing:border-box');
       }
-      if (layer.verticalCenter) {
+      if (layer.verticalCenter || forceBadgeCenter) {
         /* 圓標這種可能斷成兩行的文字，用 flex 置中：不管一行還是兩行，
            整塊文字永遠垂直+水平置中在圓標色塊範圍內，而且height已經限制成
            跟圓標一樣大，兩行加起來太高也會被裁掉，不會超出圓標範圍 */
@@ -1149,6 +1267,10 @@
         style.push('flex-direction:column');
         style.push('align-items:center');
         style.push('justify-content:center');
+      }
+      if (forcePromoHitPassthrough) {
+        /* 促標底色要能在整條色帶上點擊；文字字面仍由內層 span 接收編輯。 */
+        style.push('pointer-events:none');
       }
       /* 沒有綁欄位的文字＝純裝飾/示意字，不能編輯，也就不該擋住滑鼠。
          這件事很重要：這種字常常整片蓋在圖片框上面（例如 LOGO 框裡的「LOGO」佔位字），
@@ -1180,33 +1302,37 @@
          內層，外層只負責排版，既保留置中也讓文字本身回到一般 block 游標模型。 */
       style.push('outline:none');
       style.push('cursor:text');
-      if (layer.verticalCenter) {
-        editableTextInner = {
+      /* 文字命中範圍收在真正字面附近；空白處要讓底色仍可顯示手形並開色盤。 */
+      var fullTextHitbox = layer.verticalCenter || forceBadgeCenter || isCenteredCtaText || isDynamicRowCentered;
+      editableTextInner = {
           attrs: ' contenteditable="true" spellcheck="false" data-field="' + esc(fieldKey) + '"',
           style: [
-            'display:block',
-            'width:100%',
+            'display:' + (fullTextHitbox ? 'block' : 'inline-block'),
+            (fullTextHitbox ? 'width:100%' : 'width:auto'),
+            'max-width:100%',
             'box-sizing:border-box',
-            'text-align:center',
+            'text-align:' + (forceBadgeCenter ? 'center' : 'inherit'),
+            'white-space:' + (forceBadgeCenter ? 'pre' : 'inherit'),
+            (forceBadgeCenter ? 'word-break:normal' : ''),
+            'margin:' + (forceBadgeCenter ? '0' : '0 auto'),
+            (forceBadgeCenter ? 'align-self:center' : ''),
+            (forceBadgeCenter ? 'flex:0 0 auto' : ''),
             'outline:none',
             'cursor:text',
             'pointer-events:auto'
           ]
-        };
-        /* 外層不接收滑鼠，避免點擊空白處時把焦點落在不可編輯的容器上；
-           內層寬度覆蓋整個文字框，實際字面仍由它接收輸入。 */
-        style.push('pointer-events:none');
-        attrs = '';
-      } else {
-        attrs = ' contenteditable="true" spellcheck="false" data-field="' + esc(fieldKey) + '"';
-      }
+      };
+      /* 外層不接收滑鼠，避免點擊空白處時把焦點落在不可編輯的容器上；
+         內層寬度覆蓋真正文字所需的範圍，實際字面仍由它接收輸入。 */
+      style.push('pointer-events:none');
+      attrs = '';
     }
     if (layer.type === 'text' && fieldKey && opts && opts.theme && opts.theme.endorserTextAuto &&
         themeRoleOf(layer, opts && opts._schemaId) === 'endorserText') {
       attrs += ' data-auto-text-role="endorserText"';
     }
     if (directColorEditable) {
-      attrs += ' data-color-field="' + esc(fieldKey) + '"' +
+      attrs += ' data-color-field="' + esc(colorFieldKey) + '"' +
         ' data-color-label="' + esc(layer.fieldLabel || '色塊') + '"' +
         ' data-color-value="' + esc(renderedColorValue || '') + '"' +
         ' title="點一下直接換色"';
@@ -1521,15 +1647,23 @@
         return String(l.field || '');
       });
       var imageZSlots = [];
+      var signatureImageZByField = {};
       var seenImageLayerFields = {};
-      (schema.layers || []).forEach(function (layer) {
-        if (layer.type !== 'image' || layer.fixedImage || !layer.field) return;
+      renderOpts._schemaLayers.forEach(function (layer) {
+        if (layer.type !== 'image' || layer.fixedImage || layer.fixedLayerOrder || !layer.field ||
+            !isSharedMovableImageField(layer.field)) return;
         if (seenImageLayerFields[layer.field]) return;
         seenImageLayerFields[layer.field] = true;
+        if (/^signImg\d*$/i.test(String(layer.field))) {
+          signatureImageZByField[layer.field] = layer.zIndex != null ? Number(layer.zIndex) : 0;
+          return;
+        }
         imageZSlots.push(layer.zIndex != null ? Number(layer.zIndex) : 0);
       });
       imageZSlots.sort(function (a, b) { return b - a; });
       renderOpts._imageZSlots = imageZSlots;
+      renderOpts._signatureImageZByField = signatureImageZByField;
+      renderOpts._contentImageZIndex = contentImageZIndexOf(schema);
       var nameValue = data && data.name != null ? String(data.name).trim() : '';
       var warnValue = data && data.warn != null ? String(data.warn).trim() : '';
       renderOpts._subareaWarnNudge = /^subarea_/i.test(String(schema.id || '')) &&
@@ -1551,6 +1685,7 @@
 
       /* 沒填的代言人／贈品空間讓給商品圖（範圍變大，被讓出來的圖層不畫） */
       var absorb = computeAbsorb(schema, data, renderOpts);
+      var circleLayout = localCircleLayoutOf(schema, data);
       (schema.layers || []).forEach(function (layer) {
         var dynamicLayer = dynamicRowLayerOf(layer, dynamicRows);
         if (!dynamicLayer) return;
@@ -1560,6 +1695,10 @@
           var grown = layerWithBox(layer, absorb.boxes[ti]);
           html += renderLayer(grown, grown.left, grown.top, data, null, renderOpts);
           return;
+        }
+        var circleLeft = circleLayout && circleLayout[dynamicLayer.field];
+        if (circleLeft != null) {
+          dynamicLayer = Object.assign({}, dynamicLayer, { left: circleLeft });
         }
         html += renderLayer(dynamicLayer, dynamicLayer.left, dynamicLayer.top, data, null, renderOpts);
       });
@@ -1798,20 +1937,29 @@
     });
 
     var layers = schema.layers || [];
+    var allLayers = layers.slice();
+    (schema.repeats || []).forEach(function (repeat) {
+      allLayers = allLayers.concat(repeat.layers || []);
+    });
     layers.forEach(function (l) {
       var role = themeRoleOf(l);
       var isCta = isCtaTriangle(l) || isCtaBgLayer(l) ||
         (l.type === 'text' && role === 'ctaText');
       if (isCta) l.zIndex = CTA_Z_BASE + (l.zIndex || 0);
     });
-    /* 簽名檔壓在代言人上面（有編號的各自成對：signImg2 對 endorserImg2） */
-    layers.forEach(function (sign) {
+    /* 簽名圖是 MSBN 設計稿的最上層圖片：不只要高於人物，也必須高於
+       商品、贈品、LOGO 等所有一般圖片。這裡一次調整 schema 與重複區塊，
+       後續 render 的 imageOrder 不會再把它壓回去。 */
+    var maxOtherImageZ = -Infinity;
+    allLayers.forEach(function (layer) {
+      if (layer.type !== 'image' || /^signImg\d*$/i.test(String(layer.field || ''))) return;
+      maxOtherImageZ = Math.max(maxOtherImageZ, Number(layer.zIndex || 0));
+    });
+    var signatureOffset = 1;
+    allLayers.forEach(function (sign) {
       if (sign.type !== 'image' || !/^signImg\d*$/.test(String(sign.field || ''))) return;
-      var suffix = String(sign.field).replace('signImg', '');
-      layers.forEach(function (endorser) {
-        if (endorser.field !== ('endorserImg' + suffix)) return;
-        if ((sign.zIndex || 0) <= (endorser.zIndex || 0)) sign.zIndex = (endorser.zIndex || 0) + 1;
-      });
+      sign.zIndex = Math.max(Number(sign.zIndex || 0), maxOtherImageZ + signatureOffset);
+      signatureOffset++;
     });
   }
 

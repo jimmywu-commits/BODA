@@ -15,7 +15,8 @@
       "backgroundColor": "rgb(255, 255, 255)",
       "border": "1px solid rgb(134, 134, 134)",
       "field": "swatchColor",
-      "fieldLabel": "右・圓形色塊1"
+      "fieldLabel": "右・圓形色塊1",
+      "optionalColor": true
     },
     {
       "zIndex": 1492,
@@ -26,7 +27,8 @@
       "height": 25.0,
       "backgroundColor": "rgb(139, 190, 192)",
       "field": "swatchColor2",
-      "fieldLabel": "右・圓形色塊2"
+      "fieldLabel": "右・圓形色塊2",
+      "optionalColor": true
     },
     {
       "zIndex": 1491,
@@ -37,7 +39,8 @@
       "height": 25.0,
       "backgroundColor": "rgb(52, 51, 55)",
       "field": "swatchColor3",
-      "fieldLabel": "右・圓形色塊3"
+      "fieldLabel": "右・圓形色塊3",
+      "optionalColor": true
     },
     {
       "zIndex": 1490,
@@ -49,7 +52,8 @@
       "backgroundColor": "rgb(255, 255, 255)",
       "border": "1px solid rgb(134, 134, 134)",
       "field": "swatchColor4",
-      "fieldLabel": "左・圓形色塊1"
+      "fieldLabel": "左・圓形色塊1",
+      "optionalColor": true
     },
     {
       "zIndex": 1489,
@@ -60,7 +64,8 @@
       "height": 25.0,
       "backgroundColor": "rgb(139, 190, 192)",
       "field": "swatchColor5",
-      "fieldLabel": "左・圓形色塊2"
+      "fieldLabel": "左・圓形色塊2",
+      "optionalColor": true
     },
     {
       "zIndex": 1488,
@@ -71,7 +76,8 @@
       "height": 25.0,
       "backgroundColor": "rgb(52, 51, 55)",
       "field": "swatchColor6",
-      "fieldLabel": "左・圓形色塊3"
+      "fieldLabel": "左・圓形色塊3",
+      "optionalColor": true
     },
     {
       "zIndex": 1485,

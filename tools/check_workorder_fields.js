@@ -91,8 +91,13 @@ Object.keys(MSBN_FIELDS).forEach((file) => {
 
   /* 反向：block.json 有圖片欄位，但工單完全沒提到 → 畫布上會出現多餘的佔位卡 */
   const specTypes = new Set();
-  (spec.groups || []).forEach((g) => g.forEach((x) => specTypes.add(typeof x === 'string' ? x : x.type)));
+  const explicitTargets = new Set();
+  (spec.groups || []).forEach((g) => g.forEach((x) => {
+    specTypes.add(typeof x === 'string' ? x : x.type);
+    if (x && typeof x === 'object' && (x.targetKey || x.fieldKey)) explicitTargets.add(x.targetKey || x.fieldKey);
+  }));
   const wantedImageKeys = new Set();
+  explicitTargets.forEach((key) => wantedImageKeys.add(key));
   specTypes.forEach((t) => {
     const b = LABEL_TO_FIELD_BASE[t];
     if (b) for (let i = 1; i <= (spec.n || 1); i++) { wantedImageKeys.add(b); wantedImageKeys.add(b + i); }

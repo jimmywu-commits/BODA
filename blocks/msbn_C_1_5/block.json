@@ -149,6 +149,22 @@
     },
     {
       "zIndex": 1311,
+      "type": "image",
+      "left": 842.0,
+      "top": 142.0,
+      "width": 315.0,
+      "height": 119.0,
+      "field": "productImg2",
+      "fieldLabel": "情境圖／信用卡圖",
+      "borderRadius": "6px",
+      "psRadius": true,
+      "clipImage": true,
+      "placeholderZIndex": 1305.5,
+      "imageZIndex": 1311,
+      "fixedLayerOrder": true
+    },
+    {
+      "zIndex": 1311,
       "type": "rect",
       "left": 444.0,
       "top": 142.0,

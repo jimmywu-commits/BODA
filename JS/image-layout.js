@@ -171,8 +171,9 @@
     while (el && el.nodeType === 1) {
       /* 匯入工單與維修畫布的副區、MSBN 都包在各自的 mount／stage；
          不依賴 blockId，所以副區、MSBN 及 MSBN 內副區排都會套用。 */
-      if ((el.id && /^(imp|mnt)-mount-/i.test(el.id)) ||
-          (el.classList && (el.classList.contains('imp-slot') || el.classList.contains('imp-mount') || el.classList.contains('mt-stage')))) {
+      if ((el.id && /^(imp|mnt|prevall)-mount-/i.test(el.id)) ||
+          (el.classList && (el.classList.contains('imp-slot') || el.classList.contains('imp-mount') ||
+            el.classList.contains('mt-stage') || el.classList.contains('preview-all-mount')))) {
         return el;
       }
       el = el.parentElement;

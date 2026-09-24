@@ -168,7 +168,10 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-log .err{color:var(--danger);}
 #import-log .ok{color:var(--teal-dark);}
 
-#import-fields-scroll{display:none;}
+#import-fields-scroll{display:block;}
+#import-fields-scroll .imp-col{display:none;}
+#import-fields-scroll .imp-col.has-local-colors{display:none;}
+#import-fields-scroll .img-field{display:none;}
 .imp-col{background:#fff;border:1px solid var(--border);border-radius:10px;
   padding:0 12px 12px;margin-bottom:14px;box-shadow:var(--shadow);}
 .imp-col .ic-head{position:sticky;top:0;z-index:2;background:#fff;
@@ -193,6 +196,12 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .text-field-row,.local-color-field-row{display:flex;align-items:center;gap:6px;}
 .text-field-row input.fv,.local-color-field-row input.fv{flex:1;min-width:0;}
 .local-color-field-row input.local-color-picker{flex-shrink:0;width:36px;height:30px;padding:2px;border:1px solid var(--border);border-radius:5px;background:#fff;cursor:pointer;}
+.local-color-group-title{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10.5px;font-weight:800;color:var(--teal-dark);padding:7px 0 5px;margin:2px 0 8px;border-bottom:1px solid var(--border);}
+.local-color-add{height:24px;min-width:0;padding:0 6px;font-size:10px;white-space:nowrap;}
+.local-color-add:disabled{opacity:.45;cursor:not-allowed;}
+.local-color-field.is-hidden{opacity:.7;}
+.local-color-field.is-hidden .local-color-picker,.local-color-field.is-hidden .local-color-text{text-decoration:line-through;}
+.local-color-toggle{min-width:44px;}
 .field-mini-btn{flex-shrink:0;height:30px;min-width:30px;padding:0 7px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--ink3);font-size:11px;cursor:pointer;}
 .field-mini-btn:hover{border-color:var(--teal);color:var(--teal-dark);background:var(--teal-tint);}
 .field-mini-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:#fbeceb;}
@@ -218,17 +227,20 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-block-tools{padding-top:10px;border-top:1px solid var(--border);}
 #import-block-tools{display:flex;flex-direction:column;gap:10px;}
 .import-block-tool{background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px;
-  box-shadow:0 1px 4px rgba(20,40,35,.05);}
+  box-shadow:0 1px 4px rgba(20,40,35,.05);transition:opacity .14s,filter .14s,box-shadow .14s,border-color .14s;}
+.import-block-tool.is-dimmed,.import-band-tool-col.is-dimmed{opacity:.34;filter:saturate(.45);}
 .import-block-tool.is-active{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-tint);}
 .import-band-tool{border:1.5px solid var(--teal-dark);}
 .import-band-tool.is-active{border-color:var(--teal-dark);box-shadow:0 0 0 2px var(--teal-tint);}
-.import-band-tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;align-items:start;}
-.import-band-tool[data-band-count="1"] .import-band-tool-grid{grid-template-columns:1fr;}
-.import-band-tool[data-band-count="2"] .import-band-tool-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-.import-band-tool[data-band-count="3"] .import-band-tool-grid{grid-template-columns:1fr;}
-.import-band-tool[data-band-count="4"] .import-band-tool-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
-.import-band-tool-col{min-width:0;padding:7px 4px;background:transparent;}
+.import-band-tool-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start;}
+/* 畫布上的副區仍維持一排 2／3，但右側工具列寬度只有 340px。
+   所有同排版位改成由上到下，各自使用完整寬度，避免縮圖與按鈕互相重疊。 */
+.import-band-tool[data-band-count] .import-band-tool-grid{grid-template-columns:minmax(0,1fr);}
+.import-band-tool-col{min-width:0;width:100%;padding:7px 4px;background:transparent;transition:opacity .14s,filter .14s,background .14s;}
+.import-band-tool-col + .import-band-tool-col{border-top:1px dashed var(--border);padding-top:12px;}
 .import-band-tool-col.is-active{background:var(--teal-tint);box-shadow:none;}
+.import-band-tool-col .local-color-group-title{margin-top:10px;padding-top:10px;}
+.import-band-tool-col .local-color-field{padding:5px 0 8px;border-bottom:1px solid var(--border);}
 .import-band-tool-col-head{display:flex;align-items:baseline;gap:4px;min-width:0;margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border);}
 .import-band-tool-col-head strong{font-size:10.5px;color:var(--teal-dark);white-space:nowrap;}
 .import-band-tool-col-head small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;color:var(--ink3);}
@@ -754,6 +766,19 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 #edit-banner button{background:var(--teal);border:none;color:#fff;font-size:11.5px;
   padding:5px 12px;border-radius:999px;cursor:pointer;font-weight:700;}
 #edit-banner button.relock{background:rgba(255,255,255,.15);}
+/* 工單生成器暫時下架：保留內部程式與既有資料相容，但不提供任何入口。 */
+.nav-item[data-view="generator"],
+.home-card[data-goto="generator"],
+.home-flow-arrow,
+#import-generator-load,
+#import-generator-hint{display:none!important;}
+/* 左側工具列精簡：首頁與頂端方塊 icon 隱藏；吸底排在曝光資源之前。 */
+#nav-rail .nav-logo,
+.nav-item[data-view="home"]{display:none!important;}
+.nav-item[data-view="import"]{order:1;}
+.nav-item[data-view="bottom"]{order:2;}
+.nav-item[data-view="exposure"]{order:3;}
+.nav-item[data-view="maint"]{order:4;}
 </style>
 </head>
 <body>
@@ -942,19 +967,16 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           </div>
           <div id="import-drop">
             <div class="id-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M9 12h6M9 16h6"/></svg></div>
-            <div class="id-text"><b>拖曳檔案到這裡</b>或點擊選擇</div>
+            <div class="id-text"><b>STEP 1<br>拖曳工單試算表到這裡</b>或點擊選擇</div>
             <input type="file" id="import-file-input" accept=".xlsx,.json" hidden>
           </div>
-          <button class="btn" id="import-generator-load" type="button"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg> 載入工單生成器版配 <span class="igl-count">0 格</span></button>
-          <div id="import-generator-hint">在工單生成器排好版後，請按上方按鈕才載入到匯入工單畫布；生成器編輯期間不會自動同步。</div>
-          <button class="btn ghost" id="btn-preview-all" style="margin:0 16px 12px;width:calc(100% - 32px);"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m7 15 3-3 2.2 2.2 2.8-3.2 3 3"/></svg> 直接預覽全部版位（不用匯入檔案）</button>
           <div id="import-log"></div>
 
           <div id="import-img-section">
             <div id="import-img-head"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg> 圖片素材（可一次選多張）</div>
             <div id="import-img-drop">
               <div class="id-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></div>
-              <div class="id-text">拖曳圖片到這裡，或點擊選擇</div>
+              <div class="id-text"><b>STEP 2<br>拖曳全部圖片到這裡</b>，或點擊選擇</div>
               <input type="file" id="import-img-input" accept="image/*" multiple hidden>
             </div>
             <input type="file" id="imp-field-img-input" accept="image/*" hidden>
@@ -971,12 +993,14 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
             <div id="import-color-list"></div>
           </div>
 
+          <button class="btn" id="import-generator-load" type="button"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg> 載入工單生成器版配 <span class="igl-count">0 格</span></button>
+          <div id="import-generator-hint">在工單生成器排好版後，請按上方按鈕才載入到匯入工單畫布；生成器編輯期間不會自動同步。</div>
           <div id="import-demo-bar">
-            <button class="btn ghost" id="btn-import-demo" type="button" title="讀取同層「測試工單與圖片」資料夾中的 demo 工單與圖片">
-              <svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 5.5V3.8h8v1.7M8 10h8M8 14h5"/><path d="m16 15.5 2 2 3-3"/></svg>
-              匯入demo工單
+            <button class="btn ghost" id="btn-preview-all" type="button" title="不需匯入檔案，直接各顯示一次所有已載入版位">
+              <svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m7 15 3-3 2.2 2.2 2.8-3.2 3 3"/></svg>
+              直接預覽全部版位（不用匯入檔案）
             </button>
-            <div class="demo-hint">從同層「測試工單與圖片」資料夾載入示範內容</div>
+            <div class="demo-hint">每個版位只顯示一次；此模式不提供欄位編輯</div>
           </div>
 
           <div id="import-dl-bar">
@@ -1015,7 +1039,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           </div>
         </div>
         <aside id="import-canvas-tools" aria-label="匯入工單操作工具列">
-          <div id="import-canvas-tools-head">版位編輯與操作</div>
+          <div id="import-canvas-tools-head">版位編輯與操作 <span id="import-active-col-name" aria-live="polite"></span></div>
           <div id="import-fields-scroll"></div>
           <div class="import-tools-section-title" id="import-image-tools-title">圖片操作</div>
           <div id="import-block-tools"><div class="import-block-tool-empty">匯入工單後，這裡會顯示商品圖／人物圖的編輯、刪除與上下移工具。</div></div>
@@ -5659,7 +5683,8 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           7,
           8,
           9,
-          10
+          10,
+          11
         ]
       ]
     },
@@ -5732,6 +5757,12 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           "label": "LOGO圖\n(完整檔名.png)",
           "hint": "(圖檔名)",
           "targetKey": "logoImg"
+        },
+        {
+          "type": "商品圖",
+          "label": "情境圖／信用卡圖",
+          "hint": "(圖檔名)",
+          "targetKey": "productImg2"
         }
       ]
     ]
@@ -6821,8 +6852,8 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <script src="JS/fonts-embed.js"></script>
 <script src="JS/render-config.js"></script>
 <script src="core/core-engine.js"></script>
-<script src="core/schema-renderer.js?v=20260917-2"></script>
-<script src="JS/image-layout.js?v=20260917-2"></script>
+<script src="core/schema-renderer.js?v=20260924-2"></script>
+<script src="JS/image-layout.js?v=20260923-1"></script>
 <script src="JS/editor-plugin.js"></script>
 <script src="jbp/js/logo-editor-plugin.js"></script>
 
@@ -10151,6 +10182,7 @@ var LABEL_TO_FIELD_BASE = {
   '情境圖': 'productImg',
   '信用卡圖': 'productImg',
   '贈品圖': 'giftImg',
+  '案型': 'copy',
   '文案': 'promo',
   '內文': 'content',
   '項目文字': 'itemText'
@@ -10400,6 +10432,366 @@ function workOrderWorksheet(wb, expectedName) {
     if (name === wanted) return sheets[i];
   }
   return null;
+}
+
+/* 0923 之後的工單把可匯入資料整理在 Layout_Template x.x。
+   版本數字可以改、空白／底線也可以不同；同時存在 Backup 時一律先用正式頁簽。 */
+function layoutTemplateWorksheet(wb) {
+  var sheets = wb && Array.isArray(wb.worksheets) ? wb.worksheets : [];
+  var candidates = sheets.filter(function (sheet) {
+    return /layout/i.test(String(sheet && (sheet.name || sheet.title) || ''));
+  });
+  if (!candidates.length) return null;
+  candidates.sort(function (a, b) {
+    function score(sheet) {
+      var name = String(sheet && (sheet.name || sheet.title) || '').trim();
+      var value = 0;
+      if (/backup/i.test(name)) value += 100;
+      if (!/^layout[\s_-]*template/i.test(name)) value += 10;
+      return value;
+    }
+    return score(a) - score(b);
+  });
+  /* 避免把舊版「MS Layout」誤當成 2.0：新版標題固定使用副區_／MSBN_。 */
+  for (var index = 0; index < candidates.length; index++) {
+    var sheet = candidates[index];
+    var lastRow = Math.min(Number(sheet.rowCount) || 0, 500);
+    for (var row = 1; row <= lastRow; row++) {
+      for (var col = 2; col <= 19; col++) {
+        var cell = sheet.getCell(row, col);
+        if (cell.isMerged && cell.master && cell.master.address !== cell.address) continue;
+        var raw = cell.value;
+        if (raw && typeof raw === 'object' && raw.richText) raw = raw.richText.map(function (part) { return part.text; }).join('');
+        if (/^(?:副區|MSBN)_/i.test(String(raw == null ? '' : raw).trim())) return sheet;
+      }
+    }
+  }
+  return candidates[0] || null;
+}
+
+/* Layout_Template 2.0 的左側 B:S 才是資料契約；U 欄以後只是版位參考圖。
+   同一列可以放 3 個（A/B）或 2 個（C/D/E）不同副區，band 保留該橫列，
+   因此匯入畫布會維持試算表由左到右、再由上到下的原始順序。 */
+function parseLayoutTemplateWorkbook(wb) {
+  var ws = layoutTemplateWorksheet(wb);
+  if (!ws) return null;
+  var maxRow = Number(ws.rowCount) || 0;
+  if (!maxRow) return null;
+  var DATA_FIRST_COL = 2, DATA_LAST_COL = 19;
+
+  function plain(cell) {
+    var v = cell ? cell.value : '';
+    if (v && typeof v === 'object' && v.richText) v = v.richText.map(function (part) { return part.text; }).join('');
+    if (v && typeof v === 'object' && v.text != null) v = v.text;
+    if (v && typeof v === 'object' && v.result != null) v = v.result;
+    return v == null ? '' : String(v).trim();
+  }
+  function value(row, col) { return plain(ws.getCell(row, col)); }
+  function isMasterCell(row, col) {
+    var cell = ws.getCell(row, col);
+    return !cell.isMerged || !cell.master || cell.master.address === cell.address;
+  }
+  function formulaText(row, col) {
+    var raw = ws.getCell(row, col).value;
+    return raw && typeof raw === 'object' && raw.formula ? '=' + raw.formula : plain(ws.getCell(row, col));
+  }
+  function masterCell(row, col) {
+    var cell = ws.getCell(row, col);
+    return cell && cell.isMerged && cell.master ? cell.master : cell;
+  }
+  function normalizedType(raw) {
+    var text = stripLabelAnnotation(raw).replace(/\r/g, '').split('\n')[0].trim();
+    if (/^(促標文案|促標文字)$/.test(text)) return '促標';
+    if (text === '小字') return '警語';
+    if (text === '代言人字') return '代言人小字';
+    if (text === '簽名圖檔') return '簽名圖';
+    if (text === '案型') return '文案';
+    if (text === 'CTA文字') return 'CTA';
+    return text;
+  }
+  var fieldTypes = {
+    '促標': 1, 'LOGO圖': 1, '商品': 1, '商品圖': 1, '品名': 1, '警語': 1,
+    '圓標': 1, 'CTA': 1, '代言人圖': 1, '代言人小字': 1, '簽名圖': 1,
+    '簽名小字': 1, '特色': 1, '內文': 1, '文案': 1, '項目文字': 1,
+    '情境圖': 1, '信用卡圖': 1, '贈品圖': 1, '底色塊': 1, '色塊': 1,
+    '圓圈色': 1
+  };
+  function isField(raw) { return !!fieldTypes[normalizedType(raw)]; }
+  function isColorType(type) { return type === '底色塊' || type === '色塊' || type === '圓圈色'; }
+  function limitFromRow(row, inputCol, regionEnd) {
+    for (var col = inputCol + 1; col <= Math.min(regionEnd, inputCol + 5); col++) {
+      var match = /LENB\([^)]*\)\/2<=([0-9]+)/.exec(formulaText(row, col));
+      if (match) return parseInt(match[1], 10);
+    }
+    return null;
+  }
+  function makeEntry(raw, row, inputCol, regionEnd) {
+    var type = normalizedType(raw);
+    var cell = masterCell(row, inputCol);
+    var entry = {
+      label: type,
+      displayLabel: String(raw || '').trim(),
+      type: type,
+      value: plain(cell),
+      address: cell.address
+    };
+    if (isColorType(type)) { entry.noCheck = true; entry.colorPreview = true; }
+    var limit = limitFromRow(row, inputCol, regionEnd);
+    if (limit != null) entry.limit = limit;
+    return entry;
+  }
+  function formulaInputColumns(row, fromCol, toCol) {
+    var found = [];
+    for (var col = fromCol; col <= toCol; col++) {
+      var formula = formulaText(row, col);
+      if (!formula || formula.charAt(0) !== '=') continue;
+      var re = /\$?([A-Z]{1,3})\$?([0-9]+)/g, match;
+      while ((match = re.exec(formula))) {
+        if (parseInt(match[2], 10) !== row) continue;
+        var inputCell = ws.getCell(match[1] + match[2]);
+        var inputCol = inputCell.col;
+        if (inputCol >= fromCol && inputCol <= toCol && found.indexOf(inputCol) === -1) found.push(inputCol);
+      }
+    }
+    return found.sort(function (a, b) { return a - b; });
+  }
+  function descriptorList(spec) {
+    var list = [];
+    (spec && spec.groups || []).forEach(function (group) {
+      (group || []).forEach(function (field) { list.push(typeof field === 'string' ? { type: field } : (field || {})); });
+    });
+    return list;
+  }
+  function applyDescriptorKeysByType(entries, descriptors) {
+    var used = {};
+    (entries || []).forEach(function (entry) {
+      var type = normalizedType(entry.type || entry.label);
+      for (var index = 0; index < (descriptors || []).length; index++) {
+        var descriptor = descriptors[index] || {};
+        if (used[index] || normalizedType(descriptor.type || descriptor.label) !== type) continue;
+        used[index] = true;
+        if (descriptor.targetKey) entry.targetKey = descriptor.targetKey;
+        break;
+      }
+    });
+  }
+  function push(out, item) {
+    item.xlsxBindings = (item.entries || []).map(function (entry) {
+      return { address: entry.address, targetKey: entry.targetKey || '', label: entry.label };
+    });
+    out.push(item);
+  }
+  function layoutHeadersAt(row) {
+    var headers = [];
+    for (var col = DATA_FIRST_COL; col <= DATA_LAST_COL; col++) {
+      var text = value(row, col);
+      if (isMasterCell(row, col) && /^(?:副區|MSBN)[_-]/i.test(text)) headers.push({ col: col, text: text });
+    }
+    return headers;
+  }
+  var hasNewLayoutMarker = false;
+  for (var markerRow = 1; markerRow <= maxRow && !hasNewLayoutMarker; markerRow++) {
+    for (var markerCol = DATA_FIRST_COL; markerCol <= DATA_LAST_COL; markerCol++) {
+      if (/^(?:副區|MSBN)_/i.test(value(markerRow, markerCol)) && isMasterCell(markerRow, markerCol)) {
+        hasNewLayoutMarker = true;
+        break;
+      }
+    }
+  }
+  if (!hasNewLayoutMarker) return null;
+  function nextSectionRow(startRow) {
+    for (var row = startRow + 1; row <= maxRow; row++) {
+      if (layoutHeadersAt(row).length || /^吸底[_-]/.test(value(row, 1)) || /^吸底[_-]/.test(value(row, 2))) return row;
+    }
+    return maxRow + 1;
+  }
+  function labelColumns(startRow, endRow, startCol, endCol) {
+    var cols = [];
+    for (var col = startCol; col <= endCol; col++) {
+      for (var row = startRow + 1; row < endRow; row++) {
+        if (isMasterCell(row, col) && isField(value(row, col))) { cols.push(col); break; }
+      }
+    }
+    return cols;
+  }
+  function entriesForLabelColumn(startRow, endRow, labelCol, regionEnd) {
+    var entries = [];
+    for (var row = startRow + 1; row < endRow; row++) {
+      var raw = value(row, labelCol);
+      if (!isField(raw)) continue;
+      entries.push(makeEntry(raw, row, labelCol + 1, regionEnd));
+    }
+    return entries;
+  }
+
+  var out = [];
+  for (var headerRow = 1; headerRow <= maxRow; headerRow++) {
+    var headers = layoutHeadersAt(headerRow);
+    if (!headers.length) continue;
+    var endRow = nextSectionRow(headerRow);
+    headers.forEach(function (header, headerIndex) {
+      var regionEnd = headerIndex + 1 < headers.length ? headers[headerIndex + 1].col - 1 : DATA_LAST_COL;
+      var subMatch = /^副區[_-]([A-F])[-_](\d+)[-_](\d+)$/i.exec(header.text);
+      if (subMatch) {
+        var family = subMatch[1].toUpperCase();
+        var variant = parseInt(subMatch[2], 10);
+        var combo = parseInt(subMatch[3], 10);
+        var subLabelCols = labelColumns(headerRow, endRow, header.col, regionEnd);
+        /* F 是四張 300px 卡片共用一個黑底標題；每一欄仍是獨立版位。 */
+        if (family === 'F' && subLabelCols.length > 1) {
+          subLabelCols.forEach(function (labelCol, positionIndex) {
+            push(out, {
+              kind: 'subarea', family: family, variant: variant, combo: combo,
+              entries: entriesForLabelColumn(headerRow, endRow, labelCol, regionEnd),
+              header: '副區 ' + family + '-' + variant + '-' + combo,
+              band: headerRow,
+              sourceKey: 'layout-template:sub:' + headerRow + ':' + header.col + ':' + positionIndex,
+              file: '副區-' + family + '-' + variant + '-' + combo + '.jpg'
+            });
+          });
+          return;
+        }
+        var subEntries = [];
+        subLabelCols.forEach(function (labelCol, labelIndex) {
+          var nextLabelCol = labelIndex + 1 < subLabelCols.length ? subLabelCols[labelIndex + 1] - 1 : regionEnd;
+          for (var row = headerRow + 1; row < endRow; row++) {
+            var raw = value(row, labelCol);
+            if (!isField(raw)) continue;
+            var inputCols = formulaInputColumns(row, labelCol + 1, nextLabelCol);
+            if (!inputCols.length) inputCols = [labelCol + 1];
+            inputCols.forEach(function (inputCol) { subEntries.push(makeEntry(raw, row, inputCol, nextLabelCol)); });
+          }
+        });
+        push(out, {
+          kind: 'subarea', family: family, variant: variant, combo: combo,
+          entries: subEntries,
+          header: '副區 ' + family + '-' + variant + '-' + combo,
+          band: headerRow,
+          sourceKey: 'layout-template:sub:' + headerRow + ':' + header.col,
+          file: '副區-' + family + '-' + variant + '-' + combo + '.jpg'
+        });
+        return;
+      }
+
+      var msbnMatch = /^MSBN[_-]([A-Z])[-_](.+)$/i.exec(header.text);
+      if (!msbnMatch) return;
+      var bareFile = 'MSBN-' + msbnMatch[1].toUpperCase() + '-' + msbnMatch[2].replace(/_/g, '-');
+      var msbnFile = bareFile + '.jpg';
+      var spec = (typeof MSBN_FIELDS === 'object' && MSBN_FIELDS) ? (MSBN_FIELDS[msbnFile] || {}) : {};
+      var columnEntries = [];
+      var msbnLabelCols = labelColumns(headerRow, endRow, header.col, regionEnd);
+      var tableMaps = {
+        'MSBN-D-1-2': { cols: [3, 9, 15], types: ['項目文字', '內文', '內文'], keys: [
+          ['itemText', 'itemText2', 'itemText3', 'itemText4', 'itemText5'],
+          ['content6', 'content7', 'content8', 'content9', 'content10'],
+          ['content', 'content2', 'content3', 'content4', 'content5']
+        ] },
+        'MSBN-D-1-3': { cols: [3, 9, 15], types: ['項目文字', '內文', '內文'], keys: [
+          ['itemText', 'itemText2', 'itemText3', 'itemText4', 'itemText5'],
+          ['content6', 'content7', 'content8', 'content9', 'content10'],
+          ['content', 'content2', 'content3', 'content4', 'content5']
+        ] },
+        'MSBN-D-2-2': { cols: [3, 8, 12, 16], types: ['項目文字', '內文', '內文', '內文'], keys: [
+          ['itemText', 'itemText2', 'itemText3', 'itemText4', 'itemText5'],
+          ['content11', 'content12', 'content13', 'content14', 'content15'],
+          ['content6', 'content7', 'content8', 'content9', 'content10'],
+          ['content', 'content2', 'content3', 'content4', 'content5']
+        ] },
+        'MSBN-D-2-3': { cols: [3, 8, 12, 16], types: ['項目文字', '內文', '內文', '內文'], keys: [
+          ['itemText', 'itemText2', 'itemText3', 'itemText4', 'itemText5'],
+          ['content11', 'content12', 'content13', 'content14', 'content15'],
+          ['content6', 'content7', 'content8', 'content9', 'content10'],
+          ['content', 'content2', 'content3', 'content4', 'content5']
+        ] },
+        'MSBN-D-3-1': { cols: [3, 9, 15], types: ['內文', '項目文字', '內文'], keys: [
+          ['content', 'content2', 'content3', 'content4', 'content5'],
+          ['itemText', 'itemText2', 'itemText3', 'itemText4', 'itemText5'],
+          ['content6', 'content7', 'content8', 'content9', 'content10']
+        ] }
+      };
+      var tableMap = tableMaps[bareFile];
+      var msbnEntries = [];
+      if (tableMap) {
+        tableMap.cols.forEach(function (inputCol, colIndex) {
+          for (var row = headerRow + 1, itemIndex = 0; row < endRow && itemIndex < tableMap.keys[colIndex].length; row++) {
+            var raw = tableMap.types[colIndex];
+            var entry = makeEntry(raw, row, inputCol, regionEnd);
+            entry.targetKey = tableMap.keys[colIndex][itemIndex++];
+            msbnEntries.push(entry);
+          }
+        });
+      } else {
+        columnEntries = msbnLabelCols.map(function (labelCol) {
+          return entriesForLabelColumn(headerRow, endRow, labelCol, regionEnd);
+        });
+        var flatDescriptors = descriptorList(spec);
+        var workOrderColumns = spec.workOrderColumns || {};
+        columnEntries.forEach(function (entries, positionIndex) {
+          var descriptorIndexes = workOrderColumns.groups && workOrderColumns.groups[positionIndex];
+          var descriptors = Array.isArray(descriptorIndexes)
+            ? descriptorIndexes.map(function (index) { return flatDescriptors[index]; }).filter(Boolean)
+            : ((spec.groups || [])[positionIndex] || []);
+          if (positionIndex === 0 && Array.isArray(workOrderColumns.common)) {
+            descriptors = workOrderColumns.common.map(function (index) { return flatDescriptors[index]; }).filter(Boolean).concat(descriptors);
+          }
+          applyDescriptorKeysByType(entries, descriptors);
+        });
+
+        /* 新版表格另外開放卡片底色與圓圈色，這兩類不在舊 MSBN 欄位清單內，
+           直接綁到 block schema 的實際色塊 key，左右／中間彼此獨立。 */
+        if (bareFile === 'MSBN-A-2-3' || bareFile === 'MSBN-B-3-3' || bareFile === 'MSBN-B-3-4') {
+          columnEntries.forEach(function (entries, positionIndex) {
+            entries.filter(function (entry) { return entry.type === '底色塊' || entry.type === '色塊'; })
+              .forEach(function (entry) { entry.targetKey = 'bgColor' + (positionIndex ? positionIndex + 1 : ''); });
+          });
+        }
+        if (bareFile === 'MSBN-D-1-1-2') {
+          var d1Keys = [
+            { productImg: 'productImg2', CTA: 'cta2', circles: ['swatchColor4', 'swatchColor5', 'swatchColor6'] },
+            { productImg: 'productImg', CTA: 'cta', circles: ['swatchColor', 'swatchColor2', 'swatchColor3'] }
+          ];
+          columnEntries.forEach(function (entries, positionIndex) {
+            var circleIndex = 0, map = d1Keys[positionIndex] || d1Keys[0];
+            entries.forEach(function (entry) {
+              if (entry.type === '商品圖') entry.targetKey = map.productImg;
+              else if (entry.type === 'CTA') entry.targetKey = map.CTA;
+              else if (entry.type === '圓圈色' && map.circles[circleIndex]) entry.targetKey = map.circles[circleIndex++];
+            });
+          });
+        }
+        if (bareFile === 'MSBN-D-2-1-2') {
+          var d2ProductKeys = ['productImg3', 'productImg2', 'productImg'];
+          var d2CtaKeys = ['cta3', 'cta2', 'cta'];
+          columnEntries.forEach(function (entries, positionIndex) {
+            var circleIndex = 0;
+            entries.forEach(function (entry) {
+              if (entry.type === '商品圖') entry.targetKey = d2ProductKeys[positionIndex];
+              else if (entry.type === 'CTA') entry.targetKey = d2CtaKeys[positionIndex];
+              else if (entry.type === '圓圈色') {
+                var number = positionIndex * 3 + circleIndex++ + 1;
+                entry.targetKey = 'swatchColor' + (number === 1 ? '' : number);
+              }
+            });
+          });
+        }
+        columnEntries.forEach(function (entries, positionIndex) {
+          entries.forEach(function (entry) {
+            if (!entry.targetKey && positionIndex) entry.label += '-' + (positionIndex + 1);
+            msbnEntries.push(entry);
+          });
+        });
+      }
+      push(out, {
+        kind: 'msbn', msbnFile: msbnFile, file: msbnFile,
+        entries: msbnEntries,
+        header: bareFile,
+        band: headerRow,
+        sourceKey: 'layout-template:msbn:' + headerRow + ':' + header.col + ':' + bareFile
+      });
+    });
+    headerRow = endRow - 1;
+  }
+  return out.length ? out : null;
 }
 /* 解析新版 BODA 工單：可見頁簽採「工單總覽＋MS Layout」，實際欄位對應記在 veryHidden 的 _BODA_META。
    這樣可以自由調整試算表呈現與插圖，又不會破壞匯入時精準還原版位的能力。 */
@@ -10918,9 +11310,10 @@ function parseImportXlsx(arrayBuffer, options) {
     applyWorkbookOverviewBackground(wb);
     syncWorkbookExposureSpec(wb);
     syncWorkbookOverviewTextToExposure(wb);
-    /* 本工具匯出的新版檔案以 _BODA_META 保存實際輸入格與 targetKey，
-       這比依可見文字／位置推測更可靠。先走精準契約，沒有契約時才
-       退回可見 MS Layout 解析，才能讓工單內容穩定回到正確畫布版位。 */
+    /* 0923 起以 Layout_Template x.x 的可見欄位為母版；只要頁簽名含 layout
+       就優先依新版順序解析。舊 _BODA_META／MS Layout 僅作向下相容。 */
+    var layoutTemplate = parseLayoutTemplateWorkbook(wb);
+    if (layoutTemplate !== null) return layoutTemplate;
     var v2 = parseImportXlsxV2Workbook(wb);
     if (v2 !== null) return v2;
     var visibleV2 = parseVisibleWorkOrderLayout(wb);
@@ -11259,6 +11652,10 @@ function renderImageGallery() {
    只有 generator 來源會在再次切進「匯入工單」時自動對照新版配，
    不會把使用者已匯入的試算表／暫存檔無聲覆蓋掉。 */
 var currentImportColumns = [];
+/* 「直接預覽全部版位」使用自己的資料來源，不能覆蓋正式匯入工單。
+   三種畫布（正式匯入／維修／全部預覽）共用同一套互動，但各自保有資料。 */
+var previewAllColumns = [];
+var activeImportCanvasContext = 'import';
 /* 使用者匯入的原始活頁簿留在記憶體：下載回填工單時直接改寫這份，而非重新產生範本。 */
 var currentImportWorkbook = null;
 var currentImportWorkbookName = '';
@@ -11334,16 +11731,11 @@ function importImagePartLayerOrders(col) {
   return out;
 }
 function rerenderImportImageLayer(idx, ctxName) {
-  var ctx = canvasCtx(ctxName);
-  var col = ctx.columns()[idx];
-  var mount = document.getElementById(ctx.mountId(idx));
-  if (!col || !mount) return;
-  mount.innerHTML = BNCore.renderInstance(col.blockId, col.data,
-    importRenderOpts(true, ctxName === 'maint' ? 'maint' : 'import', col));
-  bindCanvasInteractions(mount, col, idx, ctxName);
+  rerenderCanvasMount(ctxName || 'import', idx);
 }
 
 function moveImportImageField(idx, key, direction, ctxName) {
+  ctxName = ctxName || 'import';
   var ctx = canvasCtx(ctxName);
   var col = ctx.columns()[idx];
   if (!col) return;
@@ -11355,8 +11747,7 @@ function moveImportImageField(idx, key, direction, ctxName) {
   order[from] = order[to];
   order[to] = moved;
   col._imageOrder = order;
-  ctx.afterChange();
-  rerenderImportImageLayer(idx, ctxName);
+  refreshCanvasAfterChange(ctxName, idx, true);
   var log = document.getElementById('import-log');
   if (log && ctxName !== 'maint') {
     log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已調整「' +
@@ -11365,6 +11756,7 @@ function moveImportImageField(idx, key, direction, ctxName) {
 }
 
 function moveImportFieldImageLayer(idx, key, imageIndex, direction, ctxName) {
+  ctxName = ctxName || 'import';
   var ctx = canvasCtx(ctxName);
   var col = ctx.columns()[idx];
   var parts = col ? splitImageList(col.data[key] || '') : [];
@@ -11378,8 +11770,7 @@ function moveImportFieldImageLayer(idx, key, imageIndex, direction, ctxName) {
   order[from] = order[to];
   order[to] = movedIndex;
   col._imagePartLayerOrder[key] = order;
-  ctx.afterChange();
-  rerenderImportImageLayer(idx, ctxName);
+  refreshCanvasAfterChange(ctxName, idx, true);
   var log = document.getElementById('import-log');
   if (log && ctxName !== 'maint') {
     log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已調整圖片前後圖層；圖片位置維持不變</span>';
@@ -11395,7 +11786,7 @@ function handleImportImageAction(idx, key, act, imageIndex, ctxName) {
   } else if (act === 'part-layer-down' || act === 'part-down') {
     moveImportFieldImageLayer(idx, key, imageIndex, 1, ctxName);
   } else if (act === 'edit') {
-    openImportFieldImageEditor(idx, key, imageIndex);
+    openImportFieldImageEditor(idx, key, imageIndex, ctxName);
   } else if (act === 'swap') {
     pickImportFieldImage(idx, key, imageIndex, ctxName, false);
   } else if (act === 'add') {
@@ -11435,6 +11826,10 @@ function saveImportState() {
           header: c.header,
           band: c.band,
           sourceKey: c.sourceKey || '',
+          xlsxBindings: Array.isArray(c._xlsxBindings) ? c._xlsxBindings.map(function (binding) {
+            return { address: binding.address, targetKey: binding.targetKey, label: binding.label };
+          }) : [],
+          dynamicRowRows: Array.isArray(c._dynamicRowRows) ? c._dynamicRowRows.slice() : null,
           imageOrder: Array.isArray(c._imageOrder) ? c._imageOrder.slice() : [],
           imagePartLayerOrder: cloneImportImagePartLayerOrder(c._imagePartLayerOrder)
         };
@@ -11600,31 +11995,48 @@ function loadGeneratorSelectionIntoImport(options) {
 
 
 function renderImportFieldsForCurrentColumns() {
+  if (activeImportCanvasContext === 'preview' && document.querySelector('[id^="prevall-mount-"]')) {
+    applyCanvasThemeToContext('preview');
+    return;
+  }
   if (currentImportColumns.length) renderImportColumns(currentImportColumns, true);
 }
 
 /* 「直接預覽全部版位」專用：純粹由上到下堆疊，不包卡片外框，
    只是要快速看每個版位長怎樣，跟「匯入工單」正式呈現(整排無縫拼接)是不同用途 */
 function renderPreviewAllStacked(columns) {
+  var seenPreviewBlocks = {};
+  columns = (columns || []).filter(function (col) {
+    var id = String(col && col.blockId || '');
+    if (!id || seenPreviewBlocks[id]) return false;
+    seenPreviewBlocks[id] = true;
+    return true;
+  });
+  columns.forEach(function (col) { normalizeLocalCircleDefaults(col, BNCore.getBlock(col.blockId)); });
+  /* 直接預覽使用獨立資料，不覆蓋正式匯入工單；互動仍走共用 canvas context。 */
+  previewAllColumns = columns;
+  activeImportCanvasContext = 'preview';
   var list = document.getElementById('import-preview-list');
   hideImportBottomPreview();
-  currentImportHasBottomWorkOrder = false;
   var scroll = document.getElementById('import-fields-scroll');
+  var actionRail = document.getElementById('import-block-tools');
+  if (actionRail) actionRail.innerHTML = '';
   list.classList.add('show');
   document.getElementById('import-empty2').style.display = 'none';
   showImportToolbar(false); /* 預覽全部版位是每張各自縮到 900 寬，跟畫布的縮放下拉無關 */
-  scroll.innerHTML = '<div style="padding:8px;font-size:11.5px;color:var(--ink3);">預覽模式沒有欄位編輯，選「匯入工單」才會有。</div>';
+  scroll.innerHTML = '<div style="padding:8px;font-size:11.5px;color:var(--ink3);">預覽版位可直接點擊文字編輯；若要使用完整欄位工具，請載入工單或上傳試算表。</div>';
 
   var html = '';
   columns.forEach(function (col, idx) {
     var def = BNCore.getBlock(col.blockId);
     if (!def) { html += '<div class="imp-col">' + lineIcon('warning') + ' 找不到版位「' + esc(col.blockId) + '」</div>'; return; }
     var scale = Math.min(1, 900 / def.width);
+    var renderedSize = renderedBlockSizeOf(def, col);
     html +=
-      '<div>' +
+      '<div class="preview-all-item" data-col="' + idx + '" data-scale="' + scale + '">' +
       '<div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">' + esc(def.name) + '　' + def.width + '×' + def.height + '</div>' +
-      '<div style="width:' + Math.round(def.width * scale) + 'px;height:' + Math.round(def.height * scale) + 'px;overflow:hidden;">' +
-      '<div id="prevall-mount-' + idx + '" style="transform:scale(' + scale + ');transform-origin:top left;width:' + def.width + 'px;height:' + def.height + 'px;"></div>' +
+      '<div class="preview-all-stage-wrap" style="width:' + Math.round(renderedSize.width * scale) + 'px;height:' + Math.round(renderedSize.height * scale) + 'px;overflow:hidden;">' +
+      '<div class="preview-all-mount" id="prevall-mount-' + idx + '" style="transform:scale(' + scale + ');transform-origin:top left;width:' + renderedSize.width + 'px;height:' + renderedSize.height + 'px;"></div>' +
       '</div></div>';
   });
   list.innerHTML = html;
@@ -11633,8 +12045,12 @@ function renderPreviewAllStacked(columns) {
     var def = BNCore.getBlock(col.blockId);
     if (!def) return;
     var mount = document.getElementById('prevall-mount-' + idx);
-    if (mount) mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(false, 'preview'));
+    if (mount) {
+      mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'preview', col));
+      bindCanvasInteractions(mount, col, idx, 'preview');
+    }
   });
+  renderImportColorPanel();
 }
 
 function colorToHex(v) {
@@ -11683,13 +12099,16 @@ function isUsableImageValue(v) {
    所有圖片欄位都能用（商品圖、代言人、簽名檔、LOGO、贈品圖…）。
    如果欄位本身是逗號分隔的多張圖，每一張都可以獨立編輯，
    編輯完成後，同檔名／同素材的所有使用處都會同步更新。 */
-function openImportFieldImageEditor(idx, fieldKey, imageIndex) {
+function openImportFieldImageEditor(idx, fieldKey, imageIndex, ctxName) {
   if (typeof window.HBNProductEditorPlugin === 'undefined' && typeof window.openEraseEditor === 'undefined') {
     alert('圖片編輯器外掛(editor-plugin.js)還沒載入成功，確認檔案是否放在 JS/ 資料夾裡');
     return;
   }
 
-  var col = currentImportColumns[idx];
+  ctxName = ctxName || 'import';
+  var ctx = canvasCtx(ctxName);
+  var col = ctx.columns()[idx];
+  if (!col) return;
   var parts = splitImageList(col.data[fieldKey] || '');
   if (!parts.length) parts = [''];
   var selectedIndex = Number(imageIndex);
@@ -11699,7 +12118,7 @@ function openImportFieldImageEditor(idx, fieldKey, imageIndex) {
     alert('這個欄位的第 ' + (selectedIndex + 1) + ' 張圖片還沒有可編輯的內容');
     return;
   }
-  var mount = document.getElementById('imp-mount-' + idx);
+  var mount = document.getElementById(ctx.mountId(idx));
   if (!mount) return;
   var group = mount.querySelector('.bn-imggroup[data-field-key="' + fieldKey + '"]');
   var renderedIndex = 0;
@@ -11724,14 +12143,18 @@ function openImportFieldImageEditor(idx, fieldKey, imageIndex) {
       col.data[fieldKey] = parts.join(',');
 
       /* 同檔名／同素材的商品、人物、LOGO 都共用同一份編輯結果。 */
-      var others = findImageUsages(oldUrl);
-      var linked = replaceImageInUsages(others, oldUrl, newUrl);
+      var others = findImageUsages(oldUrl, null, ctxName);
+      var linked = replaceImageInUsages(others, oldUrl, newUrl, ctxName);
       syncImageAssetsByName(oldUrl, newUrl);
 
-      saveImportState();
-      renderImportColumns(currentImportColumns); /* 左邊縮圖＋右邊畫布一起更新 */
+      if (ctxName === 'import') {
+        saveImportState();
+        renderImportColumns(currentImportColumns); /* 左邊縮圖＋右邊畫布一起更新 */
+      } else {
+        refreshCanvasAfterChange(ctxName, idx, false);
+      }
       var log = document.getElementById('import-log');
-      if (log) log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已套用圖片編輯結果' +
+      if (log && ctxName === 'import') log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已套用圖片編輯結果' +
         (linked ? '，另外 ' + linked + ' 個用到同一張圖的欄位也一起換了' : '') + '</span>';
       });
     });
@@ -11792,10 +12215,11 @@ function syncImageAssetsByName(oldUrl, newUrl) {
 }
 /* 找出「還有哪些欄位也在用同一張圖」（exclude＝要排除的那一格，通常是正在編輯的那格）。
    同一個欄位可能是逗號分隔的多張圖，所以是逐張比對。 */
-function findImageUsages(url, exclude) {
+function findImageUsages(url, exclude, ctxName) {
   var out = [];
   if (!url) return out;
-  currentImportColumns.forEach(function (col, ci) {
+  var columns = canvasCtx(ctxName || 'import').columns();
+  columns.forEach(function (col, ci) {
     Object.keys(col.data || {}).forEach(function (k) {
       if (exclude && exclude.idx === ci && exclude.key === k) return;
       if (!splitImageList(col.data[k]).some(function (p) { return sameImageAsset(p, url); })) return;
@@ -11806,9 +12230,10 @@ function findImageUsages(url, exclude) {
 }
 
 /* 把這些欄位裡的舊圖換成新圖（多圖欄位只換相同的那一張，其他張保留） */
-function replaceImageInUsages(usages, oldUrl, newUrl) {
+function replaceImageInUsages(usages, oldUrl, newUrl, ctxName) {
+  var columns = canvasCtx(ctxName || 'import').columns();
   usages.forEach(function (u) {
-    var col = currentImportColumns[u.idx];
+    var col = columns[u.idx];
     if (!col) return;
     col.data[u.key] = splitImageList(col.data[u.key]).map(function (p) {
       return sameImageAsset(p, oldUrl) ? newUrl : p;
@@ -11835,10 +12260,11 @@ function pickImportFieldImage(idx, key, imageIndex, ctxName, append) {
 /* ════════════════════════════════════════
    畫布情境（canvas context）
    ────────────────────────────────────────
-   同一套畫布互動（改文字、拖圖片進來）現在有兩個地方在用：
+   同一套畫布互動（改文字、換色、拖圖片、動態列）由三種畫布共用：
      import：匯入工單 —— 資料要存進 localStorage 暫存，左邊還有欄位面板要同步
      maint ：維修頁 —— 純測試用，資料只放在記憶體，絕對不能碰到匯入工單的暫存
               （不然使用者去維修頁測一下，回來發現工單被蓋掉了）
+     preview：直接預覽全部版位 —— 可編輯，但使用獨立資料，不覆蓋正式工單
    差異就集中在這張表裡，互動邏輯本身兩邊共用同一份，
    維修頁測到的行為才等於實際行為。
 ════════════════════════════════════════ */
@@ -11846,37 +12272,82 @@ var CANVAS_CTX = {
   import: {
     columns: function () { return currentImportColumns; },
     mountId: function (idx) { return 'imp-mount-' + idx; },
+    renderMode: 'import',
     sideRoot: '#import-fields-scroll',
     afterChange: function () {
       saveImportState();
       renderImageGallery();
-      renderImportFieldsForCurrentColumns();
     }
   },
   maint: {
     columns: function () { return maintColumns; },
     mountId: function (idx) { return 'mnt-mount-' + idx; },
+    renderMode: 'maint',
     sideRoot: null,        /* 維修頁沒有側欄欄位面板 */
     afterChange: function () { renderImageGallery(); }  /* 素材清單是共用的，還是要更新 */
+  },
+  preview: {
+    columns: function () { return previewAllColumns; },
+    mountId: function (idx) { return 'prevall-mount-' + idx; },
+    renderMode: 'preview',
+    sideRoot: null,
+    afterChange: function () { renderImageGallery(); }
   }
 };
 function canvasCtx(name) { return CANVAS_CTX[name] || CANVAS_CTX.import; }
+
+function resizePreviewAllMount(mount, col, idx) {
+  if (!mount || !col) return;
+  var def = BNCore.getBlock(col.blockId);
+  var size = renderedBlockSizeOf(def, col);
+  var item = mount.closest('.preview-all-item');
+  var scale = item ? Number(item.getAttribute('data-scale')) : 1;
+  if (!isFinite(scale) || scale <= 0) scale = 1;
+  mount.style.width = size.width + 'px';
+  mount.style.height = size.height + 'px';
+  var wrap = item && item.querySelector('.preview-all-stage-wrap');
+  if (wrap) {
+    wrap.style.width = Math.round(size.width * scale) + 'px';
+    wrap.style.height = Math.round(size.height * scale) + 'px';
+  }
+}
+
+/* 所有畫布重畫都走這一支；不能再各自寫死 imp-/mnt-/prevall-mount。 */
+function rerenderCanvasMount(ctxName, idx) {
+  var ctx = canvasCtx(ctxName);
+  var col = ctx.columns()[idx];
+  var mount = document.getElementById(ctx.mountId(idx));
+  if (!col || !mount) return null;
+  mount.innerHTML = BNCore.renderInstance(col.blockId, col.data,
+    importRenderOpts(true, ctx.renderMode, col));
+  if (ctxName === 'maint') applyDynamicStageSize(mount, col);
+  if (ctxName === 'preview') resizePreviewAllMount(mount, col, idx);
+  bindCanvasInteractions(mount, col, idx, ctxName);
+  return mount;
+}
+
+function refreshCanvasAfterChange(ctxName, idx, refreshTools) {
+  var ctx = canvasCtx(ctxName);
+  var imageLayoutState = captureCanvasImageLayoutState();
+  ctx.afterChange();
+  /* 正式匯入的圖片／圖層操作需要同步右側工具；這支本身已重畫畫布，
+     所以後面不可再重畫第二次。 */
+  if (ctxName === 'import' && refreshTools) renderImportFieldsForCurrentColumns();
+  else rerenderCanvasMount(ctxName, idx);
+  restoreCanvasImageLayoutState(imageLayoutState);
+}
 
 /* 把一組圖片網址寫進某個版位的某個圖片欄位，然後把畫面更新到最新狀態。
    「換圖」按鈕跟「拖到畫布上」都走這一支，行為才會一致
    （寫回資料 → 存暫存 → 重畫左邊欄位面板 → 重畫那一格畫布並重新綁事件）。 */
 function setImportFieldImages(idx, key, urls, ctxName) {
+  ctxName = ctxName || 'import';
   var ctx = canvasCtx(ctxName);
   var col = ctx.columns()[idx];
   if (!col || !key || !Array.isArray(urls)) return;
   /* 多張圖用逗號接起來：渲染器會等高並排、整組置中、超寬自動縮小 */
   col.data[key] = urls.join(',');
-  ctx.afterChange();
-  var mount = document.getElementById(ctx.mountId(idx));
-  if (mount) {
-    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, ctxName === 'maint' ? 'maint' : 'import', col));
-    bindCanvasInteractions(mount, col, idx, ctxName);
-  }
+  refreshCanvasAfterChange(ctxName, idx, true);
 }
 
 /* 讀進一批圖片檔，轉成 data 網址，順便加進素材清單（之後同檔名的欄位可以自動比對到）。
@@ -12003,44 +12474,68 @@ function showImportToolbar(show) {
 }
 
 /* ════════════════════════════════════════
-   右邊工具列 ←→ 右邊畫布：捲動互相吸附
+   中間畫布 → 右側工具列：單向 Scroll Spy
    ────────────────────────────────────────
-   右邊畫布捲到哪一個版位，右邊工具列那個版位的卡片就跟著捲到最上面；
-   右邊工具列捲到哪一個版位，右邊畫布也捲到那個版位。
-   兩邊互相帶動很容易變成無窮迴圈，所以每次「程式自己捲」時會上一個
-   短暫的鎖，鎖住的期間不理對面傳來的捲動事件。
+   中間畫布是唯一主控：畫布目前看到哪個版位，右側對應工具才跟著進入
+   可視範圍。右側工具列可以獨立捲動與操作，絕不反向捲動中間畫布。
 ════════════════════════════════════════ */
-var IMPORT_SYNC = { lockUntil: 0, canvasTimer: null, toolTimer: null, pointerZone: "", canvasPriorityUntil: 0 };
-function importSyncLock(ms) { IMPORT_SYNC.lockUntil = Date.now() + (ms || 700); }
-function importSyncLocked() { return Date.now() < IMPORT_SYNC.lockUntil; }
-function markImportCanvasPriority() { IMPORT_SYNC.pointerZone = 'canvas'; IMPORT_SYNC.canvasPriorityUntil = Date.now() + 1400; }
-function importCanvasHasPriority() { return IMPORT_SYNC.pointerZone === 'canvas' || (IMPORT_SYNC.pointerZone !== 'tools' && Date.now() < IMPORT_SYNC.canvasPriorityUntil); }
+var IMPORT_SYNC = { canvasTimer: null };
 
-/* 目前在「參考線」位置上的是第幾格（找不到就回 -1） */
+/* 找出畫布可視範圍的主版位：先取包含畫面中心的格子，再比較實際可見面積。
+   副區一排 2／3 時不能只看垂直位置，否則同高度的格子會永遠誤選最右邊。 */
 function activeIndexAt(container, items, lineOffset) {
   if (!container || !items.length) return -1;
-  var line = container.getBoundingClientRect().top + (lineOffset || 0);
-  var best = -1, bestDist = Infinity;
+  var bounds = container.getBoundingClientRect();
+  var targetX = bounds.left + bounds.width / 2;
+  var targetY = bounds.top + (lineOffset == null ? bounds.height / 2 : lineOffset);
+  var best = -1, bestHit = -1, bestArea = -1, bestDist = Infinity;
   items.forEach(function (el) {
     var r = el.getBoundingClientRect();
     var col = Number(el.getAttribute('data-col'));
     if (isNaN(col)) return;
-    if (r.top <= line && r.bottom > line) { best = col; bestDist = -1; return; }
-    if (bestDist === -1) return;
-    var dist = Math.abs(r.top - line);
-    if (dist < bestDist) { bestDist = dist; best = col; }
+    var visibleW = Math.max(0, Math.min(r.right, bounds.right) - Math.max(r.left, bounds.left));
+    var visibleH = Math.max(0, Math.min(r.bottom, bounds.bottom) - Math.max(r.top, bounds.top));
+    var visibleArea = visibleW * visibleH;
+    if (!visibleArea) return;
+    var centerHit = r.left <= targetX && r.right >= targetX && r.top <= targetY && r.bottom >= targetY ? 1 : 0;
+    var dx = (r.left + r.right) / 2 - targetX;
+    var dy = (r.top + r.bottom) / 2 - targetY;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (centerHit > bestHit ||
+        (centerHit === bestHit && visibleArea > bestArea) ||
+        (centerHit === bestHit && visibleArea === bestArea && dist < bestDist)) {
+      best = col;
+      bestHit = centerHit;
+      bestArea = visibleArea;
+      bestDist = dist;
+    }
   });
   return best;
 }
 
+function importToolColMatchesIndex(el, idx) {
+  if (!el) return false;
+  var values = (el.getAttribute('data-col-list') || el.getAttribute('data-col') || '').split(',');
+  return values.some(function (value) { return String(value).trim() === String(idx); });
+}
 function markActiveImportCol(idx) {
+  var activeCol = currentImportColumns && currentImportColumns[idx];
+  var activeDef = activeCol && BNCore.getBlock(activeCol.blockId);
+  var activeNameEl = document.getElementById('import-active-col-name');
+  if (activeNameEl) activeNameEl.textContent = activeDef ? '｜目前：' + String(activeDef.name || activeCol.blockId || '') : '';
   document.querySelectorAll('#import-block-tools .import-block-tool').forEach(function (card) {
-    var ownCol = Number(card.getAttribute('data-col'));
-    var hasCol = card.querySelector('.import-band-tool-col[data-col="' + idx + '"]');
+    var ownAttr = card.getAttribute('data-col');
+    var ownCol = ownAttr == null ? -1 : Number(ownAttr);
+    var hasCol = Array.prototype.some.call(card.querySelectorAll('.import-band-tool-col[data-col-list]'), function (col) {
+      return importToolColMatchesIndex(col, idx);
+    });
     card.classList.toggle('is-active', ownCol === idx || !!hasCol);
+    card.classList.toggle('is-dimmed', idx >= 0 && ownCol !== idx && !hasCol);
   });
   document.querySelectorAll('#import-block-tools .import-band-tool-col[data-col]').forEach(function (col) {
-    col.classList.toggle('is-active', Number(col.getAttribute('data-col')) === idx);
+    var isActive = importToolColMatchesIndex(col, idx);
+    col.classList.toggle('is-active', isActive);
+    col.classList.toggle('is-dimmed', idx >= 0 && !isActive);
   });
   /* 右邊畫布上對應的那一格也框起來，一眼看得出現在對到哪一格 */
   document.querySelectorAll('#imp-strip .imp-slot').forEach(function (slot) {
@@ -12050,44 +12545,23 @@ function markActiveImportCol(idx) {
 
 function scrollImportToolsToCol(idx) {
   var tools = document.getElementById('import-canvas-tools');
-  var card = tools && (tools.querySelector('.import-band-tool-col[data-col="' + idx + '"]') ||
-    tools.querySelector('.import-block-tool[data-col="' + idx + '"]'));
+  var card = null;
+  if (tools) {
+    card = Array.prototype.find.call(tools.querySelectorAll('.import-band-tool-col[data-col-list]'), function (el) {
+      return importToolColMatchesIndex(el, idx);
+    }) || tools.querySelector('.import-block-tool[data-col="' + idx + '"]');
+  }
   if (!card) return;
   var ar = tools.getBoundingClientRect(), cr = card.getBoundingClientRect();
-  if (cr.top >= ar.top && cr.bottom <= ar.bottom) return; /* 整張卡片本來就看得到，不用動 */
-  var delta = cr.top - (ar.top + 10);
+  var pad = 10;
+  var usableHeight = Math.max(0, ar.height - pad * 2);
+  /* 被選工具固定移到右側工具列可視區的上下中心；
+     若整張工具卡高過可視區，則退回上緣對齊，避免上下都看不到。 */
+  var delta;
+  if (cr.height >= usableHeight) delta = cr.top - (ar.top + pad);
+  else delta = ((cr.top + cr.bottom) / 2) - ((ar.top + ar.bottom) / 2);
   if (Math.abs(delta) < 4) return;
   tools.scrollTo({ top: tools.scrollTop + delta, behavior: 'smooth' });
-}
-
-/* 把對到的那一格「整格」帶進畫面，不是只露出一角：
-   格子塞得進可視範圍就置中（上下左右都算，副區那種左右排的才不會停在半格）；
-   格子比可視範圍還大就對齊左上角，至少從頭開始看得到。 */
-function scrollImportCanvasToCol(idx) {
-  var area = document.getElementById('import-canvas-area');
-  var slot = area && area.querySelector('.imp-slot[data-col="' + idx + '"]');
-  if (!slot) return;
-  var ar = area.getBoundingClientRect(), sr = slot.getBoundingClientRect();
-  /* 整格本來就完整看得到就別動，免得畫面一直跳 */
-  if (sr.top >= ar.top && sr.bottom <= ar.bottom && sr.left >= ar.left && sr.right <= ar.right) return;
-
-  var PAD = 16;
-  var viewH = area.clientHeight, viewW = area.clientWidth;
-  var slotTop = sr.top - ar.top + area.scrollTop;
-  var slotLeft = sr.left - ar.left + area.scrollLeft;
-
-  var top = (sr.height + PAD * 2 <= viewH)
-    ? slotTop - (viewH - sr.height) / 2   /* 塞得下 → 垂直置中 */
-    : slotTop - PAD;                       /* 太高 → 對齊上緣 */
-  var left = (sr.width + PAD * 2 <= viewW)
-    ? slotLeft - (viewW - sr.width) / 2    /* 塞得下 → 水平置中 */
-    : slotLeft - PAD;                      /* 太寬 → 對齊左緣 */
-
-  area.scrollTo({
-    top: Math.max(0, Math.round(top)),
-    left: Math.max(0, Math.round(left)),
-    behavior: 'smooth'
-  });
 }
 
 function bindImportScrollSync() {
@@ -12095,45 +12569,28 @@ function bindImportScrollSync() {
   var tools = document.getElementById('import-canvas-tools');
   if (!area || !tools) return;
 
-  /* 游標在畫布時，畫布是唯一主控；右側工具列的程式捲動不可把畫布拉走。 */
-  area.addEventListener('pointerenter', markImportCanvasPriority);
-  area.addEventListener('pointermove', markImportCanvasPriority, { passive: true });
-  area.addEventListener('pointerdown', markImportCanvasPriority);
-  area.addEventListener('wheel', markImportCanvasPriority, { passive: true });
-  area.addEventListener('pointerleave', function () {
-    if (IMPORT_SYNC.pointerZone === 'canvas') IMPORT_SYNC.pointerZone = '';
-  });
-  tools.addEventListener('pointerenter', function () { IMPORT_SYNC.pointerZone = 'tools'; });
-  tools.addEventListener('pointerdown', function () { IMPORT_SYNC.pointerZone = 'tools'; });
-  tools.addEventListener('pointerleave', function () {
-    if (IMPORT_SYNC.pointerZone === 'tools') IMPORT_SYNC.pointerZone = '';
-  });
+  if (!area.__importHoverBound) {
+    area.__importHoverBound = true;
+    area.addEventListener('pointerover', function (e) {
+      var slot = e.target && e.target.closest ? e.target.closest('.imp-slot') : null;
+      if (!slot || !area.contains(slot)) return;
+      var idx = Number(slot.getAttribute('data-col'));
+      if (!isFinite(idx)) return;
+      if (area.__importHoverIndex === idx) return;
+      area.__importHoverIndex = idx;
+      markActiveImportCol(idx);
+      scrollImportToolsToCol(idx);
+    });
+  }
 
   area.addEventListener('scroll', function () {
-    if (importSyncLocked()) return;
     clearTimeout(IMPORT_SYNC.canvasTimer);
     IMPORT_SYNC.canvasTimer = setTimeout(function () {
-      if (importSyncLocked()) return;
       var idx = activeIndexAt(area, area.querySelectorAll('.imp-slot'), area.clientHeight / 2);
       if (idx < 0) return;
-      importSyncLock(900);
       markActiveImportCol(idx);
-      scrollImportCanvasToCol(idx);
       scrollImportToolsToCol(idx);
-    }, 100);
-  });
-
-  tools.addEventListener('scroll', function () {
-    if (importSyncLocked() || importCanvasHasPriority()) return;
-    clearTimeout(IMPORT_SYNC.toolTimer);
-    IMPORT_SYNC.toolTimer = setTimeout(function () {
-      if (importSyncLocked() || importCanvasHasPriority()) return;
-      var idx = activeIndexAt(tools, tools.querySelectorAll('.import-band-tool-col[data-col], .import-block-tool[data-col]'), 20);
-      if (idx < 0) return;
-      importSyncLock(900);
-      markActiveImportCol(idx);
-      scrollImportCanvasToCol(idx);
-    }, 100);
+    }, 90);
   });
 }
 
@@ -12314,13 +12771,13 @@ function syncExposureOverviewAssets(data) {
 
 var IMPORT_COLOR_ITEMS = [
   { key: 'bg',        label: '背景顏色',   auto: true },
-  { key: 'cardBg',    label: '卡片背景色（MSBN C／D）' },
+  { key: 'cardBg',    label: '卡片背景色（MSBN B/C/D）' },
   { key: 'cardBgA23Left',  label: 'A-2-3 左卡片背景色' },
   { key: 'cardBgA23Right', label: 'A-2-3 右卡片背景色' },
   { key: 'promoBg',   label: '促標底色' },
   { key: 'promoText', label: '促標字色' },
-  { key: 'nameOnLightBg', label: '品名配淺色底' },
-  { key: 'nameOnDarkBg',  label: '品名配深色底' },
+  { key: 'nameOnLightBg', label: '品名字色 (淺底區)' },
+  { key: 'nameOnDarkBg',  label: '品名字色 (深底區)' },
   { key: 'badgeBg',   label: '圓標底色' },
   { key: 'badgeText', label: '圓標字色' },
   { key: 'ctaBg',     label: 'CTA 底色' },
@@ -12332,7 +12789,55 @@ var IMPORT_COLOR_ITEMS = [
 ];
 
 function isCardBgThemeEligible(blockId) {
-  return /^msbn_[CD]_/i.test(String(blockId || ''));
+  var id = String(blockId || '');
+  return /^msbn_[CD]_/i.test(id) || /^msbn_B_3_[34]$/i.test(id);
+}
+function isLocalColorToolEligible(blockId, field) {
+  return /^msbn_D_(?:1_1_2|2_1_2)$/i.test(String(blockId || '')) &&
+    /^swatchColor\d*$/i.test(String(field && field.key || ''));
+}
+/* D-1-1-2／D-2-1-2 的圓圈色按「左／中／右」各自分組。
+   匯入工單若前兩顆是空白，第一次建立畫布時補成白、黑；
+   之後使用者按隱藏不會在每次重畫時又被補回。 */
+function localCircleGroupsFor(blockId, def) {
+  if (!isLocalColorToolEligible(blockId, { key: 'swatchColor' })) return [];
+  var groups = {};
+  (def && def.fields || []).forEach(function (f) {
+    if (!isLocalColorToolEligible(blockId, f)) return;
+    var m = /^(左|中|右)・/.exec(String(f.label || ''));
+    var name = m ? m[1] : '圓圈';
+    if (!groups[name]) groups[name] = [];
+    groups[name].push(f);
+  });
+  var order = { '左': 0, '中': 1, '右': 2, '圓圈': 9 };
+  return Object.keys(groups).sort(function (a, b) { return (order[a] || 9) - (order[b] || 9); }).map(function (name) {
+    return { name: name, fields: groups[name].sort(function (a, b) {
+      var am = /(\d+)\s*$/.exec(String(a.label || a.key));
+      var bm = /(\d+)\s*$/.exec(String(b.label || b.key));
+      return (am ? Number(am[1]) : 99) - (bm ? Number(bm[1]) : 99);
+    }) };
+  });
+}
+function normalizeLocalCircleDefaults(col, def) {
+  if (!col || !def || !isLocalColorToolEligible(col.blockId, { key: 'swatchColor' }) || col._localCircleDefaultsInitialized) return;
+  if (!col.data || typeof col.data !== 'object') col.data = {};
+  localCircleGroupsFor(col.blockId, def).forEach(function (group) {
+    if (group.fields[0] && !String(col.data[group.fields[0].key] == null ? '' : col.data[group.fields[0].key]).trim()) {
+      col.data[group.fields[0].key] = '#ffffff';
+    }
+    if (group.fields[1] && !String(col.data[group.fields[1].key] == null ? '' : col.data[group.fields[1].key]).trim()) {
+      col.data[group.fields[1].key] = '#000000';
+    }
+  });
+  try { Object.defineProperty(col, '_localCircleDefaultsInitialized', { value: true, writable: true, configurable: true }); }
+  catch (e) { col._localCircleDefaultsInitialized = true; }
+}
+function nextLocalCircleField(group, data) {
+  var lastActive = -1;
+  (group && group.fields || []).forEach(function (f, i) {
+    if (String(data && data[f.key] == null ? '' : data[f.key]).trim()) lastActive = i;
+  });
+  return group && group.fields[lastActive + 1] || null;
 }
 function isA23CardBgField(blockId, fieldKey, fieldLabel) {
   return /^msbn_A_2_3$/i.test(String(blockId || '')) && isCardBgField(fieldKey, fieldLabel);
@@ -12554,7 +13059,7 @@ function importLinkedDefaultColors(colorState, sampled, sharedBg) {
   var badgeBg = colorState.badgeBg || sampled.badgeBg || '';
   return {
     promoBg: getExposureSubTextColor(),
-    promoText: lightenColorBy50(sharedBg),
+    promoText: sharedBg || '#111827',
     cardBg: sharedBg || badgeBg || sampled.cardBg || '',
     /* A-2-3 左右卡片有固定的設計預設，不隨圓標底色連動。 */
     cardBgA23Left: A23_CARD_DEFAULTS.left,
@@ -12570,7 +13075,16 @@ function importLinkedDefaultColors(colorState, sampled, sharedBg) {
   };
 }
 function isFixedFiveRowDLayout(blockId) {
-  return /^msbn_D_(?:2_[23]|3_1)$/i.test(String(blockId || ''));
+  return /^msbn_D_(?:1_[23]|2_[23]|3_1)$/i.test(String(blockId || ''));
+}
+/* D-1-2、D-1-3、D-2-2、D-2-3、D-3-1 初始依設計稿顯示五列；
+   一旦使用者按過增刪列，就改用欄位自己的動態列狀態。 */
+function dynamicRowRowsForColumn(col) {
+  if (col && Object.prototype.hasOwnProperty.call(col, '_dynamicRowRows') && col._dynamicRowRows != null) {
+    return Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows.slice() : [];
+  }
+  if (col && isFixedFiveRowDLayout(col.blockId)) return [0, 1, 2, 3, 4];
+  return [];
 }
 /* 手動換背景色代表配色情境已改變：促標不保留先前的手動覆寫，
    重新使用「副標色當底、背景色加亮 50% 當字」的連動預設。 */
@@ -12582,20 +13096,22 @@ function relinkImportPromoColorsToBackground() {
 function importRenderOpts(editable, mode, col) {
   mode = mode || 'import';
   var isMaint = mode === 'maint';
-  var isEditableCanvas = mode === 'import' || mode === 'maint';
+  var isPreview = mode === 'preview';
+  var isEditableCanvas = mode === 'import' || mode === 'maint' || mode === 'preview';
   var colorState = isMaint ? maintTheme : importTheme;
-  var columns = isMaint ? maintColumns : currentImportColumns;
+  var columns = isMaint ? maintColumns : (isPreview ? previewAllColumns : currentImportColumns);
   /* 背景色維持畫布／曝光資源的共用來源；卡片背景另外使用 cardBg，
      只讓 MSBN C／D 的卡片一起同步，又不必把畫布留白變成卡片色。 */
   var sharedBg = isMaint ? (colorState.bg || resolvedImportBg()) : resolvedImportBg();
-  var sampled = sampledRoleColors(columns);
+  /* 自動色必須以正在渲染的版位本身取樣；不能用各頁第一個版位，
+     否則同一模板在維修與匯入因清單順序不同而得到不同顏色。 */
+  var sampled = sampledRoleColors(col ? [col] : columns);
   var linkedDefaults = importLinkedDefaultColors(colorState, sampled, sharedBg);
   var sharedCardBg = limitCardBackgroundColor(colorState.cardBg || linkedDefaults.cardBg);
   var a23LeftCardBg = colorState.cardBgA23Left || linkedDefaults.cardBgA23Left;
   var a23RightCardBg = colorState.cardBgA23Right || linkedDefaults.cardBgA23Right;
   var fixedFiveRowD = !!(col && isFixedFiveRowDLayout(col.blockId));
-  var forcedFiveRows = fixedFiveRowD ? [0, 1, 2, 3, 4] :
-    (col && Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows.slice() : []);
+  var forcedFiveRows = dynamicRowRowsForColumn(col);
   var theme = { canvasBg: sharedBg, bg: sharedBg, cardBg: sharedCardBg,
     cardBgA23Left: a23LeftCardBg, cardBgA23Right: a23RightCardBg,
     promoBg: colorState.promoBg || linkedDefaults.promoBg,
@@ -12605,7 +13121,7 @@ function importRenderOpts(editable, mode, col) {
     warnText: colorState.warnText || linkedDefaults.warnText,
     warnTextAuto: !colorState.warnText,
     itemText: colorState.itemText || linkedDefaults.itemText,
-    /* C 系列促標未手動選色時固定黑字；有手動色才套用統一促標字色。 */
+    /* 促標字色未手動選色時，與目前背景顏色同步。 */
     promoTextAuto: !colorState.promoText, bgScope: 'msbn-d' };
   IMPORT_COLOR_ITEMS.forEach(function (it) {
     if (it.key === 'bg' || it.key === 'cardBg') return;
@@ -12669,6 +13185,11 @@ function releaseMaintColorPicker(delay) {
   }, typeof delay === 'number' ? delay : 0);
 }
 
+function activeImportPaletteColumns() {
+  return activeImportCanvasContext === 'preview' && previewAllColumns.length
+    ? previewAllColumns : currentImportColumns;
+}
+
 function renderImportColorPanel() {
   if (importColorPickerEditing) {
     importColorPanelRefreshPending = true;
@@ -12677,12 +13198,13 @@ function renderImportColorPanel() {
   var list = document.getElementById('import-color-list');
   if (!list) return;
   var bgNow = resolvedImportBg();
-  var sampled = sampledRoleColors(); /* 畫布上目前實際的色號 */
-  var hasEligibleCardBg = currentImportColumns.some(function (col) { return isCardBgThemeEligible(col.blockId); });
-  var hasA23 = currentImportColumns.some(function (col) { return /^msbn_A_2_3$/i.test(String(col.blockId || '')); });
-  var hasMsbnC = currentImportColumns.some(function (col) { return /^msbn_C_/i.test(String(col.blockId || '')); });
-  var hasMsbn = currentImportColumns.some(function (col) { return /^msbn_/i.test(String(col.blockId || '')); });
-  var hasProductNameBlock = currentImportColumns.some(function (col) { return /^(?:msbn|subarea)_/i.test(String(col.blockId || '')); });
+  var paletteColumns = activeImportPaletteColumns();
+  var sampled = sampledRoleColors(paletteColumns); /* 畫布上目前實際的色號 */
+  var hasEligibleCardBg = paletteColumns.some(function (col) { return isCardBgThemeEligible(col.blockId); });
+  var hasA23 = paletteColumns.some(function (col) { return /^msbn_A_2_3$/i.test(String(col.blockId || '')); });
+  var hasMsbnC = paletteColumns.some(function (col) { return /^msbn_C_/i.test(String(col.blockId || '')); });
+  var hasMsbn = paletteColumns.some(function (col) { return /^msbn_/i.test(String(col.blockId || '')); });
+  var hasProductNameBlock = paletteColumns.some(function (col) { return /^(?:msbn|subarea)_/i.test(String(col.blockId || '')); });
   var linkedDefaults = importLinkedDefaultColors(importTheme, sampled, bgNow);
   var colorItems = IMPORT_COLOR_ITEMS.filter(function (it) {
     if ((it.key === 'nameOnLightBg' || it.key === 'nameOnDarkBg') && !hasProductNameBlock) return false;
@@ -12813,15 +13335,15 @@ function restoreCanvasImageLayoutState(snapshot) {
 }
 
 /* 顏色改了：不用重建左側欄位面板，只把畫布上每一格重新渲染一次就好 */
+function applyCanvasThemeToContext(ctxName) {
+  var ctx = canvasCtx(ctxName);
+  ctx.columns().forEach(function (_, idx) { rerenderCanvasMount(ctxName, idx); });
+}
 function applyImportTheme() {
   var imageLayoutState = captureCanvasImageLayoutState();
   applyImportStripBg();
-  currentImportColumns.forEach(function (col, idx) {
-    var mount = document.getElementById('imp-mount-' + idx);
-    if (!mount) return;
-    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import', col));
-    bindCanvasInteractions(mount, col, idx, 'import');
-  });
+  applyCanvasThemeToContext('import');
+  applyCanvasThemeToContext('preview');
   restoreCanvasImageLayoutState(imageLayoutState);
 }
 
@@ -12834,13 +13356,7 @@ function applyMaintThemeSoon() {
 /* 維修頁使用匯入工單共用色彩狀態；調色會立即同步回匯入畫布、曝光資源與暫存。 */
 function applyMaintTheme() {
   var imageLayoutState = captureCanvasImageLayoutState();
-  maintColumns.forEach(function (col, idx) {
-    var mount = document.getElementById('mnt-mount-' + idx);
-    if (!mount) return;
-    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'maint', col));
-    applyDynamicStageSize(mount, col);
-    bindCanvasInteractions(mount, col, idx, 'maint');
-  });
+  applyCanvasThemeToContext('maint');
   restoreCanvasImageLayoutState(imageLayoutState);
   if (maintColorPickerEditing) {
     maintColorPanelRefreshPending = true;
@@ -12981,7 +13497,7 @@ function syncImportBgFromExposure() {
     saveImportTheme();
   }
   renderImportColorPanel();
-  if (currentImportColumns.length) applyImportTheme();
+  if (currentImportColumns.length || previewAllColumns.length) applyImportTheme();
   else applyImportStripBg();
   if (maintColumns.length) applyMaintTheme();
   else renderMaintColorPanel();
@@ -12990,7 +13506,7 @@ function syncImportBgFromExposure() {
 function refreshImportAndMaintColorLinks() {
   renderImportColorPanel();
   renderMaintColorPanel();
-  if (currentImportColumns.length) applyImportTheme();
+  if (currentImportColumns.length || previewAllColumns.length) applyImportTheme();
   if (maintColumns.length) applyMaintTheme();
 }
 
@@ -13068,7 +13584,7 @@ function renderedBlockSizeOf(def, col) {
   if (!schema || !schema.dynamicRowLayout || !schema.dynamicRowLayout.fixedRowHeight ||
       !window.BNSchemaRenderer || typeof BNSchemaRenderer.dynamicRowLayoutOf !== 'function') return size;
   var layout = BNSchemaRenderer.dynamicRowLayoutOf(schema, col && col.data, {
-    dynamicRowRows: col && Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows : []
+    dynamicRowRows: dynamicRowRowsForColumn(col)
   });
   if (layout && layout.totalHeight != null) size.height = Number(layout.totalHeight) || size.height;
   return size;
@@ -13145,7 +13661,9 @@ function bindImportImageFieldTools(box, idx, ctxName) {
 }
 
 function renderImportColumns(columns, skipPreviewRerender) {
+  activeImportCanvasContext = 'import';
   currentImportColumns = columns;
+  columns.forEach(function (col) { normalizeLocalCircleDefaults(col, BNCore.getBlock(col.blockId)); });
   queueImportStateSave();
   var scroll = document.getElementById('import-fields-scroll');
   var list = document.getElementById('import-preview-list');
@@ -13244,6 +13762,10 @@ function renderImportColumns(columns, skipPreviewRerender) {
     }
   }
 
+  /* 右側工具列以版位 ID 為唯一項目；同一版位若在工單中出現多次，
+     工具合併到第一次出現的位置，但保留所有畫布索引作為啟用／定位別名。 */
+  var toolBlockColumns = {};
+
   columns.forEach(function (col, idx) {
     var def = BNCore.getBlock(col.blockId);
     if (!def) {
@@ -13270,9 +13792,28 @@ function renderImportColumns(columns, skipPreviewRerender) {
     var fieldDefsByKey = {};
     var imageToolDefs = [];
     def.fields.forEach(function (f) { fieldDefsByKey[f.key] = f; });
-    /* 右側工具選單只提供圖片操作；文字與顏色欄位改由畫布直接編輯，
-       不再在工具選單產生可輸入欄位。 */
-    var fieldsHtml = def.fields.filter(function (f) { return f.type === 'image'; }).map(function (f) {
+    /* 右側工具選單提供圖片操作，以及 D-1-1-2／D-2-1-2 各自獨立的小圓圈色票。
+       圓圈色按左／中／右分組與編號排序，不以 schema 圖層的繪製順序混在一起。 */
+    var toolFields = def.fields.filter(function (f) {
+      return f.type === 'image' || (f.type === 'color' && isLocalColorToolEligible(col.blockId, f));
+    });
+    var localColorDefs = toolFields.filter(function (f) { return f.type === 'color'; });
+    var localColorGroups = localCircleGroupsFor(col.blockId, def);
+    if (localColorDefs.length) box.classList.add('has-local-colors');
+    function localColorSortInfo(f) {
+      var m = /^(左|中|右)・.*?(\d+)\s*$/.exec(String(f.label || ''));
+      var groupOrder = { '左': 0, '中': 1, '右': 2 };
+      return { group: m ? groupOrder[m[1]] : 9, item: m ? Number(m[2]) : 99 };
+    }
+    toolFields.sort(function (a, b) {
+      if (a.type !== b.type) return a.type === 'image' ? -1 : 1;
+      if (a.type !== 'color') return 0;
+      var ai = localColorSortInfo(a);
+      var bi = localColorSortInfo(b);
+      return ai.group - bi.group || ai.item - bi.item;
+    });
+    var lastLocalColorGroup = '';
+    var fieldsHtml = toolFields.map(function (f) {
       if (f.type === 'color' && isImportColorGloballyManagedField(col.blockId, f.key, f.label)) return '';
       var val = col.data[f.key] != null ? col.data[f.key] : f.default;
       if (val == null) val = '';
@@ -13302,17 +13843,27 @@ function renderImportColumns(columns, skipPreviewRerender) {
 
       }
       if (f.type === 'color') {
-        /* 空字串代表沒有覆寫，畫布會回退到圖層原色；工具列也必須顯示
-           同一個實際色號，不能再顯示黑色或空白。 */
+        /* 空字串代表隱藏該顆；左右（及中間）每一顆都有自己的欄位，
+           因此顏色與顆數互不連動。 */
+        var groupMatch = /^(左|中|右)・/.exec(String(f.label || ''));
+        var colorGroup = groupMatch ? groupMatch[1] : '圓圈';
+        var colorGroupDef = localColorGroups.filter(function (g) { return g.name === colorGroup; })[0];
+        var groupTitle = colorGroup !== lastLocalColorGroup
+          ? '<div class="local-color-group-title"><span>' + esc(colorGroup) + '側圓圈色</span>' +
+            '<button type="button" class="field-mini-btn local-color-add" data-color-group="' + esc(colorGroup) + '"' +
+            (nextLocalCircleField(colorGroupDef, col.data) ? '' : ' disabled') + '>＋ 新增圓圈色</button></div>' : '';
+        lastLocalColorGroup = colorGroup;
+        var isHiddenColor = String(val || '').trim() === '';
         var actualColorVal = String(val || '').trim() || String(f.default || '').trim() || '#000000';
-        return '<div class="field local-color-field" data-key="' + f.key + '">' +
+        return groupTitle + '<div class="field local-color-field' + (isHiddenColor ? ' is-hidden' : '') + '" data-key="' + f.key + '">' +
           '<label>' + esc(f.label || f.key) + '</label>' +
           '<div class="local-color-field-row">' +
             '<input type="color" class="local-color-picker" value="' + esc(colorToHex(actualColorVal)) + '" title="選擇顏色">' +
             '<input type="text" class="fv local-color-text" value="' + esc(actualColorVal) + '" placeholder="#RRGGBB 或 rgb(...)" aria-label="' + esc(f.label || f.key) + '">' +
+            '<button type="button" class="field-mini-btn local-color-toggle" title="' + (isHiddenColor ? '顯示這一顆' : '隱藏這一顆') + '">' + (isHiddenColor ? '顯示' : '隱藏') + '</button>' +
             '<button type="button" class="field-mini-btn local-color-reset" title="還原這個版位的預設色">' + lineIcon('reset') + '</button>' +
           '</div>' +
-          '<div class="local-field-note">此色只修改本版位；若上方統一顏色有設定，畫面會優先使用統一色。</div>' +
+          '<div class="local-field-note">每一顆獨立設定；按「隱藏／顯示」可個別調整顆數。</div>' +
         '</div>';
       }
 
@@ -13343,7 +13894,30 @@ function renderImportColumns(columns, skipPreviewRerender) {
     box.innerHTML = '<div class="ic-head">' + (idx + 1) + '. ' + esc(def.name) + '</div>' + fieldsHtml;
     scroll.appendChild(box);
     bindImportImageFieldTools(box, idx, 'import');
+    box.querySelectorAll('.local-color-add').forEach(function (addBtn) {
+      addBtn.addEventListener('click', function () {
+        var groupName = addBtn.getAttribute('data-color-group') || '';
+        var group = localColorGroups.filter(function (g) { return g.name === groupName; })[0];
+        var next = nextLocalCircleField(group, col.data);
+        if (!next) return;
+        var nextIndex = group.fields.indexOf(next);
+        var value = String(next.default || '').trim() || (nextIndex === 0 ? '#ffffff' : '#000000');
+        col.data[next.key] = value;
+        saveImportState();
+        renderImportColumns(currentImportColumns);
+      });
+    });
+    var localColorToolCol = null;
     if (actionRail) {
+      var toolBlockId = String(col.blockId || '').toLowerCase();
+      var existingToolCol = toolBlockColumns[toolBlockId];
+      if (existingToolCol) {
+        var existingCols = (existingToolCol.getAttribute('data-col-list') || '').split(',').filter(Boolean);
+        if (existingCols.indexOf(String(idx)) === -1) existingCols.push(String(idx));
+        existingToolCol.setAttribute('data-col-list', existingCols.join(','));
+        localColorToolCol = existingToolCol;
+      } else {
+        toolBlockColumns[toolBlockId] = null;
       var toolGroupsHtml = imageToolDefs.map(function (toolDef) {
         var toolRowsHtml = toolDef.partLayerOrder.map(function (imageIndex, layerIndex) {
           var part = toolDef.parts[imageIndex] || '';
@@ -13403,21 +13977,21 @@ function renderImportColumns(columns, skipPreviewRerender) {
         toolBox.setAttribute('data-tool-band', toolBandKey);
         toolBox.setAttribute('data-band-count', toolBand ? toolBand.items.length : 1);
         toolBox.innerHTML = '<div class="import-block-tool-head">' +
-          (toolBand && toolBand.items.length > 1 ? '一排' + toolBand.items.length + '｜版位圖片操作' : (idx + 1) + '. ' + esc(def.name)) +
+          (toolBand && toolBand.items.length > 1 ? '一排' + toolBand.items.length + '｜版位圖片操作（由上到下）' : (idx + 1) + '. ' + esc(def.name)) +
           '</div><div class="import-band-tool-grid"></div>';
         actionRail.appendChild(toolBox);
       }
       var toolPositionIndex = toolBand ? toolBand.items.indexOf(idx) : 0;
       var toolPositionLabels = toolBand && toolBand.items.length === 4 ? ['上左', '上右', '下左', '下右']
-        : (toolBand && toolBand.items.length === 3 ? ['上', '中', '下']
+        : (toolBand && toolBand.items.length === 3 ? ['左', '中', '右']
           : (toolBand && toolBand.items.length === 2 ? ['左', '右'] : []));
-      var sourcePositionLabels = toolBand && toolBand.items.length === 3 ? ['左', '中', '右'] : [];
       var toolPositionLabel = toolPositionLabels[toolPositionIndex] || (idx + 1) + '. ' + String(def.name || '版位');
-      var sourcePositionLabel = sourcePositionLabels[toolPositionIndex] ? sourcePositionLabels[toolPositionIndex] + '｜' : '';
       var toolCol = document.createElement('div');
       toolCol.className = 'import-band-tool-col';
       toolCol.setAttribute('data-col', idx);
-      toolCol.innerHTML = '<div class="import-band-tool-col-head"><strong>' + esc(toolPositionLabel) + '</strong><small>' + esc(sourcePositionLabel + (def.name || '')) + '</small></div>' +
+      toolCol.setAttribute('data-col-list', String(idx));
+      toolCol.setAttribute('data-block-id', toolBlockId);
+      toolCol.innerHTML = '<div class="import-band-tool-col-head"><strong>' + esc(toolPositionLabel) + '</strong><small>' + esc(def.name || '') + '</small></div>' +
         (toolGroupsHtml || '<div class="import-block-tool-empty">這個版位沒有圖片欄位。</div>');
       toolBox.querySelector('.import-band-tool-grid').appendChild(toolCol);
       toolCol.querySelectorAll('.if-btn').forEach(function (btn) {
@@ -13428,6 +14002,9 @@ function renderImportColumns(columns, skipPreviewRerender) {
           handleImportImageAction(idx, key, act, imageIndex, 'import');
         });
       });
+      toolBlockColumns[toolBlockId] = toolCol;
+      localColorToolCol = toolCol;
+      }
     }
 
     function updateAndRerender(key, value) {
@@ -13458,6 +14035,15 @@ function renderImportColumns(columns, skipPreviewRerender) {
       var colorPicker = fieldEl.querySelector('.local-color-picker');
       var colorText = fieldEl.querySelector('.local-color-text');
       if (colorPicker && colorText) {
+        var toggleBtn = fieldEl.querySelector('.local-color-toggle');
+        function syncLocalColorState(value) {
+          var hidden = String(value || '').trim() === '';
+          fieldEl.classList.toggle('is-hidden', hidden);
+          if (toggleBtn) {
+            toggleBtn.textContent = hidden ? '顯示' : '隱藏';
+            toggleBtn.title = hidden ? '顯示這一顆' : '隱藏這一顆';
+          }
+        }
         /* 原生色盤拖曳時不重建畫布；部分瀏覽器只要 DOM 有重畫就會把色盤關掉。
            因此拖曳期間只更新旁邊的色碼，確認選色（change）後才套用到畫布。 */
         var pendingPickerColor = colorPicker.value;
@@ -13466,16 +14052,30 @@ function renderImportColumns(columns, skipPreviewRerender) {
         colorPicker.addEventListener('input', function () {
           pendingPickerColor = this.value;
           colorText.value = this.value;
+          updateCanvasLocalColorPreview(col, idx, 'import', key, this.value);
         });
         colorPicker.addEventListener('change', function () {
           var v = pendingPickerColor || this.value;
           pendingPickerColor = '';
           colorText.value = v;
+          syncLocalColorState(v);
           updateAndRerender(key, v);
         });
         colorText.addEventListener('input', function () {
           var v = this.value.trim();
           if (v) colorPicker.value = colorToHex(v);
+          syncLocalColorState(v);
+          updateAndRerender(key, v);
+        });
+        if (toggleBtn) toggleBtn.addEventListener('click', function () {
+          var currentlyHidden = fieldEl.classList.contains('is-hidden');
+          var v = currentlyHidden
+            ? (String(fieldDef.default || '').trim() || colorPicker.value || '#ffffff') : '';
+          if (v) {
+            colorText.value = v;
+            colorPicker.value = colorToHex(v);
+          }
+          syncLocalColorState(v);
           updateAndRerender(key, v);
         });
         var resetBtn = fieldEl.querySelector('.local-color-reset');
@@ -13483,10 +14083,20 @@ function renderImportColumns(columns, skipPreviewRerender) {
           var v = fieldDef.default || '';
           colorText.value = v;
           colorPicker.value = colorToHex(v || '#000000');
+          syncLocalColorState(v);
           updateAndRerender(key, v);
         });
       }
     });
+
+    /* 局部圓圈色不再另立一張上方卡片；移到同一版位的右側圖片工具卡內。
+       事件已在上方綁定完成，搬移 DOM 不會失去色票與新增按鈕功能。 */
+    if (localColorToolCol && localColorDefs.length && !localColorToolCol.getAttribute('data-local-colors-added')) {
+      Array.prototype.slice.call(box.querySelectorAll('.local-color-group-title, .local-color-field')).forEach(function (el) {
+        localColorToolCol.appendChild(el);
+      });
+      localColorToolCol.setAttribute('data-local-colors-added', '1');
+    }
 
     var myLeft = positions[idx].left || 0;
     var myTop = positions[idx].top || 0;
@@ -13538,6 +14148,9 @@ function renderImportColumns(columns, skipPreviewRerender) {
   }
   /* 重畫「統一顏色」區：沒有手動改過的顏色要把這批版位實際的色號吸進來顯示 */
   renderImportColorPanel();
+  if (columns.length && document.querySelector('#import-block-tools .import-band-tool-col[data-col="0"], #import-block-tools .import-block-tool[data-col="0"]')) {
+    markActiveImportCol(0);
+  }
 }
 
 /* 畫布重畫之後要重新綁的所有互動，統一從這裡進。
@@ -13550,7 +14163,7 @@ function dynamicRowInfoOf(col) {
   var schema = def && def.schema;
   if (!schema || !schema.dynamicRowLayout) return null;
   var layout = BNSchemaRenderer.dynamicRowLayoutOf(schema, col.data, {
-    dynamicRowRows: Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows : []
+    dynamicRowRows: dynamicRowRowsForColumn(col)
   });
   return layout ? { schema: schema, layout: layout } : null;
 }
@@ -13560,10 +14173,6 @@ function setDynamicRowUiState(col, rows) {
   var safeRows = Array.isArray(rows) ? rows.map(function (n) { return Number(n); }).filter(function (n) {
     return isFinite(n) && n >= 0;
   }) : [];
-  if (!safeRows.length) {
-    try { delete col._dynamicRowRows; } catch (e) { col._dynamicRowRows = []; }
-    return;
-  }
   try {
     Object.defineProperty(col, '_dynamicRowRows', {
       value: safeRows,
@@ -13733,13 +14342,7 @@ function rerenderAfterDynamicRowMutation(col, idx, ctxName, focusKey) {
     renderImageGallery();
     renderImportColumns(currentImportColumns);
   } else {
-    ctx.afterChange();
-    var mount = document.getElementById(ctx.mountId(idx));
-    if (mount) {
-      mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'maint', col));
-      applyDynamicStageSize(mount, col);
-      bindCanvasInteractions(mount, col, idx, 'maint');
-    }
+    refreshCanvasAfterChange(ctxName, idx, false);
   }
   if (focusKey) requestAnimationFrame(function () {
     focusDynamicRowField(col, idx, ctxName, focusKey);
@@ -13782,7 +14385,7 @@ function insertDynamicRowAt(col, idx, ctxName, gapIndex) {
 }
 
 function bindDynamicRowControls(mountEl, col, idx, ctxName) {
-  if (!mountEl || !col || (ctxName !== 'import' && ctxName !== 'maint')) return;
+  if (!mountEl || !col || (ctxName !== 'import' && ctxName !== 'maint' && ctxName !== 'preview')) return;
   var info = dynamicRowInfoOf(col);
   if (!info) return;
   var root = mountEl.querySelector('[data-bn-schema-id]');
@@ -13855,66 +14458,92 @@ function bindCanvasInteractions(mountEl, col, idx, ctxName) {
   bindEndorserTextContrast(mountEl);
 }
 
+/* 原生色盤拖曳時直接更新既有色塊，不重建 DOM，色盤才不會被關掉；
+   change 時仍會走完整重畫，確保衍生色、隱藏狀態與所有事件一致。 */
+function updateCanvasLocalColorPreview(col, idx, ctxName, key, value) {
+  if (!col || !key) return;
+  ctxName = ctxName || 'import';
+  col.data[key] = value;
+  if (ctxName === 'import') queueImportStateSave();
+  var ctx = canvasCtx(ctxName);
+  var mount = document.getElementById(ctx.mountId(idx));
+  if (!mount) return;
+  mount.querySelectorAll('[data-color-field]').forEach(function (shape) {
+    if (shape.getAttribute('data-color-field') !== key) return;
+    shape.setAttribute('data-color-value', value || '');
+    shape.style.backgroundColor = value || '';
+    shape.style.display = String(value || '').trim() ? '' : 'none';
+  });
+}
+
+var canvasLocalColorPicker = null;
+function openFallbackCanvasLocalColorPicker(col, idx, ctxName, key) {
+  if (!col || !key) return false;
+  if (!canvasLocalColorPicker) {
+    canvasLocalColorPicker = document.createElement('input');
+    canvasLocalColorPicker.type = 'color';
+    canvasLocalColorPicker.setAttribute('aria-label', '版位局部顏色');
+    canvasLocalColorPicker.style.cssText = 'position:fixed;left:-40px;top:-40px;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(canvasLocalColorPicker);
+  }
+  canvasLocalColorPicker.value = colorToHex(col.data[key] || '#ffffff');
+  canvasLocalColorPicker.oninput = function () {
+    updateCanvasLocalColorPreview(col, idx, ctxName, key, canvasLocalColorPicker.value);
+  };
+  canvasLocalColorPicker.onchange = function () {
+    updateCanvasLocalColorPreview(col, idx, ctxName, key, canvasLocalColorPicker.value);
+    refreshCanvasAfterChange(ctxName, idx, ctxName === 'import');
+  };
+  canvasLocalColorPicker.click();
+  return true;
+}
+
 /* 匯入工單畫布上的可換色色塊：點一下就定位到左側同一欄，並直接打開
    瀏覽器色盤。MSBN D-1-1-2 / D-2-1-2 的圓形色塊因此不必先在長工具列裡找。 */
-function bindCanvasColorPick(mountEl, col, idx, ctxName) {
+function openCanvasColorPicker(col, idx, ctxName, key) {
   var isMaint = ctxName === 'maint';
-  if (!mountEl || (!isMaint && ctxName !== 'import')) return;
+  var def = BNCore.getBlock(col.blockId);
+  var fieldDef = def && def.fields && def.fields.filter(function (f) { return f.key === key; })[0];
+  var role = importColorRoleOfField(col.blockId, key, fieldDef && fieldDef.label);
+  var listSelector = isMaint ? '#maint-color-list' : '#import-color-list';
+
+  /* D 系列的圓圈色是版位局部色，匯入頁優先開右側該版位自己的色票。 */
+  if (!isMaint) {
+    var card = document.querySelector('#import-fields-scroll .imp-col[data-col="' + idx + '"]');
+    var fieldEl = card && Array.prototype.find.call(card.querySelectorAll('.field'), function (el) {
+      return el.getAttribute('data-key') === key;
+    });
+    var localPicker = fieldEl && fieldEl.querySelector('.local-color-picker');
+    if (localPicker) {
+      fieldEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      fieldEl.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
+      setTimeout(function () { fieldEl.style.boxShadow = ''; }, 900);
+      localPicker.click();
+      return;
+    }
+  }
+
+  if (!role) {
+    openFallbackCanvasLocalColorPicker(col, idx, ctxName, key);
+    return;
+  }
+  var row = document.querySelector(listSelector + ' .ic-color-row[data-key="' + role + '"]');
+  var picker = row && row.querySelector('.icc-picker');
+  if (!picker) return;
+  row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  row.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
+  setTimeout(function () { row.style.boxShadow = ''; }, 900);
+  picker.click();
+}
+
+function bindCanvasColorPick(mountEl, col, idx, ctxName) {
+  if (!mountEl || (ctxName !== 'maint' && ctxName !== 'import' && ctxName !== 'preview')) return;
   mountEl.querySelectorAll('[data-color-field]').forEach(function (shape) {
     shape.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       var key = shape.getAttribute('data-color-field');
-      if (!key) return;
-      if (isMaint) {
-        var maintDef = BNCore.getBlock(col.blockId);
-        var maintFieldDef = maintDef && maintDef.fields && maintDef.fields.filter(function (f) {
-          return f.key === key;
-        })[0];
-        var maintRole = importColorRoleOfField(col.blockId, key, maintFieldDef && maintFieldDef.label);
-        if (!maintRole) return;
-        var maintPanel = document.getElementById('maint-color-panel');
-        var maintRow = document.querySelector('#maint-color-list .ic-color-row[data-key="' + maintRole + '"]');
-        if (!maintRow) return;
-        if (maintPanel) maintPanel.style.display = '';
-        var maintPicker = maintRow.querySelector('.icc-picker');
-        if (!maintPicker) return;
-        maintRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        maintRow.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
-        setTimeout(function () { maintRow.style.boxShadow = ''; }, 900);
-        maintPicker.click();
-        return;
-      }
-      var card = document.querySelector('#import-fields-scroll .imp-col[data-col="' + idx + '"]');
-      if (!card) return;
-      var fieldEl = Array.prototype.find.call(card.querySelectorAll('.field'), function (el) {
-        return el.getAttribute('data-key') === key;
-      });
-      if (fieldEl) {
-        var picker = fieldEl.querySelector('.local-color-picker');
-        if (!picker) return;
-        fieldEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        fieldEl.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
-        setTimeout(function () { fieldEl.style.boxShadow = ''; }, 900);
-        /* 這次 click 仍在使用者手勢事件鏈裡，Chrome / Edge 可以直接開原生色盤。 */
-        picker.click();
-        return;
-      }
-      /* 已集中管理的色塊不再有個別欄位，點畫布時改定位到統一顏色。 */
-      var colorDef = BNCore.getBlock(col.blockId);
-      var colorFieldDef = colorDef && colorDef.fields && colorDef.fields.filter(function (f) {
-        return f.key === key;
-      })[0];
-      var role = importColorRoleOfField(col.blockId, key, colorFieldDef && colorFieldDef.label);
-      if (!role) return;
-      var row = document.querySelector('#import-color-list .ic-color-row[data-key="' + role + '"]');
-      if (!row) return;
-      var sharedPicker = row.querySelector('.icc-picker');
-      if (!sharedPicker) return;
-      row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      row.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
-      setTimeout(function () { row.style.boxShadow = ''; }, 900);
-      sharedPicker.click();
+      if (key) openCanvasColorPicker(col, idx, ctxName, key);
     });
   });
 }
@@ -13931,9 +14560,76 @@ function readEditableText(el) {
   return t.replace(/\u00a0/g, ' ').replace(/\r\n?/g, '\n').replace(/\n+$/, '');
 }
 
+/* 圓標在第 5 字起會由程式補上換行。若直接改 textContent，瀏覽器會把
+   contenteditable 的游標移回最前面，下一個字便插到字首，視覺上就變成
+   「先打的字跑到字尾」。這裡用不計換行的字元位置記住游標，重排後再放回
+   同一個邏輯位置，換行怎麼移動都不會改變輸入順序。 */
+function editableLogicalCaretOffset(el) {
+  var selection = window.getSelection && window.getSelection();
+  if (!selection || !selection.rangeCount) return null;
+  var range = selection.getRangeAt(0);
+  if (!el.contains(range.startContainer)) return null;
+  try {
+    var before = document.createRange();
+    before.selectNodeContents(el);
+    before.setEnd(range.startContainer, range.startOffset);
+    return before.toString().replace(/\n/g, '').length;
+  } catch (e) {
+    return null;
+  }
+}
+
+function restoreEditableLogicalCaret(el, logicalOffset) {
+  if (logicalOffset == null) return;
+  var selection = window.getSelection && window.getSelection();
+  if (!selection) return;
+  var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  var node;
+  var remaining = Math.max(0, logicalOffset);
+  var targetNode = null;
+  var targetOffset = 0;
+  while ((node = walker.nextNode())) {
+    var value = node.nodeValue || '';
+    if (remaining === 0) {
+      targetNode = node;
+      targetOffset = 0;
+      break;
+    }
+    var consumed = 0;
+    for (var i = 0; i < value.length; i++) {
+      if (value.charAt(i) !== '\n') consumed++;
+      if (consumed === remaining) {
+        targetNode = node;
+        targetOffset = i + 1;
+        remaining = 0;
+        break;
+      }
+    }
+    if (targetNode) break;
+    remaining -= consumed;
+  }
+  if (!targetNode) {
+    targetNode = el.lastChild || el;
+    targetOffset = targetNode.nodeType === 3 ? (targetNode.nodeValue || '').length : targetNode.childNodes.length;
+  }
+  try {
+    var range = document.createRange();
+    range.setStart(targetNode, targetOffset);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  } catch (e) {}
+}
+
+function setEditableTextPreserveCaret(el, text) {
+  var logicalOffset = editableLogicalCaretOffset(el);
+  el.textContent = text;
+  restoreEditableLogicalCaret(el, logicalOffset);
+}
+
 /* 維修頁與匯入工單畫布都必須使用同一套文字規則；差異只在資料是否寫入暫存。 */
 function canvasTextRulesEnabled(ctxName) {
-  return ctxName === 'import' || ctxName === 'maint';
+  return ctxName === 'import' || ctxName === 'maint' || ctxName === 'preview';
 }
 
 function importCanvasTextField(col, key) {
@@ -13953,9 +14649,34 @@ function normalizeCanvasTextBreaks(text, col, key, sourceType) {
      Enter 本身仍由 bindCanvasEditable 的 beforeinput 直接攔截，
      因此「保留既有換行」不會重新開放其他文字欄位手動斷行。 */
   if (!canvasTextAllowsManualBreak(col, key) && sourceType === 'paste') {
-    return value.replace(/\n/g, '');
+    value = value.replace(/\n/g, '');
+  }
+  /* 圓標最多兩行。把既有換行收斂成字串後，依每行 4 個全形字的容量重新分配；
+     7 字會固定為 4 + 3，無論鍵盤輸入、貼上或舊資料都不可能殘留第三行。 */
+  if (canvasTextAllowsManualBreak(col, key)) {
+    var chars = Array.from(value.replace(/\n/g, ''));
+    var totalUnits = chars.reduce(function (sum, ch) {
+      return sum + (/^[\x00-\x7f]$/.test(ch) ? 0.5 : 1);
+    }, 0);
+    /* 4 字以內維持單行；5～7 字才平均拆成 3+2、3+3、4+3。 */
+    var firstLineLimit = totalUnits <= 4 ? 4 : Math.min(4, Math.ceil(totalUnits / 2));
+    var first = '', second = '', firstUnits = 0;
+    chars.forEach(function (ch) {
+      var units = /^[\x00-\x7f]$/.test(ch) ? 0.5 : 1;
+      if (firstUnits + units <= firstLineLimit) {
+        first += ch;
+        firstUnits += units;
+      } else {
+        second += ch;
+      }
+    });
+    value = second ? first + '\n' + second : first;
   }
   return value;
+}
+
+function limitCanvasTextLineCount(text, col, key) {
+  return normalizeCanvasTextBreaks(text, col, key);
 }
 
 function importCanvasTextLimit(col, key) {
@@ -13978,6 +14699,24 @@ function importCanvasTextUnits(text) {
     if (ch === '\n') return sum;
     return sum + (/^[\x00-\x7f]$/.test(ch) ? 0.5 : 1);
   }, 0);
+}
+
+/* 圓標維持原始 35px 字級；7 字時以較寬的內層完整置中，
+   不壓縮字形，四字那一行可自然呈現。 */
+function applyBadgeTwoLineFit(el, col, key) {
+  if (!el || !canvasTextAllowsManualBreak(col, key)) return;
+  var isSevenChars = importCanvasTextUnits(readEditableText(el)) > 6;
+  if (isSevenChars) {
+    el.style.width = '140px';
+    el.style.maxWidth = 'none';
+    el.style.transform = '';
+    el.style.transformOrigin = '';
+  } else {
+    el.style.width = '100%';
+    el.style.maxWidth = '100%';
+    el.style.transform = '';
+    el.style.transformOrigin = '';
+  }
 }
 
 function truncateImportCanvasText(text, limit, lineLimit) {
@@ -14030,17 +14769,17 @@ function importCanvasTextWithLimit(el, col, key, incoming) {
 /* 讓畫布上 contenteditable 的文字，編輯完（失焦或輸入時）同步寫回資料，
    並且順手把側欄對應的輸入框也更新，兩邊互相同步 */
 function rerenderDynamicCanvasRow(col, idx, ctxName, key) {
-  var mount = document.getElementById((ctxName === 'maint' ? 'mnt-mount-' : 'imp-mount-') + idx);
+  var ctx = canvasCtx(ctxName);
+  var mount = document.getElementById(ctx.mountId(idx));
   if (!mount) return;
   if (ctxName === 'import') {
     /* 文字讓某一列從空白變成有效列時，整個匯入 band 也要同步長高／縮短。 */
     renderImportColumns(currentImportColumns);
     mount = document.getElementById('imp-mount-' + idx);
   } else {
-    mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, ctxName, col));
-    applyDynamicStageSize(mount, col);
-    bindCanvasInteractions(mount, col, idx, ctxName);
+    mount = rerenderCanvasMount(ctxName, idx);
   }
+  if (!mount) return;
   var target = Array.prototype.find.call(mount.querySelectorAll('[contenteditable="true"]'), function (el) {
     return el.getAttribute('data-field') === key;
   });
@@ -14080,7 +14819,7 @@ function applyImportCanvasTextRules(el, col, idx, ctxName, key) {
     ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
   var rowsChanged = beforeRows !== afterRows;
 
-  if (ctxName === 'maint') {
+  if (ctxName === 'maint' || ctxName === 'preview') {
     if (!rowsChanged) el.textContent = transformed.text;
     if (rowsChanged) rerenderDynamicCanvasRow(col, idx, ctxName, key);
     return;
@@ -14104,12 +14843,21 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
     if (!key) return;
     el.setAttribute('data-import-text-limit', importCanvasTextLimit(col, key) == null
       ? '' : String(importCanvasTextLimit(col, key)));
+    var initialRawText = readEditableText(el);
+    var initialNormalizedText = normalizeCanvasTextBreaks(initialRawText, col, key);
+    if (initialNormalizedText !== initialRawText) {
+      el.textContent = initialNormalizedText;
+      col.data[key] = initialNormalizedText;
+    }
+    applyBadgeTwoLineFit(el, col, key);
     el.addEventListener('beforeinput', function (event) {
       if (!canvasTextRulesEnabled(ctxName)) return;
       var inputType = String(event.inputType || '');
-      if (/^insert(?:Paragraph|LineBreak)$/i.test(inputType) && !canvasTextAllowsManualBreak(col, key)) {
-        event.preventDefault();
-        return;
+      if (/^insert(?:Paragraph|LineBreak)$/i.test(inputType)) {
+        if (!canvasTextAllowsManualBreak(col, key) || readEditableText(el).split('\n').length >= 2) {
+          event.preventDefault();
+          return;
+        }
       }
       var limit = importCanvasTextLimit(col, key);
       var lineLimit = importCanvasTextLineLimit(col, key);
@@ -14168,15 +14916,18 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       el.dispatchEvent(new Event('input', { bubbles: true }));
     });
     el.addEventListener('input', function () {
-      var text = normalizeCanvasTextBreaks(readEditableText(el), col, key);
+      var rawText = readEditableText(el);
+      var text = normalizeCanvasTextBreaks(rawText, col, key);
       if (canvasTextRulesEnabled(ctxName)) {
         var limit = importCanvasTextLimit(col, key);
         var lineLimit = importCanvasTextLineLimit(col, key);
         var limited = limit == null ? text : truncateImportCanvasText(text, limit, lineLimit);
-        if (limited !== text) {
+        limited = limitCanvasTextLineCount(limited, col, key);
+        if (limited !== rawText) {
           text = limited;
-          el.textContent = limited;
+          setEditableTextPreserveCaret(el, limited);
         }
+        applyBadgeTwoLineFit(el, col, key);
       }
       var blockDef = BNCore.getBlock(col.blockId);
       var dynamicSchema = blockDef && blockDef.schema;
@@ -14186,11 +14937,11 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       var afterRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
         ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
       var rowsChanged = beforeRows !== afterRows;
-      if (ctxName === 'maint') {
+      if (ctxName === 'maint' || ctxName === 'preview') {
         if (rowsChanged) requestAnimationFrame(function () {
           rerenderDynamicCanvasRow(col, idx, ctxName, key);
         });
-        return;   /* 維修頁只改記憶體，不動工單暫存、也沒有側欄 */
+        return;   /* 維修／全部預覽只改各自記憶體，不動正式工單暫存 */
       }
       saveImportState();
       var sideInput = ctx.sideRoot
@@ -14498,6 +15249,7 @@ function afterImportParsed(rawColumns, options) {
             label: binding.label
           };
         }) : [],
+        _dynamicRowRows: oldCol && Array.isArray(oldCol._dynamicRowRows) ? oldCol._dynamicRowRows.slice() : undefined,
         _imageOrder: oldCol && Array.isArray(oldCol._imageOrder) ? oldCol._imageOrder.slice() : [],
         _imagePartLayerOrder: oldCol ? cloneImportImagePartLayerOrder(oldCol._imagePartLayerOrder) : {}
       };
@@ -14734,6 +15486,7 @@ function buildImportSnapshot() {
         band: col.band,
         sourceKey: col.sourceKey || '',
         xlsxBindings: Array.isArray(col._xlsxBindings) ? col._xlsxBindings.map(function (binding) { return { address: binding.address, targetKey: binding.targetKey, label: binding.label }; }) : [],
+        dynamicRowRows: Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows.slice() : null,
         imageOrder: Array.isArray(col._imageOrder) ? col._imageOrder.slice() : [],
         imagePartLayerOrder: cloneImportImagePartLayerOrder(col._imagePartLayerOrder),
         data: dataCopy
@@ -14994,6 +15747,7 @@ function restoreImportSnapshot(snap) {
             label: binding.label
           };
         }) : [],
+        _dynamicRowRows: Array.isArray(c.dynamicRowRows) ? c.dynamicRowRows.slice() : undefined,
         _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
         _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder),
         data: c.data || {}
@@ -15019,6 +15773,7 @@ function restoreImportSnapshot(snap) {
             label: binding.label
           };
         }) : [],
+        _dynamicRowRows: Array.isArray(c.dynamicRowRows) ? c.dynamicRowRows.slice() : undefined,
         _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
         _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder),
         data: c.data || {}
@@ -15352,17 +16107,81 @@ var bottomLastEditedStateJson = '';
 var bottomExportSeq = 0;
 var bottomExportWaiters = {};
 
+function bottomStateFromLayoutTemplate(wb, embeddedStateJson) {
+  var ws = layoutTemplateWorksheet(wb);
+  if (!ws) return '';
+  var countMap = { '兩': 2, '二': 2, '三': 3, '四': 4, '五': 5 };
+  function plain(cell) {
+    var v = cell ? cell.value : '';
+    if (v && typeof v === 'object' && v.richText) v = v.richText.map(function (part) { return part.text; }).join('');
+    if (v && typeof v === 'object' && v.text != null) v = v.text;
+    if (v && typeof v === 'object' && v.result != null) v = v.result;
+    return v == null ? '' : String(v).trim();
+  }
+  var blocks = [];
+  for (var row = 1; row <= (Number(ws.rowCount) || 0); row++) {
+    var colA = ws.getCell(row, 1), colB = ws.getCell(row, 2);
+    var marker = (!colA.isMerged || !colA.master || colA.master.address === colA.address) ? plain(colA) : '';
+    if (!marker && (!colB.isMerged || !colB.master || colB.master.address === colB.address)) marker = plain(colB);
+    var match = /^吸底[_-]([兩二三四五])格$/.exec(marker);
+    if (!match) continue;
+    var count = countMap[match[1]];
+    var slots = [], score = 0;
+    for (var index = 0; index < count; index++) {
+      var asset = plain(ws.getCell(row + 1 + index, 6));
+      var text = plain(ws.getCell(row + 1 + index, 11));
+      if (asset) score++;
+      if (text) score++;
+      slots.push({ text: text, iconId: asset || null, iconText: null });
+    }
+    blocks.push({ count: count, slots: slots, score: score, row: row });
+  }
+  if (!blocks.length) return '';
+  var embedded = null;
+  try { embedded = embeddedStateJson ? JSON.parse(embeddedStateJson) : null; } catch (e) {}
+  var embeddedCount = embedded && embedded.banners && embedded.banners[0]
+    ? Number(embedded.banners[0].slotCount || (embedded.banners[0].slots || []).length) : 0;
+  blocks.sort(function (a, b) {
+    if (b.score !== a.score) return b.score - a.score;
+    if (embeddedCount) {
+      if (a.count === embeddedCount && b.count !== embeddedCount) return -1;
+      if (b.count === embeddedCount && a.count !== embeddedCount) return 1;
+    }
+    return b.count - a.count;
+  });
+  var chosen = blocks[0];
+  var oldBanner = embedded && embedded.banners && embedded.banners[0] || {};
+  return JSON.stringify({
+    format: 'sticky-banner-project',
+    version: 2,
+    activeBannerIndex: 0,
+    sharpen: embedded && typeof embedded.sharpen === 'boolean' ? embedded.sharpen : true,
+    banners: [{
+      slotCount: chosen.count,
+      activeSlotIndex: Math.min(Number(oldBanner.activeSlotIndex) || 0, chosen.count - 1),
+      accentColor: oldBanner.accentColor || 'red',
+      slots: chosen.slots
+    }],
+    customIcons: embedded && Array.isArray(embedded.customIcons) ? embedded.customIcons : []
+  });
+}
+
 function extractEmbeddedBottomState(arrayBuffer) {
   if (!arrayBuffer || typeof ExcelJS === 'undefined') return Promise.resolve('');
   try {
     var wb = new ExcelJS.Workbook();
     return wb.xlsx.load(arrayBuffer.slice ? arrayBuffer.slice(0) : arrayBuffer).then(function () {
       var ws = wb.getWorksheet('_BODA_BOTTOM_STATE');
-      if (!ws || String(ws.getCell('A1').value || '') !== 'BODA_BOTTOM_STATE_V1') return '';
-      var count = Number(ws.getCell('B1').value) || 0;
-      var chunks = [];
-      for (var i = 0; i < count; i++) chunks.push(String(ws.getCell(i + 3, 2).value || ''));
-      return chunks.join('');
+      var embeddedState = '';
+      if (ws && String(ws.getCell('A1').value || '') === 'BODA_BOTTOM_STATE_V1') {
+        var count = Number(ws.getCell('B1').value) || 0;
+        var chunks = [];
+        for (var i = 0; i < count; i++) chunks.push(String(ws.getCell(i + 3, 2).value || ''));
+        embeddedState = chunks.join('');
+      }
+      /* 新版可見頁簽是 source of truth；A 欄寫兩／三／四／五格時，
+         直接建立相同 slotCount，避免舊隱藏狀態永遠把工具固定成五顆。 */
+      return bottomStateFromLayoutTemplate(wb, embeddedState) || embeddedState;
     }).catch(function () { return ''; });
   } catch (e) {
     return Promise.resolve('');
@@ -17255,7 +18074,7 @@ document.getElementById('btn-export-config').addEventListener('click', exportCon
    頁面切換：首頁 / 工單生成器 / 匯入工單
 ════════════════════════════════════════ */
 var VIEW_STORAGE_KEY = 'wo_last_view';
-var VALID_VIEWS = ['home', 'generator', 'exposure', 'import', 'bottom', 'maint'];
+var VALID_VIEWS = ['home', 'exposure', 'import', 'bottom', 'maint'];
 
 /* ════════════════════════════════════════
    維修頁：把所有版位一次列出來測試
@@ -17551,13 +18370,13 @@ function renderMaintList() {
   listEl.querySelectorAll('.mt-item').forEach(function (item, idx) {
     var id = item.getAttribute('data-block');
     var col = { blockId: id, data: maintDataFor(id, textMode), header: id };
+    normalizeLocalCircleDefaults(col, BNCore.getBlock(id));
     /* D-3-1 的維修 Demo 要看得到完整的預設文字列。
        它的示意字剛好等於圖層 default，動態列引擎會把這些列判定成未啟用；
        維修頁只強制顯示，不改動實際資料，選「留空」時仍保持空白。 */
     var maintDef = BNCore.getBlock(id);
     var maintLayout = maintDef && maintDef.schema && maintDef.schema.dynamicRowLayout;
-    if (/^msbn_D_3_1$/i.test(id) && textMode !== 'empty' &&
-        maintLayout && Array.isArray(maintLayout.rows)) {
+    if (isFixedFiveRowDLayout(id) && maintLayout && Array.isArray(maintLayout.rows)) {
       setDynamicRowUiState(col, maintLayout.rows.map(function (_, rowIndex) { return rowIndex; }));
     }
     maintColumns[idx] = col;
@@ -17871,7 +18690,8 @@ document.getElementById('import-generator-load').addEventListener('click', funct
   var changed = loadGeneratorSelectionIntoImport({ auto: false, fromGeneratorView: false });
   if (!changed) appLoadingFinish('沒有需要同步的版位');
 });
-document.getElementById('btn-import-demo').addEventListener('click', function () {
+var importDemoButton = document.getElementById('btn-import-demo');
+if (importDemoButton) importDemoButton.addEventListener('click', function () {
   loadDemoImport();
 });
 
@@ -17894,7 +18714,7 @@ document.getElementById('imp-field-img-input').addEventListener('change', functi
 renderImageGallery();
 bindMaintControls();
 probeImportMidBanner(); /* 量一次 img/three.jpg 的比例（副區與 MSBN 之間那張固定圖） */
-bindImportScrollSync();  /* 右邊工具列 ←→ 右邊畫布 捲動互相吸附 */
+bindImportScrollSync();  /* 中間畫布主控；右側工具列只單向跟隨 */
 
 /* 除錯用：不透過任何試算表/JSON，直接把目前所有已註冊的版位都畫出來，
    純粹測試「載入版位模板 → 渲染」這條路徑本身是否正常。 */
@@ -17902,7 +18722,13 @@ document.getElementById('btn-preview-all').addEventListener('click', function ()
   var importLog = document.getElementById('import-log');
   importLog.innerHTML = '<span class="ok">載入版位模板中…</span>';
   ensureBlocksLoaded(function () {
-    var ids = BNCore.getBlocks().map(function (b) { return b.id; }).filter(function (id) { return id !== 'msbn3p'; }).sort();
+    /* 防止重新註冊、載入競態或日後清單重複時，右側把同一版位畫出多次。 */
+    var seenIds = {};
+    var ids = BNCore.getBlocks().map(function (b) { return b.id; }).filter(function (id) {
+      if (id === 'msbn3p' || seenIds[id]) return false;
+      seenIds[id] = true;
+      return true;
+    }).sort();
     var columns = ids.map(function (id) {
       return { blockId: id, data: BNCore.defaultData(id), header: id };
     });
@@ -17926,6 +18752,10 @@ if (savedImportState && savedImportState.columns && savedImportState.columns.len
       header: c.header,
       band: c.band,
       sourceKey: c.sourceKey || '',
+      _xlsxBindings: Array.isArray(c.xlsxBindings) ? c.xlsxBindings.map(function (binding) {
+        return { address: binding.address, targetKey: binding.targetKey, label: binding.label };
+      }) : [],
+      _dynamicRowRows: Array.isArray(c.dynamicRowRows) ? c.dynamicRowRows.slice() : undefined,
       _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
       _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder)
     };
@@ -17935,7 +18765,7 @@ refreshGeneratorImportButton();
 
 var teachingModeActive = teachingMode === 'subarea' || teachingMode === 'msbn';
 if (teachingModeActive) document.body.classList.add('tutorial-' + teachingMode);
-var initialView = teachingModeActive ? 'generator' : getSavedView();
+var initialView = getSavedView();
 showView(initialView); /* 還原上次所在工具頁，不再每次強制回首頁 */
 window.addEventListener('hashchange', function () {
   var hashView = String(window.location.hash || '').replace(/^#/, '');
