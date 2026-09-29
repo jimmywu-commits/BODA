@@ -58,7 +58,7 @@
      這裡先給一組預設值，setConfig() 載入實際檔案內容後會覆蓋掉。
   ════════════════════════════════════════ */
   var CONFIG = {
-    textVerticalCorrection: { promo: 0, name: 0, warn: 0, badgeText: 0, ctaText: -3, logoText: 0 },
+    textVerticalCorrection: { promo: 0, name: 0, warn: 0, badgeText: 0, ctaText: -3, logoText: 0, twoLineText: 4 },
     letterSpacing: { promo: 0, name: 0, warn: 0, badgeText: 0, ctaText: 0, logoText: 0 },
     /* 7 字圓標固定最多兩行：四字那一行保留足夠寬度，不讓瀏覽器再折出第三行。 */
     badge: { maxWidth: 112, lineHeight: 53 },
@@ -150,8 +150,24 @@
   function isContentImageField(fieldKey) {
     return /^(?:productImg|giftImg|endorserImg)[0-9]*$/i.test(String(fieldKey || ''));
   }
+  /* 空的圖片欄位要用淡色框提示可放圖；不同範圍依設計需求使用不同透明度。
+     這裡同時看中文欄位名與 field key，讓舊版位（例如 MSBN D 的「商品圖／情境圖」）
+     也能和新版位一樣顯示可編輯的範圍。實際圖片存在時不套用這個透明度。 */
+  function rangePlaceholderOpacityOf(layer) {
+    if (!layer || layer.type !== 'image') return null;
+    var label = String(layer.fieldLabel || '');
+    var field = String(layer.field || '');
+    if (/贈品範圍|贈品/.test(label) || /^giftImg\d*$/i.test(field) ||
+        /簽名範圍|簽名/.test(label) || /^signImg\d*$/i.test(field)) return 0.3;
+    if (/曝品範圍|商品範圍|商品圖|商品圖片|代言人範圍|代言人/.test(label) ||
+        /^(?:productImg|endorserImg)\d*$/i.test(field)) return 0.6;
+    return null;
+  }
   function isMsbnC15ProductBoundary(schemaId, fieldKey) {
     return /^msbn_C_1_5$/i.test(String(schemaId || '')) && /^productImg$/i.test(String(fieldKey || ''));
+  }
+  function isMsbnB34ProductBoundary(schemaId, fieldKey) {
+    return /^msbn_B_3_4$/i.test(String(schemaId || '')) && /^productImg[0-9]*$/i.test(String(fieldKey || ''));
   }
   /* 曝品／贈品／代言人圖要在底層，但仍須位於卡片背景之上；促標、圓標、
      CTA、品名與其他資訊則全部壓在它們上方。以每個 schema 的背景與資訊層
@@ -356,6 +372,21 @@
     return m ? (m[1] || '') : null;
   }
 
+  /* 原始版配中本來就是兩行的欄位（案型／文案／代言人字／簽名小字等），
+     若工單只填第一行，畫布仍使用同一個欄位範圍，但把實際已有的內容垂直置中。
+     MSBN D 的表格列與品名有自己的列高／排版規則，明確排除。 */
+  function isTwoLineCenterTextLayer(layer, schemaId) {
+    if (!layer || layer.type !== 'text' || !layer.field) return false;
+    if (/^msbn_D_/i.test(String(schemaId || ''))) return false;
+    var field = String(layer.field || '').replace(/[0-9]+$/, '').toLowerCase();
+    if (field === 'name') return false;
+    var label = String(layer.fieldLabel || '');
+    var design = String(layer.designText == null ? '' : layer.designText);
+    var def = String(layer.default == null ? '' : layer.default);
+    return /案型|文案|代言人字|代言人小字|簽名小字/.test(label) ||
+      design.indexOf('\n') !== -1 || def.indexOf('\n') !== -1;
+  }
+
   function layerCenterDistance(a, b) {
     var ax = (Number(a.left) || 0) + (Number(a.width) || 0) / 2;
     var ay = (Number(a.top) || 0) + (Number(a.height) || 0) / 2;
@@ -422,6 +453,28 @@
       if (!tri) tri = nearestUnusedLayer(bg, triangles, usedTriangles);
       if (tri && tri.height != null) {
         tri.top = Number(bg.top) + (Number(bg.height) - Number(tri.height)) / 2;
+        /* 有字 CTA 以「文字＋三角」為一個整體置中。原本有些文字層沒有 width，
+           以三字示意文案估算原間距；有 width 的版位則直接沿用原始間距，
+           統一再增加 3px。三角形改由文字層的 pseudo element 畫出，文字縮短成
+           GO 或其他 1～3 字時，仍會保留同一間距並讓整組回到 CTA 底色中央。 */
+        var textWidth = Number(text.width);
+        if (!isFinite(textWidth) || textWidth <= 0) {
+          var sample = String(text.designText || text.default || '逛逛去').split(/\r?\n/)[0];
+          var sampleChars = Array.from(sample).length || 3;
+          textWidth = sampleChars * (Number(text.fontSize) || 42);
+        }
+        var originalGap = Number(tri.left) - (Number(text.left || 0) + textWidth);
+        if (!isFinite(originalGap)) originalGap = 0;
+        text._ctaInlineTriangle = true;
+        text._ctaGroupLeft = Number(bg.left || 0);
+        text._ctaGroupWidth = Number(bg.width || 0);
+        text._ctaTriangleWidth = Number(tri.width || 0);
+        text._ctaTriangleHeight = Number(tri.height || 0);
+        /* CTA 文字與三角形使用固定 8px 視覺間距；不要沿用 PS 文字框寬度，
+           否則改成 GO 或其他短字時三角形會被推到最右邊。 */
+        text._ctaTriangleGap = 8;
+        text._ctaTriangleLayer = tri;
+        tri.hidden = true;
         usedTriangles.push(tri);
       }
     });
@@ -559,8 +612,7 @@
       return readableTextColor(requestedBodyColor, bodySurface);
     }
 
-    /* MSBN C（C-1-1～3 除外）的促標是淺色卡片上的標題，系統預設固定黑字；
-       只有使用者明確選過「促標字色」時才改套全域手動色。 */
+    /* 促標預設字色由目前促標底色的明暗連動決定；明確選色時沿用全域覆寫。 */
     var v = theme[role];
     return (v && String(v).trim()) ? String(v).trim() : null;
   }
@@ -573,6 +625,44 @@
     if (!layer.field) return null;
     if (!fieldPrefix || layer.globalField) return layer.field;
     return fieldPrefix + layer.field;
+  }
+
+  function badgeBackgroundColorForText(textLayer, opts, data, fieldPrefix) {
+    var layers = (opts && opts._schemaLayers) || [];
+    var badgeBgs = layers.filter(function (candidate) {
+      return themeRoleOf(candidate, opts && opts._schemaId) === 'badgeBg';
+    });
+    if (!badgeBgs.length) return null;
+
+    var textField = String(textLayer && textLayer.field || '');
+    var textSuffix = (textField.match(/(\d+)$/) || [])[1] || '';
+    var desiredField = 'badgeColor' + textSuffix;
+    var exact = badgeBgs.filter(function (candidate) {
+      return String(candidate.field || '') === desiredField;
+    })[0];
+    if (!exact && textSuffix) {
+      exact = badgeBgs.filter(function (candidate) {
+        return String(candidate.field || '').replace(/\d+$/, '').toLowerCase() === 'badgecolor' &&
+          ((String(candidate.field || '').match(/(\d+)$/) || [])[1] || '') === textSuffix;
+      })[0];
+    }
+    if (!exact && badgeBgs.length === 1) exact = badgeBgs[0];
+    if (!exact) {
+      var textCx = Number(textLayer.left || 0) + Number(textLayer.width || 0) / 2;
+      var textCy = Number(textLayer.top || 0) + Number(textLayer.height || 0) / 2;
+      exact = badgeBgs.reduce(function (best, candidate) {
+        var dx = Number(candidate.left || 0) + Number(candidate.width || 0) / 2 - textCx;
+        var dy = Number(candidate.top || 0) + Number(candidate.height || 0) / 2 - textCy;
+        var distance = dx * dx + dy * dy;
+        return !best || distance < best.distance ? { layer: candidate, distance: distance } : best;
+      }, null);
+      exact = exact && exact.layer;
+    }
+    if (!exact) return null;
+    var key = resolveFieldKey(exact, fieldPrefix);
+    var raw = key && data ? data[key] : null;
+    return themeColorOf(exact, opts, data, fieldPrefix) ||
+      derivedColorOf(exact, data, fieldPrefix, opts) || raw || exact.backgroundColor || null;
   }
 
   /* A layer can derive its color from another editable color field.
@@ -878,14 +968,27 @@
        只把 CTA 文字往上提，底色塊與三角形仍維持幾何中心不動。 */
     var isCenteredCtaText = layer.type === 'text' && layer.ctaVerticalCenter &&
       layer._ctaBoxTop != null && layer._ctaBoxHeight != null;
+    var isInlineCtaText = isCenteredCtaText && layer._ctaInlineTriangle &&
+      layer._ctaGroupLeft != null && layer._ctaGroupWidth != null;
     var isDynamicRowCentered = layer.type === 'text' && layer._dynamicRowCentered &&
       layer._dynamicRowTop != null && layer._dynamicRowHeight != null;
+    var isTwoLineCenterText = isTwoLineCenterTextLayer(layer, opts && opts._schemaId) &&
+      !isCenteredCtaText && !isDynamicRowCentered;
     if (isDynamicRowCentered) top = Number(layer._dynamicRowTop);
     if (isCenteredCtaText) {
       var ctaOpticalY = Number(CONFIG.textVerticalCorrection.ctaText);
       if (!isFinite(ctaOpticalY)) ctaOpticalY = 0;
       top = Number(layer._ctaBoxTop) + ctaOpticalY;
     }
+    /* 原稿兩行欄位仍以 topExact 為錨點；整體再往下 4px，讓單行／雙行都維持
+       使用者確認過的視覺位置，而不是被 flex 行框往上拉。 */
+    if (isTwoLineCenterText && layer.topExact != null) {
+      var twoLineTopExact = Number(layer.topExact);
+      var twoLineOpticalY = Number(CONFIG.textVerticalCorrection.twoLineText);
+      if (!isFinite(twoLineOpticalY)) twoLineOpticalY = 0;
+      if (isFinite(twoLineTopExact)) top = twoLineTopExact + twoLineOpticalY;
+    }
+    if (isInlineCtaText) left = Number(layer._ctaGroupLeft);
 
     /* PS 文字圖層座標修正（垂直）：
        PS 匯出「只給 left/top、沒有 transform 縮放」的文字圖層時，量測基準點跟瀏覽器
@@ -906,7 +1009,7 @@
        這裡只對「沒有縮放，或縮放接近1（可視為沒縮放）」的文字套用；
        像 msbn3p 那種有明顯縮放 transform 的文字，是另一套已經驗證過的座標系統，不能套用。 */
     if (layer.type === 'text' && layer.fontSize && !layer.verticalCenter &&
-        !isCenteredCtaText && !isDynamicRowCentered) {
+        !isCenteredCtaText && !isDynamicRowCentered && !isTwoLineCenterText) {
       if (layer.topExact != null) {
         /* topExact ＝已經算好的「文字內容區上緣」，直接用，不再做任何推算。
            （實際套用在下面「扣掉上下 padding」之後，因為那一段對 topExact 不適用，
@@ -955,7 +1058,7 @@
        補回同樣的量。字的位置完全不變（padding 只影響裁切範圍，不影響行框中心），
        左右也還是照原本的框裁，所以橫向不會壓到隔壁。 */
     var textPadV = 0;
-    if (layer.type === 'text' && layer.fontSize && !isCenteredCtaText && !isDynamicRowCentered) {
+    if (layer.type === 'text' && layer.fontSize && !isCenteredCtaText && !isDynamicRowCentered && !isTwoLineCenterText) {
       var lineBox = lineHeightMultiplier(layer) * layer.fontSize;
       textPadV = Math.max(0, (FONT_CONTENT_EM * layer.fontSize - lineBox) / 2);
       /* 上面那串估算算出來的是「行框上緣」，要再往上退半個 padding 才是內容區上緣；
@@ -966,6 +1069,15 @@
 
     var warnNudge = opts && opts._subareaWarnNudge &&
       layer.type === 'text' && /^warn\d*$/i.test(String(layer.field || '')) ? 2 : 0;
+    var movableTextFieldKey = isEndorserNoteLayer(layer) ? resolveFieldKey(layer, fieldPrefix) : null;
+    var savedCanvasTextPosition = movableTextFieldKey && data && data.__canvasTextPositions
+      ? data.__canvasTextPositions[movableTextFieldKey] : null;
+    if (savedCanvasTextPosition) {
+      var savedLeft = Number(savedCanvasTextPosition.left);
+      var savedTop = Number(savedCanvasTextPosition.top);
+      if (isFinite(savedLeft)) left = savedLeft;
+      if (isFinite(savedTop)) top = savedTop;
+    }
     var style = ['position:absolute', 'left:' + px(left), 'top:' + px(top + warnNudge)];
     if (textPadV > 0) {
       style.push('padding-top:' + px(textPadV));
@@ -980,10 +1092,28 @@
        圖片的 z-index 要等下面判斷出是否有可渲染圖片後再決定；
        其他圖層仍直接使用原本的 zIndex。 */
     if (layer.type !== 'image' && layer.zIndex != null) style.push('z-index:' + layer.zIndex);
-    if (badgeWidthOverride != null) style.push('width:' + px(badgeWidthOverride));
+    if (isInlineCtaText) style.push('width:' + px(Number(layer._ctaGroupWidth)));
+    else if (badgeWidthOverride != null) style.push('width:' + px(badgeWidthOverride));
     else if (layer.width != null) style.push('width:' + px(Number(layer.width) + cTextWidthExtra));
     if (isCenteredCtaText) style.push('height:' + px(layer._ctaBoxHeight));
     else if (isDynamicRowCentered) style.push('height:' + px(layer._dynamicRowHeight));
+    else if (isTwoLineCenterText && layer.height == null && layer.fontSize) {
+      /* 有些原始兩行欄位只記錄 top／width，沒有把文字框 height 寫進 JSON。
+         仍以原稿的兩行行框建立範圍；當工單只填第一行時，flex 才能把它置中，
+         而不會留下第二行的空白在下方。已有明確 height 的版位則完全沿用原稿。 */
+      /* 這裡要用 block.json 原始行距，不用 CONFIG 的壓縮行距。
+         例如簽名／代言人小字原稿是 1.667，但顯示字距可能另有 1.15 的美術微調；
+         垂直置中範圍仍必須落在原本兩行位置的中點。 */
+      var rawTwoLineLh = layer.lineHeight;
+      var rawTwoLineMultiplier = Number(rawTwoLineLh);
+      if (!isFinite(rawTwoLineMultiplier) || rawTwoLineMultiplier <= 0) {
+        rawTwoLineMultiplier = lineHeightMultiplier(layer);
+      } else if (rawTwoLineMultiplier > 4) {
+        rawTwoLineMultiplier = rawTwoLineMultiplier / Number(layer.fontSize);
+      }
+      var twoLineHeight = rawTwoLineMultiplier * Number(layer.fontSize) * 2;
+      if (isFinite(twoLineHeight) && twoLineHeight > 0) style.push('height:' + px(twoLineHeight));
+    }
     else if (layer.height != null) style.push('height:' + px(layer.height));
     if (layer.boxShadow) style.push('box-shadow:' + layer.boxShadow);
     if (layer.clipPath) style.push('clip-path:' + layer.clipPath);
@@ -1063,6 +1193,10 @@
          未設定新欄位的舊版位會完整沿用 layer.zIndex，不改變既有結果。 */
       var stateZIndex = url ? layer.imageZIndex : layer.placeholderZIndex;
       if (stateZIndex == null) stateZIndex = layer.zIndex;
+      var rangePlaceholderOpacity = rangePlaceholderOpacityOf(layer);
+      if (rangePlaceholderOpacity != null && url && layer.imageZIndex == null && stateZIndex === layer.zIndex) {
+        stateZIndex = Number(layer.zIndex || 0) + 1;
+      }
       /* imageOrder 是匯入工單每一格自己的圖片欄位順序。
          這裡把排序後的欄位對應到原 schema 的圖片 z-index 槽位，
          所以商品圖與人物圖可以互換上下層，而文字／背景仍維持原本層級。 */
@@ -1082,7 +1216,7 @@
       if (layer.fixedLayerOrder) {
         stateZIndex = url && layer.imageZIndex != null ? layer.imageZIndex
           : (!url && layer.placeholderZIndex != null ? layer.placeholderZIndex : layer.zIndex);
-      } else if (isContentImage && url && !isSubareaSchema && opts && opts._contentImageZIndex != null) {
+      } else if (isContentImage && url && layer.imageZIndex == null && !isSubareaSchema && opts && opts._contentImageZIndex != null) {
         stateZIndex = opts._contentImageZIndex;
       } else if (isSignatureImage && opts && opts._signatureImageZByField &&
           opts._signatureImageZByField[layer.field] != null) {
@@ -1116,7 +1250,11 @@
          一般商品圖框的底色只是佔位用的灰底，一放圖就該完全消失。 */
       var keepBg = layer.keepBgWithImage || !!layer.bgField;
       if (imgBgColor && (!url || keepBg)) style.push('background-color:' + imgBgColor);
-      if (!url && layer.opacity != null) style.push('opacity:' + layer.opacity); /* 半透明佔位色只在「還沒放圖片」時套用 */
+      if (!url && rangePlaceholderOpacity != null) {
+        style.push('opacity:' + rangePlaceholderOpacity);
+      } else if (!url && layer.opacity != null) {
+        style.push('opacity:' + layer.opacity); /* 半透明佔位色只在「還沒放圖片」時套用 */
+      }
       if (!url) {
         /* 尚未上傳圖片：不畫 <img>（不會出現破圖跟滾輪提示文字），改放柔和的佔位卡 */
         style.push('display:flex');
@@ -1145,7 +1283,8 @@
         style.push('align-items:center');
         style.push('justify-content:center');
         var forceOwnImageClip = isMsbnB1WhiteProductBoundary(opts && opts._schemaId, fieldKey) ||
-          isMsbnC15ProductBoundary(opts && opts._schemaId, fieldKey);
+          isMsbnC15ProductBoundary(opts && opts._schemaId, fieldKey) ||
+          isMsbnB34ProductBoundary(opts && opts._schemaId, fieldKey);
         var clipImage = forceOwnImageClip || (((opts && opts.imageClipToBounds) || layer.clipImage) &&
           !(opts && opts.imageClipToBounds && isSharedMovableImageField(fieldKey)));
         style.push('overflow:' + (clipImage ? 'hidden' : 'visible'));
@@ -1221,6 +1360,11 @@
       if (layer.fontFamily) style.push('font-family:' + JSON.stringify(layer.fontFamily));
       var textColor = themeColorOf(layer, opts, data, fieldPrefix) || layer.color; /* 全站統一顏色（促標字色／圓標字色／CTA字色）優先 */
       if (textColor) style.push('color:' + textColor);
+      if (directColorRole === 'badgeText') {
+        var badgeStrokeColor = badgeBackgroundColorForText(layer, opts, data, fieldPrefix) || '#ffffff';
+        style.push('-webkit-text-stroke:8px ' + badgeStrokeColor);
+        style.push('paint-order:stroke fill');
+      }
       var textWeight = semanticTextWeight(layer);
       if (textWeight) style.push('font-weight:' + textWeight);
       /* PS 有些文字層有自己的 tracking（例如有字 CTA 是 -0.025em，
@@ -1231,14 +1375,20 @@
          用跟上面垂直修正同一支函式解析，兩邊保證一致。 */
       var lhOut = lineHeightCss(effectiveLineHeight(layer));
       if (lhOut != null) style.push('line-height:' + lhOut);
-      if (layer.textAlign) style.push('text-align:' + layer.textAlign);
+      var centeredMsbnB22Text = /^msbn_B_2_2$/i.test(String(opts && opts._schemaId || '')) &&
+        /^(?:name|name2|warn|warn2)$/i.test(String(layer.field || ''));
+      if (layer.textAlign || centeredMsbnB22Text) style.push('text-align:' + (centeredMsbnB22Text ? 'center' : layer.textAlign));
       if (layer.textDecoration) style.push('text-decoration:' + layer.textDecoration);
       /* 可編輯文字保留使用者手動輸入的換行，但禁止瀏覽器依寬度自動折行。
          這樣字數限制才真的能阻止超出範圍，而不是把多出的字偷偷折到下一行。 */
       var editableTextNoWrap = !!(fieldKey && opts && opts.editable && layer.type === 'text');
-      var dynamicWhiteSpace = editableTextNoWrap ? 'pre'
+      var dynamicWhiteSpace = (editableTextNoWrap || isTwoLineCenterText) ? 'pre'
         : (isDynamicRowCentered ? 'pre-line' : (layer.whiteSpace || 'nowrap'));
       style.push('white-space:' + (isCenteredCtaText ? 'nowrap' : dynamicWhiteSpace));
+      if (isTwoLineCenterText) {
+        style.push('word-break:normal');
+        style.push('overflow-wrap:normal');
+      }
       if (layer.transform) style.push('transform:matrix(' + layer.transform.join(',') + ')');
       /* 一般文字仍裁在自己的框內；CTA 的框是定位參考，文字必須保持單行，
          所以允許極小的字型量測差異溢出，不會因此換行。 */
@@ -1249,6 +1399,18 @@
         style.push('display:flex');
         style.push('align-items:center');
         style.push('box-sizing:border-box');
+        if (isInlineCtaText) {
+          style.push('flex-direction:row');
+          style.push('justify-content:center');
+          style.push('gap:' + px(Number(layer._ctaTriangleGap) || 3));
+          var ctaTriangleLayer = layer._ctaTriangleLayer;
+          var ctaTriangleColor = ctaTriangleLayer
+            ? (themeColorOf(ctaTriangleLayer, opts, data, fieldPrefix) || ctaTriangleLayer.backgroundColor || '#fff')
+            : '#fff';
+          style.push('--bn-cta-triangle-color:' + ctaTriangleColor);
+          style.push('--bn-cta-triangle-width:' + px(Number(layer._ctaTriangleWidth) || 0));
+          style.push('--bn-cta-triangle-height:' + px(Number(layer._ctaTriangleHeight) || 0));
+        }
       }
       if (isDynamicRowCentered) {
         /* D 系列可增減列：每個文字層使用目前列高作為容器，
@@ -1257,6 +1419,13 @@
         style.push('flex-direction:column');
         style.push('align-items:center');
         style.push('justify-content:center');
+        style.push('box-sizing:border-box');
+      }
+      if (isTwoLineCenterText) {
+        style.push('display:flex');
+        style.push('flex-direction:column');
+        style.push('justify-content:center');
+        style.push('align-items:' + (layer.textAlign === 'center' ? 'center' : 'flex-start'));
         style.push('box-sizing:border-box');
       }
       if (layer.verticalCenter || forceBadgeCenter) {
@@ -1288,10 +1457,24 @@
           ? designDefaultText
           : dataText)
         : designDefaultText;
+      if (isTwoLineCenterText) {
+        text = String(text == null ? '' : text).replace(/\r\n?/g, '\n').split('\n').slice(0, 2).join('\n');
+      }
+      if (fieldKey && themeRoleOf(layer, opts && opts._schemaId) === 'ctaText') {
+        text = Array.from(String(text == null ? '' : text)).slice(0, 3).join('');
+      }
       content = esc(text || '');
     }
 
+    var isEmptyEditableText = !!(fieldKey && opts && opts.editable && layer.type === 'text' &&
+      String(data[fieldKey] == null ? '' : data[fieldKey]).trim() === '');
+    var isDesignDefaultEditableText = !!(fieldKey && opts && opts.editable && opts.designTextDefaults &&
+      layer.type === 'text' && layer.designText != null && useDesignDefault);
+    if (isDesignDefaultEditableText) style.push('opacity:0.1');
     var attrs = '';
+    var renderClassNames = [];
+    if (isInlineCtaText) renderClassNames.push('bn-cta-inline-group');
+    if (isEmptyEditableText) renderClassNames.push('bn-empty-text-placeholder');
     if (opts && opts.editable && layer.type === 'text' && fieldKey) {
       /* 可以直接在畫布上點擊編輯：contenteditable + 記住對應的欄位key，
          外部（例如匯入工單頁面）監聽 input/blur 事件時可以用 data-field 取值寫回資料。
@@ -1303,22 +1486,27 @@
       style.push('outline:none');
       style.push('cursor:text');
       /* 文字命中範圍收在真正字面附近；空白處要讓底色仍可顯示手形並開色盤。 */
-      var fullTextHitbox = layer.verticalCenter || forceBadgeCenter || isCenteredCtaText || isDynamicRowCentered;
+      var fullTextHitbox = layer.verticalCenter || forceBadgeCenter || isCenteredCtaText || isDynamicRowCentered || isEmptyEditableText;
       editableTextInner = {
           attrs: ' contenteditable="true" spellcheck="false" data-field="' + esc(fieldKey) + '"',
           style: [
             'display:' + (fullTextHitbox ? 'block' : 'inline-block'),
-            (fullTextHitbox ? 'width:100%' : 'width:auto'),
+            (isInlineCtaText ? 'width:auto' : (fullTextHitbox ? 'width:100%' : 'width:auto')),
             'max-width:100%',
+            /* 空白文字欄位只需要底部虛線提示；不能把可編輯內層撐滿圓標，
+               否則 flex 會把圓標文字的行框推到錯誤位置。 */
+            '',
             'box-sizing:border-box',
             'text-align:' + (forceBadgeCenter ? 'center' : 'inherit'),
             'white-space:' + (forceBadgeCenter ? 'pre' : 'inherit'),
             (forceBadgeCenter ? 'word-break:normal' : ''),
-            'margin:' + (forceBadgeCenter ? '0' : '0 auto'),
+            /* CTA 文字與三角形由外層 flex 整組置中；內層若保留 auto margin，
+               flex 剩餘寬度會被邊距吃掉，造成三角形再次被推到最右側。 */
+            'margin:' + ((forceBadgeCenter || isInlineCtaText) ? '0' : '0 auto'),
             (forceBadgeCenter ? 'align-self:center' : ''),
-            (forceBadgeCenter ? 'flex:0 0 auto' : ''),
+            ((forceBadgeCenter || isInlineCtaText) ? 'flex:0 0 auto' : ''),
             'outline:none',
-            'cursor:text',
+            'cursor:' + (isEndorserNoteLayer(layer) ? 'move' : 'text'),
             'pointer-events:auto'
           ]
       };
@@ -1327,9 +1515,15 @@
       style.push('pointer-events:none');
       attrs = '';
     }
+    if (renderClassNames.length) attrs += ' class="' + renderClassNames.join(' ') + '"';
+    if (isEmptyEditableText) attrs += ' data-bn-empty-text="1"';
     if (layer.type === 'text' && fieldKey && opts && opts.theme && opts.theme.endorserTextAuto &&
         themeRoleOf(layer, opts && opts._schemaId) === 'endorserText') {
       attrs += ' data-auto-text-role="endorserText"';
+    }
+    if (layer.type === 'text' && fieldKey && opts && opts.editable && isEndorserNoteLayer(layer)) {
+      attrs += ' data-movable-canvas-text="endorser" data-text-field="' + esc(fieldKey) + '"' +
+        ' title="按住滑鼠左鍵拖曳可移動代言人小字"';
     }
     if (directColorEditable) {
       attrs += ' data-color-field="' + esc(colorFieldKey) + '"' +
@@ -1346,9 +1540,11 @@
     if (layer.type === 'image' && fieldKey && !layer.fixedImage) {
       attrs += ' data-img-field="' + esc(fieldKey) + '"' +
         ' data-img-label="' + esc(layer.fieldLabel || '圖片') + '"';
-      if (isMsbnB1WhiteProductBoundary(opts && opts._schemaId, fieldKey)) {
+      if (isMsbnB1WhiteProductBoundary(opts && opts._schemaId, fieldKey) ||
+          isMsbnB34ProductBoundary(opts && opts._schemaId, fieldKey)) {
         attrs += ' data-image-boundary="own"';
       }
+      if (rangePlaceholderOpacityOf(layer) != null && !url) attrs += ' data-bn-range-placeholder="1"';
       if (shouldSampleLogoBackground(layer, urls.length)) attrs += ' data-logo-bg-sample="adaptive"';
 
       /* aspectSource + aspectBoxes：同一組曝品／贈品範圍會依曝品原圖方向一起切換。
@@ -1402,13 +1598,66 @@
   }
 
   function computeAbsorb(schema, data, opts) {
-    var res = { skip: [], targets: [], boxes: [] };
+    var res = { skip: [], hide: [], targets: [], boxes: [] };
     /* 維修頁／全部版位預覽要看得到每個原始框，所以可以明確關掉。
        匯入編輯模式則 forceImageAbsorb=true：即使 A-2-2 / A-3-1 為了設計稿預覽
        設了 disableImageAbsorb，也會依實際有沒有上傳圖片動態歸還空間。 */
     if (opts && opts.imageAbsorb === false) return res;
     if (schema.disableImageAbsorb && !(opts && opts.forceImageAbsorb)) return res;
     var layers = schema.layers || [];
+    /* 一個圖片組合只要有任一張實際圖片，就不再顯示同組其他空白的淡色範圍。
+       這和「空間吸底」是兩件事：有圖時只隱藏提示框，不改動其餘圖片與文字的
+       原始座標；全部沒圖時才由下方原本的吸底規則合併可用範圍。 */
+    var imageGroups = {};
+    layers.forEach(function (layer) {
+      if (!layer || layer.type !== 'image') return;
+      var match = /^(productImg|endorserImg|signImg|giftImg)(\d*)$/i.exec(String(layer.field || ''));
+      if (!match) return;
+      var groupKey = match[2] || '';
+      (imageGroups[groupKey] = imageGroups[groupKey] || []).push(layer);
+    });
+    Object.keys(imageGroups).forEach(function (groupKey) {
+      var members = imageGroups[groupKey];
+      if (!members.some(function (layer) { return hasRenderableImageValue(data && data[layer.field]); })) return;
+      members.forEach(function (layer) {
+        if (!hasRenderableImageValue(data && data[layer.field]) && res.hide.indexOf(layer) === -1) {
+          res.hide.push(layer);
+        }
+      });
+    });
+    /* MSBN A-3-1 的曝品／贈品是一個共用可移動範圍：只要其中一張有圖，
+       實際圖片的拖曳框就使用兩個範圍的聯集；空白的另一格只保留資料欄位，
+       不再蓋住畫布，也不會把圖片限制在原本較小的單格。 */
+    if (/^msbn_A_3_1$/i.test(String(schema && schema.id || ''))) {
+      ['','2','3'].forEach(function (suffix) {
+        var members = layers.filter(function (layer) {
+          return layer && layer.type === 'image' &&
+            (layer.field === 'productImg' + suffix || layer.field === 'giftImg' + suffix);
+        });
+        var active = members.filter(function (layer) {
+          return hasRenderableImageValue(data && data[layer.field]);
+        });
+        if (!active.length || !members.length) return;
+        var left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+        members.forEach(function (layer) {
+          left = Math.min(left, Number(layer.left || 0));
+          top = Math.min(top, Number(layer.top || 0));
+          right = Math.max(right, Number(layer.left || 0) + Number(layer.width || 0));
+          bottom = Math.max(bottom, Number(layer.top || 0) + Number(layer.height || 0));
+          if (!hasRenderableImageValue(data && data[layer.field]) && res.hide.indexOf(layer) === -1) res.hide.push(layer);
+        });
+        var box = { left: left, top: top, width: right - left, height: bottom - top };
+        active.forEach(function (layer) {
+          var ti = res.targets.indexOf(layer);
+          if (ti === -1) {
+            res.targets.push(layer);
+            res.boxes.push(box);
+          } else {
+            res.boxes[ti] = box;
+          }
+        });
+      });
+    }
     ABSORB_GROUPS.forEach(function (group) {
       layers.forEach(function (target) {
         if (target.type !== 'image' || !target.field) return;
@@ -1690,6 +1939,7 @@
         var dynamicLayer = dynamicRowLayerOf(layer, dynamicRows);
         if (!dynamicLayer) return;
         if (absorb.skip.indexOf(layer) !== -1) return;
+        if (absorb.hide.indexOf(layer) !== -1 && !hasRenderableImageValue(data && layer.field && data[layer.field])) return;
         var ti = absorb.targets.indexOf(layer);
         if (ti !== -1) {
           var grown = layerWithBox(layer, absorb.boxes[ti]);

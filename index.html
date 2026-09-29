@@ -364,6 +364,18 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .imp-slot.is-active::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:9;
   box-shadow:inset 0 0 0 calc(2px / var(--impz,1)) var(--teal),
              inset 0 0 0 calc(4px / var(--impz,1)) var(--teal-tint);}
+/* 空白文字欄位的編輯提示只存在於畫布操作狀態；下載輸出時由 .bn-export-capture 隱藏。 */
+.bn-empty-text-placeholder{border-bottom:1px dashed rgba(90,110,106,.42);box-sizing:border-box;}
+.bn-empty-text-placeholder:hover{border-bottom-color:rgba(34,145,136,.72);}
+.bn-export-capture .bn-empty-text-placeholder{border-bottom-color:transparent !important;border-bottom-style:none !important;}
+/* 有字 CTA 的文字與三角形是同一個水平群組；群組寬度跟著 CTA 底色，
+   文字縮短時仍整組置中，且保留固定間距。 */
+.bn-cta-inline-group::after{content:"";display:block;flex:0 0 var(--bn-cta-triangle-width,0px);
+  width:var(--bn-cta-triangle-width,0px);height:var(--bn-cta-triangle-height,0px);
+  background:var(--bn-cta-triangle-color,#fff);clip-path:polygon(0 0,100% 50%,0 100%);
+  pointer-events:none;}
+/* 曝品範圍的淡色操作底框只供編輯定位，輸出成品時不納入圖片。 */
+.bn-export-capture [data-bn-range-placeholder]{opacity:0 !important;background:transparent !important;}
 
 /* 全站統一顏色區（在圖片素材下面）：改一個顏色，畫布上所有版位一起變 */
 #import-color-section{margin:0 16px 14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
@@ -6852,9 +6864,9 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <script src="JS/fonts-embed.js"></script>
 <script src="JS/render-config.js"></script>
 <script src="core/core-engine.js"></script>
-<script src="core/schema-renderer.js?v=20260924-2"></script>
-<script src="JS/image-layout.js?v=20260923-1"></script>
-<script src="JS/editor-plugin.js"></script>
+<script src="core/schema-renderer.js?v=20260929-cta-inline1"></script>
+<script src="JS/image-layout.js?v=20260924-2"></script>
+<script src="JS/editor-plugin.js?v=20260924-2"></script>
 <script src="jbp/js/logo-editor-plugin.js"></script>
 
 <script>
@@ -7045,7 +7057,8 @@ function appLoadingFinishView(token, message) {
 }
 document.addEventListener('click', function (e) {
   var el = e.target && e.target.closest ? e.target.closest('button, .home-card') : null;
-  if (!el || el.disabled || el.closest('#app-loading')) return;
+  if (!el || el.disabled || el.hasAttribute('data-skip-app-loading') ||
+      el.closest('#app-loading, .hbn-plugin-modal, .cropper-modal-wrap')) return;
   var label = appLoadingLabelOf(el);
   if (APP_LOADING.manualIds[el.id]) appLoadingStart('LOADING · ' + label, 8, '正在處理…');
   else appLoadingPulse(label);
@@ -7629,7 +7642,10 @@ function canonicalLabel(label) {
   text = text.replace(/\s*圖\s*$/, '圖');
   if (text === '商品') return '商品圖';
   if (text === '警語' || text === '小字') return '小字';
-  if (text === '代言人字' || text === '代言人小字') return '代言人小字';
+  /* 試算表的「代言人字」是舊母版對「簽名小字」的稱呼；
+     只有明確寫「代言人小字」才對到 MSBN B 系列的 endorserNote。 */
+  if (text === '代言人字') return '簽名小字';
+  if (text === '代言人小字') return '代言人小字';
   if (text === '簽名圖檔' || text === '簽名圖') return '簽名圖';
   if (text === '底色塊' || text === '圓圈色') return '色塊';
   return text;
@@ -10173,7 +10189,7 @@ var LABEL_TO_FIELD_BASE = {
      block.json 目前沒有「特色」這個欄位，依需求直接當「警語」處理，共用同一個欄位 */
   '特色': 'warn',
   '代言人圖': 'endorserImg',
-  '代言人字': 'endorserNote',
+  '代言人字': 'signNote',
   '簽名圖': 'signImg',
   '簽名圖檔': 'signImg',
   '簽名小字': 'signNote',
@@ -10206,6 +10222,31 @@ function detectVariant(fam, entries) {
   return 1;
 }
 
+function isMsbnC14Block(blockDef) {
+  return /^msbn_C_1_4$/i.test(String(blockDef && blockDef.id || ''));
+}
+function normalizeMsbnC14FixedRowValue(value, fieldKey) {
+  var text = String(value == null ? '' : value).replace(/\r\n?/g, '\n');
+  if (!/^(?:promo|copy)\d*$/i.test(String(fieldKey || ''))) return text;
+  var perLine = /^promo/i.test(String(fieldKey || '')) ? 6 : 4;
+  return text.split('\n').slice(0, 2).map(function (line) {
+    return Array.from(line).slice(0, perLine).join('');
+  }).join('\n');
+}
+function normalizeMsbnC14FixedRowEntry(entry, blockDef, fieldKey) {
+  if (!isMsbnC14Block(blockDef)) return entry;
+  var normalized = Object.assign({}, entry || {});
+  normalized.value = normalizeMsbnC14FixedRowValue(normalized.value, fieldKey || normalized.targetKey);
+  return normalized;
+}
+function limitMsbnC14FixedRows(mapped, blockDef) {
+  if (!isMsbnC14Block(blockDef) || !mapped) return mapped;
+  Object.keys(mapped).forEach(function (key) {
+    if (/^(?:promo|copy)\d*$/i.test(key)) mapped[key] = normalizeMsbnC14FixedRowValue(mapped[key], key);
+  });
+  return mapped;
+}
+
 /* 把「標籤→內容」的原始清單，對到某個版位實際的欄位 key。
    會自動處理新舊格式差異：
    - 舊格式「品名-1」「品名-2」分兩欄，但目標版位只有一個「name」單一多行欄位
@@ -10223,10 +10264,16 @@ function smartMapEntriesToFields(entries, blockDef) {
   var unkeyedEntries = [];
   (entries || []).forEach(function (e) {
     var targetKey = String(e && e.targetKey || '').trim();
+    var entryBaseLabel = stripLabelAnnotation(e && e.label || '').replace(/\r/g, '').split('\n')[0].trim();
+    /* 母版舊版 _BODA_META 可能把「代言人字」記成 endorserNote；
+       這個顯示標籤實際代表畫布的簽名小字，故在精準 key 分流前強制改到 signNote。 */
+    if (entryBaseLabel === '代言人字' && fieldKeys.indexOf('signNote') !== -1) targetKey = 'signNote';
     if (targetKey && fieldKeys.indexOf(targetKey) !== -1) {
-      (keyedEntries[targetKey] = keyedEntries[targetKey] || []).push(e);
+      (keyedEntries[targetKey] = keyedEntries[targetKey] || []).push(
+        normalizeMsbnC14FixedRowEntry(e, blockDef, targetKey)
+      );
     } else {
-      unkeyedEntries.push(e);
+      unkeyedEntries.push(normalizeMsbnC14FixedRowEntry(e, blockDef, targetKey));
     }
   });
   unkeyedEntries.forEach(function (e, order) {
@@ -10248,6 +10295,11 @@ function smartMapEntriesToFields(entries, blockDef) {
   Object.keys(groups).forEach(function (base) {
     var baseKey = LABEL_TO_FIELD_BASE[base];
     if (!baseKey) return;
+    /* 舊版 B 系列畫布沒有 signNote 時，保留相容退路；有 signNote 的版位
+       一律優先寫入真正的簽名小字欄位，避免「代言人字」又跑回 endorserNote。 */
+    if (base === '代言人字' && fieldKeys.indexOf(baseKey) === -1 && fieldKeys.indexOf('endorserNote') !== -1) {
+      baseKey = 'endorserNote';
+    }
 
     /* 同一種欄位可能同時有兩種重複方式：
        1. 同一個位置重複多列，但版型只有一個欄位，例如兩列「簽名小字」
@@ -10305,7 +10357,7 @@ function smartMapEntriesToFields(entries, blockDef) {
     /* 極舊版型的退路：所有內容合併到第一個可用欄位，不讓資料直接遺失。 */
     if (!keyedFieldKeys[available[0]]) data[available[0]] = ordered.map(function (it) { return it.value; }).filter(Boolean).join('\n');
   });
-  return data;
+  return limitMsbnC14FixedRows(data, blockDef);
 }
 
 /* 舊格式的可見 MS Layout 可能沒有 targetKey。促標值不能因為欄位契約缺失
@@ -10315,7 +10367,7 @@ function repairImportPromoMapping(entries, blockDef, mapped) {
   var promoKeys = (blockDef && Array.isArray(blockDef.fields) ? blockDef.fields : []).filter(function (field) {
     return field && field.type === 'text' && (/^promo\d*$/i.test(String(field.key || '')) || /促標/.test(String(field.label || '')));
   }).map(function (field) { return field.key; });
-  if (!promoKeys.length) return mapped;
+  if (!promoKeys.length) return limitMsbnC14FixedRows(mapped, blockDef);
   (Array.isArray(entries) ? entries : []).forEach(function (entry) {
     var label = stripLabelAnnotation(entry && entry.label || '');
     var match = /^促標(?:-(\d+))?$/.exec(label);
@@ -10326,9 +10378,9 @@ function repairImportPromoMapping(entries, blockDef, mapped) {
       var position = match[1] ? parseInt(match[1], 10) : 1;
       targetKey = promoKeys[position - 1] || promoKeys[0];
     }
-    if (targetKey) mapped[targetKey] = value;
+    if (targetKey) mapped[targetKey] = normalizeMsbnC14FixedRowValue(value, targetKey);
   });
-  return mapped;
+  return limitMsbnC14FixedRows(mapped, blockDef);
 }
 
 var blocksLoadedForImport = false;
@@ -10503,7 +10555,7 @@ function parseLayoutTemplateWorkbook(wb) {
     var text = stripLabelAnnotation(raw).replace(/\r/g, '').split('\n')[0].trim();
     if (/^(促標文案|促標文字)$/.test(text)) return '促標';
     if (text === '小字') return '警語';
-    if (text === '代言人字') return '代言人小字';
+    if (text === '代言人字') return '簽名小字';
     if (text === '簽名圖檔') return '簽名圖';
     if (text === '案型') return '文案';
     if (text === 'CTA文字') return 'CTA';
@@ -11126,7 +11178,9 @@ function parseVisibleWorkOrderLayout(wb) {
   function cell(row, col) { return plain(ws.getCell(row, col)); }
   function base(raw) {
     var value = String(raw || '').replace(/\r/g, '').split(/\n|[（(]/, 1)[0].trim();
-    return /^(促標文案|促標文字)$/.test(value) ? '促標' : value;
+    if (/^(促標文案|促標文字)$/.test(value)) return '促標';
+    if (value === '代言人字') return '簽名小字';
+    return value;
   }
   var known = ['促標', 'LOGO圖', '商品圖', '商品', '品名', '警語', '圓標', 'CTA', 'CTA文字', '代言人圖', '簽名圖', '簽名小字', '代言人小字', '特色', '內文', '文案', '項目文字', '情境圖', '信用卡圖', '贈品圖'];
   function isField(raw) { var b = base(raw); return known.indexOf(b) !== -1 || isColor(raw); }
@@ -12053,6 +12107,22 @@ function renderPreviewAllStacked(columns) {
   renderImportColorPanel();
 }
 
+function relativeLuminanceForDefaultColor(value) {
+  var rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(String(value || ''));
+  var hex = String(value || '').trim();
+  var channels;
+  if (rgb) channels = [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+  else {
+    if (/^#[0-9a-f]{3}$/i.test(hex)) hex = '#' + hex.slice(1).split('').map(function (ch) { return ch + ch; }).join('');
+    if (!/^#[0-9a-f]{6}$/i.test(hex)) return null;
+    channels = [1, 3, 5].map(function (offset) { return parseInt(hex.slice(offset, offset + 2), 16); });
+  }
+  var linear = channels.map(function (channel) {
+    var component = channel / 255;
+    return component <= 0.04045 ? component / 12.92 : Math.pow((component + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
 function colorToHex(v) {
   if (!v) return '#000000';
   v = String(v).trim();
@@ -12099,6 +12169,107 @@ function isUsableImageValue(v) {
    所有圖片欄位都能用（商品圖、代言人、簽名檔、LOGO、贈品圖…）。
    如果欄位本身是逗號分隔的多張圖，每一張都可以獨立編輯，
    編輯完成後，同檔名／同素材的所有使用處都會同步更新。 */
+function canvasImageLayoutStateFrom(img) {
+  if (!img || !img.parentElement) return {};
+  var group = img.parentElement;
+  var imgs = group.querySelectorAll('img.bn-imggroup-img');
+  if (!imgs.length) return {};
+  var ratios = null;
+  var gapPx = Number(img.dataset && img.dataset.layoutGapPx);
+  if (img.dataset && img.dataset.layoutSlotRatios) {
+    try {
+      var saved = JSON.parse(img.dataset.layoutSlotRatios);
+      if (Array.isArray(saved) && saved.length === imgs.length && saved.every(function (ratio) {
+        return typeof ratio === 'number' && isFinite(ratio) && ratio >= 0;
+      })) ratios = saved;
+    } catch (e) {}
+  }
+  if (!ratios) {
+    var groupWidth = group.clientWidth || group.offsetWidth;
+    if (!groupWidth) return {};
+    ratios = Array.prototype.map.call(imgs, function (item) {
+      var width = item.offsetWidth || parseFloat(item.style.width) || 0;
+      return width / groupWidth;
+    });
+    var gap = 5;
+    if (window.getComputedStyle) {
+      var computed = window.getComputedStyle(group);
+      var computedGap = parseFloat(computed.columnGap || computed.gap);
+      if (isFinite(computedGap) && computedGap >= 0) gap = computedGap;
+    }
+    gapPx = gap;
+  }
+  return { layoutSlotRatios: JSON.stringify(ratios), layoutGapPx: String(isFinite(gapPx) && gapPx >= 0 ? gapPx : 5) };
+}
+
+function canvasImageEditorStateFrom(img, outputSrc, includeProductEditorState) {
+  if (!img || !img.dataset) return null;
+  var state = canvasImageLayoutStateFrom(img);
+  state.outputSrc = outputSrc || img.getAttribute('src') || img.src;
+  if (includeProductEditorState !== false) {
+    if (img.dataset.baseSrc) state.baseSrc = img.dataset.baseSrc;
+    ['outputRatio', 'productOnlyRatio', 'shadowEnabled', 'pluginShadowX', 'pluginShadowY', 'pluginShadowW', 'pluginShadowH',
+      'layoutSourceWidth', 'layoutSourceHeight', 'layoutOutputWidth', 'layoutOutputHeight', 'layoutOffsetX', 'layoutOffsetY']
+      .forEach(function (key) { if (img.dataset[key] != null) state[key] = img.dataset[key]; });
+  }
+  return state;
+}
+
+function rememberCanvasImageEditorState(col, fieldKey, renderedIndex, state) {
+  if (!col || !col.data) return;
+  var key = fieldKey + '::' + renderedIndex;
+  var store = col.data.__canvasImageEditorState;
+  if (!state) {
+    if (!store) return;
+    delete store[key];
+    if (!Object.keys(store).length) delete col.data.__canvasImageEditorState;
+    return;
+  }
+  if (!store) store = col.data.__canvasImageEditorState = {};
+  store[key] = state;
+}
+function updateRenderedImageField(ctxName, idx, fieldKey) {
+  var ctx = canvasCtx(ctxName);
+  var col = ctx.columns()[idx];
+  var mount = document.getElementById(ctx.mountId(idx));
+  if (!col || !mount) return;
+  var group = Array.prototype.find.call(mount.querySelectorAll('.bn-imggroup'), function (candidate) {
+    return candidate.getAttribute('data-field-key') === fieldKey;
+  });
+  if (!group) return;
+  var urls = splitImageList(col.data[fieldKey] || '').filter(isUsableImageValue);
+  var imgs = group.querySelectorAll('img.bn-imggroup-img');
+  for (var i = 0; i < imgs.length && i < urls.length; i++) {
+    if (imgs[i].getAttribute('src') !== urls[i]) imgs[i].setAttribute('src', urls[i]);
+  }
+  restoreCanvasImageEditorState(mount, col);
+}
+function updateVisibleImageThumbnails(oldUrl, newUrl) {
+  document.querySelectorAll('.if-thumb img').forEach(function (img) {
+    var src = img.getAttribute('src') || img.src;
+    if (src && (sameImageAsset(src, oldUrl) || src === oldUrl)) img.setAttribute('src', newUrl);
+  });
+}
+function restoreCanvasImageEditorState(mountEl, col) {
+  var states = col && col.data && col.data.__canvasImageEditorState;
+  if (!mountEl || !states) return;
+  Object.keys(states).forEach(function (stateKey) {
+    var splitAt = stateKey.lastIndexOf('::');
+    if (splitAt < 0) return;
+    var fieldKey = stateKey.slice(0, splitAt);
+    var imageIndex = Number(stateKey.slice(splitAt + 2));
+    if (!isFinite(imageIndex) || imageIndex < 0) return;
+    var group = Array.prototype.find.call(mountEl.querySelectorAll('.bn-imggroup'), function (candidate) {
+      return candidate.getAttribute('data-field-key') === fieldKey;
+    });
+    var img = group && group.querySelectorAll('img.bn-imggroup-img')[imageIndex];
+    var state = states[stateKey];
+    if (!img || !state || (state.outputSrc && state.outputSrc !== img.getAttribute('src') && state.outputSrc !== img.src)) return;
+    Object.keys(state).forEach(function (key) {
+      if (key !== 'outputSrc') img.dataset[key] = String(state[key]);
+    });
+  });
+}
 function openImportFieldImageEditor(idx, fieldKey, imageIndex, ctxName) {
   if (typeof window.HBNProductEditorPlugin === 'undefined' && typeof window.openEraseEditor === 'undefined') {
     alert('圖片編輯器外掛(editor-plugin.js)還沒載入成功，確認檔案是否放在 JS/ 資料夾裡');
@@ -12130,33 +12301,62 @@ function openImportFieldImageEditor(idx, fieldKey, imageIndex, ctxName) {
   if (!imgEl || !imgEl.src) { alert('這個欄位的第 ' + (selectedIndex + 1) + ' 張圖片目前還沒有渲染完成'); return; }
   var oldUrl = parts[selectedIndex];
   var isLogoField = /^logoImg\d*$/i.test(String(fieldKey || ''));
-  /* 監看這張<img>的src有沒有被外掛編輯器改掉 */
+  /* 監看這張<img>的src有沒有被外掛編輯器改掉；直接更新資料與既有 DOM，
+     保留 image-layout 的縮放、位移和 flex 佔位，不重畫整張畫布。 */
   var mo = new MutationObserver(function (mutations) {
     mutations.forEach(function (m) {
       if (m.attributeName !== 'src') return;
-      var rawNewUrl = imgEl.src;
+      var rawNewUrl = imgEl.getAttribute('src') || imgEl.src;
       if (!rawNewUrl || rawNewUrl === oldUrl) return;
       mo.disconnect();
-      trimImportImageWhiteBorder(rawNewUrl).then(function (newUrl) {
-        if (!newUrl || newUrl === oldUrl) return;
-      parts[selectedIndex] = newUrl;
+      parts[selectedIndex] = rawNewUrl;
       col.data[fieldKey] = parts.join(',');
 
       /* 同檔名／同素材的商品、人物、LOGO 都共用同一份編輯結果。 */
       var others = findImageUsages(oldUrl, null, ctxName);
-      var linked = replaceImageInUsages(others, oldUrl, newUrl, ctxName);
-      syncImageAssetsByName(oldUrl, newUrl);
-
-      if (ctxName === 'import') {
-        saveImportState();
-        renderImportColumns(currentImportColumns); /* 左邊縮圖＋右邊畫布一起更新 */
-      } else {
-        refreshCanvasAfterChange(ctxName, idx, false);
-      }
+      var linkedLayoutStates = [];
+      others.forEach(function (usage) {
+        var usageCol = canvasCtx(ctxName).columns()[usage.idx];
+        var usageParts = splitImageList(usageCol && usageCol.data && usageCol.data[usage.key] || '');
+        var usageMount = document.getElementById(canvasCtx(ctxName).mountId(usage.idx));
+        var usageGroup = usageMount && Array.prototype.find.call(usageMount.querySelectorAll('.bn-imggroup'), function (candidate) {
+          return candidate.getAttribute('data-field-key') === usage.key;
+        });
+        var usageImgs = usageGroup ? usageGroup.querySelectorAll('img.bn-imggroup-img') : [];
+        var usableIndex = -1;
+        usageParts.forEach(function (part) {
+          if (!isUsableImageValue(part)) return;
+          usableIndex++;
+          if (sameImageAsset(part, oldUrl)) {
+            linkedLayoutStates.push({
+              idx: usage.idx,
+              key: usage.key,
+              imageIndex: usableIndex,
+              layout: canvasImageLayoutStateFrom(usageImgs[usableIndex])
+            });
+          }
+        });
+      });
+      var linked = replaceImageInUsages(others, oldUrl, rawNewUrl, ctxName);
+      syncImageAssetsByName(oldUrl, rawNewUrl);
+      var editorState = canvasImageEditorStateFrom(imgEl, rawNewUrl, !isLogoField);
+      rememberCanvasImageEditorState(col, fieldKey, renderedIndex, editorState);
+      updateRenderedImageField(ctxName, idx, fieldKey);
+      linkedLayoutStates.forEach(function (linkedState) {
+        var usageCol = canvasCtx(ctxName).columns()[linkedState.idx];
+        var stateForUsage = {};
+        Object.keys(editorState || {}).forEach(function (key) { stateForUsage[key] = editorState[key]; });
+        Object.keys(linkedState.layout || {}).forEach(function (key) { stateForUsage[key] = linkedState.layout[key]; });
+        rememberCanvasImageEditorState(usageCol, linkedState.key, linkedState.imageIndex, stateForUsage);
+      });
+      others.forEach(function (usage) {
+        updateRenderedImageField(ctxName, usage.idx, usage.key);
+      });
+      updateVisibleImageThumbnails(oldUrl, rawNewUrl);
+      canvasCtx(ctxName).afterChange();
       var log = document.getElementById('import-log');
       if (log && ctxName === 'import') log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已套用圖片編輯結果' +
         (linked ? '，另外 ' + linked + ' 個用到同一張圖的欄位也一起換了' : '') + '</span>';
-      });
     });
   });
   mo.observe(imgEl, { attributes: true, attributeFilter: ['src'] });
@@ -12479,7 +12679,7 @@ function showImportToolbar(show) {
    中間畫布是唯一主控：畫布目前看到哪個版位，右側對應工具才跟著進入
    可視範圍。右側工具列可以獨立捲動與操作，絕不反向捲動中間畫布。
 ════════════════════════════════════════ */
-var IMPORT_SYNC = { canvasTimer: null };
+var IMPORT_SYNC = { canvasTimer: null, activeIndex: -1 };
 
 /* 找出畫布可視範圍的主版位：先取包含畫面中心的格子，再比較實際可見面積。
    副區一排 2／3 時不能只看垂直位置，否則同高度的格子會永遠誤選最右邊。 */
@@ -12519,6 +12719,7 @@ function importToolColMatchesIndex(el, idx) {
   return values.some(function (value) { return String(value).trim() === String(idx); });
 }
 function markActiveImportCol(idx) {
+  if (isFinite(Number(idx)) && Number(idx) >= 0) IMPORT_SYNC.activeIndex = Number(idx);
   var activeCol = currentImportColumns && currentImportColumns[idx];
   var activeDef = activeCol && BNCore.getBlock(activeCol.blockId);
   var activeNameEl = document.getElementById('import-active-col-name');
@@ -13050,16 +13251,20 @@ function sampledRoleColors(columns) {
   return out;
 }
 
-/* 匯入工單的連動預設：未手動覆寫時，促標底色跟曝光副標、促標字色跟背景，
+/* 匯入工單的連動預設：未手動覆寫時，促標底色跟曝光副標、促標深色底用白字、淺色底用畫布背景色，
    MSBN C／D 卡片底色以背景同色相為來源，再加亮成舒適淡色；一旦使用者手動指定，外層呼叫端會優先使用手動色。 */
 var A23_CARD_DEFAULTS = { left: '#a9c5ff', right: '#ffbda9' };
 function importLinkedDefaultColors(colorState, sampled, sharedBg) {
   colorState = colorState || {};
   sampled = sampled || {};
   var badgeBg = colorState.badgeBg || sampled.badgeBg || '';
+  var linkedPromoBg = colorState.promoBg || getExposureSubTextColor();
+  var promoBgLuminance = relativeLuminanceForDefaultColor(linkedPromoBg);
+  var linkedPromoText = promoBgLuminance != null && promoBgLuminance >= 0.52
+    ? (sharedBg || '#111827') : '#ffffff';
   return {
     promoBg: getExposureSubTextColor(),
-    promoText: sharedBg || '#111827',
+    promoText: linkedPromoText,
     cardBg: sharedBg || badgeBg || sampled.cardBg || '',
     /* A-2-3 左右卡片有固定的設計預設，不隨圓標底色連動。 */
     cardBgA23Left: A23_CARD_DEFAULTS.left,
@@ -13087,7 +13292,7 @@ function dynamicRowRowsForColumn(col) {
   return [];
 }
 /* 手動換背景色代表配色情境已改變：促標不保留先前的手動覆寫，
-   重新使用「副標色當底、背景色加亮 50% 當字」的連動預設。 */
+   重新以副標色為底；深色底用白字，淡色底用新的畫布背景色。 */
 function relinkImportPromoColorsToBackground() {
   importTheme.promoBg = '';
   importTheme.promoText = '';
@@ -13121,7 +13326,7 @@ function importRenderOpts(editable, mode, col) {
     warnText: colorState.warnText || linkedDefaults.warnText,
     warnTextAuto: !colorState.warnText,
     itemText: colorState.itemText || linkedDefaults.itemText,
-    /* 促標字色未手動選色時，與目前背景顏色同步。 */
+    /* 促標字色未手動選色時：深色底用白字，淡色底跟畫布背景色。 */
     promoTextAuto: !colorState.promoText, bgScope: 'msbn-d' };
   IMPORT_COLOR_ITEMS.forEach(function (it) {
     if (it.key === 'bg' || it.key === 'cardBg') return;
@@ -13223,7 +13428,7 @@ function renderImportColorPanel() {
     var note = isBg ? '與曝光資源、畫布留白連動' : (it.key === 'promoBg'
       ? (overridden ? '' : '預設跟曝光資源副標文字色')
       : (it.key === 'promoText'
-        ? (overridden ? '' : (hasMsbnC ? 'MSBN C（C-1-1～3 除外）預設黑字；其他版位為背景色加亮 50%' : '預設為背景色加亮 50%'))
+        ? (overridden ? '' : '預設白字；促標底色偏淡時改用畫布背景色')
         : (isCardBg
           ? (overridden ? '只同步 MSBN C／D 卡片；同步後加亮 60%' : '預設依背景色同色相配色，再加亮 60%')
           : (isA23CardBg
@@ -13391,7 +13596,7 @@ function renderMaintColorPanel() {
     var note = isBg ? (overridden ? '維修測試背景色' : '目前共用背景色') : (it.key === 'promoBg'
       ? (overridden ? '' : '預設跟曝光資源副標文字色')
       : (it.key === 'promoText'
-        ? (overridden ? '' : (hasMsbnC ? 'MSBN C（C-1-1～3 除外）預設黑字；其他版位為背景色加亮 50%' : '預設為背景色加亮 50%'))
+        ? (overridden ? '' : '預設白字；促標底色偏淡時改用畫布背景色')
         : (isCardBg
           ? (overridden ? '只同步 MSBN C／D 卡片；同步後加亮 60%' : '預設依背景色同色相配色，再加亮 60%')
           : (isA23CardBg
@@ -13614,6 +13819,7 @@ function importImageActionButton(label, title, key, act, imageIndex, disabled, i
   var button = document.createElement('button');
   button.type = 'button';
   button.className = 'if-btn' + (iconOnly ? ' if-icon-btn' : '') + (danger ? ' danger' : '');
+  if (act === 'edit') button.setAttribute('data-skip-app-loading', '1');
   button.title = title;
   button.setAttribute('aria-label', title);
   button.disabled = !!disabled;
@@ -13653,7 +13859,7 @@ function bindImportImageFieldTools(box, idx, ctxName) {
       actions.appendChild(importImageActionButton('上移', '這張圖片圖層上移', key, 'part-layer-up', imageIndex, layerIndex <= 0, 'up', true, false, idx, ctxName));
       actions.appendChild(importImageActionButton('下移', '這張圖片圖層下移', key, 'part-layer-down', imageIndex, layerIndex >= parts.length - 1, 'down', true, false, idx, ctxName));
       actions.appendChild(importImageActionButton('編輯', '裁切／去背／擦除／影子', key, 'edit', imageIndex, !usable, 'edit', false, false, idx, ctxName));
-      actions.appendChild(importImageActionButton('換圖', '更換這張圖片', key, 'swap', imageIndex, false, 'refresh', false, false, idx, ctxName));
+      actions.appendChild(importImageActionButton(usable ? '換圖' : '新增', usable ? '更換這張圖片' : '新增這張圖片', key, 'swap', imageIndex, false, usable ? 'refresh' : 'upload', false, false, idx, ctxName));
       actions.appendChild(importImageActionButton('刪除', '刪除這張圖片', key, 'del', imageIndex, !part, 'close', false, true, idx, ctxName));
       row.appendChild(actions);
     });
@@ -13663,6 +13869,10 @@ function bindImportImageFieldTools(box, idx, ctxName) {
 function renderImportColumns(columns, skipPreviewRerender) {
   activeImportCanvasContext = 'import';
   currentImportColumns = columns;
+  var importToolsBeforeRender = document.getElementById('import-canvas-tools');
+  var preservedToolScrollTop = importToolsBeforeRender ? importToolsBeforeRender.scrollTop : null;
+  var preservedActiveIndex = Number(IMPORT_SYNC && IMPORT_SYNC.activeIndex);
+  if (!isFinite(preservedActiveIndex) || preservedActiveIndex < 0 || preservedActiveIndex >= columns.length) preservedActiveIndex = -1;
   columns.forEach(function (col) { normalizeLocalCircleDefaults(col, BNCore.getBlock(col.blockId)); });
   queueImportStateSave();
   var scroll = document.getElementById('import-fields-scroll');
@@ -13944,7 +14154,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
               '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="edit" data-image-index="' + imageIndex + '"' + (usable ? '' : ' disabled') +
                 ' title="裁切／去背／擦除／影子" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 編輯') + '">' + lineIcon('edit') + ' 編輯</button>' +
               '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="swap" data-image-index="' + imageIndex + '"' +
-                ' title="更換這張圖片" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 換圖') + '">' + lineIcon('refresh') + ' 換圖</button>' +
+                ' title="' + (usable ? '更換這張圖片' : '補上這張圖片') + '" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' ' + (usable ? '換圖' : '補圖')) + '">' + lineIcon(usable ? 'refresh' : 'upload') + ' ' + (usable ? '換圖' : '補圖') + '</button>' +
               '<button type="button" class="if-btn danger" data-key="' + esc(toolDef.key) + '" data-act="del" data-image-index="' + imageIndex + '"' + (part ? '' : ' disabled') +
                 ' title="刪除這張圖片" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 刪除') + '">' + lineIcon('close') + ' 刪除</button>' +
             '</div>' +
@@ -14149,7 +14359,13 @@ function renderImportColumns(columns, skipPreviewRerender) {
   /* 重畫「統一顏色」區：沒有手動改過的顏色要把這批版位實際的色號吸進來顯示 */
   renderImportColorPanel();
   if (columns.length && document.querySelector('#import-block-tools .import-band-tool-col[data-col="0"], #import-block-tools .import-block-tool[data-col="0"]')) {
-    markActiveImportCol(0);
+    markActiveImportCol(preservedActiveIndex >= 0 ? preservedActiveIndex : 0);
+    if (preservedToolScrollTop != null) {
+      requestAnimationFrame(function () {
+        var tools = document.getElementById('import-canvas-tools');
+        if (tools) tools.scrollTop = preservedToolScrollTop;
+      });
+    }
   }
 }
 
@@ -14444,8 +14660,61 @@ function bindDynamicRowControls(mountEl, col, idx, ctxName) {
 }
 
 
+function bindEndorserTextDrag(mountEl, col, idx, ctxName) {
+  if (!mountEl || !col || !col.data) return;
+  mountEl.querySelectorAll('[data-movable-canvas-text="endorser"]').forEach(function (textLayer) {
+    if (textLayer._bnEndorserDragBound) return;
+    textLayer._bnEndorserDragBound = true;
+    var fieldKey = textLayer.getAttribute('data-text-field');
+    if (!fieldKey) return;
+    textLayer.addEventListener('mousedown', function (event) {
+      if (event.button !== 0 || !event.target.closest('[contenteditable="true"]')) return;
+      var startX = event.clientX;
+      var startY = event.clientY;
+      var startLeft = parseFloat(textLayer.style.left) || 0;
+      var startTop = parseFloat(textLayer.style.top) || 0;
+      var started = false;
+      var moved = false;
+      var oldUserSelect = document.body.style.userSelect;
+      var mountRect = mountEl.getBoundingClientRect();
+      var scaleX = mountEl.offsetWidth ? mountRect.width / mountEl.offsetWidth : 1;
+      var scaleY = mountEl.offsetHeight ? mountRect.height / mountEl.offsetHeight : scaleX;
+      if (!isFinite(scaleX) || scaleX <= 0) scaleX = 1;
+      if (!isFinite(scaleY) || scaleY <= 0) scaleY = scaleX;
+
+      function onMove(moveEvent) {
+        var dx = moveEvent.clientX - startX;
+        var dy = moveEvent.clientY - startY;
+        if (!started && Math.abs(dx) + Math.abs(dy) < 4) return;
+        started = true;
+        moved = true;
+        moveEvent.preventDefault();
+        document.body.style.userSelect = 'none';
+        var left = startLeft + dx / scaleX;
+        var top = startTop + dy / scaleY;
+        textLayer.style.left = left + 'px';
+        textLayer.style.top = top + 'px';
+        var positions = col.data.__canvasTextPositions || (col.data.__canvasTextPositions = {});
+        positions[fieldKey] = { left: left, top: top };
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.userSelect = oldUserSelect;
+        if (!moved) return;
+        var selection = window.getSelection && window.getSelection();
+        if (selection) selection.removeAllRanges();
+        if (ctxName === 'import') saveImportState();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
 function bindCanvasInteractions(mountEl, col, idx, ctxName) {
+  restoreCanvasImageEditorState(mountEl, col);
   bindCanvasEditable(mountEl, col, idx, ctxName);
+  bindEndorserTextDrag(mountEl, col, idx, ctxName);
   bindDynamicRowControls(mountEl, col, idx, ctxName);
   bindCanvasColorPick(mountEl, col, idx, ctxName);
   bindCanvasImageDrop(mountEl, col, idx, ctxName);
@@ -14509,10 +14778,20 @@ function openCanvasColorPicker(col, idx, ctxName, key) {
 
   /* D 系列的圓圈色是版位局部色，匯入頁優先開右側該版位自己的色票。 */
   if (!isMaint) {
-    var card = document.querySelector('#import-fields-scroll .imp-col[data-col="' + idx + '"]');
-    var fieldEl = card && Array.prototype.find.call(card.querySelectorAll('.field'), function (el) {
+    /* 圓圈色欄位已合併到右側版位工具卡；先從該工具卡找，
+       舊版仍留在左側欄位區的資料才退回原本的尋找方式。 */
+    var toolCol = Array.prototype.find.call(document.querySelectorAll('#import-block-tools .import-band-tool-col[data-col-list]'), function (el) {
+      return importToolColMatchesIndex(el, idx);
+    });
+    var fieldEl = toolCol && Array.prototype.find.call(toolCol.querySelectorAll('.field'), function (el) {
       return el.getAttribute('data-key') === key;
     });
+    if (!fieldEl) {
+      var card = document.querySelector('#import-fields-scroll .imp-col[data-col="' + idx + '"]');
+      fieldEl = card && Array.prototype.find.call(card.querySelectorAll('.field'), function (el) {
+        return el.getAttribute('data-key') === key;
+      });
+    }
     var localPicker = fieldEl && fieldEl.querySelector('.local-color-picker');
     if (localPicker) {
       fieldEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -14642,9 +14921,16 @@ function canvasTextAllowsManualBreak(col, key) {
   var field = importCanvasTextField(col, key);
   return !!(field && (/badge/i.test(String(field.key || '')) || /圓標/.test(String(field.label || ''))));
 }
+function isCanvasCtaTextField(col, key) {
+  var field = importCanvasTextField(col, key);
+  return /^cta\d*$/i.test(String(key || '')) || !!(field && /CTA/i.test(String(field.label || '')));
+}
 
 function normalizeCanvasTextBreaks(text, col, key, sourceType) {
   var value = String(text == null ? '' : text).replace(/\r\n?/g, '\n');
+  if (col && /^msbn_C_1_4$/i.test(String(col.blockId || '')) && /^(?:promo|copy)\d*$/i.test(String(key || ''))) {
+    value = normalizeMsbnC14FixedRowValue(value, key);
+  }
   /* 版型原本的兩行資料必須保留；只有新增的貼上內容才依規則移除換行。
      Enter 本身仍由 bindCanvasEditable 的 beforeinput 直接攔截，
      因此「保留既有換行」不會重新開放其他文字欄位手動斷行。 */
@@ -14658,8 +14944,11 @@ function normalizeCanvasTextBreaks(text, col, key, sourceType) {
     var totalUnits = chars.reduce(function (sum, ch) {
       return sum + (/^[\x00-\x7f]$/.test(ch) ? 0.5 : 1);
     }, 0);
-    /* 4 字以內維持單行；5～7 字才平均拆成 3+2、3+3、4+3。 */
-    var firstLineLimit = totalUnits <= 4 ? 4 : Math.min(4, Math.ceil(totalUnits / 2));
+    /* 圓標沿用原始版配的斷行節奏：4 個中文字固定 2+2；5～7 字為
+       3+2、3+3、4+3。其他短字串維持單行。 */
+    var isFourFullWidthChars = chars.length === 4 && totalUnits >= 3.5;
+    var firstLineLimit = isFourFullWidthChars ? 2
+      : (totalUnits <= 4 ? 4 : Math.min(4, Math.ceil(totalUnits / 2)));
     var first = '', second = '', firstUnits = 0;
     chars.forEach(function (ch) {
       var units = /^[\x00-\x7f]$/.test(ch) ? 0.5 : 1;
@@ -14861,6 +15150,18 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       }
       var limit = importCanvasTextLimit(col, key);
       var lineLimit = importCanvasTextLineLimit(col, key);
+      var isCtaText = isCanvasCtaTextField(col, key);
+      if (isCtaText && !/^(delete|history|format)/i.test(inputType)) {
+        var ctaIncoming = event.data;
+        if (ctaIncoming == null && inputType === 'insertParagraph') ctaIncoming = '\n';
+        if (ctaIncoming != null) {
+          var ctaCurrent = readEditableText(el);
+          var ctaSelected = importCanvasSelectionText(el);
+          var nextCtaLength = Array.from(ctaCurrent).length - Array.from(ctaSelected).length + Array.from(ctaIncoming).length;
+          if (nextCtaLength > 3) event.preventDefault();
+          return;
+        }
+      }
       if (limit == null) return;
       if (/^(delete|history|format)/i.test(inputType)) return;
       var incoming = event.data;
@@ -14903,8 +15204,11 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       var current = readEditableText(el);
       var selected = importCanvasSelectionText(el);
       var available = limit - importCanvasTextUnits(current) + importCanvasTextUnits(selected);
-      var allowed = limit == null ? normalizedIncoming
-        : truncateImportCanvasText(normalizedIncoming, Math.max(0, available), lineLimit);
+      var isCtaText = isCanvasCtaTextField(col, key);
+      var allowed = isCtaText
+        ? Array.from(normalizedIncoming).slice(0, Math.max(0, 3 - Array.from(current).length + Array.from(selected).length)).join('')
+        : (limit == null ? normalizedIncoming
+          : truncateImportCanvasText(normalizedIncoming, Math.max(0, available), lineLimit));
       var selection = window.getSelection && window.getSelection();
       if (!selection || !selection.rangeCount || !el.contains(selection.getRangeAt(0).commonAncestorContainer)) return;
       var range = selection.getRangeAt(0);
@@ -14921,7 +15225,9 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       if (canvasTextRulesEnabled(ctxName)) {
         var limit = importCanvasTextLimit(col, key);
         var lineLimit = importCanvasTextLineLimit(col, key);
-        var limited = limit == null ? text : truncateImportCanvasText(text, limit, lineLimit);
+        var limited = isCanvasCtaTextField(col, key)
+          ? Array.from(text).slice(0, 3).join('')
+          : (limit == null ? text : truncateImportCanvasText(text, limit, lineLimit));
         limited = limitCanvasTextLineCount(limited, col, key);
         if (limited !== rawText) {
           text = limited;
@@ -15168,6 +15474,9 @@ function resolveImportBindingTargetKeys(entries, blockDef) {
   Object.keys(groups).forEach(function (base) {
     var baseKey = LABEL_TO_FIELD_BASE[base];
     if (!baseKey) return;
+    if (base === '代言人字' && fieldKeys.indexOf(baseKey) === -1 && fieldKeys.indexOf('endorserNote') !== -1) {
+      baseKey = 'endorserNote';
+    }
     var keyRe = new RegExp('^' + baseKey.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&') + '(\\d*)$');
     var available = fieldKeys.filter(function (key) { return keyRe.test(key); }).sort(function (a, b) {
       var ma = keyRe.exec(a), mb = keyRe.exec(b);
@@ -15615,12 +15924,15 @@ function exportImportPlacementImages(strip, baseOptions) {
       backgroundColor: resolvedImportBg(),
       style: importPlacementCaptureStyle(job)
     });
+    if (job.element && job.element.classList) job.element.classList.add('bn-export-capture');
     return waitForImportExportRender(job.element)
       .then(function () { return htmlToImage.toPng(job.element, options); })
       .then(function (dataUrl) {
+        if (job.element && job.element.classList) job.element.classList.remove('bn-export-capture');
         output.push({ filename: job.filename, dataUrl: dataUrl });
       })
       .catch(function (err) {
+        if (job.element && job.element.classList) job.element.classList.remove('bn-export-capture');
         failures.push({ filename: job.filename, error: err });
       })
       .then(function () { return next(index + 1); });
@@ -15657,6 +15969,7 @@ function downloadImportImage() {
      截圖前先拿掉，截完再放回去 */
   var activeSlots = Array.prototype.slice.call(strip.querySelectorAll('.imp-slot.is-active'));
   activeSlots.forEach(function (s) { s.classList.remove('is-active'); });
+  strip.classList.add('bn-export-capture');
 
   var prevTransform = strip.style.transform;
   var prevW = wrap.style.width, prevH = wrap.style.height;
@@ -15670,6 +15983,7 @@ function downloadImportImage() {
     wrap.style.width = prevW;
     wrap.style.height = prevH;
     activeSlots.forEach(function (s) { s.classList.add('is-active'); });
+    strip.classList.remove('bn-export-capture');
   }
   var opts = {
     width: fullW,
@@ -15885,6 +16199,94 @@ function downloadImportedWorkOrderXlsx() {
     setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
   });
 }
+
+/* 「色票.xlsx」固定 A:E、33 列的 CSV 版本。
+   CSV 不保留活頁簿公式本體，因此 D3／D4／D14／D29 直接寫入公式計算後的色碼；
+   這與 Excel 將原檔另存 CSV 時輸出的結果一致。 */
+var IMPORT_COLOR_TICKET_ROWS = [
+  ['Component', 'Position', 'Detail', 'Color', '對照邏輯'],
+  ['Page Style', 'Page Background Color', '(現在 GD 固定會提供的顏色) 頁面底色', '#FFFFFF', 'Page Background Color'],
+  ['Page Style', 'Header Background Color', '頁面標題底色跟頁面底色相同', '#FFFFFF', 'Page Background Color'],
+  ['Page Style', 'Page Title Text Color', '頁面標題文字顏色', '#d12f60', 'Unselected Sticky Tab Text Color'],
+  ['Page Style', 'Page Header Icons Color Before Page Scrolled Up', '標題 Icon 點選前的顏色', '#d12f60', 'Unselected Sticky Tab Text Color'],
+  ['Page Style', 'Page Header Icons Color After Page Scrolled Up', '標題 Icon 點選後的顏色', '#d12f60', 'Unselected Sticky Tab Text Color'],
+  ['Anchor Tab Bar', 'Component Background', '錨點背景色', '#FFFFFF', 'Page Background Color'],
+  ['Anchor Tab Bar', 'Selected Sticky Tab Bg Color', '(現在 GD 固定會提供的顏色)', '#d12f60', 'Selected Sticky Tab Bg Color'],
+  ['Anchor Tab Bar', 'Selected Sticky Tab Text Color', '', '#FFFFFF', 'Selected Sticky Tab Text Color'],
+  ['Anchor Tab Bar', 'Unselected Sticky Tab Bg Color', '', '#FFFFFF', 'Unselected Sticky Tab Bg Color'],
+  ['Anchor Tab Bar', 'Unselected Sticky Tab Text Color', '', '#d12f60', 'Unselected Sticky Tab Text Color'],
+  ['Anchor Tab Bar', 'Show More and Dropdown > More Background Color', '', '#FFFFFF', 'Show More and Dropdown > More Background Color'],
+  ['Anchor Tab Bar', 'Show More and Dropdown > More Icon and Text Color', '', '#d12f60', 'Show More and Dropdown > More Icon and Text Color'],
+  ['Gap', 'Color', 'Gap 的顏色跟頁面底色一樣', '#FFFFFF', 'Page Background Color'],
+  ['Voucher Grid', 'Able to Claim All Vouchers > Claim All Button Borderline Color', '一鑑領取 Voucher 按鈕外框顏色', '#FFFFFF', 'Unselected Sticky Tab Bg Color'],
+  ['Voucher Grid', 'Able to Claim All Voucher > Claim All Button Background Color', '一鑑領取 Voucher 按鈕背景顏色', '#d12f60', 'Selected Sticky Tab Bg Color'],
+  ['Voucher Grid', 'Able to Claim All Voucher > Claim All Button Text Color', '一鑑領取 Voucher 按鈕文字顏色', '#d12f60', 'Unselected Sticky Tab Text Color'],
+  ['Product Collection', 'Multi Tabs > Selected Tab Background Color', 'Product Collection Tab 選擇後的背景顏色', '#d12f60', 'Selected Sticky Tab Bg Color'],
+  ['Product Collection', 'Multi Tabs > Selected Tab Text Color', 'Product Collection Tab 選擇後的文字顏色', '#FFFFFF', 'Selected Sticky Tab Text Color'],
+  ['Product Collection', 'Multi Tabs > Unselected Tab Background Color', 'Product Collection Tab 選擇前的背景顏色', '#FFFFFF', 'Unselected Sticky Tab Bg Color'],
+  ['Product Collection', 'Multi Tabs > Unselected Tab Text Color', 'Product Collection Tab 選擇前的文字顏色', '#d12f60', 'Unselected Sticky Tab Text Color'],
+  ['Product Collection', 'Footer/Header See All Color', 'Product Collection 看全部的顏色', '#d12f60', 'Selected Sticky Tab Bg Color'],
+  ['Product Collection', 'Product Collection', 'Product Collection 看全部的顏色', '#d12f60', 'Selected Sticky Tab Bg Color'],
+  ['CTA Button', 'Button Text Color', '系統 CTA 文字顏色', '#FFFFFF', 'Selected Sticky Tab Text Color'],
+  ['CTA Button', 'Background Color', '系統 CTA 背景顏色', '#d12f60', 'Selected Sticky Tab Bg Color'],
+  ['CTA Button', 'Border Color', '系統 CTA 邊框顏色', '#FFFFFF', 'Unselected Sticky Tab Bg Color'],
+  ['時間軸', 'Text Color (時間)', '(現在 GD 固定會提供的顏色)', '9D1500', 'Text Color (時間)'],
+  ['時間軸', 'Text Color (提醒我)', '', 'EE4E68', 'Text Color (提醒我)'],
+  ['Header', 'Header Text Color', '系統標的文字顏色', '#FFFFFF', 'Selected Sticky Tab Text Color'],
+  ['Header', 'Display Trapezoidal/Rectangle Bg under Text > Text Background Color', '系統標的背景顏色', '#d12f60', 'Selected Sticky Tab Bg Color'],
+  ['Header', 'Display See All > See All Color', '系統標 "看更多" 的文字顏色', '#FFFFFF', 'Selected Sticky Tab Text Color'],
+  ['Section: MSBN_A-1-1 \nSection: MSBN_A-1-2 \nSection: MSBN_A-2-1 \nSection: MSBN_A-2-2 \nSection: MSBN_A-3-1', 'Text Color (**活動價$000,000**)', '(現在 GD 固定會提供的顏色)', '9D1500', 'Text Color (**活動價$000,000**)'],
+  ['Section: MSBN_A-1-1 \nSection: MSBN_A-1-2 \nSection: MSBN_A-2-1 \nSection: MSBN_A-2-2 \nSection: MSBN_A-3-1', 'Text Color (<s>$000,000</s>)', '(現在 GD 固定會提供的顏色)', 'EE4E68', 'Text Color (<s>$000,000</s>)']
+];
+function normalizedTicketColor(value, fallback) {
+  var raw = String(value == null ? '' : value).trim();
+  if (/^#[0-9a-f]{3}$/i.test(raw)) raw = '#' + raw.slice(1).split('').map(function (ch) { return ch + ch; }).join('');
+  if (/^#[0-9a-f]{6}$/i.test(raw) || /^rgba?\(/i.test(raw)) return colorToHex(raw).toUpperCase();
+  return String(fallback || '#000000').toUpperCase();
+}
+function currentImportColorTicketValues() {
+  var background = normalizedTicketColor(resolvedImportBg(), '#FFFFFF');
+  var columns = activeImportPaletteColumns();
+  var sampled = sampledRoleColors(columns);
+  var linked = importLinkedDefaultColors(importTheme, sampled, background);
+  return {
+    background: background,
+    promoText: normalizedTicketColor(importTheme.promoText || linked.promoText || sampled.promoText, '#FFFFFF'),
+    promoBg: normalizedTicketColor(importTheme.promoBg || linked.promoBg || sampled.promoBg, '#d12f60'),
+    warnText: normalizedTicketColor(importTheme.warnText || linked.warnText || sampled.warnText, '#4b5563')
+  };
+}
+function csvCell(value) {
+  var text = String(value == null ? '' : value);
+  return /[",\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+}
+function buildImportColorTicketCsv() {
+  var colors = currentImportColorTicketValues();
+  var rows = IMPORT_COLOR_TICKET_ROWS.map(function (row) { return row.slice(); });
+  [2, 9, 10, 12].forEach(function (rowNumber) { rows[rowNumber - 1][3] = colors.background; });
+  [8, 11, 13, 28].forEach(function (rowNumber) { rows[rowNumber - 1][3] = colors.promoText; });
+  rows[27 - 1][3] = colors.promoBg;
+  rows[32 - 1][3] = colors.warnText;
+  rows[33 - 1][3] = '#EE4E68';
+  /* 原色票公式的實際結果。 */
+  rows[3 - 1][3] = rows[2 - 1][3];
+  rows[4 - 1][3] = rows[11 - 1][3];
+  rows[14 - 1][3] = rows[2 - 1][3];
+  rows[29 - 1][3] = rows[9 - 1][3];
+  return '\ufeff' + rows.map(function (row) { return row.map(csvCell).join(','); }).join('\r\n');
+}
+function downloadImportColorTicketCsv() {
+  var blob = new Blob([buildImportColorTicketCsv()], { type: 'text/csv;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  /* CSV 本身只有一張表；固定檔名後，Excel 開啟時唯一頁籤即顯示為「色票」。 */
+  a.download = '色票.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+}
 document.getElementById('btn-upload-snapshot').addEventListener('click', function () {
   document.getElementById('snapshot-file-input').click();
 });
@@ -15905,7 +16307,7 @@ document.getElementById('btn-download-import-package').addEventListener('click',
   var workOrderSkipped = !currentImportWorkbook;
   btn.disabled = true;
   btn.innerHTML = lineIcon('loading') + ' 輸出中…';
-  appLoadingStart('LOADING · 下載工單、圖片與暫存檔', 8, '正在準備回填工單與成品圖片…');
+  appLoadingStart('LOADING · 下載工單、圖片、色票與暫存檔', 8, '正在準備回填工單、成品圖片與色票 CSV…');
   Promise.resolve()
     .then(function () {
       if (workOrderSkipped) return null;
@@ -15919,7 +16321,9 @@ document.getElementById('btn-download-import-package').addEventListener('click',
       return downloadImportImage();
     })
     .then(function () {
-      appLoadingUpdate(86, 'LOADING · 建立暫存檔', '正在整理可還原的編輯資料…');
+      appLoadingUpdate(82, 'LOADING · 匯出色票', '正在套用目前畫布色碼並下載 CSV…');
+      downloadImportColorTicketCsv();
+      appLoadingUpdate(88, 'LOADING · 建立暫存檔', '正在整理可還原的編輯資料…');
       return buildImportSnapshot();
     })
     .then(function (snap) {
@@ -15927,9 +16331,9 @@ document.getElementById('btn-download-import-package').addEventListener('click',
       downloadJSON(snap, '匯入暫存_' + Date.now() + '.json');
       if (workOrderError || workOrderSkipped) {
         var reason = workOrderError ? workOrderError.message : '目前不是由原始 .xlsx 工單匯入';
-        appLoadingFinish('圖片與暫存檔已下載；工單未下載：' + reason);
+        appLoadingFinish('圖片、色票 CSV 與暫存檔已下載；工單未下載：' + reason);
       } else {
-        appLoadingFinish('工單、圖片與暫存檔已下載');
+        appLoadingFinish('工單、圖片、色票 CSV 與暫存檔已下載');
       }
     })
     .catch(function (err) {
@@ -16495,7 +16899,7 @@ function ensureBottomPreviewLoaded(forceReload) {
   };
 
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=import-preview&bridge=1&v=20260902-levelpreset1';
+  frame.src = 'bottom/index.html?embed=import-preview&bridge=1&v=20260929-colorcsv1';
 }
 /* bottom/index.html 是一套完整的吸底編輯器，仍用 iframe 隔離 CSS、Konva 與狀態。
    嵌入模式由 bottom 自己把面板排到左側，父頁只保留素材庫標題與三個頁簽。 */
@@ -16532,7 +16936,7 @@ function ensureBottomToolLoaded(forceReload) {
     }, 80);
   };
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20260902-levelpreset1';
+  frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20260929-colorcsv1';
 }
 
 function postToStandaloneBottom(message, transfer) {
@@ -16606,7 +17010,7 @@ function ensureStandaloneBottomLoaded(forceReload) {
     }, 80);
   };
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=standalone&bridge=1&v=20260902-levelpreset1';
+  frame.src = 'bottom/index.html?embed=standalone&bridge=1&v=20260929-colorcsv1';
 }
 function syncGeneratorToolMode() {
   var isSticky = currentPaletteTab === 'sticky';

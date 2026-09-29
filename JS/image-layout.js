@@ -157,10 +157,58 @@
     offsetStore[groupKey][index] = { x: x, y: y };
   }
 
-  /* 把記住的位移套到這張圖上（用 transform，不影響其他張圖的排版位置） */
+  function imageEditorGeometry(img) {
+    var data = img && img.dataset;
+    if (!data) return null;
+    var sourceWidth = Number(data.layoutSourceWidth);
+    var sourceHeight = Number(data.layoutSourceHeight);
+    var outputWidth = Number(data.layoutOutputWidth);
+    var outputHeight = Number(data.layoutOutputHeight);
+    if (!(sourceWidth > 0 && sourceHeight > 0 && outputWidth > 0 && outputHeight > 0)) return null;
+    return {
+      sourceWidth: sourceWidth,
+      sourceHeight: sourceHeight,
+      outputWidth: outputWidth,
+      outputHeight: outputHeight,
+      offsetX: Number(data.layoutOffsetX) || 0,
+      offsetY: Number(data.layoutOffsetY) || 0
+    };
+  }
+
+  /* 把記住的位移套到這張圖上（用 transform，不影響其他張圖的排版位置）。
+     編輯器輸出可能比商品本體多出影子邊界；矩陣會把本體還原到原來的錨點，
+     同時讓影子延伸到圖片框外，flex 佔位仍維持原寬度。 */
   function applyOffset(img, groupKey, index) {
     var o = getOffset(groupKey, index);
-    img.style.transform = (o.x || o.y) ? ('translate(' + o.x + 'px,' + o.y + 'px)') : '';
+    var weight = getWeight(groupKey, index, img);
+    var geometry = imageEditorGeometry(img);
+    img._bnImageLayoutWeight = weight;
+    if (geometry && img.offsetWidth) {
+      var baseWidth = img.offsetWidth;
+      var productHeight = baseWidth * geometry.sourceHeight / geometry.sourceWidth;
+      var group = img.parentElement;
+      var groupHeight = group ? group.clientHeight : img.offsetHeight;
+      var layoutTop = (groupHeight - img.offsetHeight) / 2;
+      var desiredTop = (groupHeight - productHeight) / 2;
+      var editScale = geometry.outputWidth / geometry.sourceWidth;
+      var txEdit = -geometry.offsetX * baseWidth / geometry.sourceWidth;
+      var tyEdit = desiredTop - layoutTop - geometry.offsetY * baseWidth / geometry.sourceWidth;
+      var centerX = baseWidth / 2;
+      var centerY = desiredTop - layoutTop + productHeight / 2;
+      var scale = editScale * weight;
+      var tx = o.x + centerX * (1 - weight) + weight * txEdit;
+      var ty = o.y + centerY * (1 - weight) + weight * tyEdit;
+      img.style.transformOrigin = 'top left';
+      img.style.transform = 'matrix(' + scale + ',0,0,' + scale + ',' + tx + ',' + ty + ')';
+      img._bnImageLayoutScale = scale;
+      return;
+    }
+    img.style.transformOrigin = 'center center';
+    var transforms = [];
+    if (o.x || o.y) transforms.push('translate(' + o.x + 'px,' + o.y + 'px)');
+    if (weight !== 1) transforms.push('scale(' + weight + ')');
+    img.style.transform = transforms.join(' ');
+    img._bnImageLayoutScale = weight;
   }
 
   /* ── 匯入工單圖片邊界 ──────────────────────────────────────
@@ -253,8 +301,9 @@
   }
 
   function elementScale(el, rect) {
-    var sx = el.offsetWidth ? rect.width / el.offsetWidth : 1;
-    var sy = el.offsetHeight ? rect.height / el.offsetHeight : sx;
+    var ownScale = Number(el && el._bnImageLayoutScale) || Number(el && el._bnImageLayoutWeight) || 1;
+    var sx = el.offsetWidth ? rect.width / el.offsetWidth / ownScale : 1;
+    var sy = el.offsetHeight ? rect.height / el.offsetHeight / ownScale : sx;
     if (!isFinite(sx) || sx <= 0) sx = 1;
     if (!isFinite(sy) || sy <= 0) sy = sx;
     return { x: sx, y: sy };
@@ -265,11 +314,28 @@
     var offset = getOffset(groupKey, index);
     var rect = img.getBoundingClientRect();
     var scale = elementScale(img, rect);
-    var baseLeft = rect.left - offset.x * scale.x;
-    var baseTop = rect.top - offset.y * scale.y;
+    var geometry = imageEditorGeometry(img);
+    var weight = getWeight(groupKey, index, img);
+    var visualW = rect.width, visualH = rect.height;
+    var baseLeft, baseTop, imageW, imageH;
+    if (geometry) {
+      /* 只用商品本體夾制；影子可以自然延伸出圖片框，不會因陰影大小推動商品。 */
+      imageW = img.offsetWidth * weight * scale.x;
+      imageH = img.offsetWidth * geometry.sourceHeight / geometry.sourceWidth * weight * scale.y;
+      var productOffsetX = weight * geometry.offsetX * img.offsetWidth / geometry.sourceWidth * scale.x;
+      var productOffsetY = weight * geometry.offsetY * img.offsetWidth / geometry.sourceWidth * scale.y;
+      baseLeft = rect.left + productOffsetX - offset.x * scale.x;
+      baseTop = rect.top + productOffsetY - offset.y * scale.y;
+    } else {
+      /* 先回到目前縮放比例下「尚未平移」的實際邊界；縮放中心造成的位移也要保留，
+         讓邊界夾制不會自行把已置中的圖片往上或往左推。 */
+      baseLeft = rect.left - offset.x * scale.x;
+      baseTop = rect.top - offset.y * scale.y;
+      imageW = visualW;
+      imageH = visualH;
+    }
     /* 圖片小於可用區時仍完整留在區內；放大後則允許大於區域，
        只限制它持續覆蓋圖片區，讓使用者可自由平移取景，超出部分由容器裁切。 */
-    var imageW = rect.width, imageH = rect.height;
     var minX, maxX, minY, maxY;
     if (imageW >= bounds.width) {
       minX = (bounds.right - imageW - baseLeft) / scale.x;
@@ -326,28 +392,56 @@
     var n = imgs.length;
     var totalGap = GAP * (n - 1);
 
-    var baseWidths = imgs.map(function (img) {
+    var savedSlotRatios = null;
+    var savedGapPx = null;
+    imgs.some(function (img) {
+      if (!img.dataset || !img.dataset.layoutSlotRatios) return false;
+      try {
+        var parsed = JSON.parse(img.dataset.layoutSlotRatios);
+        if (Array.isArray(parsed) && parsed.length === imgs.length && parsed.every(function (ratio) {
+          return typeof ratio === 'number' && isFinite(ratio) && ratio >= 0;
+        })) {
+          savedSlotRatios = parsed;
+          var gapPx = Number(img.dataset.layoutGapPx);
+          if (isFinite(gapPx) && gapPx >= 0) savedGapPx = gapPx;
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    });
+    var layoutGap = savedSlotRatios ? (savedGapPx == null ? GAP : savedGapPx) : GAP;
+    var baseWidths = imgs.map(function (img, i) {
+      if (savedSlotRatios) return savedSlotRatios[i] * containerW;
       var ratio = (img.naturalWidth && img.naturalHeight) ? (img.naturalWidth / img.naturalHeight) : 1;
       return containerH * ratio;
     });
     var baseTotalW = baseWidths.reduce(function (a, b) { return a + b; }, 0);
 
     var fitScale = 1;
-    if (baseTotalW + totalGap > containerW && baseTotalW > 0) {
+    if (!savedSlotRatios && baseTotalW + totalGap > containerW && baseTotalW > 0) {
       fitScale = Math.max((containerW - totalGap) / baseTotalW, 0.02);
     }
 
-    group.style.gap = GAP + 'px';
+    group.style.gap = layoutGap + 'px';
+    var appliedSlotRatios = [];
     imgs.forEach(function (img, i) {
       var weight = getWeight(groupKey, i, img);
 
-      var finalWidth = baseWidths[i] * fitScale * weight;
-      img.style.width = finalWidth + 'px';
+      /* 權重只做視覺 transform，不改 flex 佔位寬度；縮放單張圖時，
+         同組其他圖片的起點與間距因此固定不動。 */
+      var slotWidth = baseWidths[i] * fitScale;
+      img.style.width = slotWidth + 'px';
       img.style.height = 'auto';
       img.style.maxWidth = 'none';
       img.style.maxHeight = 'none';
+      appliedSlotRatios.push(slotWidth / containerW);
       applyOffset(img, groupKey, i);
       if (bounds) clampImageOffset(img, groupKey, i, bounds);
+    });
+    imgs.forEach(function (img) {
+      if (!img.dataset) return;
+      img.dataset.layoutSlotRatios = JSON.stringify(appliedSlotRatios);
+      img.dataset.layoutGapPx = String(layoutGap);
     });
   }
 
@@ -545,6 +639,14 @@
   function enableImageInteractions(group) {
     getImgs(group).forEach(function (img, i) {
       /* 滾輪縮放 */
+      img.addEventListener('load', function () {
+        /* 裁切編輯器會原位換 src；只更新這張圖的 transform，保持同組 flex 位置。 */
+        applyOffset(img, getGroupKey(group), i);
+        if (isBoundedWorkOrderGroup(group)) {
+          clampImageOffset(img, getGroupKey(group), i, imageBoundaryOfGroup(group));
+        }
+      });
+
       img.addEventListener('wheel', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -568,7 +670,7 @@
         /* 匯入預覽整塊會被 CSS transform 縮放，滑鼠移動的距離要換算回原始尺寸，
            不然縮到 50% 時圖片會跑得比滑鼠快一倍 */
         var rect = img.getBoundingClientRect();
-        var scale = (img.offsetWidth && rect.width) ? (rect.width / img.offsetWidth) : 1;
+        var scale = elementScale(img, rect).x;
         if (!scale || !isFinite(scale)) scale = 1;
         var prevCursor = img.style.cursor;
         img.style.cursor = 'grabbing';
@@ -657,6 +759,19 @@
 
   window.BNImageLayout = {
     scanAndProcess: scanAndProcess,
+    refreshEditedImage: function (img) {
+      if (!img) return false;
+      var group = img;
+      while (group && group.nodeType === 1 && !(group.classList && group.classList.contains('bn-imggroup'))) group = group.parentElement;
+      if (!group) return false;
+      var imgs = getImgs(group);
+      var index = imgs.indexOf(img);
+      if (index < 0) return false;
+      var groupKey = getGroupKey(group);
+      applyOffset(img, groupKey, index);
+      if (isBoundedWorkOrderGroup(group)) clampImageOffset(img, groupKey, index, imageBoundaryOfGroup(group));
+      return true;
+    },
     /* 匯出目前所有圖片的滾輪縮放權重（給「下載暫存檔」用） */
     getWeights: function () {
       try { return JSON.parse(JSON.stringify(weightStore)); }

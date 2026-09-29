@@ -163,6 +163,25 @@ html.embed-generator #panel-footer { padding: 10px 12px; }
 
 #konva-container[hidden] { display: none; }
 
+/* 點擊吸底畫布下方文字時的原地編輯框；位置與大小由 stage 縮放即時計算。 */
+.bottom-canvas-text-editor {
+  position: absolute;
+  z-index: 30;
+  margin: 0;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  outline: none;
+  background: rgba(255, 255, 255, .96);
+  color: #111827;
+  font-family: "ShopeeNotoSansContent", sans-serif;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .22);
+}
+
 /* 拖到「未選圖」框時亮起，提示可直接放開上傳。 */
 #konva-container.image-drop-target {
   outline: 2px dashed var(--accent);

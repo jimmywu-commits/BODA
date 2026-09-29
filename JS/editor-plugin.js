@@ -448,46 +448,38 @@
     }
 
     function renderProductOnlyCanvas(){
+      /* 保留原始畫布邊界；裁掉透明留白會讓商品本體在畫布上偏移。 */
       const out = document.createElement('canvas');
       out.width = canvas.width; out.height = canvas.height;
       out.getContext('2d').drawImage(canvas,0,0);
-      const trimmed = trimCanvasToVisibleBounds(out, 0);
-      trimmed._productOffsetX = 0;
-      trimmed._productOffsetY = 0;
-      trimmed._productW = trimmed.width;
-      trimmed._productH = trimmed.height;
-      trimmed._outputRatio = trimmed.width / Math.max(1, trimmed.height);
-      return trimmed;
+      out._productOffsetX = 0;
+      out._productOffsetY = 0;
+      out._productW = out.width;
+      out._productH = out.height;
+      out._outputRatio = out.width / Math.max(1, out.height);
+      return out;
     }
 
     function renderWithShadowCanvas(){
-      const productBounds = getVisibleImageBounds();
+      /* 以原始畫布作錨點，必要時向影子方向擴展輸出邊界；renderer 會補償這些
+         邊界並固定 flex 佔位，讓影子完整保留、商品與同組圖片不移位。 */
       const hasShadow = !!(shadowState && shadowLoaded);
-      const minX = hasShadow ? Math.min(productBounds.x, shadowState.x) : productBounds.x;
-      const minY = hasShadow ? Math.min(productBounds.y, shadowState.y) : productBounds.y;
-      const maxX = hasShadow ? Math.max(productBounds.x + productBounds.w, shadowState.x + shadowState.w) : (productBounds.x + productBounds.w);
-      const maxY = hasShadow ? Math.max(productBounds.y + productBounds.h, shadowState.y + shadowState.h) : (productBounds.y + productBounds.h);
-
+      const minX = hasShadow ? Math.min(0, shadowState.x) : 0;
+      const minY = hasShadow ? Math.min(0, shadowState.y) : 0;
+      const maxX = hasShadow ? Math.max(canvas.width, shadowState.x + shadowState.w) : canvas.width;
+      const maxY = hasShadow ? Math.max(canvas.height, shadowState.y + shadowState.h) : canvas.height;
       const out = document.createElement('canvas');
       out.width = Math.max(1, Math.ceil(maxX - minX));
       out.height = Math.max(1, Math.ceil(maxY - minY));
       const o = out.getContext('2d');
-
-      if(hasShadow){
-        o.drawImage(shadowImg, shadowState.x - minX, shadowState.y - minY, shadowState.w, shadowState.h);
-      }
+      if(hasShadow) o.drawImage(shadowImg, shadowState.x - minX, shadowState.y - minY, shadowState.w, shadowState.h);
       o.drawImage(canvas, -minX, -minY);
-
-      const trimmed = trimCanvasToVisibleBounds(out, 0);
-      const trimX = trimmed._trimX || 0;
-      const trimY = trimmed._trimY || 0;
-      /* Metadata for applyToTarget(): visible product remains at this offset inside the expanded shadow result. */
-      trimmed._productOffsetX = (productBounds.x - minX) - trimX;
-      trimmed._productOffsetY = (productBounds.y - minY) - trimY;
-      trimmed._productW = productBounds.w;
-      trimmed._productH = productBounds.h;
-      trimmed._outputRatio = trimmed.width / Math.max(1, trimmed.height);
-      return trimmed;
+      out._productOffsetX = -minX;
+      out._productOffsetY = -minY;
+      out._productW = canvas.width;
+      out._productH = canvas.height;
+      out._outputRatio = out.width / Math.max(1, out.height);
+      return out;
     }
 
     function applyCrop(){
@@ -538,67 +530,42 @@
       // Otherwise the onload callback cannot restore the original product box size.
       const boxRef = targetBox;
       const imgRef = targetImg;
+      const stateRef = boxRef || imgRef;
+      const originalImgStyle = imgRef.getAttribute('style');
 
-      if(boxRef && boxRef.dataset){
-        boxRef.dataset.baseSrc = productUrl;
-        boxRef.dataset.outputRatio = String(final.width / Math.max(1, final.height));
-        boxRef.dataset.productOnlyRatio = String(productOnly.width / Math.max(1, productOnly.height));
-        boxRef.dataset.shadowEnabled = shadowState ? '1' : '0';
+      /* 圖片編輯狀態記在可重用的圖片節點上。畫布欄位沒有 .editor-item 包裝時，
+         仍能在重新渲染後還原去背底圖與影子設定。 */
+      if(stateRef && stateRef.dataset){
+        stateRef.dataset.baseSrc = productUrl;
+        stateRef.dataset.outputRatio = String(final.width / Math.max(1, final.height));
+        stateRef.dataset.productOnlyRatio = String(productOnly.width / Math.max(1, productOnly.height));
+        stateRef.dataset.layoutSourceWidth = String(productOnly.width);
+        stateRef.dataset.layoutSourceHeight = String(productOnly.height);
+        stateRef.dataset.layoutOutputWidth = String(final.width);
+        stateRef.dataset.layoutOutputHeight = String(final.height);
+        stateRef.dataset.layoutOffsetX = String(final._productOffsetX || 0);
+        stateRef.dataset.layoutOffsetY = String(final._productOffsetY || 0);
+        stateRef.dataset.shadowEnabled = shadowState ? '1' : '0';
         if(shadowState){
-          boxRef.dataset.pluginShadowX = String(shadowState.x);
-          boxRef.dataset.pluginShadowY = String(shadowState.y);
-          boxRef.dataset.pluginShadowW = String(shadowState.w);
-          boxRef.dataset.pluginShadowH = String(shadowState.h);
+          stateRef.dataset.pluginShadowX = String(shadowState.x);
+          stateRef.dataset.pluginShadowY = String(shadowState.y);
+          stateRef.dataset.pluginShadowW = String(shadowState.w);
+          stateRef.dataset.pluginShadowH = String(shadowState.h);
         } else {
-          delete boxRef.dataset.pluginShadowX;
-          delete boxRef.dataset.pluginShadowY;
-          delete boxRef.dataset.pluginShadowW;
-          delete boxRef.dataset.pluginShadowH;
+          delete stateRef.dataset.pluginShadowX;
+          delete stateRef.dataset.pluginShadowY;
+          delete stateRef.dataset.pluginShadowW;
+          delete stateRef.dataset.pluginShadowH;
         }
-      }
-
-      const prevW = boxRef ? (parseFloat(boxRef.style.width) || boxRef.offsetWidth || 0) : 0;
-      const prevH = boxRef ? (parseFloat(boxRef.style.height) || boxRef.offsetHeight || 0) : 0;
-      const prevL = boxRef ? (parseFloat(boxRef.style.left) || boxRef.offsetLeft || 0) : 0;
-      const prevT = boxRef ? (parseFloat(boxRef.style.top) || boxRef.offsetTop || 0) : 0;
-
-      function containRect(boxW, boxH, imgW, imgH){
-        if(!boxW || !boxH || !imgW || !imgH) return {x:0,y:0,w:boxW,h:boxH,scale:1};
-        const scale = Math.min(boxW / imgW, boxH / imgH);
-        const w = imgW * scale;
-        const h = imgH * scale;
-        return { x:(boxW - w) / 2, y:(boxH - h) / 2, w, h, scale };
       }
 
       imgRef.onload = ()=>{
-        if(boxRef){
-          let targetW = prevW;
-          let targetH = prevH;
-          let targetL = prevL;
-          let targetT = prevT;
-
-          if(shadowState && (final.width !== productOnly.width || final.height !== productOnly.height)){
-            const prevDraw = containRect(prevW, prevH, productOnly.width, productOnly.height);
-            const scale = prevDraw.scale || 1;
-            targetW = Math.max(20, Math.round(final.width * scale));
-            targetH = Math.max(20, Math.round(final.height * scale));
-            targetL = Math.round(prevL + prevDraw.x - (final._productOffsetX || 0) * scale);
-            targetT = Math.round(prevT + prevDraw.y - (final._productOffsetY || 0) * scale);
-          }
-
-          boxRef.style.width = targetW + 'px';
-          boxRef.style.height = targetH + 'px';
-          boxRef.style.left = targetL + 'px';
-          boxRef.style.top = targetT + 'px';
-          boxRef.dataset.fixedW = String(Math.round(targetW || boxRef.offsetWidth || 0));
-          boxRef.dataset.fixedH = String(Math.round(targetH || boxRef.offsetHeight || 0));
+        /* 編輯結果只換圖片像素；保留 image-layout 設定的寬度、transform 與游標位置。 */
+        if(originalImgStyle == null) imgRef.removeAttribute('style');
+        else imgRef.setAttribute('style', originalImgStyle);
+        if(window.BNImageLayout && typeof window.BNImageLayout.refreshEditedImage === 'function'){
+          window.BNImageLayout.refreshEditedImage(imgRef);
         }
-        imgRef.style.objectFit = 'contain';
-        imgRef.style.width = '100%';
-        imgRef.style.height = '100%';
-        imgRef.style.maxWidth = '100%';
-        imgRef.style.maxHeight = '100%';
-        imgRef.style.display = 'block';
         if(typeof window.syncDdLinkedCanvases === 'function'){
           setTimeout(()=>window.syncDdLinkedCanvases(), 80);
         }
@@ -752,7 +719,8 @@
     function open(imgEl){
       targetImg = imgEl;
       targetBox = imgEl.closest('.editor-item');
-      originalSrc = (targetBox && targetBox.dataset && targetBox.dataset.baseSrc) ? targetBox.dataset.baseSrc : imgEl.src;
+      const stateRef = targetBox || imgEl;
+      originalSrc = (stateRef && stateRef.dataset && stateRef.dataset.baseSrc) ? stateRef.dataset.baseSrc : imgEl.src;
       modal.classList.add('open');
       const img = new Image();
       img.onload = ()=>{
@@ -768,12 +736,12 @@
         chip.style.background = 'transparent';
 
         // 還原上次儲存的影子狀態
-        const hasSavedShadow = targetBox && targetBox.dataset && targetBox.dataset.shadowEnabled === '1';
+        const hasSavedShadow = stateRef && stateRef.dataset && stateRef.dataset.shadowEnabled === '1';
         if(hasSavedShadow){
-          const sx = parseFloat(targetBox.dataset.pluginShadowX);
-          const sy = parseFloat(targetBox.dataset.pluginShadowY);
-          const sw = parseFloat(targetBox.dataset.pluginShadowW);
-          const sh = parseFloat(targetBox.dataset.pluginShadowH);
+          const sx = parseFloat(stateRef.dataset.pluginShadowX);
+          const sy = parseFloat(stateRef.dataset.pluginShadowY);
+          const sw = parseFloat(stateRef.dataset.pluginShadowW);
+          const sh = parseFloat(stateRef.dataset.pluginShadowH);
           if(isFinite(sx) && isFinite(sy) && isFinite(sw) && isFinite(sh) && sw > 0 && sh > 0){
             shadowState = {x:sx, y:sy, w:sw, h:sh};
           } else {

@@ -342,6 +342,7 @@
       fontFamily: L.fontFamily,
       fill: color,
       opacity: hasText ? 1 : PREVIEW_OPACITY,
+      listening: false,
     });
     // 取整理由同 drawTextIcon：純中文本來就落在整數上，混英數的文案才有差
     textNode.x(Math.round(slotLayout.centerX - textNode.width() / 2));
@@ -349,16 +350,42 @@
     // 空白時畫的是預覽假字，銳化它沒有意義（也不會進匯出）
     if (hasText) applyTextSharpen(textNode, layer, isPreview, opts.sharpen);
 
+    /* 預覽畫布的下方文字可直接點擊編輯。透明命中框只存在預覽，
+       不會進入匯出 PNG，也不會改變文字的實際繪製位置。 */
+    if (isPreview && typeof opts.editText === "function") {
+      var textHit = new Konva.Rect({
+        name: "slot-text-hit",
+        x: slotLayout.textX,
+        y: slotLayout.textY,
+        width: slotLayout.textWidth,
+        height: slotLayout.textHeight,
+        fill: "rgba(0,0,0,0.001)",
+      });
+      textHit.on("mouseenter", function () {
+        var stage = layer.getStage();
+        if (stage) stage.container().style.cursor = "text";
+      });
+      textHit.on("mouseleave", function () {
+        var stage = layer.getStage();
+        if (stage) stage.container().style.cursor = "";
+      });
+      textHit.on("click tap", function () {
+        opts.editText(index, slotLayout, slotState.text || "");
+      });
+      group.add(textHit);
+    }
+
     return group;
   }
 
-  function render(layer, state, isPreview) {
+  function render(layer, state, isPreview, editText) {
     renderGeneration++;
     var opts = {
       generation: renderGeneration,
       isPreview: isPreview,
       // 銳化是全域渲染偏好，預覽與匯出走同一個值，所見即所得
       sharpen: !!state.sharpen,
+      editText: editText,
     };
 
     layer.destroyChildren();
@@ -399,9 +426,56 @@
       var layer = new Konva.Layer();
       stage.add(layer);
 
+      var activeTextEditor = null;
+      function closeTextEditor() {
+        if (!activeTextEditor) return;
+        var editor = activeTextEditor;
+        activeTextEditor = null;
+        if (editor.parentNode) editor.parentNode.removeChild(editor);
+      }
+      function openTextEditor(index, slotLayout, currentText) {
+        closeTextEditor();
+        store.dispatch(Actions.setActiveSlot(index));
+        var input = document.createElement("input");
+        input.type = "text";
+        input.className = "bottom-canvas-text-editor";
+        input.value = currentText || "";
+        var scaleX = stage.scaleX() || 1;
+        var scaleY = stage.scaleY() || scaleX;
+        input.style.left = Math.round(stage.x() + slotLayout.textX * scaleX) + "px";
+        input.style.top = Math.round(stage.y() + slotLayout.textY * scaleY) + "px";
+        input.style.width = Math.max(80, Math.round(slotLayout.textWidth * scaleX)) + "px";
+        input.style.height = Math.max(28, Math.round(slotLayout.textHeight * scaleY)) + "px";
+        input.style.fontSize = Math.max(16, Math.round(window.LAYOUT.fontSize * scaleY)) + "px";
+        var composing = false;
+        input.addEventListener("compositionstart", function () { composing = true; });
+        input.addEventListener("compositionend", function () {
+          composing = false;
+          store.dispatch(Actions.setSlotText(index, input.value));
+        });
+        input.addEventListener("input", function () {
+          if (!composing) store.dispatch(Actions.setSlotText(index, input.value));
+        });
+        input.addEventListener("keydown", function (event) {
+          if (event.key === "Enter") { event.preventDefault(); input.blur(); }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            store.dispatch(Actions.setSlotText(index, currentText || ""));
+            closeTextEditor();
+          }
+          event.stopPropagation();
+        });
+        input.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+        input.addEventListener("blur", closeTextEditor);
+        activeTextEditor = input;
+        container.appendChild(input);
+        input.focus();
+        input.select();
+      }
+
       // 畫面上畫的永遠是「目前分頁」那一條；render() 本身不知道分頁的存在
       function draw(state) {
-        render(layer, window.Selectors.viewState(state), true);
+        render(layer, window.Selectors.viewState(state), true, openTextEditor);
       }
 
       /*
@@ -439,10 +513,18 @@
         var files = event.dataTransfer && event.dataTransfer.files;
         return files && files.length ? files[0] : null;
       }
+      function hasDraggedFiles(event) {
+        var transfer = event.dataTransfer;
+        if (!transfer) return false;
+        if (transfer.files && transfer.files.length) return true;
+        var types = transfer.types ? Array.prototype.slice.call(transfer.types) : [];
+        return types.indexOf("Files") !== -1;
+      }
 
       container.addEventListener("dragover", function (event) {
-        var file = draggedImageFile(event);
-        if (!file) return;
+        /* Safari／Chromium 在 dragover 階段可能刻意不公開 files；types 仍會帶 Files。
+           先攔截預設行為，圖片才能真正 drop 進虛線框，而不是被瀏覽器另開分頁。 */
+        if (!hasDraggedFiles(event)) return;
         // 即使游標不在空框上也攔住瀏覽器預設的「直接開啟圖片」行為。
         event.preventDefault();
         if (slotIndexAtClientPoint(event.clientX, event.clientY) < 0) {
@@ -456,11 +538,12 @@
         container.classList.remove("image-drop-target");
       });
       container.addEventListener("drop", function (event) {
+        if (!hasDraggedFiles(event)) return;
+        event.preventDefault();
         var file = draggedImageFile(event);
         var index = slotIndexAtClientPoint(event.clientX, event.clientY);
         container.classList.remove("image-drop-target");
         if (!file) return;
-        event.preventDefault();
         if (index >= 0 && typeof window.BottomImageUpload === "function") window.BottomImageUpload(file, index);
       });
       // 畫面上的 stage 才是預覽模式（會畫假字）

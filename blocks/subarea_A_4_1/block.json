@@ -12,8 +12,8 @@
       "zIndex": 166,
       "left": 204.0,
       "top": 89.0,
-      "width": 168.0,
-      "height": 154.0,
+      "width": 154.0,
+      "height": 238.0,
       "backgroundColor": "rgb(200,200,200)",
       "field": "productImg",
       "fieldLabel": "商品圖片網址"
