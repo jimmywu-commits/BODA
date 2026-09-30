@@ -452,9 +452,14 @@
         input.addEventListener("compositionend", function () {
           composing = false;
           store.dispatch(Actions.setSlotText(index, input.value));
+          var slot = window.Selectors.viewState(store.getState()).slots[index];
+          if (slot && input.value !== slot.text) input.value = slot.text;
         });
         input.addEventListener("input", function () {
-          if (!composing) store.dispatch(Actions.setSlotText(index, input.value));
+          if (composing) return;
+          store.dispatch(Actions.setSlotText(index, input.value));
+          var slot = window.Selectors.viewState(store.getState()).slots[index];
+          if (slot && input.value !== slot.text) input.value = slot.text;
         });
         input.addEventListener("keydown", function (event) {
           if (event.key === "Enter") { event.preventDefault(); input.blur(); }

@@ -20,6 +20,7 @@
     "bottomRadius": 0,
     "gridLines": {
       "outerBorder": false,
+      "topBorder": true,
       "left": 20,
       "width": 1160,
       "verticalDividers": [210, 534, 857],

@@ -255,7 +255,8 @@
       "width": 263.0,
       "height": 145.0,
       "field": "productImg",
-      "fieldLabel": "情境圖／信用卡圖"
+      "fieldLabel": "情境圖／信用卡圖",
+      "imageZIndex": 1319
     },
     {
       "zIndex": 1320,

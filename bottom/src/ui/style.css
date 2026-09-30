@@ -530,6 +530,16 @@ input[type="file"]::file-selector-button:hover {
 
 .icon-tile:hover { background: var(--bg3); border-color: var(--border-strong); }
 
+/* 主會場 Home、今日旗艦店、品牌旗艦僅限第一格；其他格在素材選單反灰。 */
+.icon-tile.is-disabled,
+.icon-tile.is-disabled:hover {
+  opacity: .28;
+  filter: grayscale(1);
+  cursor: not-allowed;
+  background: var(--bg2);
+  border-color: transparent;
+}
+
 .icon-tile.selected {
   border-color: var(--accent);
   background: rgba(238, 77, 45, .16);
@@ -1574,3 +1584,37 @@ html.embed-standalone #zoom-bar {
   border-color: rgba(255, 255, 255, .24);
   color: #dce5e2;
 }
+
+/* ── 獨立吸底頁：與「匯入工單」共用的 STEP 1／STEP 2 卡片與底部常駐按鈕 ── */
+html.embed-standalone .host-step-drop {
+  margin: 4px 0 10px;
+  padding: 22px 12px;
+  border: 2px dashed #c3cdc9;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: .12s;
+  background: #fff;
+}
+html.embed-standalone .host-step-drop:hover,
+html.embed-standalone .host-step-drop.dragover {
+  border-color: #4d9b95;
+  background: #e6f2f0;
+}
+html.embed-standalone .host-step-icon { color: #5b6a67; margin-bottom: 8px; }
+html.embed-standalone .host-step-svg,
+html.embed-standalone .host-btn-svg {
+  display: inline-block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: middle;
+}
+html.embed-standalone .host-step-svg { width: 30px; height: 30px; }
+html.embed-standalone .host-btn-svg { width: 15px; height: 15px; margin-right: 3px; vertical-align: -3px; }
+html.embed-standalone .host-step-text { font-size: 12px; color: #5b6a67; line-height: 1.5; }
+html.embed-standalone .host-step-text b { color: #1f2b29; }
+html.embed-standalone .host-step-subhead { font-size: 12px; font-weight: 700; color: #1f2b29; margin: 6px 0 2px; }
+html.embed-standalone .host-dl-hint { font-size: 10px; color: #93a19d; text-align: center; margin-top: 6px; line-height: 1.5; }

@@ -246,7 +246,13 @@
       for (var lr = r + 1; lr <= Math.min(rows.length - 1, r + 3); lr++) {
         if (colsMatching(rows[lr], RE_LOGO_LABEL).length >= MIN_GROUPS) { logoRow = lr; break; }
       }
-      if (logoRow === null) continue;
+      if (logoRow === null) {
+        /* Layout_Output「一顆一行」格式：沒有獨立 logo row，
+           嘗試往上找第N顆 pattern 的連續區段。 */
+        var inlineResult = detectLayoutOutputInlineBlocks(rows, r, sheetName);
+        if (inlineResult) { blocks.push(inlineResult); }
+        continue;
+      }
       var textRow = logoRow + 1;
       if (textRow >= rows.length) continue;
 
@@ -286,6 +292,184 @@
       });
     }
     return blocks;
+  }
+
+  /* Layout_Output「一顆一行」格式偵測：
+     每一行是一顆吸底按鈕，同一列包含 icon/logo 類型、素材名稱、案型、文案。
+     從已找到 icon label 的行開始，向下掃描同屬「吸底」的連續行。
+     格式範例：
+       Row header: [吸底, 吸底_01, 吸底_三格, ...]
+       Row 1: [吸底, 吸底_01, 第1顆, icon, icon, icon, 房子, 房子, OK, 案型, 案型, 主會場, 主會場, OK]
+       Row 2: [吸底, 吸底_01, 第2顆, icon, icon, icon, SAMPO..., SAMPO..., OK, ...] */
+  function detectLayoutOutputInlineBlocks(rows, startRow, sheetName) {
+    var groups = [];
+    for (var r = startRow; r < rows.length && r <= startRow + MAX_GROUPS + 1; r++) {
+      var row = rows[r] || [];
+      if (r > startRow && !RE_STICKY.test(cell(rows, r, 0)) && !RE_STICKY.test(cell(rows, r, 1))) break;
+      var m = null;
+      for (var c = 0; c < Math.min(row.length, 6); c++) {
+        m = /^第([1-5])顆$/.exec(str(row[c]));
+        if (m) break;
+      }
+      if (!m) continue;
+      var btnIndex = parseInt(m[1], 10) - 1;
+      var iconLabels = colsMatching(row, RE_ICON_LABEL);
+      var logoLabels = colsMatching(row, RE_LOGO_LABEL);
+      var isLogo = logoLabels.length > iconLabels.length;
+      var labelCols = isLogo ? logoLabels : iconLabels;
+      if (!labelCols.length) continue;
+      var lastLabel = labelCols[labelCols.length - 1];
+      var assetName = '';
+      var textValue = '';
+      for (var ac = lastLabel + 1; ac < row.length; ac++) {
+        var av = cleanTemplateValue(row[ac]);
+        if (!av || /^OK$/i.test(av) || RE_ICON_LABEL.test(av) || RE_LOGO_LABEL.test(av)) continue;
+        if (!assetName) { assetName = av; continue; }
+        if (/^案型$/i.test(av)) continue;
+        if (!textValue) { textValue = av; break; }
+      }
+      groups.push({
+        index: btnIndex,
+        columns: [],
+        type: isLogo ? 'logo' : 'icon',
+        iconName: isLogo ? '' : assetName,
+        logoName: isLogo ? assetName : '',
+        name: assetName,
+        iconChecked: !isLogo && assetName ? true : null,
+        logoChecked: isLogo && assetName ? true : null,
+        text: textValue,
+        assetPath: '',
+        bothProvided: false
+      });
+    }
+    if (groups.length < MIN_GROUPS) return null;
+    return {
+      sheetName: sheetName,
+      iconRow: null,
+      logoRow: null,
+      pathRow: null,
+      textRow: null,
+      score: 85,
+      signals: ['Layout_Output 一顆一行格式', groups.length + ' 顆'],
+      groups: groups
+    };
+  }
+
+  /* ---------------- Layout_Output／Layout_Template 2.0「吸底_N格」格式 ----------------
+     區塊標記是「吸底_兩格／三格／四格／五格」（在 A、B 或 C 欄），下面每一列是一顆：
+       C=第1顆 | D=icon／logo（或提示字「icon圖或品牌logo圖」）| G=素材名稱 | I=檢核
+       J=案型 | L=案型文字 | N=檢核 | O=備註
+     欄位不寫死：素材＝類型欄之後、「案型」之前第一個有內容的格子；
+     文案＝「案型」之後第一個有內容的格子（略過 OK／待填 等檢核結果與備註）。 */
+  var RE_LAYOUT_STICKY_MARK = /^吸底[_-]([兩二三四五])格$/;
+  var LAYOUT_STICKY_COUNT = { "兩": 2, "二": 2, "三": 3, "四": 4, "五": 5 };
+  var RE_CHECK_RESULT = /^(?:OK|待填|超過|鎖定)$/i;
+  var RE_ASSET_TYPE_HINT = /icon.*logo|logo.*icon/i;
+
+  function isLayoutFiller(v) {
+    return !v || RE_CHECK_RESULT.test(v) || /^備註/.test(v);
+  }
+
+  function parseLayoutStickyRow(row) {
+    var titleCol = -1, index = -1;
+    for (var c = 0; c < Math.min(row.length, 6); c++) {
+      var m = /^第([1-5])顆$/.exec(str(row[c]));
+      if (m) { titleCol = c; index = parseInt(m[1], 10) - 1; break; }
+    }
+    if (titleCol < 0) return null;
+    var typeCol = -1, typeValue = "";
+    for (var tc = titleCol + 1; tc < row.length; tc++) {
+      var tv = str(row[tc]);
+      if (!tv) continue;
+      typeCol = tc; typeValue = tv; break;
+    }
+    var caseCol = -1;
+    for (var cc = Math.max(typeCol, titleCol) + 1; cc < row.length; cc++) {
+      if (/^(?:案型|文案)$/.test(str(row[cc]))) { caseCol = cc; break; }
+    }
+    var assetName = "";
+    for (var ac = typeCol + 1; ac < (caseCol >= 0 ? caseCol : row.length); ac++) {
+      var av = cleanTemplateValue(row[ac]);
+      if (isLayoutFiller(av)) continue;
+      assetName = av; break;
+    }
+    var text = "";
+    if (caseCol >= 0) {
+      for (var xc = caseCol + 1; xc < row.length; xc++) {
+        var xv = cleanTemplateValue(row[xc]);
+        if (isLayoutFiller(xv)) continue;
+        text = xv; break;
+      }
+    }
+    /* D 欄明寫 logo／icon 就照填的；若仍是「icon圖或品牌logo圖」提示字，再看素材名稱有沒有 logo。 */
+    var type;
+    if (/logo/i.test(typeValue) && !RE_ASSET_TYPE_HINT.test(typeValue)) type = "logo";
+    else if (/icon/i.test(typeValue) && !RE_ASSET_TYPE_HINT.test(typeValue)) type = "icon";
+    else type = /logo/i.test(assetName) ? "logo" : "icon";
+    return {
+      index: index,
+      columns: [],
+      type: type,
+      iconName: type === "icon" ? assetName : "",
+      logoName: type === "logo" ? assetName : "",
+      name: assetName,
+      iconChecked: type === "icon" && assetName ? true : null,
+      logoChecked: type === "logo" && assetName ? true : null,
+      text: text,
+      assetPath: "",
+      bothProvided: false
+    };
+  }
+
+  function detectLayoutStickyBlocks(rows, sheetName) {
+    var blocks = [];
+    for (var r = 0; r < rows.length; r++) {
+      var count = 0;
+      for (var c = 0; c <= 2; c++) {
+        var m = RE_LAYOUT_STICKY_MARK.exec(cell(rows, r, c));
+        if (m) { count = LAYOUT_STICKY_COUNT[m[1]]; break; }
+      }
+      if (!count) continue;
+      var groups = [];
+      for (var k = 1; k <= count; k++) {
+        var g = parseLayoutStickyRow(rows[r + k] || []);
+        if (g) groups.push(g);
+      }
+      if (groups.length < MIN_GROUPS) continue;
+      groups.sort(function (a, b) { return a.index - b.index; });
+      var filled = groups.reduce(function (sum, g) { return sum + (g.name ? 1 : 0) + (g.text ? 1 : 0); }, 0);
+      blocks.push({
+        sheetName: sheetName,
+        iconRow: r,
+        logoRow: null,
+        pathRow: null,
+        textRow: null,
+        score: 95,
+        filled: filled,
+        signals: [cell(rows, r, 0) + " " + count + " 格"],
+        groups: groups
+      });
+    }
+    return blocks;
+  }
+
+  /* 匯入工單以 Layout_Output 為準；沒有才看正式的 Layout_Template（略過 Backup）。
+     母版把兩格～五格全部列出，只取「填了最多內容」的那一段，同分取格數多的。 */
+  function analyseLayoutSticky(workbook) {
+    var names = workbook.SheetNames || [];
+    function norm(n) { return String(n || "").trim().toLowerCase().replace(/[\s_-]+/g, "_"); }
+    var ordered = names.filter(function (n) { return norm(n) === "layout_output"; })
+      .concat(names.filter(function (n) { return /^layout[\s_-]*template/i.test(String(n).trim()) && !/backup/i.test(n); }));
+    for (var i = 0; i < ordered.length; i++) {
+      var blocks = detectLayoutStickyBlocks(sheetToRows(workbook, ordered[i]), ordered[i]);
+      if (!blocks.length) continue;
+      blocks.sort(function (a, b) {
+        if (b.filled !== a.filled) return b.filled - a.filled;
+        return b.groups.length - a.groups.length;
+      });
+      return blocks[0];
+    }
+    return null;
   }
 
   /* ---------------- 區塊分析 ---------------- */
@@ -484,6 +668,9 @@
     /* BODA 匯出的精準欄位對照優先，避免同一段又被結構掃描重複匯入。 */
     var exact = analyseBodaBottomMeta(workbook);
     if (exact) return [exact];
+    /* Layout_Output 的「吸底_N格」一顆一列格式：只取一條，避免母版的兩～五格全部變成分頁。 */
+    var layoutSticky = analyseLayoutSticky(workbook);
+    if (layoutSticky) return [layoutSticky];
 
     var blocks = [];
     workbook.SheetNames.forEach(function (name) {
@@ -509,6 +696,8 @@
     if (!n) return null;
 
     var passes = [
+      /* 母版裡也可能直接填素材 id（例如 bod-logo） */
+      function (i) { return norm(i.id) === n; },
       function (i) { return i.type === type && norm(i.displayName) === n; },
       function (i) { return norm(i.displayName) === n; },
       function (i) { return i.type === type && (norm(i.displayName).indexOf(n) >= 0 || n.indexOf(norm(i.displayName)) >= 0); },
@@ -523,12 +712,75 @@
     return null;
   }
 
+  /* ---------------- 對回主工具「STEP 2」上傳的圖片 ----------------
+     試算表「icon圖或品牌logo圖」右邊填的是 LOGO 圖檔名（可不含副檔名）。
+     主工具會把 STEP 2 上傳的圖片（{ name, url }）交給吸底，存在 window.BottomHostAssets。
+     對得到檔名就建立一顆自訂 LOGO 素材（保持原色），對不到先記成待補，
+     之後主工具再上傳圖片時會自動補上。 */
+  function assetKey(name) {
+    return str(name).split(/[\\/]/).pop()
+      .replace(/\.(png|jpe?g|gif|webp|svg|bmp)$/i, "")
+      .trim().toLowerCase();
+  }
+
+  function findHostAsset(name) {
+    var key = assetKey(name);
+    if (!key) return null;
+    var assets = window.BottomHostAssets || [];
+    for (var i = 0; i < assets.length; i++) {
+      if (assets[i] && assets[i].url && assetKey(assets[i].name) === key) return assets[i];
+    }
+    return null;
+  }
+
+  function hostAssetIconId(asset) {
+    return "host-logo-" + assetKey(asset.name).replace(/[^a-z0-9\u4e00-\u9fff]+/gi, "-");
+  }
+
+  function iconFromHostAsset(asset) {
+    return {
+      id: hostAssetIconId(asset),
+      displayName: str(asset.name).replace(/\.(png|jpe?g|gif|webp|svg|bmp)$/i, ""),
+      type: "logo",
+      src: asset.url,
+      custom: true,
+    };
+  }
+
+  function exactLibraryIcon(library, name) {
+    var n = norm(name);
+    if (!n) return null;
+    for (var i = 0; i < library.length; i++) {
+      if (norm(library[i].id) === n || norm(library[i].displayName) === n) return library[i];
+    }
+    return null;
+  }
+
+  /* 一顆素材名稱的對應順序：素材庫完全同名 → 主工具上傳的同檔名圖片 → 素材庫近似名稱。 */
+  function resolveAsset(library, name, type) {
+    var exact = exactLibraryIcon(library, name);
+    if (exact) return { icon: exact, isNew: false };
+    var asset = findHostAsset(name);
+    if (asset) {
+      var id = hostAssetIconId(asset);
+      for (var i = 0; i < library.length; i++) {
+        if (library[i].id === id) return { icon: library[i], isNew: false };
+      }
+      return { icon: iconFromHostAsset(asset), isNew: true };
+    }
+    var fuzzy = matchLibraryIcon(library, name, type);
+    return fuzzy ? { icon: fuzzy, isNew: false } : null;
+  }
+
   /*
    * 把偵測結果變成 banner 陣列，同時產生一份「發生了什麼」的報告。
    * 報告要夠具體（第幾條第幾格、原文是什麼），使用者才有辦法核對。
    */
   function toBanners(blocks, library) {
     var notes = [];
+    var newIcons = [];
+    var pending = [];
+    library = (library || []).slice();
     var banners = blocks.map(function (block, bi) {
       var groups = block.groups.slice(0, MAX_GROUPS);
       if (block.groups.length > MAX_GROUPS) {
@@ -560,11 +812,18 @@
           );
         }
 
-        var matched = matchLibraryIcon(library, g.name, g.type);
+        var resolved = g.name ? resolveAsset(library, g.name, g.type) : null;
+        var matched = resolved ? resolved.icon : null;
+        if (resolved && resolved.isNew) {
+          newIcons.push(matched);
+          library.push(matched);
+        }
         if (g.name && !matched) {
+          pending.push({ bannerIndex: bi, slotIndex: i, name: g.name });
           notes.push(
             "第 " + (bi + 1) + " 條第 " + (i + 1) + " 格的" +
-              (g.type === "logo" ? "LOGO" : "Icon") + "「" + g.name + "」素材庫裡沒有，需人工選或上傳"
+              (g.type === "logo" ? "LOGO" : "Icon") + "「" + g.name + "」素材庫裡沒有，" +
+              "請在「STEP 2」上傳同檔名的圖片（會自動套用），或人工選／上傳"
           );
         }
 
@@ -578,7 +837,7 @@
       return banner;
     });
 
-    return { banners: banners, notes: notes };
+    return { banners: banners, notes: notes, newIcons: newIcons, pending: pending };
   }
 
   function summarise(blocks) {
@@ -637,5 +896,7 @@
     toBanners: toBanners,
     summarise: summarise,
     matchLibraryIcon: matchLibraryIcon,
+    resolveAsset: resolveAsset,
+    findHostAsset: findHostAsset,
   };
 })();

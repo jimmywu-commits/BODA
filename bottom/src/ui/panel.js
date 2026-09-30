@@ -85,6 +85,8 @@
           type: icon.type,
           src: editedDataUrl,
           custom: true,
+          /* 第一格專用素材即使編輯成新圖，也不能因此繞過位置限制。 */
+          firstSlotOnly: !!(window.BottomSlotRules && window.BottomSlotRules.isFirstSlotOnlyIcon(icon, state.library)),
         };
         // 加素材＋套用算同一件事，合併成一步 undo
         store.beginBatch();
@@ -177,6 +179,42 @@
    *
    * onDone 是給對話框用的：成功才關閉，失敗要留在原地把錯誤顯示出來。
    */
+  /* ---------------- 主工具 STEP 2 上傳的圖片 → 補上吸底 LOGO ---------------- */
+  var pendingHostAssets = [];
+
+  function applyPendingHostAssets(store, Actions) {
+    if (!pendingHostAssets.length || !window.WorkOrderImporter) return 0;
+    var state = store.getState();
+    var library = state.library.slice();
+    var newIcons = [];
+    var applied = 0;
+    var banners = state.banners.map(function (banner) { return banner; });
+    var stillPending = [];
+    pendingHostAssets.forEach(function (p) {
+      var banner = banners[p.bannerIndex];
+      var slot = banner && banner.slots[p.slotIndex];
+      /* 使用者已經自己選了圖，就不要蓋掉 */
+      if (!slot || slot.iconId || slot.iconText != null) return;
+      var resolved = window.WorkOrderImporter.resolveAsset(library, p.name, "logo");
+      if (!resolved || !resolved.icon || !window.WorkOrderImporter.findHostAsset(p.name)) {
+        stillPending.push(p);
+        return;
+      }
+      if (resolved.isNew) { newIcons.push(resolved.icon); library.push(resolved.icon); }
+      var slots = banner.slots.slice();
+      slots[p.slotIndex] = Object.assign({}, slot, { iconId: resolved.icon.id, iconText: null, type: resolved.icon.type });
+      banners[p.bannerIndex] = Object.assign({}, banner, { slots: slots });
+      applied++;
+    });
+    pendingHostAssets = stillPending;
+    if (!applied) return 0;
+    store.beginBatch();
+    newIcons.forEach(function (icon) { store.dispatch(Actions.addLibraryIcon(icon)); });
+    store.dispatch(Actions.setBanners(banners, state.activeBannerIndex));
+    store.endBatch();
+    return applied;
+  }
+
   function importWorkOrderFile(store, Actions, ui, rerender, file, onDone) {
     if (!file) return;
     ui.importMessage = "正在讀取工單…";
@@ -190,8 +228,11 @@
 
         // 整份匯入算一步 undo，按錯可以 Ctrl+Z 整個退回
         store.beginBatch();
+        (built.newIcons || []).forEach(function (icon) { store.dispatch(Actions.addLibraryIcon(icon)); });
         store.dispatch(Actions.setBanners(built.banners, 0));
         store.endBatch();
+        /* 還沒對到圖的 LOGO 檔名先記下來；主工具之後在 STEP 2 上傳同檔名圖片時自動補上。 */
+        pendingHostAssets = (built.pending || []).slice();
 
         ui.importMessage =
           "已從工單匯入 " + built.banners.length + " 條吸底圖（" +
@@ -242,6 +283,122 @@
         if (onDone) onDone(err);
       }
     );
+  }
+
+  /* ---------------- 獨立「吸底」頁：與「匯入工單」共用 STEP 1／STEP 2 ----------------
+     檔案一律交給主工具處理（同一份工單會同時畫出匯入工單畫布與吸底），
+     吸底自己不再另外開一套匯入入口。 */
+  function isStandaloneHostEmbed() {
+    return !!(window.BottomParentBridge && window.BottomParentBridge.isEmbedded &&
+      window.BottomParentBridge.isEmbedded() &&
+      new URLSearchParams(location.search).get("embed") === "standalone");
+  }
+
+  var HOST_ICON_SHEET = '<svg class="host-step-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M9 12h6M9 16h6"/></svg>';
+  var HOST_ICON_IMAGE = '<svg class="host-step-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg>';
+
+  function buildHostDropCard(opts) {
+    var input = el("input", { type: "file", accept: opts.accept, style: "display:none;" });
+    if (opts.multiple) input.multiple = true;
+    var card = el("div", { class: "host-step-drop", title: opts.title || "" });
+    var icon = el("div", { class: "host-step-icon" });
+    icon.innerHTML = opts.icon;
+    var text = el("div", { class: "host-step-text" });
+    text.innerHTML = "<b>" + opts.step + "<br>" + opts.headline + "</b>" + opts.tail;
+    card.appendChild(icon);
+    card.appendChild(text);
+    card.appendChild(input);
+    function send(files) {
+      var list = Array.prototype.slice.call(files || []);
+      if (opts.filter) list = list.filter(opts.filter);
+      if (!list.length) return;
+      if (!opts.multiple) list = list.slice(0, 1);
+      window.BottomParentBridge.sendHostFiles(opts.kind, list);
+      if (opts.onSent) opts.onSent(list);
+    }
+    card.addEventListener("click", function () { input.click(); });
+    input.addEventListener("change", function () { send(input.files); input.value = ""; });
+    card.addEventListener("dragover", function (e) { e.preventDefault(); card.classList.add("dragover"); });
+    card.addEventListener("dragleave", function () { card.classList.remove("dragover"); });
+    card.addEventListener("drop", function (e) {
+      e.preventDefault();
+      card.classList.remove("dragover");
+      send(e.dataTransfer && e.dataTransfer.files);
+    });
+    return card;
+  }
+
+  function buildHostImportSection(store, Actions, ui, rerender) {
+    var node = section("匯入");
+    node.appendChild(buildHostDropCard({
+      kind: "workorder",
+      accept: ".xlsx,.json",
+      step: "STEP 1",
+      headline: "拖曳工單試算表到這裡",
+      tail: "或點擊選擇",
+      icon: HOST_ICON_SHEET,
+      title: "與「匯入工單」共用：選一次，匯入工單畫布與吸底同時更新",
+      filter: function (f) { return /\.(xlsx|xlsm|json)$/i.test(f.name || ""); },
+      onSent: function (list) {
+        ui.importMessage = "正在匯入「" + list[0].name + "」…";
+        ui.importDetail = [];
+        rerender();
+      }
+    }));
+    node.appendChild(el("div", { class: "host-step-subhead" }, ["圖片素材（可一次選多張）"]));
+    node.appendChild(buildHostDropCard({
+      kind: "images",
+      accept: "image/*",
+      multiple: true,
+      step: "STEP 2",
+      headline: "拖曳全部圖片到這裡",
+      tail: "，或點擊選擇",
+      icon: HOST_ICON_IMAGE,
+      title: "與「匯入工單」共用：試算表吸底填的 LOGO 圖檔名，會自動對到同檔名圖片",
+      filter: function (f) { return /^image\//.test(f.type || ""); },
+      onSent: function (list) {
+        ui.importMessage = "已送出 " + list.length + " 張圖片，對到試算表 LOGO 檔名的會自動套用。";
+        rerender();
+      }
+    }));
+    appendImportResult(node, ui);
+    return node;
+  }
+
+  function appendImportResult(node, ui) {
+    if (ui.importMessage) node.appendChild(note(ui.importMessage));
+    if (ui.importDetail && ui.importDetail.length) {
+      var box = el("details", { class: "import-detail-box" });
+      box.appendChild(el("summary", {}, ["匯入明細（" + ui.importDetail.length + " 項）"]));
+      var list = el("ul", { class: "import-detail" });
+      ui.importDetail.forEach(function (line) { list.appendChild(el("li", {}, [line])); });
+      box.appendChild(list);
+      node.appendChild(box);
+    }
+  }
+
+  /* 面板底部改成與「匯入工單」相同的常駐按鈕（上傳暫存檔／下載工單＋圖片＋暫存檔），
+     實際動作由主工具執行，吸底成品會跟著工單一起下載。 */
+  function buildHostActionFooter() {
+    var node = el("div", { class: "panel-section export-section host-dl-bar" });
+    var snapInput = el("input", { type: "file", accept: ".json", style: "display:none;" });
+    snapInput.addEventListener("change", function () {
+      if (snapInput.files && snapInput.files[0]) window.BottomParentBridge.sendHostFiles("snapshot", [snapInput.files[0]]);
+      snapInput.value = "";
+    });
+    var upBtn = el("button", { class: "block host-dl-btn" }, []);
+    upBtn.innerHTML = '<svg class="host-btn-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V10"/><path d="m7.8 13.8 4.2-4.2 4.2 4.2"/><path d="M4 4h16v5"/></svg> 上傳暫存檔還原編輯';
+    upBtn.addEventListener("click", function () { snapInput.click(); });
+    var dlBtn = el("button", { class: "primary block host-dl-btn", style: "margin-top:8px;" }, []);
+    dlBtn.innerHTML = '<svg class="host-btn-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 20h16"/></svg> 下載工單＋圖片＋暫存檔';
+    dlBtn.addEventListener("click", function () { window.BottomParentBridge.requestHostAction("download-package"); });
+    node.appendChild(upBtn);
+    node.appendChild(snapInput);
+    node.appendChild(dlBtn);
+    node.appendChild(el("div", { class: "host-dl-hint" }, [
+      "會回填目前文字、色碼與共用文案至原 Excel，並下載合成 PNG、各版位獨立 PNG（副區整排、MSBN 逐顆、吸底多狀態圖）與編輯暫存 .json。"
+    ]));
+    return node;
   }
 
   function buildImportSection(store, Actions, ui, rerender) {
@@ -629,6 +786,12 @@
       iconRow.appendChild(
         window.IconPicker.buildTrigger(state.library, slot.iconId, function (iconId) {
           store.dispatch(Actions.setSlotIcon(index, iconId || null));
+        }, {
+          isDisabled: function (icon) {
+            return index > 0 && window.BottomSlotRules &&
+              window.BottomSlotRules.isFirstSlotOnlyIcon(icon, state.library);
+          },
+          disabledReason: "僅限第一格使用"
         })
       );
 
@@ -727,7 +890,10 @@
 
     // 文字 + 字數
     var textRow = el("div", { class: "text-row" });
-    var input = el("input", { type: "text", placeholder: "文字（上限 5 字）" });
+    var input = el("input", {
+      type: "text",
+      placeholder: index === 0 ? "文字（上限 5 字）" : "文字（不可輸入主會場）"
+    });
     input.setAttribute("data-slot-index", String(index));
     input.value = slot.text;
 
@@ -967,7 +1133,9 @@
         window.BottomParentBridge.isEmbedded &&
         window.BottomParentBridge.isEmbedded() &&
         new URLSearchParams(location.search).get("embed") === "generator";
-      if (!isGeneratorEmbed) {
+      if (isStandaloneHostEmbed()) {
+        scrollArea.appendChild(buildHostImportSection(store, Actions, ui, renderAll));
+      } else if (!isGeneratorEmbed) {
         scrollArea.appendChild(buildImportSection(store, Actions, ui, renderAll));
       }
       scrollArea.appendChild(buildAccentColorSection(banner, store, Actions));
@@ -983,7 +1151,9 @@
       if (applySection) scrollArea.appendChild(applySection);
 
       footer.innerHTML = "";
-      footer.appendChild(buildExportSection(state, banner, store, ui, renderAll));
+      footer.appendChild(isStandaloneHostEmbed()
+        ? buildHostActionFooter()
+        : buildExportSection(state, banner, store, ui, renderAll));
 
       if (focusInfo && focusInfo.slotIndex != null) {
         var toFocus = scrollArea.querySelector(
@@ -1138,6 +1308,15 @@
       },
       stageImageUpload: function (file, index) {
         stageImageUpload(file, index, ui, renderAll, true);
+      },
+      /* 主工具 STEP 2 上傳了新圖片：把之前對不到的 LOGO 檔名補上 */
+      applyHostAssets: function () {
+        var n = applyPendingHostAssets(store, Actions);
+        if (n) {
+          ui.importMessage = "已用「STEP 2」上傳的圖片補上 " + n + " 顆 LOGO。";
+          renderAll();
+        }
+        return n;
       },
     };
   }

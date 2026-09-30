@@ -135,15 +135,24 @@
       return;
     }
     var file = makeFile(msg.buffer, msg.name);
+    /* 主工具 STEP 2 上傳的圖片一起帶進來，試算表填的 LOGO 圖檔名才對得到圖 */
+    if (Array.isArray(msg.images)) window.BottomHostAssets = msg.images;
     /* 這是父頁提供的檔案與既有編輯狀態，不是本入口的新編輯。
        匯入過程產生的 store change 不得再轉送回父頁。 */
     parentStateSyncDepth++;
     panelApi.importWorkOrder(file, function (err) {
       try {
         if (!err && msg.bottomState) applyStateFromParent({ state: msg.bottomState, requestId: msg.requestId || "" });
-        if (!err) applyLevelPreset(msg.levelId);
+        /* 已有使用者的吸底編輯（重新整理、切換頁面後重送工單）時，不可再套等級預設，
+           否則第一顆的文字／LOGO 與反白顏色會被蓋回預設值。只有「全新匯入」才套等級預設。 */
+        if (!err && !msg.bottomState) applyLevelPreset(msg.levelId);
         if (!err && window.StartupDialog && window.StartupDialog.close) window.StartupDialog.close();
         if (!err) sendPreviewImage(msg);
+        /* 可編輯的吸底入口匯入完成後，把「匯入＋等級預設＋LOGO 補圖」後的完整狀態回報給主工具，
+           主工具再原封不動轉給匯入工單畫布下方的吸底預覽，兩邊才會一模一樣。 */
+        if (!err && !isImportPreview() && window.store) {
+          post({ type: "STATE", state: serializeStateForBridge(window.store.getState()), changed: true, actionType: "PARENT_IMPORT" });
+        }
         post({
           type: "IMPORT_RESULT",
           requestId: msg.requestId || "",
@@ -213,12 +222,31 @@
       syncHostLevelControl(null, msg.levels || []);
     } else if (msg.type === "BOTTOM_LEVEL") {
       syncHostLevelControl(msg.levelId);
-      if (applyLevelPreset(msg.levelId) && isImportPreview()) sendPreviewImage(msg);
+      /* applyPreset:false＝只同步等級下拉，不動吸底內容（還原既有編輯時用） */
+      if (msg.applyPreset !== false && applyLevelPreset(msg.levelId) && isImportPreview()) sendPreviewImage(msg);
     } else if (msg.type === "BOTTOM_STATE") {
       applyStateFromParent(msg);
       /* 預覽 iframe 沒有收到 XLSX 時也要能以目前吸底狀態輸出縮圖；
          工單生成器的「下載全部」會先等這張圖，再寫入 MS Layout 右側。 */
       if (isImportPreview()) setTimeout(function () { sendPreviewImage(msg); }, 0);
+    } else if (msg.type === "IMAGE_ASSETS") {
+      /* 主工具 STEP 2 新上傳了圖片：更新清單，補上之前對不到的 LOGO */
+      window.BottomHostAssets = Array.isArray(msg.images) ? msg.images : [];
+      if (panelApi && panelApi.applyHostAssets) {
+        var appliedCount = panelApi.applyHostAssets();
+        if (appliedCount && isImportPreview()) sendPreviewImage(msg);
+      }
+    } else if (msg.type === "EXPORT_VARIANTS") {
+      /* 主工具下載成品時要的吸底多狀態圖（每一顆反白各一張，全部分頁） */
+      if (!window.ExportBatch || !window.ExportBatch.exportAllBannerFiles || !window.store) {
+        post({ type: "VARIANTS_RESULT", requestId: msg.requestId || "", ok: false, message: "吸底匯出器尚未就緒" });
+        return;
+      }
+      window.ExportBatch.exportAllBannerFiles(window.store).then(function (files) {
+        post({ type: "VARIANTS_RESULT", requestId: msg.requestId || "", ok: true, files: files });
+      }).catch(function (err) {
+        post({ type: "VARIANTS_RESULT", requestId: msg.requestId || "", ok: false, message: err && err.message ? err.message : String(err) });
+      });
     } else if (msg.type === "EXPORT_ALL") {
       exportAllForParent(msg);
     } else if (msg.type === "NO_WORKORDER") {
@@ -277,6 +305,12 @@
     isEmbedded: isEmbedded,
     requestLatestWorkOrder: requestLatestWorkOrder,
     requestLevelChange: function (levelId) { return post({ type: "LEVEL_CHANGE_REQUEST", levelId: String(levelId || "") }); },
-    requestGeneratorDownloadAll: function () { return post({ type: "REQUEST_GENERATOR_DOWNLOAD_ALL" }); }
+    requestGeneratorDownloadAll: function () { return post({ type: "REQUEST_GENERATOR_DOWNLOAD_ALL" }); },
+    /* 獨立吸底頁的 STEP 1／STEP 2／上傳暫存檔：檔案交給主工具，走與「匯入工單」相同的流程 */
+    sendHostFiles: function (kind, files) {
+      return post({ type: "HOST_FILES", kind: String(kind || ""), files: Array.prototype.slice.call(files || []) });
+    },
+    /* 獨立吸底頁底部的「下載工單＋圖片＋暫存檔」 */
+    requestHostAction: function (action) { return post({ type: "HOST_ACTION", action: String(action || "") }); }
   };
 })();

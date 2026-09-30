@@ -222,7 +222,8 @@
       "width": 304.0,
       "height": 226.0,
       "field": "productImg",
-      "fieldLabel": "商品圖／情境圖（右）"
+      "fieldLabel": "商品圖／情境圖（右）",
+      "imageZIndex": 1550
     },
     {
       "zIndex": 1550,
@@ -232,7 +233,8 @@
       "width": 304.0,
       "height": 226.0,
       "field": "productImg2",
-      "fieldLabel": "商品圖／情境圖（中）"
+      "fieldLabel": "商品圖／情境圖（中）",
+      "imageZIndex": 1550
     },
     {
       "zIndex": 1550,
@@ -242,7 +244,8 @@
       "width": 304.0,
       "height": 226.0,
       "field": "productImg3",
-      "fieldLabel": "商品圖／情境圖（左）"
+      "fieldLabel": "商品圖／情境圖（左）",
+      "imageZIndex": 1550
     },
     {
       "zIndex": 1549,

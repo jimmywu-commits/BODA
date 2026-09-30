@@ -192,7 +192,11 @@
     if (maxBase === -Infinity && minInfo === Infinity) return 1;
     if (minInfo === Infinity) return maxBase + 1;
     if (maxBase === -Infinity) return minInfo - 1;
-    return maxBase < minInfo ? maxBase + (minInfo - maxBase) / 2 : maxBase + 1;
+    /* CSS 的 z-index 只接受整數；寫成 1568.5 這種小數會被瀏覽器整個忽略，
+       圖片就掉到卡片底色下面看不見（MSBN D-2-1-2、D-1-1-1、D-1-1-2、B-1-1）。
+       取背景與資訊層中間的整數；兩者只差 1 時，放在背景正上方。 */
+    if (maxBase < minInfo) return Math.max(maxBase + 1, Math.floor((maxBase + minInfo) / 2));
+    return maxBase + 1;
   }
   /* MSBN B-1-1～B-1-4 的商品圖要留在白底圓角框內；
      這些版位的底色矩形只是整張卡片背景，不能被當成商品圖可移動範圍。 */
@@ -308,6 +312,16 @@
     if (!layer || layer.type !== 'text') return false;
     var field = String(layer.field || '').replace(/[0-9]+$/, '');
     return /^endorserNote$/i.test(field) || /代言人小字/.test(String(layer.fieldLabel || ''));
+  }
+
+  /* 簽名小字（signNote、signNote2…）：跟代言人小字一樣，可以在畫布上用滑鼠拖曳移動位置。 */
+  function isSignNoteLayer(layer) {
+    if (!layer || layer.type !== 'text') return false;
+    var field = String(layer.field || '').replace(/[0-9]+$/, '');
+    return /^signNote$/i.test(field) || /簽名小字/.test(String(layer.fieldLabel || ''));
+  }
+  function isMovableCanvasTextLayer(layer) {
+    return isEndorserNoteLayer(layer) || isSignNoteLayer(layer);
   }
 
   /*
@@ -559,8 +573,11 @@
       return (endorserTextColor && String(endorserTextColor).trim()) ? String(endorserTextColor).trim() : '#111827';
     }
     if (role === 'itemText') {
-      var itemTextColor = theme.itemText;
-      return (itemTextColor && String(itemTextColor).trim()) ? String(itemTextColor).trim() : (layer.color || null);
+      /* D 系列表格的項目文字／內文：依卡片底色自動黑／白字；
+         統一顏色有手動選色時，只要在該底色上清楚可讀就照選的顏色。 */
+      var itemSurface = msbnCardSurfaceOf(opts, data, fieldPrefix, theme);
+      var itemTextColor = theme.itemText && String(theme.itemText).trim();
+      return itemTextColor ? readableTextColor(itemTextColor, itemSurface) : autoTextColorOn(itemSurface);
     }
     /* 警語預設深灰；深色卡片／畫布上改用淡灰，手動選色時保留使用者設定。 */
     if (role === 'warnText' && theme.warnTextAuto) {
@@ -612,9 +629,72 @@
       return readableTextColor(requestedBodyColor, bodySurface);
     }
 
+    /* MSBN C-1-4／C-1-5 的「文案」（欄位名 promo）直接壓在卡片底色上、沒有促標色帶，
+       不能跟促標底色連動；改依卡片底色自動黑／白字（手動選色且清楚可讀時保留）。 */
+    if (role === 'promoText' && /^msbn_C_1_[45]$/i.test(themeSchemaId)) {
+      var copySurface = msbnCardSurfaceOf(opts, data, fieldPrefix, theme);
+      var explicitPromo = !theme.promoTextAuto && theme.promoText && String(theme.promoText).trim();
+      return explicitPromo ? readableTextColor(explicitPromo, copySurface) : autoTextColorOn(copySurface);
+    }
     /* 促標預設字色由目前促標底色的明暗連動決定；明確選色時沿用全域覆寫。 */
     var v = theme[role];
-    return (v && String(v).trim()) ? String(v).trim() : null;
+    var roleColor = (v && String(v).trim()) ? String(v).trim() : null;
+    /* 促標字／圓標字／CTA 字（含 CTA 三角形）壓在自己的色塊上：
+       底色改成淡色時字不能還是白色、底色改深時字不能還是深色。
+       原本的字色（設計稿或手動選色）在底色上夠清楚（≥3:1，大字標準）就保留，
+       不夠清楚才自動換成黑字／白字。 */
+    if (role === 'promoText' || role === 'badgeText' || role === 'ctaText') {
+      var surfaceRole = role === 'promoText' ? 'promoBg' : (role === 'badgeText' ? 'badgeBg' : 'ctaBg');
+      var shapeSurface = roleSurfaceForLayer(layer, surfaceRole, opts, data, fieldPrefix);
+      if (shapeSurface) {
+        var baseColor = roleColor || layer.color || (layer.type !== 'text' ? layer.backgroundColor : null);
+        return readableLargeTextColor(baseColor, shapeSurface);
+      }
+    }
+    return roleColor;
+  }
+
+  function readableLargeTextColor(candidate, surface) {
+    if (!parseCssColor(surface)) return candidate || null;
+    if (candidate && contrastRatio(candidate, surface) >= 3) return candidate;
+    return autoTextColorOn(surface);
+  }
+
+  /* 找出文字（或 CTA 三角形）底下那塊指定角色的色塊，回傳它目前實際顯示的顏色。
+     先比對欄位編號（promo2 ↔ promoColor2），再退回「文字中心落在色塊範圍內」最近的那塊。 */
+  function roleSurfaceForLayer(textLayer, surfaceRole, opts, data, fieldPrefix) {
+    var layers = (opts && opts._schemaLayers) || [];
+    var candidates = layers.filter(function (candidate) {
+      return candidate && (candidate.type === 'rect' || candidate.type === 'circle' || candidate.type === 'image') &&
+        themeRoleOf(candidate, opts && opts._schemaId) === surfaceRole;
+    });
+    if (!candidates.length) return null;
+    var textField = String(textLayer && textLayer.field || '');
+    var suffix = (textField.match(/(\d+)$/) || [])[1] || '';
+    var bySuffix = candidates.filter(function (candidate) {
+      return (((String(candidate.field || '').match(/(\d+)$/) || [])[1]) || '') === suffix;
+    });
+    var pool = bySuffix.length ? bySuffix : candidates;
+    var tl = Number(textLayer.left || 0), tt = Number(textLayer.top || 0);
+    var tw = Number(textLayer.width || 0), th = Number(textLayer.height || textLayer.fontSize || 0);
+    var cx = tl + tw / 2, cy = tt + th / 2;
+    var best = null;
+    pool.forEach(function (candidate) {
+      var l = Number(candidate.left || 0), t = Number(candidate.top || 0);
+      var w = Number(candidate.width || 0), h = Number(candidate.height || 0);
+      var dx = Math.max(l - cx, 0, cx - (l + w));
+      var dy = Math.max(t - cy, 0, cy - (t + h));
+      var distance = dx * dx + dy * dy;
+      if (!best || distance < best.distance) best = { layer: candidate, distance: distance };
+    });
+    if (!best) return null;
+    /* 文字離色塊太遠（不是壓在它上面），就不以它當底色判斷 */
+    if (best.distance > 120 * 120) return null;
+    var exact = best.layer;
+    var key = resolveFieldKey(exact, fieldPrefix);
+    var raw = key && data ? data[key] : null;
+    return themeColorOf(exact, opts, data, fieldPrefix) ||
+      derivedColorOf(exact, data, fieldPrefix, opts) || raw || exact.backgroundColor || null;
   }
 
   /* 算出這個圖層在資料物件裡對應的 key
@@ -739,7 +819,32 @@
     if (!surfaceRgb) return candidate || null;
     /* 以 WCAG 一般文字 4.5:1 做最後防線；淡色卡不會再被白字吃掉。 */
     if (candidate && contrastRatio(candidate, surface) >= 4.5) return candidate;
-    return relativeLuminance(surfaceRgb) >= 0.52 ? '#121827' : '#ffffff';
+    return autoTextColorOn(surface);
+  }
+  /* 依底色自動選字色：淡底用黑字、深底用白字。
+     以「黑字、白字哪一個對比比較高」決定，中間調的底色（例如天空藍）也不會誤選白字。 */
+  function autoTextColorOn(surface) {
+    var dark = '#121827', light = '#ffffff';
+    var cDark = contrastRatio(dark, surface), cLight = contrastRatio(light, surface);
+    if (cDark == null || cLight == null) return dark;
+    return cDark >= cLight ? dark : light;
+  }
+  /* MSBN C／D 卡片的實際底色：統一顏色有設卡片底色就用它，否則用該版位自己的卡片色。 */
+  function msbnCardSurfaceOf(opts, data, fieldPrefix, theme) {
+    if (theme && theme.cardBg && String(theme.cardBg).trim()) return String(theme.cardBg).trim();
+    var layers = (opts && opts._schemaLayers) || [];
+    var cardLayer = null;
+    layers.some(function (candidate) {
+      if (!candidate || candidate.type !== 'rect') return false;
+      if (themeRoleOf(candidate, opts && opts._schemaId) !== 'cardBg') return false;
+      cardLayer = candidate;
+      return true;
+    });
+    if (cardLayer) {
+      var key = resolveFieldKey(cardLayer, fieldPrefix);
+      return (key && data && data[key]) || cardLayer.backgroundColor || '#ffffff';
+    }
+    return (theme && (theme.canvasBg || theme.bg)) || '#ffffff';
   }
 
   function rgbToHsl(c) {
@@ -1069,7 +1174,7 @@
 
     var warnNudge = opts && opts._subareaWarnNudge &&
       layer.type === 'text' && /^warn\d*$/i.test(String(layer.field || '')) ? 2 : 0;
-    var movableTextFieldKey = isEndorserNoteLayer(layer) ? resolveFieldKey(layer, fieldPrefix) : null;
+    var movableTextFieldKey = isMovableCanvasTextLayer(layer) ? resolveFieldKey(layer, fieldPrefix) : null;
     var savedCanvasTextPosition = movableTextFieldKey && data && data.__canvasTextPositions
       ? data.__canvasTextPositions[movableTextFieldKey] : null;
     if (savedCanvasTextPosition) {
@@ -1521,9 +1626,10 @@
         themeRoleOf(layer, opts && opts._schemaId) === 'endorserText') {
       attrs += ' data-auto-text-role="endorserText"';
     }
-    if (layer.type === 'text' && fieldKey && opts && opts.editable && isEndorserNoteLayer(layer)) {
+    if (layer.type === 'text' && fieldKey && opts && opts.editable && isMovableCanvasTextLayer(layer)) {
+      /* 沿用同一套拖曳邏輯（index.html 的 bindEndorserTextDrag），位置存在 data.__canvasTextPositions */
       attrs += ' data-movable-canvas-text="endorser" data-text-field="' + esc(fieldKey) + '"' +
-        ' title="按住滑鼠左鍵拖曳可移動代言人小字"';
+        ' title="按住滑鼠左鍵拖曳可移動' + (isSignNoteLayer(layer) ? '簽名小字' : '代言人小字') + '"';
     }
     if (directColorEditable) {
       attrs += ' data-color-field="' + esc(colorFieldKey) + '"' +
@@ -1868,6 +1974,10 @@
       line(left, top, lineWidth, height);
       line(left + Math.max(0, width - lineWidth), top, lineWidth, height);
     }
+    /* topBorder：沒有外框的表格，最上緣也畫一條跟列分隔同色同粗的橫線（例如 MSBN D-2-3）。 */
+    if (grid.outerBorder === false && grid.topBorder) {
+      line(left, top, width, lineWidth);
+    }
     var verticalDividers = Array.isArray(grid.verticalDividers)
       ? grid.verticalDividers
       : [grid.itemDivider, grid.contentDivider];
@@ -2211,6 +2321,20 @@
       sign.zIndex = Math.max(Number(sign.zIndex || 0), maxOtherImageZ + signatureOffset);
       signatureOffset++;
     });
+    /* 簽名小字壓在簽名圖範圍上：若文字層級低於簽名圖，簽名圖（或它的空白佔位框）
+       會蓋住文字，滑鼠點不到、也拖曳不了。這裡把簽名小字一律放到所有簽名圖之上。 */
+    var maxSignImageZ = -Infinity;
+    allLayers.forEach(function (layer) {
+      if (layer.type === 'image' && /^signImg\d*$/i.test(String(layer.field || ''))) {
+        maxSignImageZ = Math.max(maxSignImageZ, Number(layer.zIndex || 0));
+      }
+    });
+    if (maxSignImageZ > -Infinity) {
+      allLayers.forEach(function (layer) {
+        if (!isSignNoteLayer(layer)) return;
+        layer.zIndex = Math.max(Number(layer.zIndex || 0), maxSignImageZ + 1);
+      });
+    }
   }
 
   /* 抓出這個版位目前「實際用的顏色」，給左側『統一顏色』區把色號吸進來用。

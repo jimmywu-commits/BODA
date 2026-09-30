@@ -13,6 +13,54 @@
   var TYPES = window.Actions.types;
   var MIN_SLOTS = 2;
   var MAX_SLOTS = 5;
+  var RESERVED_MAIN_VENUE_TEXT = "主會場";
+  var FIRST_SLOT_ONLY_ICON_IDS = {
+    u4e3bu6703u5834: true, // 主會場 Home icon
+    "bod-logo": true,     // 今日旗艦店
+    "mdd-logo": true,     // 品牌旗艦
+  };
+
+  function sanitizeSlotText(index, text) {
+    var value = String(text == null ? "" : text);
+    return Number(index) === 0 ? value : value.split(RESERVED_MAIN_VENUE_TEXT).join("");
+  }
+
+  function findLibraryIcon(library, iconId) {
+    for (var i = 0; i < (library || []).length; i++) {
+      if (library[i].id === iconId) return library[i];
+    }
+    return null;
+  }
+
+  function isFirstSlotOnlyIcon(library, iconOrId) {
+    var icon = iconOrId && typeof iconOrId === "object"
+      ? iconOrId : findLibraryIcon(library, iconOrId);
+    var id = icon ? icon.id : iconOrId;
+    return !!(FIRST_SLOT_ONLY_ICON_IDS[id] || (icon && icon.firstSlotOnly));
+  }
+
+  function sanitizeBannerSlot(library, slot, index) {
+    var text = sanitizeSlotText(index, slot && slot.text);
+    var iconId = slot && slot.iconId;
+    if (Number(index) > 0 && isFirstSlotOnlyIcon(library, iconId)) iconId = null;
+    if (slot && slot.text === text && slot.iconId === iconId) return slot;
+    return Object.assign({}, slot || createSlot(index), {
+      text: text,
+      iconId: iconId,
+      type: iconId ? (slot.type || findIconType(library, iconId)) : "icon",
+    });
+  }
+
+  function sanitizeBanner(library, banner) {
+    if (!banner || !Array.isArray(banner.slots)) return banner;
+    var changed = false;
+    var slots = banner.slots.map(function (slot, index) {
+      var sanitized = sanitizeBannerSlot(library, slot, index);
+      if (sanitized !== slot) changed = true;
+      return sanitized;
+    });
+    return changed ? Object.assign({}, banner, { slots: slots }) : banner;
+  }
 
   function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));
@@ -133,9 +181,11 @@
       }
 
       case TYPES.SET_SLOT_TEXT: {
-        // 不截斷。5 字是軟性建議，超過仍然存得進去，由 UI 用紅框警告（見 textLimit.js）
+        /* 不截斷一般文案；但「主會場」是第一格專用字，第二格以後即時移除。
+           這層同時涵蓋右側輸入與畫布直接編輯。 */
+        var sanitizedText = sanitizeSlotText(action.index, action.text);
         return updateActiveSlot(state, action.index, function (slot) {
-          return Object.assign({}, slot, { text: action.text || "" });
+          return Object.assign({}, slot, { text: sanitizedText });
         });
       }
 
@@ -145,13 +195,15 @@
        *（工單匯入、載入存檔），靠 UI 自律遲早會出現「圖蓋在字上面」的狀態。
        */
       case TYPES.SET_SLOT_ICON: {
-        var iconType = findIconType(state.library, action.iconId);
+        var selectedIconId = Number(action.index) > 0 && isFirstSlotOnlyIcon(state.library, action.iconId)
+          ? null : action.iconId;
+        var iconType = findIconType(state.library, selectedIconId);
         return updateActiveSlot(state, action.index, function (slot) {
           return Object.assign({}, slot, {
-            iconId: action.iconId,
+            iconId: selectedIconId,
             type: iconType,
             // 選了圖就退出文字模式
-            iconText: action.iconId ? null : slot.iconText,
+            iconText: selectedIconId ? null : slot.iconText,
           });
         });
       }
@@ -275,9 +327,12 @@
 
       case TYPES.SET_BANNERS: {
         if (!action.banners || !action.banners.length) return state;
+        var sanitizedBanners = action.banners.map(function (banner) {
+          return sanitizeBanner(state.library, banner);
+        });
         return Object.assign({}, state, {
-          banners: action.banners,
-          activeBannerIndex: clamp(action.activeIndex, 0, action.banners.length - 1),
+          banners: sanitizedBanners,
+          activeBannerIndex: clamp(action.activeIndex, 0, sanitizedBanners.length - 1),
         });
       }
 
@@ -287,5 +342,11 @@
   };
 
   window.SLOT_LIMITS = { MIN_SLOTS: MIN_SLOTS, MAX_SLOTS: MAX_SLOTS };
+  window.BottomSlotRules = {
+    sanitizeText: sanitizeSlotText,
+    isFirstSlotOnlyIcon: function (iconOrId, library) {
+      return isFirstSlotOnlyIcon(library || [], iconOrId);
+    },
+  };
   window.BannerFactory = { create: createBanner, createSlot: createSlot, resizeSlots: resizeSlots };
 })();

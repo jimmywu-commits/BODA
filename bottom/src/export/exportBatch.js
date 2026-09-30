@@ -208,7 +208,26 @@
     triggerDownload(await zip.generateAsync({ type: "blob" }), prefix + "-全部分頁.zip");
   }
 
+  /* 主工具「下載工單＋圖片＋暫存檔」用：全部分頁的多狀態圖，直接回傳檔名＋dataURL，
+     檔名規則與吸底自己的 ZIP 相同（分頁名稱-第幾顆-文字.png）。 */
+  async function exportAllBannerFiles(store) {
+    var groups = await exportAllBanners(store);
+    var state = store.getState();
+    var files = [];
+    groups.forEach(function (group) {
+      var view = window.Selectors.viewState(state, state.banners[group.bannerIndex]);
+      group.results.forEach(function (r, idx) {
+        files.push({
+          filename: safeName(group.label) + "-" + slotFileLabel(view, idx) + ".png",
+          dataUrl: r.dataUrl
+        });
+      });
+    });
+    return files;
+  }
+
   window.ExportBatch = {
+    exportAllBannerFiles: exportAllBannerFiles,
     exportAll: exportAll,
     exportView: exportView,
     exportAllBanners: exportAllBanners,

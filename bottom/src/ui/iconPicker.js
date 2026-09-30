@@ -43,12 +43,15 @@
     open = null;
   }
 
-  function buildTile(icon, isSelected, onPick) {
+  function buildTile(icon, isSelected, onPick, isDisabled, disabledReason) {
     var tile = el("button", {
-      class: "icon-tile" + (isSelected ? " selected" : ""),
-      title: icon.displayName + (icon.type === "logo" ? "（LOGO：保持原色）" : ""),
+      class: "icon-tile" + (isSelected ? " selected" : "") + (isDisabled ? " is-disabled" : ""),
+      title: isDisabled
+        ? icon.displayName + "（" + (disabledReason || "此位置不可使用") + "）"
+        : icon.displayName + (icon.type === "logo" ? "（LOGO：保持原色）" : ""),
       onClick: function () { onPick(icon.id); },
     });
+    if (isDisabled) tile.setAttribute("disabled", "disabled");
 
     var src = iconThumbSrc(icon);
     if (src) {
@@ -107,8 +110,9 @@
    * library：目前素材庫；selectedId：目前這一格選的；onPick(idOrNull)：選好之後的回呼。
    * onPick 會自動關閉面板，呼叫端不用管。
    */
-  function openPicker(anchor, library, selectedId, onPick) {
+  function openPicker(anchor, library, selectedId, onPick, options) {
     close();
+    options = options || {};
 
     var panel = el("div", { class: "icon-picker" });
 
@@ -138,7 +142,8 @@
       var shown = 0;
       library.forEach(function (icon) {
         if (kw && icon.displayName.toLowerCase().indexOf(kw) < 0) return;
-        grid.appendChild(buildTile(icon, icon.id === selectedId, pick));
+        var disabled = typeof options.isDisabled === "function" && options.isDisabled(icon);
+        grid.appendChild(buildTile(icon, icon.id === selectedId, pick, disabled, options.disabledReason));
         shown++;
       });
       empty.hidden = shown > 0;
@@ -188,7 +193,7 @@
   /*
    * 每一格上那顆「目前選了什麼」的按鈕。點下去開選單。
    */
-  function buildTrigger(library, selectedId, onPick) {
+  function buildTrigger(library, selectedId, onPick, options) {
     var icon = null;
     for (var i = 0; i < library.length; i++) {
       if (library[i].id === selectedId) { icon = library[i]; break; }
@@ -214,7 +219,7 @@
     btn.appendChild(el("span", { class: "icon-trigger-caret" }, ["▾"]));
 
     btn.addEventListener("click", function () {
-      openPicker(btn, library, selectedId, onPick);
+      openPicker(btn, library, selectedId, onPick, options);
     });
     return btn;
   }
