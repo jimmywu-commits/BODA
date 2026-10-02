@@ -952,7 +952,7 @@
      * 改完再用這顆推出去比重按一次整組套用安全——整組會把已經手動改過的其他格也蓋掉。
      * 一樣只有兩條以上才出現。
      */
-    if (state.banners.length > 1) {
+    if (false && state.banners.length > 1) {
       var copyRow = el("div", { class: "copy-row" });
       copyRow.appendChild(
         el(
@@ -1035,6 +1035,7 @@
    * 只有兩條以上才出現。單條時這顆按鈕沒有任何作用，留著只會讓人以為自己漏了什麼。
    */
   function buildApplyIconsSection(state, banner, store, Actions, ui, rerender) {
+    return null; // 暫時隱藏，連動功能已取代手動套用
     if (state.banners.length < 2) return null;
 
     var others = state.banners.length - 1;
@@ -1144,7 +1145,7 @@
       node.appendChild(allBtn);
     }
 
-    var btn = el("button", { class: (bannerCount > 1 ? "" : "primary") + " block", style: bannerCount > 1 ? "margin-top:6px;" : "" }, [
+    var btn = el("button", { class: (bannerCount > 1 ? "" : "primary") + " block", style: (bannerCount > 1 ? "margin-top:6px;" : "") + "display:none;" }, [
       "匯出「" + window.Selectors.bannerLabel(state.activeBannerIndex) + "」的 " + n + " 張變體圖",
     ]);
     btn.addEventListener("click", function () {

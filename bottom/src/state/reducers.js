@@ -325,8 +325,19 @@
           return Object.assign({}, s, { linked: !wasLinked });
         });
         if (!wasLinked && state.banners.length > 1) {
-          next = propagateLinkedIcon(next, action.index);
-          next = propagateLinkedText(next, action.index);
+          var donor = null;
+          for (var li = 0; li < next.banners.length; li++) {
+            if (li === next.activeBannerIndex) continue;
+            var ds = next.banners[li].slots[action.index];
+            if (ds && isSlotLinked(ds)) { donor = ds; break; }
+          }
+          if (donor) {
+            var donorIcon = iconFieldsOf(donor);
+            var donorText = donor.text;
+            next = updateActiveSlot(next, action.index, function (s) {
+              return Object.assign({}, s, donorIcon, { text: sanitizeSlotText(action.index, donorText) });
+            });
+          }
         }
         return next;
       }
