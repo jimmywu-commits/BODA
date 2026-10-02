@@ -250,7 +250,7 @@
       }
 
       case TYPES.SET_SLOT_ICON_TEXT: {
-        var iconText = action.text == null ? null : String(action.text);
+        var iconText = action.text == null ? null : String(action.text).replace(/~/g, "-");
         var next = updateActiveSlot(state, action.index, function (slot) {
           if (iconText == null) return Object.assign({}, slot, { iconText: null });
           return Object.assign({}, slot, {
