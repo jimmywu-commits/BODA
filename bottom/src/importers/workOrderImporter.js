@@ -454,20 +454,25 @@
   }
 
   /* 匯入工單以 Layout_Output 為準；沒有才看正式的 Layout_Template（略過 Backup）。
+     Layout_Output 可能有多條同格式的吸底（多分頁）→ 全部回傳；
      母版把兩格～五格全部列出，只取「填了最多內容」的那一段，同分取格數多的。 */
   function analyseLayoutSticky(workbook) {
     var names = workbook.SheetNames || [];
     function norm(n) { return String(n || "").trim().toLowerCase().replace(/[\s_-]+/g, "_"); }
-    var ordered = names.filter(function (n) { return norm(n) === "layout_output"; })
-      .concat(names.filter(function (n) { return /^layout[\s_-]*template/i.test(String(n).trim()) && !/backup/i.test(n); }));
-    for (var i = 0; i < ordered.length; i++) {
-      var blocks = detectLayoutStickyBlocks(sheetToRows(workbook, ordered[i]), ordered[i]);
-      if (!blocks.length) continue;
-      blocks.sort(function (a, b) {
+    var outputSheets = names.filter(function (n) { return norm(n) === "layout_output"; });
+    var templateSheets = names.filter(function (n) { return /^layout[\s_-]*template/i.test(String(n).trim()) && !/backup/i.test(n); });
+    for (var i = 0; i < outputSheets.length; i++) {
+      var blocks = detectLayoutStickyBlocks(sheetToRows(workbook, outputSheets[i]), outputSheets[i]);
+      if (blocks.length) return blocks;
+    }
+    for (var j = 0; j < templateSheets.length; j++) {
+      var tblocks = detectLayoutStickyBlocks(sheetToRows(workbook, templateSheets[j]), templateSheets[j]);
+      if (!tblocks.length) continue;
+      tblocks.sort(function (a, b) {
         if (b.filled !== a.filled) return b.filled - a.filled;
         return b.groups.length - a.groups.length;
       });
-      return blocks[0];
+      return [tblocks[0]];
     }
     return null;
   }
@@ -668,9 +673,9 @@
     /* BODA 匯出的精準欄位對照優先，避免同一段又被結構掃描重複匯入。 */
     var exact = analyseBodaBottomMeta(workbook);
     if (exact) return [exact];
-    /* Layout_Output 的「吸底_N格」一顆一列格式：只取一條，避免母版的兩～五格全部變成分頁。 */
+    /* Layout_Output 的「吸底_N格」一顆一列格式：Output 回傳所有條，Template 只取最佳。 */
     var layoutSticky = analyseLayoutSticky(workbook);
-    if (layoutSticky) return [layoutSticky];
+    if (layoutSticky) return layoutSticky;
 
     var blocks = [];
     workbook.SheetNames.forEach(function (name) {

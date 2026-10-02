@@ -68,26 +68,56 @@
     var takeOrder = handler(function (f, cb) { api.importWorkOrder(f, cb); }, "工單匯入失敗");
     var takeProject = handler(function (f, cb) { api.loadProject(f, cb); }, "載入進度失敗");
 
+    function handleStartupFiles(fileList) {
+      var sheets = [], images = [], json = null;
+      for (var i = 0; i < fileList.length; i++) {
+        var f = fileList[i];
+        if (/\.json$/i.test(f.name)) { json = f; }
+        else if (/\.(xlsx|xlsm|csv)$/i.test(f.name)) { sheets.push(f); }
+        else if (/^image\//i.test(f.type)) { images.push(f); }
+      }
+      if (!sheets.length && !images.length && json) {
+        takeProject(json);
+        return;
+      }
+      if (!sheets.length && !images.length) {
+        setError("請選擇工單 .xlsx 或圖片檔。");
+        return;
+      }
+      if (images.length && api.loadImageAssets) {
+        api.loadImageAssets(images, function () {
+          if (sheets.length) takeOrder(sheets[0]);
+          else close();
+        });
+      } else if (sheets.length) {
+        takeOrder(sheets[0]);
+      } else {
+        close();
+      }
+    }
+
     // ── 主按鈕：整塊都是 <label>，點哪裡都會開檔案選擇器
+    //    可同時選工單 xlsx 和圖片，一次上傳
     var orderInput = el("input", {
       type: "file",
-      accept: ".xlsx,.xlsm,.csv",
+      accept: ".xlsx,.xlsm,.csv,.png,.jpg,.jpeg,.svg,.gif,.webp",
       class: "startup-file",
     });
+    orderInput.setAttribute("multiple", "multiple");
     orderInput.addEventListener("change", function (e) {
-      var f = e.target.files && e.target.files[0];
-      e.target.value = ""; // 先清空，選同一個檔第二次才會再觸發 change
-      takeOrder(f);
+      var files = e.target.files;
+      e.target.value = "";
+      if (!files || !files.length) return;
+      handleStartupFiles(files);
     });
 
     var drop = el("label", { class: "startup-drop" }, [
       el("div", { class: "startup-drop-icon", text: "📊" }),
-      el("div", { class: "startup-drop-title", text: "上傳工單 .xlsx" }),
-      el("div", { class: "startup-drop-hint", text: "點擊選擇，或直接把檔案拖曳到這裡" }),
+      el("div", { class: "startup-drop-title", text: "上傳工單與圖片" }),
+      el("div", { class: "startup-drop-hint", text: "點擊選擇，或直接把檔案拖曳到這裡（可同時選工單 .xlsx 與圖片）" }),
       orderInput,
     ]);
 
-    // 拖曳：dragover 一定要 preventDefault，否則瀏覽器會直接用新分頁開啟那個檔案
     drop.addEventListener("dragover", function (e) {
       e.preventDefault();
       drop.classList.add("dragover");
@@ -96,18 +126,9 @@
     drop.addEventListener("drop", function (e) {
       e.preventDefault();
       drop.classList.remove("dragover");
-      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if (!f) return;
-      // 副檔名先擋一次：.json 拖到工單框是很自然的誤操作，直接說清楚比丟解析錯誤好
-      if (/\.json$/i.test(f.name)) {
-        setError("這是進度存檔，請改用下方的「📂 載入進度存檔」。");
-        return;
-      }
-      if (!/\.(xlsx|xlsm|csv)$/i.test(f.name)) {
-        setError("只吃得下 .xlsx / .xlsm / .csv 的工單檔。");
-        return;
-      }
-      takeOrder(f);
+      var files = e.dataTransfer && e.dataTransfer.files;
+      if (!files || !files.length) return;
+      handleStartupFiles(files);
     });
 
     // ── 下方兩顆：略過 / 載入進度存檔
@@ -121,7 +142,7 @@
       takeProject(f);
     });
     var loadProject = el("label", { class: "startup-minor" }, [
-      el("span", { text: "📂 載入進度存檔" }),
+      el("span", { text: "載入進度存檔" }),
       projectInput,
     ]);
 
@@ -131,7 +152,7 @@
       el("div", { class: "startup-title", text: "開始製作吸底圖" }),
       el("div", {
         class: "startup-sub",
-        text: "上傳本次的工單 .xlsx，系統會自動帶入每一條吸底圖的文案與 icon 名稱。",
+        text: "上傳工單 .xlsx 與圖片，系統會自動帶入文案、icon 名稱與 LOGO 圖檔。",
       }),
       drop,
       el("div", { class: "startup-minor-row" }, [skip, loadProject]),

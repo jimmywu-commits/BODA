@@ -29,6 +29,7 @@
           // 用文字代替 icon（9.9 / 10.10）。null = 圖片模式，字串（含空字串）= 文字模式。
           // 舊存檔沒有這個欄位 → 讀回來是 undefined → 正規化成 null，等同舊行為
           iconText: slot.iconText == null ? null : slot.iconText,
+          linked: slot.linked === false ? false : undefined,
         };
       }),
     };
@@ -162,13 +163,11 @@
         }
 
         return Object.assign({}, slot, {
-          // 不截斷：存檔存的是使用者當初真的打進去的字，載回來要一模一樣
           text: s.text || "",
           iconId: iconId,
           iconText: iconText,
           type: iconId ? findType(iconId) : "icon",
-          // 舊存檔可能帶 offset（手動拖曳過的位置）。拖曳功能已移除，這裡刻意不還原，
-          // 讓所有欄位都回到模板位置——否則畫面上會有一個偏掉、卻沒有任何方法歸位的格子。
+          linked: s.linked === false ? false : undefined,
         });
       });
 

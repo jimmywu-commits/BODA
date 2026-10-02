@@ -405,7 +405,27 @@ input[type="file"]::file-selector-button:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
   margin-bottom: 8px;
+}
+
+.link-toggle {
+  font-size: calc(11px * var(--ui-scale, 1));
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s;
+}
+.link-toggle.linked {
+  background: rgba(77, 155, 149, .18);
+  border-color: #4d9b95;
+  color: #4d9b95;
+}
+.link-toggle.unlinked {
+  background: rgba(180, 180, 180, .15);
+  border-color: #888;
+  color: #999;
 }
 
 .slot-no { font-size: 11px; color: var(--text3); }
@@ -997,6 +1017,21 @@ button[disabled]:hover {
 
 .banner-tab-close:hover { opacity: 1; background: rgba(255, 255, 255, .15); }
 
+.banner-tab-dup {
+  flex: 0 0 auto;
+  width: calc(16px * var(--ui-scale));
+  height: calc(16px * var(--ui-scale));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  opacity: .55;
+  font-size: calc(11px * var(--ui-scale));
+  line-height: 1;
+  cursor: pointer;
+}
+.banner-tab-dup:hover { opacity: 1; background: rgba(255, 255, 255, .15); }
+
 .banner-tab-add {
   color: var(--text);
   font-weight: 700;
@@ -1389,7 +1424,8 @@ html.embed-generator .banner-tab.active:hover {
 html.embed-generator .banner-tab.active::before { background: var(--accent); }
 html.embed-generator .banner-tab-meta { color: var(--text3); }
 html.embed-generator .banner-tab.active .banner-tab-meta { color: var(--text2); }
-html.embed-generator .banner-tab-close:hover { background: rgba(31, 43, 41, .08); }
+html.embed-generator .banner-tab-close:hover,
+html.embed-generator .banner-tab-dup:hover { background: rgba(31, 43, 41, .08); }
 
 /* 畫布本身保留中性灰工作區；只有浮動縮放列維持深底，確保在畫布上有足夠對比。 */
 html.embed-generator #stage-wrap { background: var(--canvas-backdrop); }

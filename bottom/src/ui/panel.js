@@ -122,6 +122,17 @@
       tab.appendChild(el("span", { class: "banner-tab-label" }, [label]));
       tab.appendChild(el("span", { class: "banner-tab-meta" }, [meta]));
 
+      tab.appendChild(
+        el("span", {
+          class: "banner-tab-dup",
+          title: "複製這條分頁（含內容）",
+          onClick: function (e) {
+            e.stopPropagation();
+            store.dispatch(Actions.duplicateBanner(index));
+          },
+        }, ["＋"])
+      );
+
       // 只剩一個分頁時不給關，否則會沒有東西可編輯
       if (state.banners.length > 1) {
         tab.appendChild(
@@ -249,6 +260,51 @@
         if (onDone) onDone(err);
       }
     );
+  }
+
+  function loadImageAssets(files, store, Actions, ui, rerender, afterDone) {
+    if (!files.length) { if (afterDone) afterDone(); return; }
+    var loaded = 0;
+    var assets = (window.BottomHostAssets || []).slice();
+    Array.prototype.forEach.call(files, function (file) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        assets.push({ name: file.name, url: e.target.result });
+        loaded++;
+        if (loaded < files.length) return;
+        window.BottomHostAssets = assets;
+        var applied = applyPendingHostAssets(store, Actions);
+        var msg = "已載入 " + files.length + " 張圖片";
+        if (applied) msg += "，其中 " + applied + " 張自動對應到工單 LOGO";
+        ui.importMessage = (ui.importMessage ? ui.importMessage + "　" : "") + msg + "。";
+        rerender();
+        if (afterDone) afterDone();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handleMixedFiles(fileList, store, Actions, ui, rerender) {
+    var sheets = [], images = [];
+    for (var i = 0; i < fileList.length; i++) {
+      var f = fileList[i];
+      if (/\.(xlsx|xlsm|csv|json)$/i.test(f.name)) sheets.push(f);
+      else if (/^image\//i.test(f.type)) images.push(f);
+    }
+    if (!sheets.length && !images.length) return;
+    if (sheets.length && images.length) {
+      loadImageAssets(images, store, Actions, ui, rerender, function () {
+        var first = sheets[0];
+        if (/\.json$/i.test(first.name)) loadProjectFile(store, Actions, ui, rerender, first);
+        else importWorkOrderFile(store, Actions, ui, rerender, first);
+      });
+    } else if (sheets.length) {
+      var first = sheets[0];
+      if (/\.json$/i.test(first.name)) loadProjectFile(store, Actions, ui, rerender, first);
+      else importWorkOrderFile(store, Actions, ui, rerender, first);
+    } else {
+      loadImageAssets(images, store, Actions, ui, rerender);
+    }
   }
 
   function loadProjectFile(store, Actions, ui, rerender, file, onDone) {
@@ -404,21 +460,40 @@
   function buildImportSection(store, Actions, ui, rerender) {
     var node = section("匯入");
 
-    // 藏起來的真實 file input，由下面那顆橘色大按鈕觸發（原生 file input 太小、樣式也改不動）
     var orderInput = el("input", {
       type: "file",
-      accept: ".xlsx,.xlsm,.csv",
+      accept: ".xlsx,.xlsm,.csv,.png,.jpg,.jpeg,.svg,.gif,.webp",
       style: "display:none;",
     });
+    orderInput.setAttribute("multiple", "multiple");
     orderInput.addEventListener("change", function (e) {
-      importWorkOrderFile(store, Actions, ui, rerender, e.target.files && e.target.files[0]);
+      handleMixedFiles(e.target.files || [], store, Actions, ui, rerender);
       orderInput.value = "";
     });
     node.appendChild(orderInput);
     node.appendChild(
       el("button", { class: "primary block", onClick: function () { orderInput.click(); } }, [
-        "📋 匯入工單（xlsx / csv）",
+        "匯入工單（可同時選圖片）",
       ])
+    );
+
+    var imageInput = el("input", {
+      type: "file",
+      accept: ".png,.jpg,.jpeg,.svg,.gif,.webp,.xlsx,.xlsm,.csv",
+      style: "display:none;",
+    });
+    imageInput.setAttribute("multiple", "multiple");
+    imageInput.addEventListener("change", function (e) {
+      handleMixedFiles(e.target.files || [], store, Actions, ui, rerender);
+      imageInput.value = "";
+    });
+    node.appendChild(imageInput);
+    node.appendChild(
+      el("button", {
+        class: "block",
+        style: "margin-top:6px;",
+        onClick: function () { imageInput.click(); },
+      }, ["匯入圖片（可同時選工單）"])
     );
 
     /* 嵌入 BODA 時，可以直接取用主工具「匯入工單」最近選過的同一份 xlsx。
@@ -463,7 +538,7 @@
           title: "載入之前匯出 zip 裡的「" + window.ProjectFile.FILENAME + "」，接續編輯",
           onClick: function () { projectInput.click(); },
         },
-        ["📂 載入進度存檔（JSON）"]
+        ["載入進度存檔（JSON）"]
       )
     );
 
@@ -733,6 +808,24 @@
         [isActive ? "● 反白中" : "○ 設為反白"]
       )
     );
+    if (state.banners.length > 1) {
+      var linked = slot.linked !== false;
+      head.appendChild(
+        el(
+          "button",
+          {
+            class: "mini link-toggle" + (linked ? " linked" : " unlinked"),
+            title: linked
+              ? "連動中：編輯此格會同步到其他分頁的同一格。點擊解除連動。"
+              : "已解連動：此格獨立編輯。點擊恢復連動（會以目前的值同步到其他分頁）。",
+            onClick: function () {
+              store.dispatch(Actions.toggleSlotLink(index));
+            },
+          },
+          [linked ? "🔗 連動" : "🔓 解連動"]
+        )
+      );
+    }
     card.appendChild(head);
 
     var iconRow = el("div", { class: "icon-row" });
@@ -1026,8 +1119,32 @@
     warn.hidden = !over.length;
     node.appendChild(warn);
 
-    // 只匯目前這一條——日常是編一條匯一條，不該不小心吐出一堆圖
-    var btn = el("button", { class: "primary block" }, [
+    if (bannerCount > 1) {
+      var total = state.banners.reduce(function (sum, b) { return sum + b.slots.length; }, 0);
+      var allBtn = el("button", { class: "primary block" }, [
+        "匯出全部 " + bannerCount + " 條（共 " + total + " 張，依分頁分資料夾）",
+      ]);
+      allBtn.addEventListener("click", function () {
+        allBtn.setAttribute("disabled", "disabled");
+        ui.exportStatus = "匯出全部分頁中…";
+        rerender();
+        window.ExportBatch.exportAllBanners(store)
+          .then(function (groups) {
+            return window.ExportBatch.downloadAllBannersAsZip(groups, "吸底圖", store);
+          })
+          .then(function () {
+            ui.exportStatus = "已下載 " + bannerCount + " 條、共 " + total + " 張 PNG（zip，內含進度存檔）。";
+            rerender();
+          })
+          .catch(function (err) {
+            ui.exportStatus = "匯出失敗：" + err.message;
+            rerender();
+          });
+      });
+      node.appendChild(allBtn);
+    }
+
+    var btn = el("button", { class: (bannerCount > 1 ? "" : "primary") + " block", style: bannerCount > 1 ? "margin-top:6px;" : "" }, [
       "匯出「" + window.Selectors.bannerLabel(state.activeBannerIndex) + "」的 " + n + " 張變體圖",
     ]);
     btn.addEventListener("click", function () {
@@ -1052,31 +1169,6 @@
         });
     });
     node.appendChild(btn);
-
-    if (bannerCount > 1) {
-      var total = state.banners.reduce(function (sum, b) { return sum + b.slots.length; }, 0);
-      var allBtn = el("button", { class: "block", style: "margin-top:6px;" }, [
-        "匯出全部 " + bannerCount + " 條（共 " + total + " 張，依分頁分資料夾）",
-      ]);
-      allBtn.addEventListener("click", function () {
-        allBtn.setAttribute("disabled", "disabled");
-        ui.exportStatus = "匯出全部分頁中…";
-        rerender();
-        window.ExportBatch.exportAllBanners(store)
-          .then(function (groups) {
-            return window.ExportBatch.downloadAllBannersAsZip(groups, "吸底圖", store);
-          })
-          .then(function () {
-            ui.exportStatus = "已下載 " + bannerCount + " 條、共 " + total + " 張 PNG（zip）。";
-            rerender();
-          })
-          .catch(function (err) {
-            ui.exportStatus = "匯出失敗：" + err.message;
-            rerender();
-          });
-      });
-      node.appendChild(allBtn);
-    }
 
     if (ui.exportStatus) node.appendChild(note(ui.exportStatus));
     return node;
@@ -1317,6 +1409,9 @@
           renderAll();
         }
         return n;
+      },
+      loadImageAssets: function (files, onDone) {
+        loadImageAssets(files, store, Actions, ui, renderAll, onDone);
       },
     };
   }

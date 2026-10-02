@@ -12,6 +12,10 @@
    */
   window.store.dispatch(window.Actions.setLibrary(window.ICON_LIBRARY.slice()));
 
+  var hasAutoSave = window.BottomAutoSave
+    ? window.BottomAutoSave.restore(window.store, window.Actions)
+    : false;
+
   function mountApp() {
     statusEl.hidden = true;
     canvasEl.hidden = false;
@@ -70,9 +74,12 @@
        因此和手動匯入共用完全相同的解析、核對訊息與 undo 行為。 */
     if (window.BottomParentBridge) window.BottomParentBridge.mount(panel);
 
+    if (window.BottomAutoSave) window.BottomAutoSave.mount(window.store);
+
     /* 單獨開啟 bottom/index.html 時保留原本的開場工單對話框；嵌入 BODA 時工具列
-       已經直接放在左欄，並會自動接主工具工單，不再用 Modal 擋住畫布。 */
-    if (!window.BottomParentBridge || !window.BottomParentBridge.isEmbedded()) {
+       已經直接放在左欄，並會自動接主工具工單，不再用 Modal 擋住畫布。
+       如果 localStorage 有暫存（hasAutoSave），直接恢復編輯、不擋對話框。 */
+    if ((!window.BottomParentBridge || !window.BottomParentBridge.isEmbedded()) && !hasAutoSave) {
       window.StartupDialog.mount(panel);
     }
   }

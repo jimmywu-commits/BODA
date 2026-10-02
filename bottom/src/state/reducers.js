@@ -147,6 +147,46 @@
     return { iconId: slot.iconId, type: slot.type, iconText: slot.iconText };
   }
 
+  function isSlotLinked(slot) {
+    return !slot || slot.linked !== false;
+  }
+
+  function propagateLinkedIcon(state, slotIndex) {
+    var src = state.banners[state.activeBannerIndex];
+    if (!src || !src.slots[slotIndex] || !isSlotLinked(src.slots[slotIndex])) return state;
+    var srcFields = iconFieldsOf(src.slots[slotIndex]);
+    return Object.assign({}, state, {
+      banners: state.banners.map(function (banner, i) {
+        if (i === state.activeBannerIndex) return banner;
+        var slot = banner.slots[slotIndex];
+        if (!slot || !isSlotLinked(slot)) return banner;
+        return Object.assign({}, banner, {
+          slots: updateSlotAt(banner.slots, slotIndex, function (s) {
+            return Object.assign({}, s, srcFields);
+          }),
+        });
+      }),
+    });
+  }
+
+  function propagateLinkedText(state, slotIndex) {
+    var src = state.banners[state.activeBannerIndex];
+    if (!src || !src.slots[slotIndex] || !isSlotLinked(src.slots[slotIndex])) return state;
+    var text = src.slots[slotIndex].text;
+    return Object.assign({}, state, {
+      banners: state.banners.map(function (banner, i) {
+        if (i === state.activeBannerIndex) return banner;
+        var slot = banner.slots[slotIndex];
+        if (!slot || !isSlotLinked(slot)) return banner;
+        return Object.assign({}, banner, {
+          slots: updateSlotAt(banner.slots, slotIndex, function (s) {
+            return Object.assign({}, s, { text: sanitizeSlotText(slotIndex, text) });
+          }),
+        });
+      }),
+    });
+  }
+
   window.INITIAL_STATE = {
     banners: [createBanner(MAX_SLOTS)],
     activeBannerIndex: 0,
@@ -181,12 +221,12 @@
       }
 
       case TYPES.SET_SLOT_TEXT: {
-        /* 不截斷一般文案；但「主會場」是第一格專用字，第二格以後即時移除。
-           這層同時涵蓋右側輸入與畫布直接編輯。 */
         var sanitizedText = sanitizeSlotText(action.index, action.text);
-        return updateActiveSlot(state, action.index, function (slot) {
+        var next = updateActiveSlot(state, action.index, function (slot) {
           return Object.assign({}, slot, { text: sanitizedText });
         });
+        if (state.banners.length > 1) next = propagateLinkedText(next, action.index);
+        return next;
       }
 
       /*
@@ -198,28 +238,29 @@
         var selectedIconId = Number(action.index) > 0 && isFirstSlotOnlyIcon(state.library, action.iconId)
           ? null : action.iconId;
         var iconType = findIconType(state.library, selectedIconId);
-        return updateActiveSlot(state, action.index, function (slot) {
+        var next = updateActiveSlot(state, action.index, function (slot) {
           return Object.assign({}, slot, {
             iconId: selectedIconId,
             type: iconType,
-            // 選了圖就退出文字模式
             iconText: selectedIconId ? null : slot.iconText,
           });
         });
+        if (state.banners.length > 1) next = propagateLinkedIcon(next, action.index);
+        return next;
       }
 
-      // text 傳 null = 退出文字模式改用圖；傳字串（含空字串）= 進入/停留在文字模式
       case TYPES.SET_SLOT_ICON_TEXT: {
         var iconText = action.text == null ? null : String(action.text);
-        return updateActiveSlot(state, action.index, function (slot) {
+        var next = updateActiveSlot(state, action.index, function (slot) {
           if (iconText == null) return Object.assign({}, slot, { iconText: null });
           return Object.assign({}, slot, {
             iconText: iconText,
             iconId: null,
-            // 文字永遠走一般 icon 的配色（反白橘/紅、未選轉灰），不會是 LOGO
             type: "icon",
           });
         });
+        if (state.banners.length > 1) next = propagateLinkedIcon(next, action.index);
+        return next;
       }
 
       case TYPES.SET_ACTIVE_SLOT: {
@@ -275,6 +316,21 @@
         });
       }
 
+      case TYPES.TOGGLE_SLOT_LINK: {
+        var activeBnr = state.banners[state.activeBannerIndex];
+        var targetSlot = activeBnr && activeBnr.slots[action.index];
+        if (!targetSlot) return state;
+        var wasLinked = isSlotLinked(targetSlot);
+        var next = updateActiveSlot(state, action.index, function (s) {
+          return Object.assign({}, s, { linked: !wasLinked });
+        });
+        if (!wasLinked && state.banners.length > 1) {
+          next = propagateLinkedIcon(next, action.index);
+          next = propagateLinkedText(next, action.index);
+        }
+        return next;
+      }
+
       case TYPES.SET_ACCENT_COLOR: {
         return updateActive(state, function (banner) {
           return Object.assign({}, banner, { accentColor: action.color });
@@ -305,6 +361,25 @@
         return Object.assign({}, state, {
           banners: added,
           activeBannerIndex: added.length - 1,
+        });
+      }
+
+      case TYPES.DUPLICATE_BANNER: {
+        var srcBnr = state.banners[action.index];
+        if (!srcBnr) return state;
+        bannerSeq++;
+        var clonedSlots = srcBnr.slots.map(function (s) {
+          return Object.assign({}, s, { linked: undefined });
+        });
+        var cloned = Object.assign({}, srcBnr, {
+          id: "banner-" + bannerSeq,
+          slots: clonedSlots,
+        });
+        var dup = state.banners.slice();
+        dup.splice(action.index + 1, 0, cloned);
+        return Object.assign({}, state, {
+          banners: dup,
+          activeBannerIndex: action.index + 1,
         });
       }
 

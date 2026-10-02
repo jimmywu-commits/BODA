@@ -15,9 +15,11 @@
 
     // 多條吸底圖（分頁）
     ADD_BANNER: "ADD_BANNER",
+    DUPLICATE_BANNER: "DUPLICATE_BANNER",
     REMOVE_BANNER: "REMOVE_BANNER",
     SET_ACTIVE_BANNER: "SET_ACTIVE_BANNER",
     SET_BANNERS: "SET_BANNERS",
+    TOGGLE_SLOT_LINK: "TOGGLE_SLOT_LINK",
   };
 
   window.Actions = {
@@ -67,6 +69,9 @@
     addBanner: function () {
       return { type: TYPES.ADD_BANNER };
     },
+    duplicateBanner: function (index) {
+      return { type: TYPES.DUPLICATE_BANNER, index: index };
+    },
     removeBanner: function (index) {
       return { type: TYPES.REMOVE_BANNER, index: index };
     },
@@ -76,6 +81,9 @@
     // 整批取代（工單匯入、載入進度存檔用）
     setBanners: function (banners, activeIndex) {
       return { type: TYPES.SET_BANNERS, banners: banners, activeIndex: activeIndex || 0 };
+    },
+    toggleSlotLink: function (index) {
+      return { type: TYPES.TOGGLE_SLOT_LINK, index: index };
     },
   };
 })();
