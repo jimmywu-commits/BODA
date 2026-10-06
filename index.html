@@ -6879,7 +6879,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <script src="JS/fonts-embed.js"></script>
 <script src="JS/render-config.js"></script>
 <script src="core/core-engine.js"></script>
-<script src="core/schema-renderer.js?v=20260930-autotext2"></script>
+<script src="core/schema-renderer.js?v=20261003-addline1"></script>
 <script src="JS/image-layout.js?v=20260924-2"></script>
 <script src="JS/editor-plugin.js?v=20260924-2"></script>
 <script src="jbp/js/logo-editor-plugin.js"></script>
@@ -15405,9 +15405,47 @@ function bindEndorserTextDrag(mountEl, col, idx, ctxName) {
     });
   });
 }
+function bindCanvasAddLineButtons(mountEl, col, idx, ctxName) {
+  if (!mountEl) return;
+  mountEl.querySelectorAll('[data-add-line-field]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var key = btn.getAttribute('data-add-line-field');
+      if (!key) return;
+      var current = String(col.data[key] == null ? '' : col.data[key]);
+      if (current.indexOf('\n') < 0) {
+        col.data[key] = current + '\n';
+        if (ctxName === 'import') {
+          saveImportState();
+          renderImportColumns(currentImportColumns);
+        } else {
+          var mount = rerenderCanvasMount(ctxName, idx);
+          if (mount) {
+            var target = Array.prototype.find.call(
+              mount.querySelectorAll('[contenteditable="true"]'),
+              function (el) { return el.getAttribute('data-field') === key; }
+            );
+            if (target) {
+              target.focus();
+              try {
+                var range = document.createRange();
+                range.selectNodeContents(target);
+                range.collapse(false);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+              } catch (_) {}
+            }
+          }
+        }
+      }
+    });
+  });
+}
 function bindCanvasInteractions(mountEl, col, idx, ctxName) {
   restoreCanvasImageEditorState(mountEl, col);
   bindCanvasEditable(mountEl, col, idx, ctxName);
+  bindCanvasAddLineButtons(mountEl, col, idx, ctxName);
   bindEndorserTextDrag(mountEl, col, idx, ctxName);
   bindDynamicRowControls(mountEl, col, idx, ctxName);
   bindCanvasColorPick(mountEl, col, idx, ctxName);

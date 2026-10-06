@@ -1190,7 +1190,7 @@
       node.appendChild(allBtn);
     }
 
-    var btn = el("button", { class: (bannerCount > 1 ? "" : "primary") + " block", style: (bannerCount > 1 ? "margin-top:6px;" : "") + "display:none;" }, [
+    var btn = el("button", { class: (bannerCount > 1 ? "" : "primary") + " block", style: bannerCount > 1 ? "margin-top:6px;" : "" }, [
       "匯出「" + window.Selectors.bannerLabel(state.activeBannerIndex) + "」的 " + n + " 張變體圖",
     ]);
     btn.addEventListener("click", function () {

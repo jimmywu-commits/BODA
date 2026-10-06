@@ -1672,7 +1672,20 @@
     if (editableTextInner) {
       content = '<span' + editableTextInner.attrs + ' style="' + editableTextInner.style.join(';') + ';">' + content + '</span>';
     }
-    return "<div" + attrs + " style='" + style.join(';') + ";'>" + content + '</div>';
+    var addLineBtn = '';
+    if (isTwoLineCenterText && opts && opts.editable && fieldKey) {
+      var rawText = String(data[fieldKey] == null ? '' : data[fieldKey]);
+      var lineCount = rawText.replace(/\r\n?/g, '\n').split('\n').length;
+      if (lineCount < 2) {
+        addLineBtn = '<span data-add-line-field="' + esc(fieldKey) + '" ' +
+          'style="position:absolute;top:1px;right:1px;width:16px;height:16px;' +
+          'display:flex;align-items:center;justify-content:center;' +
+          'font-size:13px;line-height:1;cursor:pointer;pointer-events:auto;' +
+          'color:rgba(255,255,255,.55);background:rgba(0,0,0,.35);' +
+          'border-radius:3px;z-index:2;user-select:none;" title="加回第二行">+</span>';
+      }
+    }
+    return "<div" + attrs + " style='" + style.join(';') + ";'>" + content + addLineBtn + '</div>';
   }
 
   /* ── 沒填的欄位，空間讓給商品圖 ──────────────────────────────
