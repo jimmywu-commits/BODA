@@ -482,6 +482,14 @@
     setInputValue('txt-ar', copy.ar);
     if(typeof global.broadcastText === 'function') global.broadcastText();
     try{ document.dispatchEvent(new CustomEvent('bn-state-dirty')); }catch(_){}
+
+    setTimeout(function(){
+      if(typeof global.bnRunAllFields === 'function'){
+        global.bnRunAllFields();
+      } else if(typeof global.broadcastText === 'function'){
+        global.broadcastText();
+      }
+    }, 80);
   }
 
   function handleFile(file){

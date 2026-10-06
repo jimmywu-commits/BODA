@@ -255,6 +255,7 @@
   }
 
   function bridgeInputs(){
+    var needsInitial = [];
     Object.keys(FIELD_MAP).forEach(function(id){
       var inp = document.getElementById(id);
       if(!inp || inp.dataset.bnBanwordBound === '1') return;
@@ -275,8 +276,47 @@
         e.preventDefault();
         showInputMenu(e, inp, cfg);
       });
+
+      if(inp.value) needsInitial.push({ inp: inp, cfg: cfg });
     });
+
+    // 頁面載入時，欄位已有值就立即跑一次禁用語／$／千分位轉換
+    if(needsInitial.length){
+      setTimeout(function(){
+        needsInitial.forEach(function(item){
+          if(document.activeElement === item.inp) return;
+          applyBanwordToInput(item.inp, item.cfg, {});
+        });
+      }, 100);
+    }
   }
+
+  function runAllFieldsOnce(){
+    Object.keys(FIELD_MAP).forEach(function(id){
+      var inp = document.getElementById(id);
+      if(!inp || !inp.value) return;
+      if(document.activeElement === inp) return;
+      applyBanwordToInput(inp, FIELD_MAP[id], {});
+    });
+    if(typeof global.broadcastText === 'function') global.broadcastText();
+  }
+
+  global.bnRunAllFields = function(){
+    if(global.banwordEngine){
+      runAllFieldsOnce();
+      return;
+    }
+    var tries = 0;
+    var timer = setInterval(function(){
+      tries++;
+      if(global.banwordEngine){
+        clearInterval(timer);
+        runAllFieldsOnce();
+      } else if(tries >= 30){
+        clearInterval(timer);
+      }
+    }, 200);
+  };
 
   function showInputMenu(e, inp, cfg){
     var existing = document.getElementById('_bn_input_ctx');
@@ -848,6 +888,7 @@
         setTimeout(function(){ global._bnRefreshCanvasBackgrounds(); }, delay);
       });
     }
+    setTimeout(function(){ global.bnRunAllFields(); }, 300);
     setTimeout(function(){ global._bnStateApplying = false; }, 1800);
   }
 

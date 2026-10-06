@@ -411,6 +411,38 @@
         });
       }
 
+      case TYPES.REMOVE_SLOT: {
+        var activeBnr = state.banners[state.activeBannerIndex];
+        if (!activeBnr || activeBnr.slots.length <= MIN_SLOTS) return state;
+        var ri = action.index;
+        return updateActive(state, function (banner) {
+          var next = banner.slots.filter(function (_, i) { return i !== ri; });
+          return Object.assign({}, banner, {
+            slots: next,
+            activeSlotIndex: clamp(banner.activeSlotIndex, 0, next.length - 1),
+          });
+        });
+      }
+
+      case TYPES.MOVE_SLOT: {
+        var fi = action.fromIndex;
+        var ti = action.toIndex;
+        return updateActive(state, function (banner) {
+          if (fi < 0 || fi >= banner.slots.length || ti < 0 || ti >= banner.slots.length || fi === ti) return banner;
+          var slots = banner.slots.slice();
+          var moved = slots.splice(fi, 1)[0];
+          slots.splice(ti, 0, moved);
+          var newActive = banner.activeSlotIndex;
+          if (banner.activeSlotIndex === fi) newActive = ti;
+          else if (fi < banner.activeSlotIndex && ti >= banner.activeSlotIndex) newActive--;
+          else if (fi > banner.activeSlotIndex && ti <= banner.activeSlotIndex) newActive++;
+          return Object.assign({}, banner, {
+            slots: slots,
+            activeSlotIndex: clamp(newActive, 0, slots.length - 1),
+          });
+        });
+      }
+
       case TYPES.SET_BANNERS: {
         if (!action.banners || !action.banners.length) return state;
         var sanitizedBanners = action.banners.map(function (banner) {

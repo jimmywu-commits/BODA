@@ -234,6 +234,7 @@
     let out = String(text || '');
 
     if (role === 'date') {
+      out = out.replace(/[~～∼˜]/g, '-');
       out = out.replace(/[^\p{Script=Han}\p{L}\p{N}\s,$%\/\-:]/gu, '');
     } else {
       /* 主標／副標仍禁止一般逗號，但必須保留數字千分位中的半形逗號。

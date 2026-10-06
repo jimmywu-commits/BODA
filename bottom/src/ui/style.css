@@ -404,9 +404,46 @@ input[type="file"]::file-selector-button:hover {
 .slot-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
   margin-bottom: 8px;
+}
+.slot-num {
+  font-weight: 800;
+  font-size: calc(12px * var(--ui-scale, 1));
+  color: var(--fg2, #888);
+  min-width: 1.6em;
+}
+.slot-ops {
+  margin-left: auto;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.slot-move {
+  font-size: calc(10px * var(--ui-scale, 1));
+  padding: 1px 5px;
+  line-height: 1;
+  min-width: 0;
+  color: var(--fg2, #666);
+  border-color: var(--border);
+  cursor: pointer;
+}
+.slot-move:hover {
+  background: var(--accent-bg, rgba(238,77,45,.12));
+  border-color: var(--accent);
+}
+.slot-delete {
+  font-size: calc(12px * var(--ui-scale, 1));
+  padding: 1px 5px;
+  line-height: 1;
+  min-width: 0;
+  color: #c0392b;
+  border-color: #e0c0bc;
+  cursor: pointer;
+}
+.slot-delete:hover {
+  background: rgba(192,57,43,.12);
+  border-color: #c0392b;
 }
 
 .link-toggle {

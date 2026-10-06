@@ -20,6 +20,8 @@
     SET_ACTIVE_BANNER: "SET_ACTIVE_BANNER",
     SET_BANNERS: "SET_BANNERS",
     TOGGLE_SLOT_LINK: "TOGGLE_SLOT_LINK",
+    REMOVE_SLOT: "REMOVE_SLOT",
+    MOVE_SLOT: "MOVE_SLOT",
   };
 
   window.Actions = {
@@ -84,6 +86,12 @@
     },
     toggleSlotLink: function (index) {
       return { type: TYPES.TOGGLE_SLOT_LINK, index: index };
+    },
+    removeSlot: function (index) {
+      return { type: TYPES.REMOVE_SLOT, index: index };
+    },
+    moveSlot: function (fromIndex, toIndex) {
+      return { type: TYPES.MOVE_SLOT, fromIndex: fromIndex, toIndex: toIndex };
     },
   };
 })();

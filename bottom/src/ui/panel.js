@@ -633,7 +633,25 @@
     [2, 3, 4, 5].forEach(function (n) {
       var btn = el(
         "button",
-        { onClick: function () { store.dispatch(Actions.setSlotCount(n)); } },
+        {
+          onClick: function () {
+            var current = banner.slots.length;
+            if (n < current) {
+              var hasContent = banner.slots.slice(n).some(function (s) {
+                return s.iconId || s.text || s.iconText != null;
+              });
+              if (hasContent) {
+                var ok = window.confirm(
+                  "將從目前 " + current + " 顆減少為 " + n + " 顆，" +
+                  "會刪除最後 " + (current - n) + " 顆的內容。\n\n" +
+                  "若要從中間刪除特定顆，請使用每顆右上角的 ✕ 按鈕。"
+                );
+                if (!ok) return;
+              }
+            }
+            store.dispatch(Actions.setSlotCount(n));
+          },
+        },
         [String(n) + " 顆"]
       );
       if (banner.slots.length === n) btn.classList.add("primary");
@@ -798,6 +816,7 @@
     var card = el("div", { class: "slot-card" + (isActive ? " active" : "") });
 
     var head = el("div", { class: "slot-head" });
+    head.appendChild(el("span", { class: "slot-num" }, ["#" + (index + 1)]));
     head.appendChild(
       el(
         "button",
@@ -826,6 +845,32 @@
         )
       );
     }
+    var slotOps = el("div", { class: "slot-ops" });
+    if (index > 0) {
+      slotOps.appendChild(el("button", {
+        class: "mini slot-move",
+        title: "上移",
+        onClick: function () { store.dispatch(Actions.moveSlot(index, index - 1)); },
+      }, ["▲"]));
+    }
+    if (index < banner.slots.length - 1) {
+      slotOps.appendChild(el("button", {
+        class: "mini slot-move",
+        title: "下移",
+        onClick: function () { store.dispatch(Actions.moveSlot(index, index + 1)); },
+      }, ["▼"]));
+    }
+    if (banner.slots.length > (window.SLOT_LIMITS ? window.SLOT_LIMITS.MIN_SLOTS : 2)) {
+      slotOps.appendChild(el("button", {
+        class: "mini slot-delete",
+        title: "刪除這一顆",
+        onClick: function () {
+          var ok = window.confirm("確定要刪除第 " + (index + 1) + " 顆嗎？");
+          if (ok) store.dispatch(Actions.removeSlot(index));
+        },
+      }, ["✕"]));
+    }
+    head.appendChild(slotOps);
     card.appendChild(head);
 
     var iconRow = el("div", { class: "icon-row" });

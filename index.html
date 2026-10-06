@@ -206,6 +206,13 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .local-color-toggle{min-width:44px;}
 .field-mini-btn{flex-shrink:0;height:30px;min-width:30px;padding:0 7px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--ink3);font-size:11px;cursor:pointer;}
 .field-mini-btn:hover{border-color:var(--teal);color:var(--teal-dark);background:var(--teal-tint);}
+.imp-coupon-swap{display:flex;gap:4px;padding:6px 8px;background:var(--bg);border-radius:8px;margin:-4px 0 10px;}
+.imp-coupon-slot{flex:1;display:flex;align-items:center;justify-content:center;gap:2px;padding:7px 4px;background:#fff;border-radius:6px;cursor:grab;border:2px solid var(--border);transition:border-color .15s,background .15s;user-select:none;}
+.imp-coupon-slot:active{cursor:grabbing;}
+.imp-coupon-slot.drag-over{border-color:var(--teal);background:var(--teal-tint);}
+.imp-swap-arrow{cursor:pointer;opacity:.35;font-size:13px;padding:2px 5px;border-radius:4px;line-height:1;transition:opacity .12s,background .12s;}
+.imp-swap-arrow:hover{opacity:.85;background:var(--bg);}
+.imp-slot-label{font-weight:800;font-size:11.5px;color:var(--ink2);letter-spacing:.03em;}
 .field-mini-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:#fbeceb;}
 .local-field-note{font-size:9.5px;color:var(--ink3);line-height:1.45;margin-top:4px;}
 
@@ -12036,6 +12043,37 @@ var currentImportHasBottomWorkOrder = false;
 var currentImportSource = 'saved';
 var currentGeneratorSignature = '';
 var IMPORT_STORAGE_KEY = 'wo_import_state_v1';
+var IMPORT_IDB_NAME = 'boda-import-persist';
+var IMPORT_IDB_STORE = 'kv';
+function importIdbOpen() {
+  return new Promise(function (resolve, reject) {
+    if (!window.indexedDB) { reject(new Error('no indexedDB')); return; }
+    var req = indexedDB.open(IMPORT_IDB_NAME, 1);
+    req.onupgradeneeded = function () { req.result.createObjectStore(IMPORT_IDB_STORE); };
+    req.onsuccess = function () { resolve(req.result); };
+    req.onerror = function () { reject(req.error); };
+  });
+}
+function importIdbPut(value) {
+  return importIdbOpen().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var tx = db.transaction(IMPORT_IDB_STORE, 'readwrite');
+      tx.objectStore(IMPORT_IDB_STORE).put(value, 'current');
+      tx.oncomplete = function () { db.close(); resolve(); };
+      tx.onerror = function () { db.close(); reject(tx.error); };
+    });
+  }).catch(function (err) { console.warn('[BODA] 匯入工單暫存寫入 IDB 失敗：', err); });
+}
+function importIdbGet() {
+  return importIdbOpen().then(function (db) {
+    return new Promise(function (resolve) {
+      var tx = db.transaction(IMPORT_IDB_STORE, 'readonly');
+      var req = tx.objectStore(IMPORT_IDB_STORE).get('current');
+      req.onsuccess = function () { db.close(); resolve(req.result || null); };
+      req.onerror = function () { db.close(); resolve(null); };
+    });
+  }).catch(function () { return null; });
+}
 function importSideTextInput(ctx, idx, key) {
   if (!ctx || !ctx.sideRoot) return null;
   var root = document.querySelector(ctx.sideRoot);
@@ -12186,47 +12224,91 @@ function queueImportStateSave() {
   }, 180);
 }
 
+function buildImportStateSavePayload() {
+  return {
+    version: 2,
+    ts: Date.now(),
+    source: currentImportSource,
+    generatorSignature: currentGeneratorSignature,
+    columns: currentImportColumns.map(function (c) {
+      return {
+        blockId: c.blockId,
+        data: c.data,
+        header: c.header,
+        band: c.band,
+        sourceKey: c.sourceKey || '',
+        xlsxBindings: Array.isArray(c._xlsxBindings) ? c._xlsxBindings.map(function (binding) {
+          return { address: binding.address, targetKey: binding.targetKey, label: binding.label };
+        }) : [],
+        dynamicRowRows: Array.isArray(c._dynamicRowRows) ? c._dynamicRowRows.slice() : null,
+        imageOrder: Array.isArray(c._imageOrder) ? c._imageOrder.slice() : [],
+        imagePartLayerOrder: cloneImportImagePartLayerOrder(c._imagePartLayerOrder)
+      };
+    })
+  };
+}
 function saveImportState() {
+  var toSave = buildImportStateSavePayload();
+  importIdbPut(toSave);
   try {
-    var toSave = {
-      version: 2,
-      source: currentImportSource,
-      generatorSignature: currentGeneratorSignature,
-      columns: currentImportColumns.map(function (c) {
-        return {
-          blockId: c.blockId,
-          data: c.data,
-          header: c.header,
-          band: c.band,
-          sourceKey: c.sourceKey || '',
-          xlsxBindings: Array.isArray(c._xlsxBindings) ? c._xlsxBindings.map(function (binding) {
-            return { address: binding.address, targetKey: binding.targetKey, label: binding.label };
-          }) : [],
-          dynamicRowRows: Array.isArray(c._dynamicRowRows) ? c._dynamicRowRows.slice() : null,
-          imageOrder: Array.isArray(c._imageOrder) ? c._imageOrder.slice() : [],
-          imagePartLayerOrder: cloneImportImagePartLayerOrder(c._imagePartLayerOrder)
-        };
-      })
-    };
     localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(toSave));
-  } catch (e) { /* 存不了就算了，不影響操作 */ }
+  } catch (e) { /* localStorage 可能滿，IDB 已寫入 */ }
 }
 
+function normalizeImportState(saved) {
+  if (!saved) return null;
+  if (Array.isArray(saved)) {
+    return { version: 1, source: 'saved', generatorSignature: '', columns: saved, ts: 0 };
+  }
+  return {
+    version: saved.version || 2,
+    source: saved.source || 'saved',
+    generatorSignature: saved.generatorSignature || '',
+    columns: Array.isArray(saved.columns) ? saved.columns : [],
+    ts: saved.ts || 0
+  };
+}
 function loadImportState() {
   try {
-    var saved = JSON.parse(localStorage.getItem(IMPORT_STORAGE_KEY));
-    if (!saved) return null;
-    /* 舊版直接存 columns 陣列；讀進來時包成新版結構，原內容完全保留。 */
-    if (Array.isArray(saved)) {
-      return { version: 1, source: 'saved', generatorSignature: '', columns: saved };
-    }
-    return {
-      version: saved.version || 2,
-      source: saved.source || 'saved',
-      generatorSignature: saved.generatorSignature || '',
-      columns: Array.isArray(saved.columns) ? saved.columns : []
-    };
+    return normalizeImportState(JSON.parse(localStorage.getItem(IMPORT_STORAGE_KEY)));
   } catch (e) { return null; }
+}
+function applyImportState(state) {
+  if (!state || !state.columns || !state.columns.length) return;
+  currentImportSource = state.source || 'saved';
+  currentGeneratorSignature = state.generatorSignature || '';
+  currentImportColumns = state.columns.map(function (c) {
+    return {
+      blockId: c.blockId,
+      data: c.data || {},
+      header: c.header,
+      band: c.band,
+      sourceKey: c.sourceKey || '',
+      _xlsxBindings: Array.isArray(c.xlsxBindings) ? c.xlsxBindings.map(function (binding) {
+        return { address: binding.address, targetKey: binding.targetKey, label: binding.label };
+      }) : [],
+      _dynamicRowRows: Array.isArray(c.dynamicRowRows) ? c.dynamicRowRows.slice() : undefined,
+      _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
+      _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder)
+    };
+  });
+}
+function loadImportStateFromIdb() {
+  return importIdbGet().then(function (idbState) {
+    var idb = normalizeImportState(idbState);
+    if (!idb || !idb.columns || !idb.columns.length) return false;
+    var localTs = 0;
+    try {
+      var local = JSON.parse(localStorage.getItem(IMPORT_STORAGE_KEY));
+      localTs = (local && local.ts) || 0;
+    } catch (e) {}
+    if (idb.ts > localTs) {
+      applyImportState(idb);
+      if (blocksLoadedForImport) renderImportColumns(currentImportColumns);
+      return true;
+    }
+    return false;
+  }).catch(function () { return false; });
 }
 
 /* 原始工單格 → BNCore 的 block id。檔案匯入與「工單生成器直接帶入」共用
@@ -14253,6 +14335,99 @@ function bindImportBottomOpenEditor(el) {
     if (e.key === 'Enter' || e.key === ' ') open(e);
   });
 }
+function msbnCSeriesPositionKeys(blockId) {
+  var def = BNCore.getBlock(blockId);
+  if (!def) return null;
+  var msbnFile = def.refImage || '';
+  if (!/^MSBN-C-/i.test(msbnFile)) return null;
+  var spec = (typeof MSBN_FIELDS === 'object' && MSBN_FIELDS) ? (MSBN_FIELDS[msbnFile] || {}) : {};
+  if (!spec.workOrderColumns) return null;
+  var posLabels = spec.workOrderColumns.labels || [];
+  if (posLabels.length < 2) return null;
+  var posRegex = /（(左|中|右)）/;
+  var positionKeys = {};
+  var assignedKeys = {};
+  (def.fields || []).forEach(function (f) {
+    var match = posRegex.exec(f.label || '');
+    if (!match) return;
+    var pos = match[1];
+    if (!positionKeys[pos]) positionKeys[pos] = [];
+    if (!assignedKeys[f.key]) { positionKeys[pos].push(f.key); assignedKeys[f.key] = true; }
+  });
+  var flatFields = [];
+  (spec.groups || []).forEach(function (g) { flatFields = flatFields.concat(g); });
+  (spec.workOrderColumns.groups || []).forEach(function (indices, gi) {
+    var posLabel = posLabels[gi];
+    if (!posLabel) return;
+    if (!positionKeys[posLabel]) positionKeys[posLabel] = [];
+    indices.forEach(function (fi) {
+      var field = flatFields[fi];
+      if (!field || !field.targetKey) return;
+      if (!assignedKeys[field.targetKey]) {
+        positionKeys[posLabel].push(field.targetKey);
+        assignedKeys[field.targetKey] = true;
+      }
+    });
+  });
+  return { labels: posLabels, keys: positionKeys };
+}
+function swapMsbnCSeriesPositions(col, labelA, labelB) {
+  var map = msbnCSeriesPositionKeys(col.blockId);
+  if (!map) return false;
+  var keysA = map.keys[labelA] || [];
+  var keysB = map.keys[labelB] || [];
+  if (!keysA.length && !keysB.length) return false;
+  function keyRole(k) {
+    if (/^promo\d*$/i.test(k)) return 'promo';
+    if (/^copy\d*$/i.test(k)) return 'copy';
+    if (/^ctaColor\d*$/i.test(k)) return 'ctaColor';
+    if (/^cta\d*$/i.test(k)) return 'cta';
+    if (/img/i.test(k)) return 'image';
+    if (/^warn\d*$/i.test(k)) return 'warn';
+    return k;
+  }
+  var rolesA = {}, rolesB = {};
+  keysA.forEach(function (k) { var r = keyRole(k); if (!rolesA[r]) rolesA[r] = []; rolesA[r].push(k); });
+  keysB.forEach(function (k) { var r = keyRole(k); if (!rolesB[r]) rolesB[r] = []; rolesB[r].push(k); });
+  var allRoles = {};
+  Object.keys(rolesA).forEach(function (r) { allRoles[r] = true; });
+  Object.keys(rolesB).forEach(function (r) { allRoles[r] = true; });
+  Object.keys(allRoles).forEach(function (role) {
+    var aList = rolesA[role] || [];
+    var bList = rolesB[role] || [];
+    var maxLen = Math.max(aList.length, bList.length);
+    for (var i = 0; i < maxLen; i++) {
+      var aKey = aList[i], bKey = bList[i];
+      if (aKey && bKey) {
+        var tmp = col.data[aKey];
+        col.data[aKey] = col.data[bKey];
+        col.data[bKey] = tmp;
+      }
+    }
+  });
+  var store = col.data.__canvasImageEditorState;
+  if (store) {
+    var swapPairs = [];
+    Object.keys(allRoles).forEach(function (role) {
+      var aList = rolesA[role] || [], bList = rolesB[role] || [];
+      for (var i = 0; i < Math.min(aList.length, bList.length); i++) {
+        if (/img/i.test(aList[i]) || /img/i.test(bList[i])) swapPairs.push([aList[i], bList[i]]);
+      }
+    });
+    swapPairs.forEach(function (pair) {
+      var entriesA = {}, entriesB = {};
+      Object.keys(store).forEach(function (k) {
+        if (k.indexOf(pair[0] + '::') === 0) entriesA[k] = store[k];
+        if (k.indexOf(pair[1] + '::') === 0) entriesB[k] = store[k];
+      });
+      Object.keys(entriesA).forEach(function (k) { delete store[k]; });
+      Object.keys(entriesB).forEach(function (k) { delete store[k]; });
+      Object.keys(entriesA).forEach(function (k) { store[k.replace(pair[0] + '::', pair[1] + '::')] = entriesA[k]; });
+      Object.keys(entriesB).forEach(function (k) { store[k.replace(pair[1] + '::', pair[0] + '::')] = entriesB[k]; });
+    });
+  }
+  return true;
+}
 function renderImportColumns(columns, skipPreviewRerender) {
   activeImportCanvasContext = 'import';
   currentImportColumns = columns;
@@ -14488,8 +14663,70 @@ function renderImportColumns(columns, skipPreviewRerender) {
     }).map(function (item) {
       return item.toolDef;
     });
-    box.innerHTML = '<div class="ic-head">' + (idx + 1) + '. ' + esc(def.name) + '</div>' + fieldsHtml;
+    var couponSwapHtml = '';
+    var couponPosMap = msbnCSeriesPositionKeys(col.blockId);
+    if (couponPosMap) {
+      var slots = couponPosMap.labels.map(function (label, li) {
+        var leftArrow = li > 0
+          ? '<span class="imp-swap-arrow" data-swap-dir="left" data-swap-pos="' + esc(label) + '">◀</span>'
+          : '<span class="imp-swap-arrow" style="visibility:hidden">◀</span>';
+        var rightArrow = li < couponPosMap.labels.length - 1
+          ? '<span class="imp-swap-arrow" data-swap-dir="right" data-swap-pos="' + esc(label) + '">▶</span>'
+          : '<span class="imp-swap-arrow" style="visibility:hidden">▶</span>';
+        return '<div class="imp-coupon-slot" data-pos="' + esc(label) + '" draggable="true">' +
+          leftArrow + '<span class="imp-slot-label">' + esc(label) + '</span>' + rightArrow + '</div>';
+      }).join('');
+      couponSwapHtml = '<div class="imp-coupon-swap">' + slots + '</div>';
+    }
+    box.innerHTML = '<div class="ic-head">' + (idx + 1) + '. ' + esc(def.name) + '</div>' + couponSwapHtml + fieldsHtml;
     scroll.appendChild(box);
+    if (couponPosMap) {
+      (function (colRef, colIdx, posMap) {
+        function doSwap(posA, posB) {
+          swapMsbnCSeriesPositions(colRef, posA, posB);
+          saveImportState();
+          renderImportColumns(currentImportColumns, true);
+        }
+        box.querySelectorAll('.imp-swap-arrow[data-swap-dir]').forEach(function (arrow) {
+          arrow.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var pos = arrow.getAttribute('data-swap-pos');
+            var dir = arrow.getAttribute('data-swap-dir');
+            var li = posMap.labels.indexOf(pos);
+            if (li < 0) return;
+            var targetPos = dir === 'left' ? posMap.labels[li - 1] : posMap.labels[li + 1];
+            if (targetPos) doSwap(pos, targetPos);
+          });
+        });
+        var dragState = { pos: null };
+        box.querySelectorAll('.imp-coupon-slot').forEach(function (slot) {
+          slot.addEventListener('dragstart', function (e) {
+            dragState.pos = slot.getAttribute('data-pos');
+            e.dataTransfer.effectAllowed = 'move';
+            try { e.dataTransfer.setData('text/plain', dragState.pos); } catch (_) {}
+          });
+          slot.addEventListener('dragover', function (e) {
+            if (!dragState.pos || dragState.pos === slot.getAttribute('data-pos')) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            slot.classList.add('drag-over');
+          });
+          slot.addEventListener('dragleave', function () { slot.classList.remove('drag-over'); });
+          slot.addEventListener('drop', function (e) {
+            e.preventDefault();
+            slot.classList.remove('drag-over');
+            var from = dragState.pos;
+            var to = slot.getAttribute('data-pos');
+            dragState.pos = null;
+            if (from && to && from !== to) doSwap(from, to);
+          });
+          slot.addEventListener('dragend', function () {
+            dragState.pos = null;
+            box.querySelectorAll('.imp-coupon-slot').forEach(function (s) { s.classList.remove('drag-over'); });
+          });
+        });
+      })(col, idx, couponPosMap);
+    }
     bindImportImageFieldTools(box, idx, 'import');
     box.querySelectorAll('.local-color-add').forEach(function (addBtn) {
       addBtn.addEventListener('click', function () {
@@ -14573,10 +14810,71 @@ function renderImportColumns(columns, skipPreviewRerender) {
         toolBox.className = 'import-block-tool import-band-tool';
         toolBox.setAttribute('data-tool-band', toolBandKey);
         toolBox.setAttribute('data-band-count', toolBand ? toolBand.items.length : 1);
+        var toolCouponSwapHtml = '';
+        if (couponPosMap) {
+          var toolSwapSlots = couponPosMap.labels.map(function (label, li) {
+            var la = li > 0
+              ? '<span class="imp-swap-arrow" data-swap-dir="left" data-swap-pos="' + esc(label) + '">◀</span>'
+              : '<span class="imp-swap-arrow" style="visibility:hidden">◀</span>';
+            var ra = li < couponPosMap.labels.length - 1
+              ? '<span class="imp-swap-arrow" data-swap-dir="right" data-swap-pos="' + esc(label) + '">▶</span>'
+              : '<span class="imp-swap-arrow" style="visibility:hidden">▶</span>';
+            return '<div class="imp-coupon-slot" data-pos="' + esc(label) + '" draggable="true">' +
+              la + '<span class="imp-slot-label">' + esc(label) + '</span>' + ra + '</div>';
+          }).join('');
+          toolCouponSwapHtml = '<div class="imp-coupon-swap">' + toolSwapSlots + '</div>';
+        }
         toolBox.innerHTML = '<div class="import-block-tool-head">' +
           (toolBand && toolBand.items.length > 1 ? '一排' + toolBand.items.length + '｜版位圖片操作（由上到下）' : (idx + 1) + '. ' + esc(def.name)) +
-          '</div><div class="import-band-tool-grid"></div>';
+          '</div>' + toolCouponSwapHtml + '<div class="import-band-tool-grid"></div>';
         actionRail.appendChild(toolBox);
+        if (couponPosMap) {
+          (function (colRef, colIdx, posMap, tbx) {
+            function doSwap(posA, posB) {
+              swapMsbnCSeriesPositions(colRef, posA, posB);
+              saveImportState();
+              renderImportColumns(currentImportColumns, true);
+            }
+            tbx.querySelectorAll('.imp-swap-arrow[data-swap-dir]').forEach(function (arrow) {
+              arrow.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var pos = arrow.getAttribute('data-swap-pos');
+                var dir = arrow.getAttribute('data-swap-dir');
+                var li = posMap.labels.indexOf(pos);
+                if (li < 0) return;
+                var targetPos = dir === 'left' ? posMap.labels[li - 1] : posMap.labels[li + 1];
+                if (targetPos) doSwap(pos, targetPos);
+              });
+            });
+            var dragState = { pos: null };
+            tbx.querySelectorAll('.imp-coupon-slot').forEach(function (slot) {
+              slot.addEventListener('dragstart', function (e) {
+                dragState.pos = slot.getAttribute('data-pos');
+                e.dataTransfer.effectAllowed = 'move';
+                try { e.dataTransfer.setData('text/plain', dragState.pos); } catch (_) {}
+              });
+              slot.addEventListener('dragover', function (e) {
+                if (!dragState.pos || dragState.pos === slot.getAttribute('data-pos')) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                slot.classList.add('drag-over');
+              });
+              slot.addEventListener('dragleave', function () { slot.classList.remove('drag-over'); });
+              slot.addEventListener('drop', function (e) {
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+                var from = dragState.pos;
+                var to = slot.getAttribute('data-pos');
+                dragState.pos = null;
+                if (from && to && from !== to) doSwap(from, to);
+              });
+              slot.addEventListener('dragend', function () {
+                dragState.pos = null;
+                tbx.querySelectorAll('.imp-coupon-slot').forEach(function (s) { s.classList.remove('drag-over'); });
+              });
+            });
+          })(col, idx, couponPosMap, toolBox);
+        }
       }
       var toolPositionIndex = toolBand ? toolBand.items.indexOf(idx) : 0;
       var toolPositionLabels = toolBand && toolBand.items.length === 4 ? ['上左', '上右', '下左', '下右']
@@ -18033,6 +18331,8 @@ document.getElementById('btn-clear-cache').addEventListener('click', function ()
     try { localStorage.removeItem(k); } catch (e) {}
     try { sessionStorage.removeItem(k); } catch (e) {}
   });
+  try { indexedDB.deleteDatabase(IMPORT_IDB_NAME); } catch (e) {}
+  try { indexedDB.deleteDatabase(BOTTOM_PERSIST_DB); } catch (e) {}
   location.reload();
 });
 
@@ -19833,28 +20133,14 @@ document.getElementById('btn-preview-all').addEventListener('click', function ()
 
 /* 先把上次匯入工單的內容與來源讀回記憶體，再決定要開哪個工具頁。
    如此重新整理後停在匯入頁時，能分辨既有內容是 generator 還是檔案來源，
-   不會因為同步判斷太早而誤蓋資料。 */
+   不會因為同步判斷太早而誤蓋資料。
+   localStorage 可能因容量不足而存不進去；IndexedDB 沒有容量限制，
+   非同步補救會在版位載入後自動比對並覆蓋較舊的 localStorage 結果。 */
 var savedImportState = loadImportState();
-if (savedImportState && savedImportState.columns && savedImportState.columns.length) {
-  currentImportSource = savedImportState.source || 'saved';
-  currentGeneratorSignature = savedImportState.generatorSignature || '';
-  currentImportColumns = savedImportState.columns.map(function (c) {
-    return {
-      blockId: c.blockId,
-      data: c.data || {},
-      header: c.header,
-      band: c.band,
-      sourceKey: c.sourceKey || '',
-      _xlsxBindings: Array.isArray(c.xlsxBindings) ? c.xlsxBindings.map(function (binding) {
-        return { address: binding.address, targetKey: binding.targetKey, label: binding.label };
-      }) : [],
-      _dynamicRowRows: Array.isArray(c.dynamicRowRows) ? c.dynamicRowRows.slice() : undefined,
-      _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
-      _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder)
-    };
-  });
-}
+applyImportState(savedImportState);
 refreshGeneratorImportButton();
+/* IndexedDB 非同步補救：localStorage 可能因 dataURL 圖片太大而存失敗 */
+loadImportStateFromIdb();
 /* 上次的吸底編輯現況（重新整理不遺失）；還原後重畫匯入畫布，最下面的吸底才接得回來 */
 restoreBottomPersist().then(function (restored) {
   if (restored && currentImportColumns.length && blocksLoadedForImport) renderImportColumns(currentImportColumns);
@@ -19864,6 +20150,10 @@ var teachingModeActive = teachingMode === 'subarea' || teachingMode === 'msbn';
 if (teachingModeActive) document.body.classList.add('tutorial-' + teachingMode);
 var initialView = getSavedView();
 showView(initialView); /* 還原上次所在工具頁，不再每次強制回首頁 */
+window.addEventListener('beforeunload', function () {
+  if (importStateSaveTimer) { clearTimeout(importStateSaveTimer); saveImportState(); }
+  if (bottomPersistTimer) { clearTimeout(bottomPersistTimer); bottomPersistTimer = null; queueBottomPersist(); }
+});
 window.addEventListener('hashchange', function () {
   var hashView = String(window.location.hash || '').replace(/^#/, '');
   if (isValidView(hashView)) showView(hashView, { skipHash: true });
