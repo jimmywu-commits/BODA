@@ -111,6 +111,20 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #exposure-fallback .ef-desc{font-size:12.5px;line-height:1.8;}
 #exposure-fallback b{color:var(--teal-dark);}
 
+/* ══════════════ 背景色（color-tool.html） ══════════════ */
+#view-color.active{display:block;}
+#color-wrap{position:relative;width:100%;height:100%;background:#0d1117;}
+#color-frame{width:100%;height:100%;border:none;display:block;background:#0d1117;}
+#color-wrap.missing #color-fallback{display:flex;}
+#color-wrap.missing #color-frame{display:none;}
+#color-fallback{position:absolute;inset:0;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;
+  background:var(--bg);color:var(--ink2);}
+#color-fallback .ef-icon{font-size:44px;}
+#color-fallback .ef-title{font-size:16px;font-weight:800;color:var(--ink);}
+#color-fallback .ef-desc{font-size:12.5px;line-height:1.8;}
+#color-fallback b{color:var(--teal-dark);}
+
 /* ══════════════ 匯入工單（佔位頁） ══════════════ */
 /* ══════════════ 匯入工單 ══════════════ */
 #view-import.active{display:flex;}
@@ -334,6 +348,13 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 /* 左側僅負責上傳；已上傳素材不再顯示縮圖，避免工具列冗長。 */
 #import-img-gallery{display:none !important;}
 #import-img-gallery .im-empty{font-size:10.5px;color:var(--ink3);line-height:1.6;}
+/* 商品影子設定：上傳圖片時自動烘進圖片，這裡調的會重新套用到已上傳的素材 */
+#import-shadow-panel{margin-top:10px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:#fbfcfc;font-size:11px;color:var(--ink2);}
+#import-shadow-panel .ishd-title{font-weight:600;color:var(--teal-dark);margin-bottom:6px;}
+#import-shadow-panel .ishd-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5px 0;}
+#import-shadow-panel .ishd-row input[type=range]{flex:1;max-width:130px;}
+#import-shadow-panel select{font-size:11px;}
+#import-shadow-panel button{margin-top:4px;font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background:#fff;cursor:pointer;}
 #import-img-gallery .im-empty b{color:var(--teal-dark);}
 /* 已上傳素材的縮圖：可以直接拖到右邊畫布的圖片框裡 */
 #import-img-gallery .im-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
@@ -805,7 +826,8 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 .nav-item[data-view="import"]{order:1;}
 .nav-item[data-view="bottom"]{order:2;}
 .nav-item[data-view="exposure"]{order:3;}
-.nav-item[data-view="maint"]{order:4;}
+.nav-item[data-view="color"]{order:4;}
+.nav-item[data-view="maint"]{order:5;}
 </style>
 </head>
 <body>
@@ -826,6 +848,9 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     </button>
     <button class="nav-item" data-view="exposure" title="曝光資源">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></span><span class="lbl">曝光資源</span>
+    </button>
+    <button class="nav-item" data-view="color" title="背景色">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 3.87 7 13 7 13s7-9.13 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="3" fill="var(--bg,#fff)" stroke="none"/></svg></span><span class="lbl">背景色</span>
     </button>
     <button class="nav-item" data-view="bottom" title="吸底">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12v5H6z"/><path d="M4 12h16v8H4z"/><path d="M8 12V9M16 12V9"/><path d="M8 16h8"/></svg></span><span class="lbl">吸底</span>
@@ -983,6 +1008,18 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
       </div>
     </div>
 
+    <!-- ══════════════ 背景色（shopee/color/color-tool.html，用 iframe 載入） ══════════════ -->
+    <div id="view-color" class="view">
+      <div id="color-wrap">
+        <iframe id="color-frame" title="背景色" allow="clipboard-write; clipboard-read"></iframe>
+        <div id="color-fallback">
+          <div class="ef-icon">🎨</div>
+          <div class="ef-title">找不到「背景色」的程式檔</div>
+          <div class="ef-desc">請確認 <b>shopee/color/color-tool.html</b> 檔案存在。</div>
+        </div>
+      </div>
+    </div>
+
     <!-- ══════════════ 匯入工單 ══════════════ -->
     <div id="view-import" class="view">
       <div id="import-app">
@@ -1007,6 +1044,20 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
               <input type="file" id="import-img-input" accept="image/*" multiple hidden>
             </div>
             <input type="file" id="imp-field-img-input" accept="image/*" hidden>
+            <div id="import-shadow-panel">
+              <div class="ishd-title">商品影子（上傳時自動套用）</div>
+              <div class="ishd-row"><span>光源</span>
+                <select id="import-shadow-angle">
+                  <option value="off">關閉</option>
+                  <option value="left">左</option>
+                  <option value="top">中</option>
+                  <option value="right">右</option>
+                </select>
+              </div>
+              <div class="ishd-row"><span>左右位移 <b id="import-shadow-x-val">0%</b></span><input type="range" id="import-shadow-x" min="-30" max="30" step="1" value="0"></div>
+              <div class="ishd-row"><span>上下位移 <b id="import-shadow-y-val">0%</b></span><input type="range" id="import-shadow-y" min="-30" max="30" step="1" value="0"></div>
+              <button type="button" id="import-shadow-reset">還原預設</button>
+            </div>
             <div id="import-img-gallery" aria-hidden="true"><div class="im-empty">還沒有上傳圖片</div></div>
           </div>
 
@@ -6879,9 +6930,10 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <script src="JS/fonts-embed.js"></script>
 <script src="JS/render-config.js"></script>
 <script src="core/core-engine.js"></script>
-<script src="core/schema-renderer.js?v=20261003-addline1"></script>
+<script src="core/schema-renderer.js?v=20261006-addline4"></script>
+<script src="shadow-module/shadow-plugin.js?v=20261012-shadow1"></script>
 <script src="JS/image-layout.js?v=20260924-2"></script>
-<script src="JS/editor-plugin.js?v=20260924-2"></script>
+<script src="JS/editor-plugin.js?v=20261012-shadowrm1"></script>
 <script src="jbp/js/logo-editor-plugin.js"></script>
 
 <script>
@@ -11894,6 +11946,236 @@ function trimImportImageWhiteBorder(dataUrl) {
   });
 }
 
+/* ───── 商品影子：上傳時自動烘進圖片（引擎在 shadow-module/shadow-plugin.js） ─────
+   烘好的圖跟原圖同尺寸（商品縮到畫布 80%、底部對齊 84% 高度），所以版型的圖片框不會跑掉。
+   只對「有透明像素」的去背圖加影子；白底 JPG 加了會變成一整個黑框，直接略過。 */
+var IMPORT_SHADOW_KEY = 'wo_import_shadow_v1';
+var IMPORT_SHADOW_ANGLES = ['off', 'left', 'top', 'right'];
+var importShadowSeq = 0;
+
+function clampImportShadowOffset(v) {
+  var n = Number(v);
+  if (!isFinite(n)) return 0;
+  return Math.max(-30, Math.min(30, Math.round(n)));
+}
+function loadImportShadowSettings() {
+  var s = { angle: 'top', offsetX: 0, offsetY: 0 };
+  try {
+    var o = JSON.parse(localStorage.getItem(IMPORT_SHADOW_KEY) || 'null');
+    if (o && typeof o === 'object') {
+      if (IMPORT_SHADOW_ANGLES.indexOf(o.angle) >= 0) s.angle = o.angle;
+      s.offsetX = clampImportShadowOffset(o.offsetX);
+      s.offsetY = clampImportShadowOffset(o.offsetY);
+    }
+  } catch (e) {}
+  return s;
+}
+function saveImportShadowSettings(s) {
+  try { localStorage.setItem(IMPORT_SHADOW_KEY, JSON.stringify(s)); } catch (e) {}
+}
+var importShadowSettings = loadImportShadowSettings();
+
+function importImageHasTransparency(img) {
+  var fullW = img.naturalWidth, fullH = img.naturalHeight;
+  var scale = Math.min(1, 300 / Math.max(fullW, fullH));
+  var w = Math.max(1, Math.round(fullW * scale)), h = Math.max(1, Math.round(fullH * scale));
+  var c = document.createElement('canvas'); c.width = w; c.height = h;
+  var cctx = c.getContext('2d', { willReadFrequently: true }); cctx.drawImage(img, 0, 0, w, h);
+  var d = cctx.getImageData(0, 0, w, h).data;
+  for (var i = 3; i < d.length; i += 4) if (d[i] <= 200) return true;
+  return false;
+}
+
+/* 不透明圖（白底 JPG 等）→ 從四個角的背景色開始，把與背景色相近、且跟邊緣連在一起的像素透明化，
+   再裁到商品本身。回傳 Image；四角背景色不一致（看不出背景）時回傳 null。 */
+function importCutoutImage(img) {
+  return new Promise(function (resolve) {
+    try {
+      var W = img.naturalWidth, H = img.naturalHeight;
+      var c = document.createElement('canvas'); c.width = W; c.height = H;
+      var cx = c.getContext('2d', { willReadFrequently: true });
+      cx.drawImage(img, 0, 0);
+      var data = cx.getImageData(0, 0, W, H);
+      var px = data.data;
+      var corners = [0, (W - 1) * 4, (H - 1) * W * 4, ((H - 1) * W + W - 1) * 4];
+      var bg = [0, 0, 0];
+      corners.forEach(function (p) { bg[0] += px[p]; bg[1] += px[p + 1]; bg[2] += px[p + 2]; });
+      bg = bg.map(function (v) { return v / 4; });
+      function diffAt(i) {
+        var p = i * 4;
+        return Math.max(Math.abs(px[p] - bg[0]), Math.abs(px[p + 1] - bg[1]), Math.abs(px[p + 2] - bg[2]));
+      }
+      var consistent = corners.every(function (p) { return diffAt(p / 4) <= 40; });
+      if (!consistent) { resolve(null); return; }
+      var TOL = 36, N = W * H;
+      var isBg = new Uint8Array(N), queue = new Int32Array(N), head = 0, tail = 0;
+      function tryPush(i) { if (!isBg[i] && diffAt(i) <= TOL) { isBg[i] = 1; queue[tail++] = i; } }
+      for (var x = 0; x < W; x++) { tryPush(x); tryPush((H - 1) * W + x); }
+      for (var y = 0; y < H; y++) { tryPush(y * W); tryPush(y * W + W - 1); }
+      while (head < tail) {
+        var i = queue[head++], ix = i % W, iy = (i - ix) / W;
+        if (ix > 0) tryPush(i - 1);
+        if (ix < W - 1) tryPush(i + 1);
+        if (iy > 0) tryPush(i - W);
+        if (iy < H - 1) tryPush(i + W);
+      }
+      var minX = W, minY = H, maxX = -1, maxY = -1;
+      for (var k = 0; k < N; k++) {
+        if (isBg[k]) { px[k * 4 + 3] = 0; continue; }
+        var kx = k % W, ky = (k - kx) / W;
+        if (kx < minX) minX = kx; if (kx > maxX) maxX = kx;
+        if (ky < minY) minY = ky; if (ky > maxY) maxY = ky;
+      }
+      if (maxX < 0) { resolve(null); return; }
+      cx.putImageData(data, 0, 0);
+      var out = document.createElement('canvas');
+      out.width = maxX - minX + 1; out.height = maxY - minY + 1;
+      out.getContext('2d').drawImage(c, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+      var cut = new Image();
+      cut.onload = function () { resolve(cut); };
+      cut.onerror = function () { resolve(null); };
+      cut.src = out.toDataURL('image/png');
+    } catch (err) { resolve(null); }
+  });
+}
+
+/* 把影子烘進 dataURL，回傳新的 PNG dataURL；不需要影子時原樣回傳。 */
+function bakeImportShadow(dataUrl, settings) {
+  return new Promise(function (resolve) {
+    var st = settings || importShadowSettings;
+    var SP = window.ShadowPlugin;
+    if (!dataUrl || st.angle === 'off' || !SP || typeof SP.registerProduct !== 'function') { resolve(dataUrl); return; }
+    var img = new Image();
+    img.onerror = function () { resolve(dataUrl); };
+    img.onload = function () {
+      if (!img.naturalWidth || !img.naturalHeight) { resolve(dataUrl); return; }
+      /* 去背圖（有透明像素）直接用；白底 JPG 等不透明圖先摳掉背景，
+         否則整張底圖會把影子蓋住。畫布尺寸一律是原圖尺寸，版型不變。 */
+      var sourcePromise = importImageHasTransparency(img) ? Promise.resolve(img) : importCutoutImage(img);
+      var id = 'import_shadow_' + (++importShadowSeq);
+      sourcePromise.then(function (productImg) {
+        if (!productImg) { resolve(dataUrl); return; }
+        return SP.registerProduct(id, productImg, 'product').then(function (p) {
+          var W = img.naturalWidth, H = img.naturalHeight;
+          var pw = productImg.naturalWidth, ph = productImg.naturalHeight;
+          var s = Math.min(W * 0.8 / pw, H * 0.8 / ph);
+          var dw = pw * s, dh = ph * s;
+          var dx = (W - dw) / 2, dy = H * 0.84 - dh;
+          var pad = p.trim ? p.trim.bottom * dh : 0;
+          var groundY = dy + dh - pad;
+          var cx = W / 2;
+          var canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+          var cctx = canvas.getContext('2d');
+          SP.setAngle(st.angle);
+          SP.renderScene(cctx, [{
+            id: id, x: cx + st.offsetX / 100 * dw, y: groundY + st.offsetY / 100 * dh,
+            w: dw, h: dh, groundAnchorX: cx, groundAnchorY: groundY
+          }], true);
+          cctx.drawImage(productImg, dx, dy, dw, dh);
+          SP.removeProduct(id);
+          resolve(canvas.toDataURL('image/png'));
+        });
+      }).catch(function () { SP.removeProduct(id); resolve(dataUrl); });
+    };
+    img.src = dataUrl;
+  });
+}
+
+/* 原圖 → 白邊裁切 → 影子。回傳已烘好的 dataURL。 */
+function prepareImportImage(originalDataUrl) {
+  return trimImportImageWhiteBorder(originalDataUrl).then(function (trimmed) {
+    return bakeImportShadow(trimmed);
+  });
+}
+
+/* 設定改動後：用每張圖的原圖重新烘一次，再把欄位裡的舊網址換成新的。
+   沒有原圖（baseUrl）的素材是從底部暫存還原的，網址已經烘過影子，再烘會疊兩層，所以略過。 */
+function reapplyImportShadowToUploads() {
+  var list = (uploadedImages || []).filter(function (img) { return img && img.url && img.baseUrl; });
+  var swap = {};
+  var done = 0;
+  appLoadingStart('LOADING · 套用影子', 5, '正在重新套用商品影子…');
+  list.reduce(function (chain, img) {
+    return chain.then(function () {
+      var oldUrl = img.url;
+      return prepareImportImage(img.baseUrl).then(function (baked) {
+        swap[oldUrl] = baked;
+        img.url = baked;
+        done++;
+        appLoadingUpdate(8 + Math.round((done / list.length) * 84), 'LOADING · 套用影子', '已重製 ' + done + '/' + list.length + ' 張');
+      });
+    });
+  }, Promise.resolve()).then(function () {
+    (currentImportColumns || []).concat(previewAllColumns || []).forEach(function (col) {
+      var def = BNCore.getBlock(col.blockId);
+      if (!def || !col.data) return;
+      (def.fields || []).forEach(function (field) {
+        if (field.type !== 'image') return;
+        var parts = splitImageList(col.data[field.key] || '');
+        var changed = false;
+        parts = parts.map(function (part) {
+          var key = String(part || '').trim();
+          if (swap[key]) { changed = true; return swap[key]; }
+          return part;
+        });
+        if (changed) col.data[field.key] = parts.join(',');
+      });
+    });
+    renderImageGallery();
+    if (currentImportWorkbook) syncWorkbookOverviewTextToExposure(currentImportWorkbook);
+    if ((currentImportColumns || []).length) refreshCanvasAfterChange('import', 0, true);
+    broadcastBottomImageAssets();
+    queueBottomPersist();
+    saveImportState();
+    appLoadingFinish('商品影子已更新');
+  });
+}
+
+function syncImportShadowPanel() {
+  var angle = document.getElementById('import-shadow-angle');
+  var x = document.getElementById('import-shadow-x');
+  var y = document.getElementById('import-shadow-y');
+  if (!angle || !x || !y) return;
+  angle.value = importShadowSettings.angle;
+  x.value = importShadowSettings.offsetX;
+  y.value = importShadowSettings.offsetY;
+  document.getElementById('import-shadow-x-val').textContent = importShadowSettings.offsetX + '%';
+  document.getElementById('import-shadow-y-val').textContent = importShadowSettings.offsetY + '%';
+}
+function initImportShadowPanel() {
+  var angle = document.getElementById('import-shadow-angle');
+  var x = document.getElementById('import-shadow-x');
+  var y = document.getElementById('import-shadow-y');
+  var reset = document.getElementById('import-shadow-reset');
+  if (!angle || !x || !y || !reset) return;
+  syncImportShadowPanel();
+  angle.addEventListener('change', function () {
+    importShadowSettings.angle = IMPORT_SHADOW_ANGLES.indexOf(angle.value) >= 0 ? angle.value : 'top';
+    saveImportShadowSettings(importShadowSettings);
+    reapplyImportShadowToUploads();
+  });
+  x.addEventListener('input', function () { document.getElementById('import-shadow-x-val').textContent = x.value + '%'; });
+  x.addEventListener('change', function () {
+    importShadowSettings.offsetX = clampImportShadowOffset(x.value);
+    saveImportShadowSettings(importShadowSettings);
+    reapplyImportShadowToUploads();
+  });
+  y.addEventListener('input', function () { document.getElementById('import-shadow-y-val').textContent = y.value + '%'; });
+  y.addEventListener('change', function () {
+    importShadowSettings.offsetY = clampImportShadowOffset(y.value);
+    saveImportShadowSettings(importShadowSettings);
+    reapplyImportShadowToUploads();
+  });
+  reset.addEventListener('click', function () {
+    importShadowSettings = { angle: 'top', offsetX: 0, offsetY: 0 };
+    saveImportShadowSettings(importShadowSettings);
+    syncImportShadowPanel();
+    reapplyImportShadowToUploads();
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initImportShadowPanel);
+else initImportShadowPanel();
+
 /* 上傳的圖片直接轉成 dataURL（不用 blob: 臨時網址）。
    blob: 網址只在當次瀏覽器工作階段有效，存進暫存檔後下次開啟就是死連結；
    dataURL 是把圖片內容本身編碼在網址字串裡，存到哪都有效──
@@ -11945,8 +12227,8 @@ function handleImageFiles(fileList) {
     uploadedImages[startIndex + i] = { name: f.name, url: '' }; /* 先佔位，保持上傳順序 */
     var fr = new FileReader();
     fr.onload = function () {
-      trimImportImageWhiteBorder(fr.result).then(function (trimmed) {
-        uploadedImages[startIndex + i].url = trimmed;
+      prepareImportImage(fr.result).then(function (baked) {
+        uploadedImages[startIndex + i].url = baked;
         uploadedImages[startIndex + i].baseUrl = fr.result;
         doneOne();
       });
@@ -11986,7 +12268,15 @@ function autoMatchImagesToColumns() {
          var sameAsset = uploadedImages.filter(function (img) {
            return img && img.url && (img.url === part || img.baseUrl === part);
          })[0];
-         if (sameAsset && sameAsset.url !== part) { changed = true; return sameAsset.url; }
+         if (sameAsset) {
+           /* 同檔名重新上傳時，欄位改用「最後上傳」的那張（它是烘過影子的新版），
+              否則欄位裡舊的、沒有影子的網址會一直留著 */
+           var newest = uploadedImages.filter(function (img) {
+             return img && img.url && sameImageFilename(img.name, sameAsset.name);
+           }).pop() || sameAsset;
+           if (newest.url !== part) { changed = true; return newest.url; }
+           return part;
+         }
          if (/^(https?:|blob:|data:)/.test(part)) return part; /* 已經是網址就不動它 */
          var match = uploadedImages.filter(function (img) { return sameImageFilename(img && img.name, part); })[0];
          if (match) { changed = true; return match.url; }
@@ -12638,7 +12928,7 @@ function canvasImageEditorStateFrom(img, outputSrc, includeProductEditorState) {
   state.outputSrc = outputSrc || img.getAttribute('src') || img.src;
   if (includeProductEditorState !== false) {
     if (img.dataset.baseSrc) state.baseSrc = img.dataset.baseSrc;
-    ['outputRatio', 'productOnlyRatio', 'shadowEnabled', 'pluginShadowX', 'pluginShadowY', 'pluginShadowW', 'pluginShadowH',
+    ['outputRatio', 'productOnlyRatio',
       'layoutSourceWidth', 'layoutSourceHeight', 'layoutOutputWidth', 'layoutOutputHeight', 'layoutOffsetX', 'layoutOffsetY']
       .forEach(function (key) { if (img.dataset[key] != null) state[key] = img.dataset[key]; });
   }
@@ -13008,10 +13298,10 @@ function readImageFilesAsUrls(fileList, done) {
   files.forEach(function (f, i) {
     var fr = new FileReader();
     fr.onload = function () {
-      trimImportImageWhiteBorder(fr.result).then(function (trimmed) {
-        urls[i] = trimmed;
-        if (!uploadedImages.some(function (img) { return img.url === trimmed; })) {
-          uploadedImages.push({ name: f.name, url: trimmed, baseUrl: fr.result });
+      prepareImportImage(fr.result).then(function (baked) {
+        urls[i] = baked;
+        if (!uploadedImages.some(function (img) { return img.url === baked; })) {
+          uploadedImages.push({ name: f.name, url: baked, baseUrl: fr.result });
         }
         completeOne();
       });
@@ -13632,6 +13922,7 @@ function getExposureSubTextColor() {
 function pushImportBgToExposure(hex) {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) return false;
   writeSharedCanvasBg(hex);
+  if (typeof pushImportBgToColorTool === 'function') pushImportBgToColorTool(hex);
   try {
     var frame = document.getElementById('exposure-frame');
     var win = frame && frame.contentWindow;
@@ -14190,17 +14481,20 @@ window.addEventListener('message', function (e) {
   saveImportTheme();
   refreshImportAndMaintColorLinks();
   if (!currentImportColumns.length) applyImportStripBg();
+  if (typeof pushImportBgToColorTool === 'function') pushImportBgToColorTool(hex);
 });
 
 /* 其他分頁／視窗變更共用背景色時也跟著更新。 */
 window.addEventListener('storage', function (e) {
   if (e.key !== SHARED_CANVAS_BG_KEY || !/^#[0-9a-fA-F]{6}$/.test(e.newValue || '')) return;
-  importTheme.bg = colorToHex(e.newValue);
+  var hex = colorToHex(e.newValue);
+  importTheme.bg = hex;
   importTheme.bgAuto = false;
   relinkImportPromoColorsToBackground();
   saveImportTheme();
   refreshImportAndMaintColorLinks();
   if (!currentImportColumns.length) applyImportStripBg();
+  if (typeof pushImportBgToColorTool === 'function') pushImportBgToColorTool(hex);
 });
 
 document.getElementById('btn-color-reset-all').addEventListener('click', function () {
@@ -15405,41 +15699,64 @@ function bindEndorserTextDrag(mountEl, col, idx, ctxName) {
     });
   });
 }
+/* 「+」加回第二行：保留第一排，第二排預設「文案資訊」。
+   第二排已有內容時不動作；尾端換行／空白行不算第二排，所以刪掉的那一排會被補回。 */
+function addCanvasSecondLine(col, idx, ctxName, key) {
+  if (!col || !key) return;
+  var current = String(col.data[key] == null ? '' : col.data[key]).replace(/\r\n?/g, '\n');
+  if (BNSchemaRenderer.hasSecondLineText(current)) return;
+  col.data[key] = current.split('\n')[0] + '\n文案資訊';
+  if (ctxName === 'import') {
+    saveImportState();
+    renderImportColumns(currentImportColumns);
+    return;
+  }
+  var mount = rerenderCanvasMount(ctxName, idx);
+  if (!mount) return;
+  var target = Array.prototype.find.call(
+    mount.querySelectorAll('[contenteditable="true"]'),
+    function (el) { return el.getAttribute('data-field') === key; }
+  );
+  if (!target) return;
+  target.focus();
+  try {
+    var range = document.createRange();
+    range.selectNodeContents(target);
+    range.collapse(false);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } catch (_) {}
+}
+function bindCanvasAddLineButton(btn, col, idx, ctxName, key) {
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    addCanvasSecondLine(col, idx, ctxName, key);
+  });
+}
+/* 編輯中刪掉第二排時，「+」要立刻出現（不必等游標離開）；加回後立刻消失。
+   只增減這一個按鈕、不重畫整格，避免正在打字的游標被打斷。 */
+function syncCanvasAddLineButton(el, col, idx, ctxName, key) {
+  var twoline = el && el.closest('[data-twoline-text="' + key + '"]');
+  if (!twoline || !col || !col.data) return;
+  var btn = twoline.querySelector('[data-add-line-field="' + key + '"]');
+  var needBtn = !BNSchemaRenderer.hasSecondLineText(col.data[key]);
+  if (needBtn && !btn) {
+    var holder = document.createElement('div');
+    holder.innerHTML = BNSchemaRenderer.addLineButtonHtml(key);
+    btn = holder.firstChild;
+    bindCanvasAddLineButton(btn, col, idx, ctxName, key);
+    twoline.appendChild(btn);
+  } else if (!needBtn && btn) {
+    btn.remove();
+  }
+}
 function bindCanvasAddLineButtons(mountEl, col, idx, ctxName) {
   if (!mountEl) return;
   mountEl.querySelectorAll('[data-add-line-field]').forEach(function (btn) {
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var key = btn.getAttribute('data-add-line-field');
-      if (!key) return;
-      var current = String(col.data[key] == null ? '' : col.data[key]);
-      if (current.indexOf('\n') < 0) {
-        col.data[key] = current + '\n';
-        if (ctxName === 'import') {
-          saveImportState();
-          renderImportColumns(currentImportColumns);
-        } else {
-          var mount = rerenderCanvasMount(ctxName, idx);
-          if (mount) {
-            var target = Array.prototype.find.call(
-              mount.querySelectorAll('[contenteditable="true"]'),
-              function (el) { return el.getAttribute('data-field') === key; }
-            );
-            if (target) {
-              target.focus();
-              try {
-                var range = document.createRange();
-                range.selectNodeContents(target);
-                range.collapse(false);
-                var sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-              } catch (_) {}
-            }
-          }
-        }
-      }
-    });
+    var key = btn.getAttribute('data-add-line-field');
+    if (!key) return;
+    bindCanvasAddLineButton(btn, col, idx, ctxName, key);
   });
 }
 function bindCanvasInteractions(mountEl, col, idx, ctxName) {
@@ -15712,6 +16029,11 @@ function importCanvasTextLineLimit(col, key) {
   var limit = Number(field.lineMaxLength);
   return isFinite(limit) && limit >= 0 ? limit : null;
 }
+/* 整欄總字數只套用在沒有「每排字數」的欄位。兩排欄位的每排上限各自獨立，
+   若再套總字數，第二排會佔掉第一排的額度（反之亦然），所以這類欄位不做總數檢查。 */
+function importCanvasTextTotalLimit(col, key) {
+  return importCanvasTextLineLimit(col, key) != null ? null : importCanvasTextLimit(col, key);
+}
 
 /* 與 Excel LENB()/2 同一套規則：中文算 1、英數與半形符號算 0.5；
    換行是兩排品名的排版分隔，不佔用每排的字數額度。 */
@@ -15740,26 +16062,29 @@ function applyBadgeTwoLineFit(el, col, key) {
   }
 }
 
+/* limit：整欄總字數（null ＝不限總數）；lineLimit：每排字數（null ＝不限每排）。
+   有每排字數的兩排欄位只看每排，兩排各自獨立，不會互相佔用額度。 */
 function truncateImportCanvasText(text, limit, lineLimit) {
-  if (limit == null) return String(text == null ? '' : text);
+  var hasTotalLimit = limit != null;
+  var hasLineLimit = lineLimit != null;
   var source = String(text == null ? '' : text);
+  if (!hasTotalLimit && !hasLineLimit) return source;
   var lines = source.split('\n');
   var outLines = [];
   var units = 0;
-  var hasLineLimit = lineLimit != null;
   lines.some(function (line, lineIndex) {
     var lineOut = '';
     var lineUnits = 0;
     Array.from(line).some(function (ch) {
       var nextLine = lineUnits + (/^[\x00-\x7f]$/.test(ch) ? 0.5 : 1);
       var nextTotal = units + nextLine;
-      if ((hasLineLimit && nextLine > lineLimit) || nextTotal > limit) return true;
+      if ((hasLineLimit && nextLine > lineLimit) || (hasTotalLimit && nextTotal > limit)) return true;
       lineOut += ch;
       lineUnits = nextLine;
       return false;
     });
     if (lineIndex > 0 && outLines.length === 0 && !lineOut) return true;
-    if (units + lineUnits > limit) return true;
+    if (hasTotalLimit && units + lineUnits > limit) return true;
     outLines.push(lineOut);
     units += lineUnits;
     return false;
@@ -15776,11 +16101,12 @@ function importCanvasSelectionText(el) {
 }
 
 function importCanvasTextWithLimit(el, col, key, incoming) {
-  var limit = importCanvasTextLimit(col, key);
+  var limit = importCanvasTextTotalLimit(col, key);
   var lineLimit = importCanvasTextLineLimit(col, key);
   var current = normalizeCanvasTextBreaks(readEditableText(el), col, key);
   var source = normalizeCanvasTextBreaks(incoming == null ? current : incoming, col, key);
-  if (limit == null) return source;
+  if (limit == null && lineLimit == null) return source;
+  if (limit == null) return truncateImportCanvasText(source, null, lineLimit);
   var selected = importCanvasSelectionText(el);
   var available = limit - importCanvasTextUnits(current) + importCanvasTextUnits(selected);
   if (available <= 0) return '';
@@ -15820,9 +16146,9 @@ function applyImportCanvasTextRules(el, col, idx, ctxName, key) {
   if (!el || !col || !key) return;
   var originalRaw = readEditableText(el);
   var raw = normalizeCanvasTextBreaks(originalRaw, col, key);
-  var limit = canvasTextRulesEnabled(ctxName) ? importCanvasTextLimit(col, key) : null;
+  var limit = canvasTextRulesEnabled(ctxName) ? importCanvasTextTotalLimit(col, key) : null;
   var lineLimit = canvasTextRulesEnabled(ctxName) ? importCanvasTextLineLimit(col, key) : null;
-  var limited = limit == null ? raw : truncateImportCanvasText(raw, limit, lineLimit);
+  var limited = truncateImportCanvasText(raw, limit, lineLimit);
   var textChanged = limited !== originalRaw;
   if (textChanged) {
     raw = limited;
@@ -15880,7 +16206,7 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
           return;
         }
       }
-      var limit = importCanvasTextLimit(col, key);
+      var limit = importCanvasTextTotalLimit(col, key);
       var lineLimit = importCanvasTextLineLimit(col, key);
       var isCtaText = isCanvasCtaTextField(col, key);
       if (isCtaText && !/^(delete|history|format)/i.test(inputType)) {
@@ -15894,15 +16220,17 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
           return;
         }
       }
-      if (limit == null) return;
+      if (limit == null && lineLimit == null) return;
       if (/^(delete|history|format)/i.test(inputType)) return;
       var incoming = event.data;
       if (incoming == null && inputType === 'insertParagraph') incoming = '\n';
       if (incoming == null) return;
       var current = readEditableText(el);
       var selected = importCanvasSelectionText(el);
-      var nextUnits = importCanvasTextUnits(current) - importCanvasTextUnits(selected) + importCanvasTextUnits(incoming);
-      if (nextUnits > limit) event.preventDefault();
+      if (limit != null) {
+        var nextUnits = importCanvasTextUnits(current) - importCanvasTextUnits(selected) + importCanvasTextUnits(incoming);
+        if (nextUnits > limit) event.preventDefault();
+      }
       if (lineLimit != null && !event.defaultPrevented) {
         var selection = window.getSelection && window.getSelection();
         var range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
@@ -15925,22 +16253,21 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
     });
     el.addEventListener('paste', function (event) {
       if (!canvasTextRulesEnabled(ctxName)) return;
-      var limit = importCanvasTextLimit(col, key);
+      var limit = importCanvasTextTotalLimit(col, key);
       var lineLimit = importCanvasTextLineLimit(col, key);
       if (!event.clipboardData) return;
       var incoming = event.clipboardData.getData('text/plain');
       if (!incoming) return;
       var normalizedIncoming = normalizeCanvasTextBreaks(incoming, col, key, 'paste');
-      if (limit == null && normalizedIncoming === incoming) return;
+      if (limit == null && lineLimit == null && normalizedIncoming === incoming) return;
       event.preventDefault();
       var current = readEditableText(el);
       var selected = importCanvasSelectionText(el);
-      var available = limit - importCanvasTextUnits(current) + importCanvasTextUnits(selected);
+      var available = limit == null ? null : Math.max(0, limit - importCanvasTextUnits(current) + importCanvasTextUnits(selected));
       var isCtaText = isCanvasCtaTextField(col, key);
       var allowed = isCtaText
         ? Array.from(normalizedIncoming).slice(0, Math.max(0, 3 - Array.from(current).length + Array.from(selected).length)).join('')
-        : (limit == null ? normalizedIncoming
-          : truncateImportCanvasText(normalizedIncoming, Math.max(0, available), lineLimit));
+        : truncateImportCanvasText(normalizedIncoming, available, lineLimit);
       var selection = window.getSelection && window.getSelection();
       if (!selection || !selection.rangeCount || !el.contains(selection.getRangeAt(0).commonAncestorContainer)) return;
       var range = selection.getRangeAt(0);
@@ -15955,11 +16282,11 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       var rawText = readEditableText(el);
       var text = normalizeCanvasTextBreaks(rawText, col, key);
       if (canvasTextRulesEnabled(ctxName)) {
-        var limit = importCanvasTextLimit(col, key);
+        var limit = importCanvasTextTotalLimit(col, key);
         var lineLimit = importCanvasTextLineLimit(col, key);
         var limited = isCanvasCtaTextField(col, key)
           ? Array.from(text).slice(0, 3).join('')
-          : (limit == null ? text : truncateImportCanvasText(text, limit, lineLimit));
+          : truncateImportCanvasText(text, limit, lineLimit);
         limited = limitCanvasTextLineCount(limited, col, key);
         if (limited !== rawText) {
           text = limited;
@@ -15972,6 +16299,7 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       var beforeRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
         ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
       col.data[key] = text;
+      syncCanvasAddLineButton(el, col, idx, ctxName, key);
       var afterRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
         ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
       var rowsChanged = beforeRows !== afterRows;
@@ -15990,7 +16318,16 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       });
     });
     el.addEventListener('blur', function () {
-      setTimeout(function () { applyImportCanvasTextRules(el, col, idx, ctxName, key); }, 0);
+      var twolineContainer = el.closest('[data-twoline-text="' + key + '"]');
+      var hadBtn = twolineContainer && !!twolineContainer.querySelector('[data-add-line-field="' + key + '"]');
+      setTimeout(function () {
+        applyImportCanvasTextRules(el, col, idx, ctxName, key);
+        if (twolineContainer) {
+          var lines = String(col.data[key] == null ? '' : col.data[key]).replace(/\r\n?/g, '\n').split('\n').length;
+          var needBtn = lines < 2;
+          if (needBtn !== hadBtn) rerenderCanvasMount(ctxName, idx);
+        }
+      }, 0);
     });
   });
 }
@@ -17193,6 +17530,7 @@ document.getElementById('btn-download-import-package').addEventListener('click',
     .then(function () {
       appLoadingUpdate(82, 'LOADING · 匯出色票', '正在套用目前畫布色碼並下載 CSV…');
       downloadImportColorTicketCsv();
+      if (colorToolLoaded) downloadColorToolCsv();
       appLoadingUpdate(88, 'LOADING · 建立暫存檔', '正在整理可還原的編輯資料…');
       return buildImportSnapshot();
     })
@@ -17547,7 +17885,7 @@ function restoreBottomPersist() {
         bottomLastEditedStateJson = saved.bottomState;
       }
       if (Array.isArray(saved.images) && saved.images.length && (!uploadedImages || !uploadedImages.length)) {
-        uploadedImages = saved.images.map(function (img) { return { name: img.name, url: img.url }; });
+        uploadedImages = saved.images.map(function (img) { return { name: img.name, url: img.url, baseUrl: img.baseUrl || '' }; });
         if (typeof renderImageGallery === 'function') renderImageGallery();
       }
       currentImportHasBottomWorkOrder = !!saved.hasBottomWorkOrder && !!(latestBottomWorkOrder || saved.bottomState);
@@ -19494,7 +19832,7 @@ document.getElementById('btn-export-config').addEventListener('click', exportCon
    頁面切換：首頁 / 工單生成器 / 匯入工單
 ════════════════════════════════════════ */
 var VIEW_STORAGE_KEY = 'wo_last_view';
-var VALID_VIEWS = ['home', 'exposure', 'import', 'bottom', 'maint'];
+var VALID_VIEWS = ['home', 'exposure', 'color', 'import', 'bottom', 'maint'];
 
 /* ════════════════════════════════════════
    維修頁：把所有版位一次列出來測試
@@ -20009,6 +20347,115 @@ function ensureExposureLoaded() {
   setTimeout(function () { if (!settled) { wrap.classList.add('missing'); appLoadingFinish('曝光資源載入逾時'); } }, 12000);
 }
 
+/* 背景色＝shopee/color/color-tool.html，用 iframe 載入（第一次進到這一頁才載）。 */
+var COLOR_TOOL_SRC_LOCAL  = 'shopee/color/color-tool.html?host=boda';
+var COLOR_TOOL_SRC_REMOTE = '../shopee/color/color-tool.html?host=boda';
+var COLOR_TOOL_SRC = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? COLOR_TOOL_SRC_LOCAL : COLOR_TOOL_SRC_REMOTE;
+var colorToolLoaded = false;
+function ensureColorToolLoaded() {
+  if (colorToolLoaded) return;
+  colorToolLoaded = true;
+  var wrap = document.getElementById('color-wrap');
+  var frame = document.getElementById('color-frame');
+  if (!frame) return;
+  var settled = false;
+  var triedFallback = false;
+  frame.addEventListener('load', function () {
+    try {
+      var doc = frame.contentDocument || frame.contentWindow.document;
+      if (doc && doc.title && /404|not found/i.test(doc.title) && !triedFallback) {
+        triedFallback = true;
+        frame.src = (COLOR_TOOL_SRC === COLOR_TOOL_SRC_LOCAL) ? COLOR_TOOL_SRC_REMOTE : COLOR_TOOL_SRC_LOCAL;
+        return;
+      }
+    } catch (e) {}
+    settled = true;
+    wrap.classList.remove('missing');
+    setTimeout(function () {
+      pushImportBgToColorTool();
+    }, 300);
+  });
+  frame.addEventListener('error', function () {
+    if (!triedFallback) {
+      triedFallback = true;
+      frame.src = (COLOR_TOOL_SRC === COLOR_TOOL_SRC_LOCAL) ? COLOR_TOOL_SRC_REMOTE : COLOR_TOOL_SRC_LOCAL;
+      return;
+    }
+    settled = true;
+    wrap.classList.add('missing');
+  });
+  frame.src = COLOR_TOOL_SRC;
+  setTimeout(function () { if (!settled) wrap.classList.add('missing'); }, 12000);
+}
+var colorToolLinked = true;
+var _colorToolSyncing = false;
+function pushImportBgToColorTool(hex) {
+  if (!colorToolLinked || !colorToolLoaded || _colorToolSyncing) return;
+  _colorToolSyncing = true;
+  try {
+    var bg = hex || ((typeof resolvedImportBg === 'function') ? colorToHex(resolvedImportBg()) : null);
+    if (!bg || !/^#[0-9a-fA-F]{6}$/.test(bg)) { _colorToolSyncing = false; return; }
+    var frame = document.getElementById('color-frame');
+    var win = frame && frame.contentWindow;
+    if (!win) { _colorToolSyncing = false; return; }
+    if (typeof win._colorToolSetBg === 'function') { win._colorToolSetBg(bg); }
+    else { win.postMessage({ type: 'wo-color-tool-set-bg', hex: bg }, '*'); }
+  } catch (e) {}
+  _colorToolSyncing = false;
+}
+window.addEventListener('message', function (e) {
+  var d = e.data || {};
+  var colorFrame = document.getElementById('color-frame');
+  if (!colorFrame || e.source !== colorFrame.contentWindow) return;
+  if (d.type === 'wo-color-tool-link') {
+    colorToolLinked = !!d.linked;
+  }
+  if (d.type === 'wo-color-tool-request-bg') {
+    pushImportBgToColorTool();
+  }
+  if (d.type === 'wo-color-tool-colors' && d.linked && d.bg && !_colorToolSyncing) {
+    _colorToolSyncing = true;
+    var hex = d.bg;
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+      importTheme.bg = hex;
+      writeSharedCanvasBg(hex);
+      saveImportTheme();
+      applyImportTheme();
+      if (typeof renderImportColorPanel === 'function') renderImportColorPanel();
+      try {
+        var exFrame = document.getElementById('exposure-frame');
+        var exWin = exFrame && exFrame.contentWindow;
+        if (exWin && typeof exWin._bnApplySharedCanvasBg === 'function') {
+          exWin._bnApplySharedCanvasBg(hex, true);
+        }
+      } catch (ex) {}
+    }
+    _colorToolSyncing = false;
+  }
+});
+function getColorToolCsvString() {
+  try {
+    var frame = document.getElementById('color-frame');
+    var win = frame && frame.contentWindow;
+    if (win && typeof win._colorToolGetCsvString === 'function') return win._colorToolGetCsvString();
+  } catch (e) {}
+  return '';
+}
+function downloadColorToolCsv() {
+  var csv = getColorToolCsvString();
+  if (!csv) return;
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '色票_背景色工具.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+}
+
 function isValidView(name) {
   return VALID_VIEWS.indexOf(name) !== -1 && !!document.getElementById('view-' + name);
 }
@@ -20043,6 +20490,7 @@ function showView(name, options) {
   if (name === 'generator' && typeof syncGeneratorToolMode === 'function') syncGeneratorToolMode();
   /* 鎖頭跟編輯提示條只跟「工單生成器」的副區／MSBN 有關，吸底工具有自己的面板 */
   if (name === 'exposure') ensureExposureLoaded();
+  if (name === 'color') ensureColorToolLoaded();
   /* 維修頁第一次進去才載入（要多抓未註冊的版位，不必在開頁時就做） */
   if (name === 'maint') ensureMaintLoaded();
   if (name === 'bottom') {

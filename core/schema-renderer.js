@@ -163,6 +163,25 @@
         /^(?:productImg|endorserImg)\d*$/i.test(field)) return 0.6;
     return null;
   }
+  /* 雙行文字「第二行有沒有內容」的唯一判斷：尾端換行與空白行都不算有第二行。
+     畫布的「+」按鈕顯示與點擊、刪除一行後的即時增減，都用這一支。 */
+  function hasSecondLineText(value) {
+    var text = String(value == null ? '' : value).replace(/\r\n?/g, '\n').replace(/\n+$/, '');
+    var at = text.indexOf('\n');
+    return at >= 0 && text.slice(at + 1).trim() !== '';
+  }
+  /* 「+」加回第二行的按鈕標記。符號用 SVG 兩條線畫在 18px 的底色塊正中央，
+     不再用字型的 "+" 字形，避免字型上下基線不一致造成偏移。 */
+  function addLineButtonHtml(fieldKey) {
+    return '<span data-add-line-field="' + esc(fieldKey) + '" ' +
+      'style="position:absolute;top:0;right:0;width:18px;height:18px;' +
+      'display:flex;align-items:center;justify-content:center;' +
+      'cursor:pointer;pointer-events:auto;' +
+      'background:rgba(0,0,0,.45);border-radius:3px;z-index:2;user-select:none;" title="加回第二行">' +
+      '<svg width="10" height="10" viewBox="0 0 10 10" style="display:block;pointer-events:none;">' +
+      '<path d="M5 0.5V9.5M0.5 5H9.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>' +
+      '</svg></span>';
+  }
   function isMsbnC15ProductBoundary(schemaId, fieldKey) {
     return /^msbn_C_1_5$/i.test(String(schemaId || '')) && /^productImg$/i.test(String(fieldKey || ''));
   }
@@ -1497,7 +1516,9 @@
       if (layer.transform) style.push('transform:matrix(' + layer.transform.join(',') + ')');
       /* 一般文字仍裁在自己的框內；CTA 的框是定位參考，文字必須保持單行，
          所以允許極小的字型量測差異溢出，不會因此換行。 */
-      style.push('overflow:' + (isCenteredCtaText || layer.verticalCenter || forceBadgeCenter ? 'visible' : 'hidden'));
+      /* 兩行文字的行框含字型 fallback 時，內容可能比框高幾 px；裁切會把第二排下緣切掉。
+         兩行欄位改為不裁切，超出的部分由下方 safe center 處理。 */
+      style.push('overflow:' + (isCenteredCtaText || layer.verticalCenter || forceBadgeCenter || isTwoLineCenterText ? 'visible' : 'hidden'));
       if (isCenteredCtaText) {
         /* 高度與 CTA 底色塊完全相同；align-items:center 讓文字行框中心
            永遠落在底色塊中心，不再依賴不同電腦的字型 top/baseline。 */
@@ -1529,7 +1550,10 @@
       if (isTwoLineCenterText) {
         style.push('display:flex');
         style.push('flex-direction:column');
+        /* 只有一排時置中；兩排（內容高於框）時改為從上緣開始，第一排維持原稿兩排的位置，
+           不會被往上推出框外。safe 不被支援的瀏覽器會沿用上一行的 center。 */
         style.push('justify-content:center');
+        style.push('justify-content:safe center');
         style.push('align-items:' + (layer.textAlign === 'center' ? 'center' : 'flex-start'));
         style.push('box-sizing:border-box');
       }
@@ -1674,16 +1698,8 @@
     }
     var addLineBtn = '';
     if (isTwoLineCenterText && opts && opts.editable && fieldKey) {
-      var rawText = String(data[fieldKey] == null ? '' : data[fieldKey]);
-      var lineCount = rawText.replace(/\r\n?/g, '\n').split('\n').length;
-      if (lineCount < 2) {
-        addLineBtn = '<span data-add-line-field="' + esc(fieldKey) + '" ' +
-          'style="position:absolute;top:1px;right:1px;width:16px;height:16px;' +
-          'display:flex;align-items:center;justify-content:center;' +
-          'font-size:13px;line-height:1;cursor:pointer;pointer-events:auto;' +
-          'color:rgba(255,255,255,.55);background:rgba(0,0,0,.35);' +
-          'border-radius:3px;z-index:2;user-select:none;" title="加回第二行">+</span>';
-      }
+      attrs += ' data-twoline-text="' + esc(fieldKey) + '"';
+      if (!hasSecondLineText(data[fieldKey])) addLineBtn = addLineButtonHtml(fieldKey);
     }
     return "<div" + attrs + " style='" + style.join(';') + ";'>" + content + addLineBtn + '</div>';
   }
@@ -2209,7 +2225,11 @@
         /* 對帶有明確「N字」設計註記的欄位做最後補漏。
            設計註記優先於 block.json 舊 maxLength，因為舊值常只代表其中一排；
            但副區 C/D、A 促標與圓標已有更高優先的共通契約，不能被舊註記覆蓋。 */
+        /* MSBN C-1-1～5 的促標／券文案已有「每排」與「總字數」的明確規則；
+           designText 只寫「促標最多6字」這種單排字數，若再解析會把整個欄位的總字數
+           錯蓋成 6，使第二排只剩第一排用掉之後的額度。 */
         var hasProtectedContract = /圓標/.test(labelText) || /^subarea_[CD]/i.test(schemaId) ||
+          /^msbn_C_1_[1-5]$/i.test(schemaId) ||
           (/^subarea_A(?:_|$)/i.test(schemaId) && (/^promo\d*$/i.test(keyText) || /促標/.test(labelText)));
         if (!hasProtectedContract && String(designText == null ? '' : designText).trim() !== '') {
           function ruleNumber(value) {
@@ -2429,6 +2449,8 @@
     themeRoleOf: themeRoleOf,
     roleColorsOf: roleColorsOf,
     dynamicRowLayoutOf: dynamicRowLayoutOf,
-    dynamicRowSignatureOf: dynamicRowSignatureOf
+    dynamicRowSignatureOf: dynamicRowSignatureOf,
+    hasSecondLineText: hasSecondLineText,
+    addLineButtonHtml: addLineButtonHtml
   };
 })(window);
