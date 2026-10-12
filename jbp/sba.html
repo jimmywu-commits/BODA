@@ -273,39 +273,10 @@ document.querySelectorAll('[contenteditable="true"]').forEach(el=>{
   .checkerboard{position:relative;display:inline-block;border-radius:8px;overflow:auto;background: conic-gradient(#ccc 25%, #fff 0 50%, #ccc 0 75%, #fff 0) 0 0/20px 20px;padding:0;max-width:100%;max-height:none}
   #eraseCanvas{display:block;background:transparent}
   #eraseWrap{padding:0;border-radius:8px}
-#shadowCanvas{position:absolute;left:0;top:0;z-index:0;pointer-events:none;}
 #eraseCanvas{position:relative;z-index:1;display:block;}
 
   
 
-  /* Shadow editor inside modal */
-  .shadow-modal-box{
-    position:absolute;
-    left:10px; top:10px;
-    width:777px; height:115px;
-    cursor:move;
-    border:1px dashed rgba(255,255,255,.35);
-    border-radius:8px;
-    box-sizing:border-box;
-    z-index:3; /* above canvas so it can receive mouse */
-  }
-  .shadow-modal-box img{
-    width:100%; height:100%;
-    object-fit:contain;
-    opacity:0;
-    mix-blend-mode:multiply;
-    pointer-events:none;
-    user-select:none;
-  }
-  .shadow-modal-handle{
-    position:absolute;
-    right:-6px; bottom:-6px;
-    width:14px; height:14px;
-    border-radius:4px;
-    background:#fff;
-    border:1px solid rgba(0,0,0,.4);
-    cursor:nwse-resize;
-  }
 .nudge{position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:9999; background:rgba(0,0,0,.55);}
   .nudge.show{display:flex;}
   .nudge-box{position:relative; width:300px; height:200px; background:#0000; border-radius:10px; overflow:hidden; box-shadow:none;}
@@ -687,9 +658,6 @@ document.querySelectorAll('[contenteditable="true"]').forEach(el=>{
   height:800px;
   transform-origin: top left;
   will-change: transform;
-}
-#shadowModalBox{
-  z-index:5;
 }
 
 .editor-zoom-hud{
@@ -1758,19 +1726,13 @@ label:has(#editZoom){
         <label><input type="radio" name="mode" value="erase" checked> 擦除</label>
         <label>筆刷：<input id="brushSize" type="range" min="5" max="120" value="40"></label>
         <label>容差：<input id="tolerance" type="range" min="0" max="80" value="20"></label>
-        <label style="display:flex;align-items:center;gap:6px"><input id="toggleShadow" type="checkbox"> 增加影子</label>
         <label style="display:flex;align-items:center;gap:6px"><input id="applyUploadSize" type="checkbox" checked> 完成後套用上傳尺寸規則</label>
         <label id="logoWhiteBaseWrap" style="display:none;align-items:center;gap:6px;margin-left:auto;font-weight:700"><input id="logoWhiteBaseChk" type="checkbox"> 加白底</label>
         <label>縮放：<input id="editZoom" type="range" min="10" max="300" value="100"></label><span id="editZoomVal" class="pill">100%</span><span class="note">裁切：拖曳框選；智慧選取：點擊或多點；擦除：拖曳</span>
       </div>
       <div id="eraseWrap" class="checkerboard">
         <div id="previewStage">
-          <canvas id="shadowCanvas" width="800" height="800"></canvas>
           <canvas id="eraseCanvas" width="800" height="800"></canvas>
-        </div>
-        <div id="shadowModalBox" class="shadow-modal-box" aria-hidden="true" style="display:none;">
-          <img id="shadowModalImg" src="bg.png" alt="shadow" draggable="false">
-          <div class="shadow-modal-handle" title="縮放"></div>
         </div>
         <div id="editorZoomHud" class="editor-zoom-hud" aria-label="視覺縮放控制">
           <button id="zoomOutBtn" type="button" title="縮小預覽">−</button>
@@ -2598,15 +2560,6 @@ bindColor('bg-color-s','#square','backgroundColor', (val)=>{
     const box = editingTargetBox;
     const baseSrc = (box && box.dataset && box.dataset.baseSrc) ? box.dataset.baseSrc : imgEl.src;
 
-    const toggle = document.getElementById('toggleShadow');
-    const shadowEnabled = (!editingModeIsLogo && box?.dataset?.shadowEnabled === '1');
-    console.log('[SHADOW] openEraseEditor: shadowEnabled=', shadowEnabled, 'dataset=', box?.dataset?.shadowEnabled);
-    if(toggle) toggle.checked = !!shadowEnabled;
-
-    const shadowWrap = toggle?.closest('label') || toggle?.parentElement;
-    const shadowBoxUi = document.getElementById('shadowModalBox');
-    if(shadowWrap) shadowWrap.style.display = editingModeIsLogo ? 'none' : '';
-    if(shadowBoxUi) shadowBoxUi.style.display = editingModeIsLogo ? 'none' : '';
     if(logoWhiteBaseWrap) logoWhiteBaseWrap.style.display = editingModeIsLogo ? 'flex' : 'none';
 
     logoWhiteBaseEnabled = false;
@@ -2617,11 +2570,6 @@ bindColor('bg-color-s','#square','backgroundColor', (val)=>{
       const minW = 800, minH = 600;
       eraseCanvas.width  = Math.max(minW, Math.round(originalImg.naturalWidth) + pad*2);
       eraseCanvas.height = Math.max(minH, Math.round(originalImg.naturalHeight) + pad*2);
-      if(shadowCanvas){
-        shadowCanvas.width = eraseCanvas.width;
-        shadowCanvas.height = eraseCanvas.height;
-      }
-
       redrawOriginal();
       drawn = true;
       cropStart = null;
@@ -2655,14 +2603,8 @@ bindColor('bg-color-s','#square','backgroundColor', (val)=>{
         const hud = document.getElementById('zoomHudReadout');
         if(stage) stage.style.transform = 'scale(' + fitScale + ')';
         if(hud) hud.textContent = Math.round(fitScale * 100) + '%';
-        if(typeof window.renderShadowPreview === 'function'){
-          try{ window.renderShadowPreview(); }catch(_){}
-        }
       }catch(_){}
 
-      if(!editingModeIsLogo && box){
-        initShadowModalForBox(box);
-      }
     };
     originalImg.src = baseSrc;
   }
@@ -2705,14 +2647,6 @@ bindColor('bg-color-s','#square','backgroundColor', (val)=>{
     lastY = y + h/2;
   }
 
-  // ===== Shadow overlay inside modal =====
-  const shadowCanvas = document.getElementById('shadowCanvas');
-  const shadowCtx = shadowCanvas ? shadowCanvas.getContext('2d') : null;
-  const shadowBox = document.getElementById('shadowModalBox');
-  const shadowImg = document.getElementById('shadowModalImg');
-  const shadowHandle = shadowBox?.querySelector('.shadow-modal-handle');
-  const shadowToggle = document.getElementById('toggleShadow');
-
   function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 
   function getEditorVisualZoom(){
@@ -2728,195 +2662,6 @@ bindColor('bg-color-s','#square','backgroundColor', (val)=>{
       y: (e.clientY - rect.top) * scaleY
     };
   }
-
-  function setShadowBoxLogical(x, y, w, h){
-    if(!shadowBox) return;
-    const z = getEditorVisualZoom();
-    shadowBox.style.left = Math.round(x * z) + 'px';
-    shadowBox.style.top = Math.round(y * z) + 'px';
-    shadowBox.style.width = Math.round(w * z) + 'px';
-    shadowBox.style.height = Math.round(h * z) + 'px';
-  }
-
-  function getShadowBoxLogical(){
-    if(!shadowBox) return {x:0,y:0,w:0,h:0};
-    const z = getEditorVisualZoom();
-    return {
-      x: (parseFloat(shadowBox.style.left) || 0) / z,
-      y: (parseFloat(shadowBox.style.top) || 0) / z,
-      w: (shadowBox.offsetWidth || parseFloat(shadowBox.style.width) || 0) / z,
-      h: (shadowBox.offsetHeight || parseFloat(shadowBox.style.height) || 0) / z
-    };
-  }
-
-  window.__setShadowBoxLogical = setShadowBoxLogical;
-  window.__getShadowBoxLogical = getShadowBoxLogical;
-
-  function renderShadowPreview(){
-    if(!shadowCtx || !shadowCanvas) return;
-    shadowCtx.clearRect(0,0,shadowCanvas.width, shadowCanvas.height);
-    if(!shadowToggle?.checked) return;
-    if(!shadowImg || !shadowImg.complete || shadowImg.naturalWidth<=0) return;
-    const boxRect = getShadowBoxLogical();
-    const x = boxRect.x;
-    const y = boxRect.y;
-    const w = boxRect.w;
-    const h = boxRect.h;
-    if(w<=0||h<=0) return;
-    shadowCtx.drawImage(shadowImg, x, y, w, h);
-  }
-
-  function getShadowAspectRatio(){
-    if(shadowImg && shadowImg.complete && shadowImg.naturalWidth>0 && shadowImg.naturalHeight>0){
-      return shadowImg.naturalHeight / shadowImg.naturalWidth;
-    }
-    return 115 / 777;
-  }
-
-  function autoPlaceShadowByVisibleBounds(){
-    console.log('[SHADOW] autoPlaceShadowByVisibleBounds called, toggle=', shadowToggle?.checked);
-    console.trace('[SHADOW] autoPlace trace');
-    if(!shadowBox || !shadowToggle?.checked) return;
-    const bounds = getAlphaBounds(eraseCanvas, 1);
-    const cw = eraseCanvas.width || 800;
-    const ch = eraseCanvas.height || 400;
-    if(!bounds){
-      shadowBox.style.display = 'none';
-      shadowBox.setAttribute('aria-hidden','true');
-      if(shadowCtx && shadowCanvas){ shadowCtx.clearRect(0,0,shadowCanvas.width, shadowCanvas.height); }
-      return;
-    }
-
-    shadowBox.style.display = 'block';
-    shadowBox.setAttribute('aria-hidden','false');
-
-    const ratio = getShadowAspectRatio();
-    const productWidth = Math.max(1, bounds.maxX - bounds.minX);
-    const shadowWidth = Math.max(20, Math.min(cw, productWidth * 1.5));
-    const shadowHeight = Math.max(8, shadowWidth * ratio);
-
-    let x = bounds.cx - shadowWidth / 2;
-    let y = bounds.maxY - shadowHeight * 0.35 - 4;
-
-    x = clamp(x, 0, Math.max(0, cw - shadowWidth));
-    y = clamp(y, 0, Math.max(0, ch - shadowHeight));
-
-    setShadowBoxLogical(shadowWidth ? x : 0, shadowHeight ? y : 0, shadowWidth, shadowHeight);
-    renderShadowPreview();
-  }
-
-  function initShadowModalForBox(box){
-    if(!shadowBox || !shadowToggle) return;
-    const enabled = shadowToggle.checked;
-    console.log('[SHADOW] initShadowModalForBox called, toggle.checked=', enabled, 'box.shadowEnabled=', box?.dataset?.shadowEnabled);
-    console.trace('[SHADOW] called from');
-
-    if(!enabled){
-      shadowBox.style.display = 'none';
-      shadowBox.setAttribute('aria-hidden','true');
-      if(shadowCtx && shadowCanvas){ shadowCtx.clearRect(0,0,shadowCanvas.width, shadowCanvas.height); }
-      console.log('[SHADOW] → hidden shadow box');
-      return;
-    }
-
-    shadowBox.style.display = 'block';
-    shadowBox.setAttribute('aria-hidden','false');
-
-    // Preserve existing shadow editing progress when reopening the editor.
-    // Product boxes save these values after applying: shadowX/Y/W/H.
-    const saved = box && box.dataset && box.dataset.shadowEnabled === '1'
-      ? {
-          x: parseFloat(box.dataset.shadowX),
-          y: parseFloat(box.dataset.shadowY),
-          w: parseFloat(box.dataset.shadowW),
-          h: parseFloat(box.dataset.shadowH)
-        }
-      : null;
-
-    console.log('[SHADOW] saved coords=', saved);
-    if(saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) && Number.isFinite(saved.w) && Number.isFinite(saved.h) && saved.w > 0 && saved.h > 0){
-      setShadowBoxLogical(saved.x, saved.y, saved.w, saved.h);
-      renderShadowPreview();
-    }else{
-      autoPlaceShadowByVisibleBounds();
-    }
-  }
-
-  // Toggle shadow on/off
-  shadowToggle?.addEventListener('change', ()=>{
-    console.log('[SHADOW] toggle change event fired, checked=', shadowToggle.checked);
-    console.trace('[SHADOW] toggle change trace');
-    if(!shadowToggle.checked){
-      initShadowModalForBox(editingTargetBox);
-      if(shadowCtx && shadowCanvas){ shadowCtx.clearRect(0,0,shadowCanvas.width, shadowCanvas.height); }
-    } else {
-      // 勾選影子：優先使用已保存的座標，若無才自動計算
-      initShadowModalForBox(editingTargetBox);
-    }
-  });
-
-  // Drag & resize in modal
-  (function bindShadowDragResize(){
-    if(!shadowBox || !shadowHandle) return;
-
-    let dragging=false, resizing=false;
-    let sx=0, sy=0, startL=0, startT=0, startW=0, startH=0;
-
-    const getCanvasRect = ()=> eraseCanvas.getBoundingClientRect();
-
-    shadowBox.addEventListener('mousedown', (e)=>{
-      if(shadowBox.style.display==='none') return;
-      if(e.target === shadowHandle) return; // handled by resize
-      e.preventDefault();
-      dragging=true;
-      sx=e.clientX; sy=e.clientY;
-      startL=parseFloat(shadowBox.style.left)||0;
-      startT=parseFloat(shadowBox.style.top)||0;
-    });
-
-    shadowHandle.addEventListener('mousedown', (e)=>{
-      if(shadowBox.style.display==='none') return;
-      e.preventDefault(); e.stopPropagation();
-      resizing=true;
-      sx=e.clientX; sy=e.clientY;
-      startL=parseFloat(shadowBox.style.left)||0;
-      startT=parseFloat(shadowBox.style.top)||0;
-      startW=shadowBox.offsetWidth;
-      startH=shadowBox.offsetHeight;
-    });
-
-    window.addEventListener('mousemove', (e)=>{
-      if(!dragging && !resizing) return;
-      const z = getEditorVisualZoom();
-      const cw = eraseCanvas.width * z, ch = eraseCanvas.height * z;
-      const dx = e.clientX - sx, dy = e.clientY - sy;
-
-      if(dragging){
-        let nl = startL + dx;
-        let nt = startT + dy;
-        const w = shadowBox.offsetWidth, h = shadowBox.offsetHeight;
-        const pad2 = 0;
-        nl = clamp(nl, pad2, Math.max(pad2, cw - pad2 - w));
-        nt = clamp(nt, pad2, Math.max(pad2, ch - pad2 - h));
-        shadowBox.style.left = nl + 'px';
-        shadowBox.style.top  = nt + 'px';
-        renderShadowPreview();
-      } else if(resizing){
-        const pad2 = 0;
-        const maxW = Math.max(20, (cw - pad2) - startL);
-        const maxH = Math.max(20, (ch - pad2) - startT);
-        let nw = (v=>v)(startW + dx, 20, maxW);
-        let nh = (v=>v)(startH + dy, 20, maxH);
-        shadowBox.style.width  = nw + 'px';
-        shadowBox.style.height = nh + 'px';
-        renderShadowPreview();
-      }
-    });
-
-    window.addEventListener('mouseup', ()=>{
-      dragging=false; resizing=false;
-    });
-  })();
 
   eraseCanvas.addEventListener('mousedown', (e)=>{
     if(!drawn) return;
@@ -2938,8 +2683,8 @@ bindColor('bg-color-s','#square','backgroundColor', (val)=>{
       lastX=x; lastY=y;
     }else if(mode==='crop' && cropping){ cropEnd = {x,y}; drawCropRect(); }
   });
-  window.addEventListener('mouseup', ()=>{ const wasDrawing = drawing; drawing=false; cropping=false; if(wasDrawing && shadowToggle?.checked){ autoPlaceShadowByVisibleBounds(); } });
-  eraseReset.addEventListener('click', ()=>{ redrawOriginal(); cropStart=cropEnd=null; if(shadowToggle?.checked){ autoPlaceShadowByVisibleBounds(); } });
+  window.addEventListener('mouseup', ()=>{ drawing=false; cropping=false; });
+  eraseReset.addEventListener('click', ()=>{ redrawOriginal(); cropStart=cropEnd=null; });
 
   function colorAt(data, w, x, y){ const i = (y*w + x)*4; return [data[i], data[i+1], data[i+2], data[i+3]]; }
   function withinTol(a,b,tol){ return Math.abs(a[0]-b[0])<=tol && Math.abs(a[1]-b[1])<=tol && Math.abs(a[2]-b[2])<=tol && Math.abs(a[3]-b[3])<=tol; }
@@ -2962,7 +2707,6 @@ bindColor('bg-color-s','#square','backgroundColor', (val)=>{
       if(cy>0) q.push([cx,cy-1]); if(cy<h-1) q.push([cx,cy+1]);
     }
     eCtx.putImageData(img,0,0);
-    if(shadowToggle?.checked){ autoPlaceShadowByVisibleBounds(); }
   }
   function drawCropRect(){ redrawOriginal(); if(!(cropStart && cropEnd)) return; const x=Math.min(cropStart.x, cropEnd.x); const y=Math.min(cropStart.y, cropEnd.y); const w=Math.abs(cropEnd.x - cropStart.x); const h=Math.abs(cropEnd.y - cropStart.y); eCtx.save(); eCtx.strokeStyle='#00E5FF'; eCtx.lineWidth=2; eCtx.setLineDash([6,4]); eCtx.strokeRect(x,y,w,h); eCtx.restore(); }
   function getCroppedCanvasFromSelection(){
@@ -3410,99 +3154,15 @@ function applyCroppedToTarget(closeAfter){
 
     let finalW = outCanvas.width, finalH = outCanvas.height;
     let finalUrl = productOnlyUrl;
-    const shadowEnabled = (!editingModeIsLogo && !!box && document.getElementById('toggleShadow')?.checked);
-
-    if(shadowEnabled){
-      const sb = document.getElementById('shadowModalBox');
-      const cr = eraseCanvas.getBoundingClientRect();
-      const br = sb?.getBoundingClientRect();
-      const scaleX = eraseCanvas.width / cr.width;
-      const scaleY = eraseCanvas.height / cr.height;
-
-      const x = br ? (br.left - cr.left) * scaleX : 0;
-      const y = br ? (br.top  - cr.top ) * scaleY : 0;
-      const w = br ? br.width  * scaleX : 777;
-      const h = br ? br.height * scaleY : 115;
-
-      if(box){
-        box.dataset.shadowEnabled = '1';
-        // 優先用邏輯座標（getShadowBoxLogical 已做 zoom 換算，是真實 canvas pixel 座標）
-        const logical = (typeof getShadowBoxLogical === 'function') ? getShadowBoxLogical() : null;
-        if(logical && logical.w > 0 && logical.h > 0){
-          box.dataset.shadowX = String(Math.round(logical.x));
-          box.dataset.shadowY = String(Math.round(logical.y));
-          box.dataset.shadowW = String(Math.round(logical.w));
-          box.dataset.shadowH = String(Math.round(logical.h));
-        } else {
-          box.dataset.shadowX = String(Math.round(x));
-          box.dataset.shadowY = String(Math.round(y));
-          box.dataset.shadowW = String(Math.round(w));
-          box.dataset.shadowH = String(Math.round(h));
-        }
-      }
-
-      const sImg = document.getElementById('shadowModalImg');
-      if(!(sImg && sImg.complete && sImg.naturalWidth>0)){
-        showToast?.('影子載入中，請再按一次完成','err',2000);
-        return;
-      }
-
-      const modalShadowRatio = (h > 0 && w > 0)
-        ? (h / w)
-        : ((sImg.naturalHeight > 0 && sImg.naturalWidth > 0) ? (sImg.naturalHeight / sImg.naturalWidth) : 0.148);
-
-      const productWidth = Math.max(1, prodB.maxX - prodB.minX);
-      const shadowScaleRatio = 1.5;
-      const shadowOverlapRatio = 0.35;
-      const shadowWidth = Math.max(20, productWidth * shadowScaleRatio);
-      const shadowHeight = Math.max(8, shadowWidth * modalShadowRatio);
-
-      let sx = prodB.cx - shadowWidth / 2;
-      let sy = prodB.maxY - shadowHeight * shadowOverlapRatio - 4;
-
-      const sh = {x:sx, y:sy, w:shadowWidth, h:shadowHeight};
-      const minX = Math.min(prodB.minX, sh.x);
-      const minY = Math.min(prodB.minY, sh.y);
-      const maxX = Math.max(prodB.maxX, sh.x + sh.w);
-      const maxY = Math.max(prodB.maxY, sh.y + sh.h);
-
-      const halfW = Math.ceil(Math.max(prodB.cx - minX, maxX - prodB.cx) + 2);
-      const halfH = Math.ceil(Math.max(prodB.cy - minY, maxY - prodB.cy) + 2);
-
-      const comp = document.createElement('canvas');
-      comp.width = Math.max(1, halfW * 2);
-      comp.height = Math.max(1, halfH * 2);
-      const cctx = comp.getContext('2d');
-
-      const dx = Math.round(comp.width/2 - prodB.cx);
-      const dy = Math.round(comp.height/2 - prodB.cy);
-
-      cctx.drawImage(sImg, dx + sh.x, dy + sh.y, sh.w, sh.h);
-      cctx.drawImage(outCanvas, dx, dy);
-
-      const comp2 = trimAndCenterOnAnchor(comp, comp.width/2, comp.height/2, 1, 2);
-
-      finalW = comp2.width;
-      finalH = comp2.height;
-      try{
-        finalUrl = comp2.toDataURL('image/png');
-      }catch(err){
-        console.error(err);
-        showToast?.('合成影子失敗（請確認圖片為本機上傳）','err',2600);
-        return;
-      }
+    if(editingModeIsLogo){
+      finalW = outCanvas.width;
+      finalH = outCanvas.height;
+      try{ finalUrl = outCanvas.toDataURL('image/png'); }catch(err){ console.error(err); }
     }else{
-      if(box) box.dataset.shadowEnabled = '0';
-      if(editingModeIsLogo){
-        finalW = outCanvas.width;
-        finalH = outCanvas.height;
-        try{ finalUrl = outCanvas.toDataURL('image/png'); }catch(err){ console.error(err); }
-      }else{
-        const compNoShadow = trimAndCenterOnAnchor(outCanvas, prodB.cx, prodB.cy, 1, 2);
-        finalW = compNoShadow.width;
-        finalH = compNoShadow.height;
-        try{ finalUrl = compNoShadow.toDataURL('image/png'); }catch(err){ console.error(err); }
-      }
+      const compNoShadow = trimAndCenterOnAnchor(outCanvas, prodB.cx, prodB.cy, 1, 2);
+      finalW = compNoShadow.width;
+      finalH = compNoShadow.height;
+      try{ finalUrl = compNoShadow.toDataURL('image/png'); }catch(err){ console.error(err); }
     }
 
     if(box) box.dataset.baseSrc = productOnlyUrl;
@@ -3582,11 +3242,6 @@ function applyCroppedToTarget(closeAfter){
 
     if(closeAfter){
       eraseModal.classList.remove('show');
-      const toggle = document.getElementById('toggleShadow');
-      const shadowWrap = toggle?.closest('label') || toggle?.parentElement;
-      const shadowBoxUi = document.getElementById('shadowModalBox');
-      if(shadowWrap) shadowWrap.style.display = '';
-      if(shadowBoxUi) shadowBoxUi.style.display = '';
       editingModeIsLogo = false;
       logoWhiteBaseEnabled = false;
       if(logoWhiteBaseWrap) logoWhiteBaseWrap.style.display = 'none';
@@ -3599,17 +3254,10 @@ function applyCroppedToTarget(closeAfter){
         originalImg = tmp;
         eraseCanvas.width  = Math.max(1, tmp.naturalWidth + EDIT_PADDING*2);
         eraseCanvas.height = Math.max(1, tmp.naturalHeight + EDIT_PADDING*2);
-        if(shadowCanvas){
-          shadowCanvas.width = eraseCanvas.width;
-          shadowCanvas.height = eraseCanvas.height;
-        }
         redrawOriginal();
         cropStart = null;
         cropEnd = null;
         cropping = false;
-        if(!editingModeIsLogo && box){
-          initShadowModalForBox(box);
-        }
       };
       tmp.src = productOnlyUrl;
     }
@@ -3618,11 +3266,6 @@ document.getElementById('eraseCancel').addEventListener('click', ()=>{ document.
   document.getElementById('nudgeClose').addEventListener('click', ()=>{
     document.getElementById('cancelNudge').classList.remove('show');
     eraseModal.classList.remove('show');
-    const toggle = document.getElementById('toggleShadow');
-    const shadowWrap = toggle?.closest('label') || toggle?.parentElement;
-    const shadowBoxUi = document.getElementById('shadowModalBox');
-    if(shadowWrap) shadowWrap.style.display = '';
-    if(shadowBoxUi) shadowBoxUi.style.display = '';
     editingModeIsLogo = false;
     logoWhiteBaseEnabled = false;
     if(logoWhiteBaseWrap) logoWhiteBaseWrap.style.display = 'none';
@@ -3651,7 +3294,7 @@ document.getElementById('eraseCancel').addEventListener('click', ()=>{ document.
     redrawOriginal();
     showToast(logoWhiteBaseEnabled ? '已啟用白底（預覽中）' : '已取消白底', 'ok', 1200);
   });
-  document.getElementById('cropConfirm').addEventListener('click', ()=>{ applyCroppedToTarget(false); if(!editingModeIsLogo && shadowToggle?.checked){ autoPlaceShadowByVisibleBounds(); } showToast('已套用裁切（可繼續編輯）','ok',1600); });
+  document.getElementById('cropConfirm').addEventListener('click', ()=>{ applyCroppedToTarget(false); showToast('已套用裁切（可繼續編輯）','ok',1600); });
 
   /* 背景縮放 + 編輯器（APP） */
   async function sampleTopLeftColor(dataUrl){
@@ -7876,30 +7519,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
     syncSize();
   }
 
-  function patchShadowDefaultOffset(){
-    if(window.__shadowOffsetPatched) return;
-    window.__shadowOffsetPatched = true;
-
-    var oldAutoPlace = window.autoPlaceShadowByVisibleBounds;
-    if(typeof oldAutoPlace !== 'function') return;
-
-    window.autoPlaceShadowByVisibleBounds = function(){
-      oldAutoPlace();
-      var shadowBox = document.getElementById('shadowModalBox');
-      var toggle = document.getElementById('toggleShadow');
-      if(!shadowBox || !toggle || !toggle.checked) return;
-      var top = parseFloat(shadowBox.style.top) || 0;
-      shadowBox.style.top = Math.max(0, top - 4) + 'px';
-      if(typeof window.renderShadowPreview === 'function'){
-        window.renderShadowPreview();
-      }
-    };
-  }
-
   function init(){
     initHexFriendlyColorInputs();
     initBrushPreview();
-    patchShadowDefaultOffset();
   }
 
   if(document.readyState === 'loading'){
@@ -8404,11 +8026,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
       if(closeAfter){
         const eraseModal = document.getElementById('eraseModal');
         if(eraseModal) eraseModal.classList.remove('show');
-        const toggle = document.getElementById('toggleShadow');
-        const shadowWrap = toggle && (toggle.closest('label') || toggle.parentElement);
-        const shadowBoxUi = document.getElementById('shadowModalBox');
-        if(shadowWrap) shadowWrap.style.display = '';
-        if(shadowBoxUi) shadowBoxUi.style.display = '';
         window.editingModeIsLogo = false;
         window.logoWhiteBaseEnabled = false;
         const logoWhiteBaseWrap = document.getElementById('logoWhiteBaseWrap');
@@ -8422,14 +8039,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
         tmp.onload = function(){
           window.originalImg = tmp;
           const eraseCanvas2 = document.getElementById('eraseCanvas');
-          const shadowCanvas = document.getElementById('shadowCanvas');
           if(eraseCanvas2){
             eraseCanvas2.width = Math.max(1, tmp.naturalWidth + 200);
             eraseCanvas2.height = Math.max(1, tmp.naturalHeight + 200);
-          }
-          if(shadowCanvas && eraseCanvas2){
-            shadowCanvas.width = eraseCanvas2.width;
-            shadowCanvas.height = eraseCanvas2.height;
           }
           if(typeof window.redrawOriginal === 'function') window.redrawOriginal();
           window.cropStart = null;
@@ -8666,11 +8278,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
       if(closeAfter){
         const eraseModal = document.getElementById('eraseModal');
         if(eraseModal) eraseModal.classList.remove('show');
-        const toggle = document.getElementById('toggleShadow');
-        const shadowWrap = toggle && (toggle.closest('label') || toggle.parentElement);
-        const shadowBoxUi = document.getElementById('shadowModalBox');
-        if(shadowWrap) shadowWrap.style.display = '';
-        if(shadowBoxUi) shadowBoxUi.style.display = '';
         window.editingModeIsLogo = false;
         window.logoWhiteBaseEnabled = false;
         const logoWhiteBaseWrap = document.getElementById('logoWhiteBaseWrap');
@@ -8684,14 +8291,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
         tmp.onload = function(){
           window.originalImg = tmp;
           const eraseCanvas2 = document.getElementById('eraseCanvas');
-          const shadowCanvas = document.getElementById('shadowCanvas');
           if(eraseCanvas2){
             eraseCanvas2.width = Math.max(1, tmp.naturalWidth + 200);
             eraseCanvas2.height = Math.max(1, tmp.naturalHeight + 200);
-          }
-          if(shadowCanvas && eraseCanvas2){
-            shadowCanvas.width = eraseCanvas2.width;
-            shadowCanvas.height = eraseCanvas2.height;
           }
           if(typeof window.redrawOriginal === 'function') window.redrawOriginal();
           window.cropStart = null;
@@ -8926,11 +8528,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
       if(closeAfter){
         const eraseModal = document.getElementById('eraseModal');
         if(eraseModal) eraseModal.classList.remove('show');
-        const toggle = document.getElementById('toggleShadow');
-        const shadowWrap = toggle && (toggle.closest('label') || toggle.parentElement);
-        const shadowBoxUi = document.getElementById('shadowModalBox');
-        if(shadowWrap) shadowWrap.style.display = '';
-        if(shadowBoxUi) shadowBoxUi.style.display = '';
         window.editingModeIsLogo = false;
         window.logoWhiteBaseEnabled = false;
         const logoWhiteBaseWrap = document.getElementById('logoWhiteBaseWrap');
@@ -8944,14 +8541,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
         tmp.onload = function(){
           window.originalImg = tmp;
           const eraseCanvas2 = document.getElementById('eraseCanvas');
-          const shadowCanvas = document.getElementById('shadowCanvas');
           if(eraseCanvas2){
             eraseCanvas2.width = Math.max(1, tmp.naturalWidth + 200);
             eraseCanvas2.height = Math.max(1, tmp.naturalHeight + 200);
-          }
-          if(shadowCanvas && eraseCanvas2){
-            shadowCanvas.width = eraseCanvas2.width;
-            shadowCanvas.height = eraseCanvas2.height;
           }
           if(typeof window.redrawOriginal === 'function') window.redrawOriginal();
           window.cropStart = null;
@@ -9181,11 +8773,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
       if(closeAfter){
         const eraseModal = document.getElementById('eraseModal');
         if(eraseModal) eraseModal.classList.remove('show');
-        const toggle = document.getElementById('toggleShadow');
-        const shadowWrap = toggle && (toggle.closest('label') || toggle.parentElement);
-        const shadowBoxUi = document.getElementById('shadowModalBox');
-        if(shadowWrap) shadowWrap.style.display = '';
-        if(shadowBoxUi) shadowBoxUi.style.display = '';
         window.editingModeIsLogo = false;
         window.logoWhiteBaseEnabled = false;
         const logoWhiteBaseWrap = document.getElementById('logoWhiteBaseWrap');
@@ -9199,14 +8786,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
         tmp.onload = function(){
           window.originalImg = tmp;
           const eraseCanvas2 = document.getElementById('eraseCanvas');
-          const shadowCanvas = document.getElementById('shadowCanvas');
           if(eraseCanvas2){
             eraseCanvas2.width = Math.max(1, tmp.naturalWidth + 200);
             eraseCanvas2.height = Math.max(1, tmp.naturalHeight + 200);
-          }
-          if(shadowCanvas && eraseCanvas2){
-            shadowCanvas.width = eraseCanvas2.width;
-            shadowCanvas.height = eraseCanvas2.height;
           }
           if(typeof window.redrawOriginal === 'function') window.redrawOriginal();
           window.cropStart = null;
@@ -9412,11 +8994,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
       if(closeAfter){
         const eraseModal = document.getElementById('eraseModal');
         if(eraseModal) eraseModal.classList.remove('show');
-        const toggle = document.getElementById('toggleShadow');
-        const shadowWrap = toggle && (toggle.closest('label') || toggle.parentElement);
-        const shadowBoxUi = document.getElementById('shadowModalBox');
-        if(shadowWrap) shadowWrap.style.display = '';
-        if(shadowBoxUi) shadowBoxUi.style.display = '';
         window.editingModeIsLogo = false;
         window.logoWhiteBaseEnabled = false;
         const logoWhiteBaseWrap = document.getElementById('logoWhiteBaseWrap');
@@ -9430,14 +9007,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
         tmp.onload = function(){
           window.originalImg = tmp;
           const eraseCanvas2 = document.getElementById('eraseCanvas');
-          const shadowCanvas = document.getElementById('shadowCanvas');
           if(eraseCanvas2){
             eraseCanvas2.width = Math.max(1, tmp.naturalWidth + 200);
             eraseCanvas2.height = Math.max(1, tmp.naturalHeight + 200);
-          }
-          if(shadowCanvas && eraseCanvas2){
-            shadowCanvas.width = eraseCanvas2.width;
-            shadowCanvas.height = eraseCanvas2.height;
           }
           if(typeof window.redrawOriginal === 'function') window.redrawOriginal();
           window.cropStart = null;
@@ -9518,18 +9090,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
       const EDIT_PADDING = (typeof window.EDIT_PADDING !== 'undefined') ? window.EDIT_PADDING : 100;
       eraseCanvas.width = Math.max(800, Math.round(nextImg.naturalWidth) + EDIT_PADDING * 2);
       eraseCanvas.height = Math.max(600, Math.round(nextImg.naturalHeight) + EDIT_PADDING * 2);
-      const shadowCanvas = document.getElementById('shadowCanvas');
-      if(shadowCanvas){
-        shadowCanvas.width = eraseCanvas.width;
-        shadowCanvas.height = eraseCanvas.height;
-      }
       if(typeof window.redrawOriginal === 'function') window.redrawOriginal();
       window.cropStart = null;
       window.cropEnd = null;
       window.cropping = false;
-      if(window.shadowToggle && window.shadowToggle.checked && typeof window.autoPlaceShadowByVisibleBounds === 'function'){
-        window.autoPlaceShadowByVisibleBounds();
-      }
       if(typeof window.showToast === 'function'){
         window.showToast('已依去背後內容重算範圍', 'ok', 1000);
       }
@@ -9633,9 +9197,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
       clone.dataset.confirmOnlyBound = '1';
       clone.addEventListener('click', function(){
         if(typeof window.applyCroppedToTarget === 'function') window.applyCroppedToTarget(false);
-        if(!window.editingModeIsLogo && window.shadowToggle && window.shadowToggle.checked && typeof window.autoPlaceShadowByVisibleBounds === 'function'){
-          window.autoPlaceShadowByVisibleBounds();
-        }
         if(typeof window.showToast === 'function') window.showToast('已套用裁切（可繼續編輯）','ok',1600);
       });
     }
@@ -10220,15 +9781,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   }
 
   function setZoom(scale){
-    var prevLogical = (typeof window.__getShadowBoxLogical === 'function') ? window.__getShadowBoxLogical() : null;
     window.__editorVisualZoom = Math.max(0.1, Math.min(3, scale));
     applyZoom();
-    if(prevLogical && typeof window.__setShadowBoxLogical === 'function'){
-      window.__setShadowBoxLogical(prevLogical.x, prevLogical.y, prevLogical.w, prevLogical.h);
-    }
-    if(typeof window.renderShadowPreview === 'function'){
-      try{ window.renderShadowPreview(); }catch(_){}
-    }
   }
 
   function resetZoom(){
@@ -11079,7 +10633,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     window.addEventListener('mousedown', function(e){
       const target = e.target;
       if(!target || !target.closest) return;
-      if(target.closest('.editor-item,.dd-product,.editor-bg,.brand,.logo-item,#shadowModalBox')){
+      if(target.closest('.editor-item,.dd-product,.editor-bg,.brand,.logo-item')){
         pointerDown = true;
       }
     }, true);
@@ -12066,11 +11620,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
 </script>
 
 
-<!-- External product editor plugin:
-     Keeps this HTML/UI intact.
-     Product image edit buttons use editor-plugin.js.
-     Logo edit still falls back to the original built-in openEraseEditor via options.isLogoEdit. -->
-<script src="./editor-plugin.js"></script>
 
 
 <!-- Jimmy patch: new.html logo menu + logo-only editor -->
@@ -15255,61 +14804,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
  function ins(){if(typeof window.captureState!='function'||typeof window.applyJsonState!='function'){setTimeout(ins,80);return}if(window.captureState.__ddbgfinal)return;var oc=window.captureState,oa=window.applyJsonState;window.captureState=function(){var s=oc.apply(this,arguments)||{};s.ddcardBgColors={horiz:cur('H'),square:cur('S')};s.ddBgState=s.ddBgState||{};s.ddBgState.bgColorH=s.ddcardBgColors.horiz;s.ddBgState.bgColorS=s.ddcardBgColors.square;return s};window.captureState.__ddbgfinal=1;window.applyJsonState=function(st,opt){window.__ddBgLock={H:pk(st||{},'H')||cur('H'),S:pk(st||{},'S')||cur('S')};window.__importingJsonBgRestore=true;al();var r=oa.apply(this,arguments);al();many();// 延後釋放 __importingJsonBgRestore，確保 ddcardFullState 已完整還原
  setTimeout(function(){window.__importingJsonBgRestore=false;al()},2500);return r};window.applyJsonState.__ddbgfinal=1;var os=window.syncDdLinkedCanvases;if(typeof os=='function'&&!os.__ddbgfinal){window.syncDdLinkedCanvases=function(){var r=os.apply(this,arguments);if(window.__ddBgLock){requestAnimationFrame(al);setTimeout(al,0);setTimeout(al,80)}return r};window.syncDdLinkedCanvases.__ddbgfinal=1}['H','S'].forEach(function(k){var id=k=='H'?'bg-color-h':'bg-color-s',e=document.getElementById(id);if(e&&!e.dataset.ddbgFinalBound){e.dataset.ddbgFinalBound=1;var f=function(){var h=hx(e.value);if(h){window.__ddBgLock=window.__ddBgLock||{};window.__ddBgLock[k]=h;ap(k,h)}};e.addEventListener('input',f,true);e.addEventListener('change',f,true)}})}
  if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',ins);else ins();
-})();
-</script>
-
-<!-- ===== 影子狀態持久化修正 ===== -->
-<!-- ===== 影子修正 ===== -->
-<script id="shadow-state-persist-fix">
-(function(){
-  if(window.__shadowFinalFix) return;
-  window.__shadowFinalFix = true;
-
-  /* 需求：完成編輯後再次進入，要保留影子的位置大小
-  
-     問題：confirm-only-visible-bounds-patch 在按完成時，先呼叫
-     rebuildEditorPreviewFromVisibleBounds（非同步），60ms 後才呼叫
-     applyCroppedToTarget。rebuild 的 onload 裡會呼叫 autoPlaceShadowByVisibleBounds，
-     這會改變 shadowBox 的 UI 位置。
-
-     但 applyCroppedToTarget 已改為用 getShadowBoxLogical() 存座標，
-     所以這個問題應已修正。這個 patch 只做最後一道保險：
-     在 openEraseEditor 的 onload 後，確認一次座標還原。  */
-
-  function restoreIfNeeded(box){
-    if(!box || box.dataset.shadowEnabled !== '1') return;
-    var tog = document.getElementById('toggleShadow');
-    if(!tog || !tog.checked) return;
-    var x=parseFloat(box.dataset.shadowX), y=parseFloat(box.dataset.shadowY);
-    var w=parseFloat(box.dataset.shadowW), h=parseFloat(box.dataset.shadowH);
-    if(!isFinite(x)||!isFinite(y)||!isFinite(w)||!isFinite(h)||w<=0||h<=0) return;
-    var sbUi=document.getElementById('shadowModalBox');
-    if(sbUi) sbUi.style.display='block';
-    if(typeof window.setShadowBoxLogical==='function') window.setShadowBoxLogical(x,y,w,h);
-    if(typeof window.renderShadowPreview==='function') window.renderShadowPreview();
-  }
-
-  /* 攔截 rebuildEditorPreviewFromVisibleBounds：rebuild 後還原座標 */
-  function patchRebuild(){
-    var orig = window.rebuildEditorPreviewFromVisibleBounds;
-    if(typeof orig!=='function'||orig.__sfFixed) return;
-    window.rebuildEditorPreviewFromVisibleBounds = function(){
-      var box = window.editingTargetBox||null;
-      var result = orig.apply(this,arguments);
-      if(box){
-        setTimeout(function(){ restoreIfNeeded(box); }, 100);
-        setTimeout(function(){ restoreIfNeeded(box); }, 250);
-      }
-      return result;
-    };
-    window.rebuildEditorPreviewFromVisibleBounds.__sfFixed=true;
-  }
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){ setTimeout(patchRebuild,0); });
-  } else {
-    setTimeout(patchRebuild,0);
-  }
 })();
 </script>
 

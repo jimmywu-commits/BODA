@@ -11959,7 +11959,7 @@ function clampImportShadowOffset(v) {
   return Math.max(-30, Math.min(30, Math.round(n)));
 }
 function loadImportShadowSettings() {
-  var s = { angle: 'top', offsetX: 0, offsetY: 0 };
+  var s = { angle: 'left', offsetX: 0, offsetY: 0 };
   try {
     var o = JSON.parse(localStorage.getItem(IMPORT_SHADOW_KEY) || 'null');
     if (o && typeof o === 'object') {
@@ -12039,46 +12039,155 @@ function importCutoutImage(img) {
   });
 }
 
+/* 抽背失敗（不透明圖四角背景不一致）時沒有加影子，提醒使用者；3 秒內只提示一次，避免整批上傳時洗版。 */
+var importShadowSkipNoticeAt = 0;
+function noteImportShadowSkipped() {
+  console.warn('[BODA] 商品影子略過：圖片背景無法自動抽出，保留原圖');
+  var now = Date.now();
+  if (now - importShadowSkipNoticeAt < 3000) return;
+  importShadowSkipNoticeAt = now;
+  var log = document.getElementById('import-log');
+  if (log) log.innerHTML = '<span class="err">有圖片的背景無法自動抽出，未加商品影子（可用圖片編輯按鈕手動去背後再套用）</span>';
+}
+
+/* 商品在畫布上的位置：商品縮到 fit 倍（底部對齊 84% 高度），再水平平移 shiftX 像素。 */
+function importShadowLayout(W, H, pw, ph, trim, fit, shiftX) {
+  var s = Math.min(W * fit / pw, H * fit / ph);
+  var dw = pw * s, dh = ph * s;
+  var dx = (W - dw) / 2 + shiftX, dy = H * 0.84 - dh;
+  var pad = trim ? trim.bottom * dh : 0;
+  return { dw: dw, dh: dh, dx: dx, dy: dy, cx: W / 2 + shiftX, groundY: dy + dh - pad };
+}
+
+/* 影子（只含陰影、不含商品）碰到畫布哪一邊。左右方向的影子最容易超出去白邊後的緊貼畫布。 */
+function importShadowEdges(ctx, W, H) {
+  /* 只讀四條 1px 邊線，不用整張像素，搜尋時每個候選都會呼叫，省很多時間。 */
+  var TH = 8, e = { l: false, r: false, t: false, b: false };
+  var hit = function (d) {
+    for (var i = 3; i < d.length; i += 4) if (d[i] > TH) return true;
+    return false;
+  };
+  e.l = hit(ctx.getImageData(0, 0, 1, H).data);
+  e.r = hit(ctx.getImageData(W - 1, 0, 1, H).data);
+  e.t = hit(ctx.getImageData(0, 0, W, 1).data);
+  e.b = hit(ctx.getImageData(0, H - 1, W, 1).data);
+  return e;
+}
+
 /* 把影子烘進 dataURL，回傳新的 PNG dataURL；不需要影子時原樣回傳。 */
-function bakeImportShadow(dataUrl, settings) {
+/* 商品影子分兩段：前處理（抠圖、註冊商品）跟設定無關，可以快取；
+   重畫（影子位置、放大縮小）只有幾毫秒，拖動滑桿時每次重畫就好。 */
+var importShadowPrepCache = {};
+
+/* 抠圖並把商品註冊進 ShadowPlugin（還不畫影子）。失敗時 product 為 null，呼叫端原樣回傳。 */
+function importShadowLoad(trimmedUrl) {
   return new Promise(function (resolve) {
-    var st = settings || importShadowSettings;
     var SP = window.ShadowPlugin;
-    if (!dataUrl || st.angle === 'off' || !SP || typeof SP.registerProduct !== 'function') { resolve(dataUrl); return; }
+    var fallback = { trimmed: trimmedUrl, product: null };
     var img = new Image();
-    img.onerror = function () { resolve(dataUrl); };
+    img.onerror = function () { resolve(fallback); };
     img.onload = function () {
-      if (!img.naturalWidth || !img.naturalHeight) { resolve(dataUrl); return; }
+      if (!img.naturalWidth || !img.naturalHeight || !SP || typeof SP.registerProduct !== 'function') { resolve(fallback); return; }
       /* 去背圖（有透明像素）直接用；白底 JPG 等不透明圖先摳掉背景，
          否則整張底圖會把影子蓋住。畫布尺寸一律是原圖尺寸，版型不變。 */
       var sourcePromise = importImageHasTransparency(img) ? Promise.resolve(img) : importCutoutImage(img);
-      var id = 'import_shadow_' + (++importShadowSeq);
       sourcePromise.then(function (productImg) {
-        if (!productImg) { resolve(dataUrl); return; }
+        if (!productImg) { resolve(fallback); return; }
+        var id = 'import_shadow_' + (++importShadowSeq);
         return SP.registerProduct(id, productImg, 'product').then(function (p) {
-          var W = img.naturalWidth, H = img.naturalHeight;
-          var pw = productImg.naturalWidth, ph = productImg.naturalHeight;
-          var s = Math.min(W * 0.8 / pw, H * 0.8 / ph);
-          var dw = pw * s, dh = ph * s;
-          var dx = (W - dw) / 2, dy = H * 0.84 - dh;
-          var pad = p.trim ? p.trim.bottom * dh : 0;
-          var groundY = dy + dh - pad;
-          var cx = W / 2;
-          var canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
-          var cctx = canvas.getContext('2d');
-          SP.setAngle(st.angle);
-          SP.renderScene(cctx, [{
-            id: id, x: cx + st.offsetX / 100 * dw, y: groundY + st.offsetY / 100 * dh,
-            w: dw, h: dh, groundAnchorX: cx, groundAnchorY: groundY
-          }], true);
-          cctx.drawImage(productImg, dx, dy, dw, dh);
-          SP.removeProduct(id);
-          resolve(canvas.toDataURL('image/png'));
+          resolve({
+            trimmed: trimmedUrl, product: productImg, id: id, trim: p.trim,
+            W: img.naturalWidth, H: img.naturalHeight, pw: productImg.naturalWidth, ph: productImg.naturalHeight
+          });
         });
-      }).catch(function () { SP.removeProduct(id); resolve(dataUrl); });
+      }).catch(function () { resolve(fallback); });
     };
-    img.src = dataUrl;
+    img.src = trimmedUrl;
   });
+}
+
+function importShadowRelease(prep) {
+  if (prep && prep.id && window.ShadowPlugin) window.ShadowPlugin.removeProduct(prep.id);
+}
+
+/* 依目前設定，在前處理好的商品上重畫影子，回傳 PNG dataURL。畫布尺寸一律是原圖尺寸。 */
+function importShadowRender(prep, st) {
+  var SP = window.ShadowPlugin;
+  if (st.angle === 'off') return prep.trimmed;
+  if (!prep.product) { noteImportShadowSkipped(); return prep.trimmed; }
+  var W = prep.W, H = prep.H, pw = prep.pw, ph = prep.ph, id = prep.id, productImg = prep.product;
+  SP.setAngle(st.angle);
+  /* 位置搜尋很耗時（每個候選都要渲染＋讀像素），所以在縮小過的畫布上做：
+     尺寸、位移、影子幾何都等比例縮放，碰邊與否的結果一樣；最後只用原尺寸畫一次。 */
+  var sc = Math.min(1, 400 / Math.max(W, H));
+  var sW = Math.max(1, Math.round(W * sc)), sH = Math.max(1, Math.round(H * sc));
+  var spw = pw * sc, sph = ph * sc;
+  var sCanvas = document.createElement('canvas'); sCanvas.width = sW; sCanvas.height = sH;
+  /* 搜尋時會一直讀像素，告訴瀏覽器用 CPU 端的畫布，比 GPU 回讀快很多。 */
+  var sctx = sCanvas.getContext('2d', { willReadFrequently: true });
+  var offX = st.offsetX / 100, offY = st.offsetY / 100;
+  var layoutAt = function (f, sx) {
+    var lay = importShadowLayout(sW, sH, spw, sph, prep.trim, f, sx);
+    sctx.clearRect(0, 0, sW, sH);
+    SP.renderScene(sctx, [{
+      id: id, x: lay.cx + offX * lay.dw, y: lay.groundY + offY * lay.dh,
+      w: lay.dw, h: lay.dh, groundAnchorX: lay.cx, groundAnchorY: lay.groundY
+    }], true);
+    return { lay: lay, e: importShadowEdges(sctx, sW, sH) };
+  };
+  /* 畫布尺寸不變（版型不跑）。影子碰到哪一邊，就先把商品往反方向平移；
+     先從置中開始往左右找一個不碰邊的水平位置；找不到才把商品再縮小。 */
+  var fit = 0.8, found = false, foundFit = 0.3, foundSx = 0;
+  var step = Math.max(1, Math.round(sW * 0.04));
+  while (!found && fit >= 0.3) {
+    var maxShift = Math.max(0, (sW - spw * Math.min(sW * fit / spw, sH * fit / sph)) / 2 - 1);
+    for (var k = 0; k * step <= maxShift + step && !found; k++) {
+      var cands = k === 0 ? [0] : [k * step, -k * step];
+      for (var c = 0; c < cands.length && !found; c++) {
+        if (Math.abs(cands[c]) > maxShift) continue;
+        var r = layoutAt(fit, cands[c]);
+        if (!r.e.l && !r.e.r && !r.e.t && !r.e.b) { found = true; foundFit = fit; foundSx = cands[c]; }
+      }
+    }
+    if (!found) fit *= 0.92;
+  }
+  /* 最後用原尺寸重算一次位置（位移要從縮小座標換回原尺寸），把影子與商品畫上去。 */
+  var full = importShadowLayout(W, H, pw, ph, prep.trim, foundFit, foundSx / sc);
+  var canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  var cctx = canvas.getContext('2d');
+  SP.renderScene(cctx, [{
+    id: id, x: full.cx + offX * full.dw, y: full.groundY + offY * full.dh,
+    w: full.dw, h: full.dh, groundAnchorX: full.cx, groundAnchorY: full.groundY
+  }], true);
+  cctx.drawImage(productImg, full.dx, full.dy, full.dw, full.dh);
+  return canvas.toDataURL('image/png');
+}
+
+/* 單次烘焙（上傳等一次性用途）：前處理、重畫、用完就釋放商品。 */
+function bakeImportShadow(dataUrl, settings) {
+  var st = settings || importShadowSettings;
+  if (!dataUrl || st.angle === 'off') return Promise.resolve(dataUrl);
+  return importShadowLoad(dataUrl).then(function (prep) {
+    var out = importShadowRender(prep, st);
+    importShadowRelease(prep);
+    return out;
+  });
+}
+
+/* 原圖的前處理結果快取（以原圖網址為 key），拖動連續重烘時不用每次重做。 */
+function importShadowPrepared(originalDataUrl) {
+  var hit = importShadowPrepCache[originalDataUrl];
+  if (!hit) {
+    hit = importShadowPrepCache[originalDataUrl] = trimImportImageWhiteBorder(originalDataUrl).then(importShadowLoad);
+  }
+  return hit;
+}
+
+/* 拖完後清掉快取並釋放註冊的商品，避免大量圖片一直佔記憶體。 */
+function importShadowDropCache() {
+  var old = importShadowPrepCache;
+  importShadowPrepCache = {};
+  Object.keys(old).forEach(function (k) { old[k].then(importShadowRelease, function () {}); });
 }
 
 /* 原圖 → 白邊裁切 → 影子。回傳已烘好的 dataURL。 */
@@ -12090,19 +12199,32 @@ function prepareImportImage(originalDataUrl) {
 
 /* 設定改動後：用每張圖的原圖重新烘一次，再把欄位裡的舊網址換成新的。
    沒有原圖（baseUrl）的素材是從底部暫存還原的，網址已經烘過影子，再烘會疊兩層，所以略過。 */
-function reapplyImportShadowToUploads() {
-  var list = (uploadedImages || []).filter(function (img) { return img && img.url && img.baseUrl; });
+function reapplyImportShadowToUploads(commit) {
+  /* commit=false（拖動中）只重烘畫布上用到的圖；commit=true（放開、換角度、重置）才全部重烘並存檔。 */
+  var onCanvas = {};
+  (currentImportColumns || []).concat(previewAllColumns || []).forEach(function (col) {
+    var def = BNCore.getBlock(col.blockId);
+    if (!def || !col.data) return;
+    (def.fields || []).forEach(function (field) {
+      if (field.type !== 'image') return;
+      splitImageList(col.data[field.key] || '').forEach(function (part) { onCanvas[String(part || '').trim()] = true; });
+    });
+  });
+  var list = (uploadedImages || []).filter(function (img) {
+    return img && img.url && img.baseUrl && (commit || onCanvas[img.url]);
+  });
   var swap = {};
   var done = 0;
-  appLoadingStart('LOADING · 套用影子', 5, '正在重新套用商品影子…');
-  list.reduce(function (chain, img) {
+  if (commit) appLoadingStart('LOADING · 套用影子', 5, '正在重新套用商品影子…');
+  return list.reduce(function (chain, img) {
     return chain.then(function () {
       var oldUrl = img.url;
-      return prepareImportImage(img.baseUrl).then(function (baked) {
+      return importShadowPrepared(img.baseUrl).then(function (prep) {
+        var baked = importShadowRender(prep, importShadowSettings);
         swap[oldUrl] = baked;
         img.url = baked;
         done++;
-        appLoadingUpdate(8 + Math.round((done / list.length) * 84), 'LOADING · 套用影子', '已重製 ' + done + '/' + list.length + ' 張');
+        if (commit) appLoadingUpdate(8 + Math.round((done / list.length) * 84), 'LOADING · 套用影子', '已重製 ' + done + '/' + list.length + ' 張');
       });
     });
   }, Promise.resolve()).then(function () {
@@ -12121,13 +12243,15 @@ function reapplyImportShadowToUploads() {
         if (changed) col.data[field.key] = parts.join(',');
       });
     });
-    renderImageGallery();
-    if (currentImportWorkbook) syncWorkbookOverviewTextToExposure(currentImportWorkbook);
     if ((currentImportColumns || []).length) refreshCanvasAfterChange('import', 0, true);
-    broadcastBottomImageAssets();
-    queueBottomPersist();
-    saveImportState();
-    appLoadingFinish('商品影子已更新');
+    if (commit) {
+      renderImageGallery();
+      if (currentImportWorkbook) syncWorkbookOverviewTextToExposure(currentImportWorkbook);
+      broadcastBottomImageAssets();
+      queueBottomPersist();
+      saveImportState();
+      appLoadingFinish('商品影子已更新');
+    }
   });
 }
 
@@ -12142,6 +12266,25 @@ function syncImportShadowPanel() {
   document.getElementById('import-shadow-x-val').textContent = importShadowSettings.offsetX + '%';
   document.getElementById('import-shadow-y-val').textContent = importShadowSettings.offsetY + '%';
 }
+/* 重烘排隊：拖動時會連續觸發，同一時間只跑一輪；跑的途中又有新設定，跑完後再補跑一輪。 */
+var importShadowReapplyRunning = false, importShadowReapplyPending = false, importShadowReapplyCommit = false;
+function scheduleImportShadowReapply(commit) {
+  importShadowReapplyCommit = importShadowReapplyCommit || !!commit;
+  if (importShadowReapplyRunning) { importShadowReapplyPending = true; return; }
+  runImportShadowReapply();
+}
+function runImportShadowReapply() {
+  var commit = importShadowReapplyCommit;
+  importShadowReapplyCommit = false;
+  importShadowReapplyRunning = true;
+  reapplyImportShadowToUploads(commit).catch(function (err) {
+    console.warn('商品影子重烘失敗', err);
+  }).then(function () {
+    importShadowReapplyRunning = false;
+    if (importShadowReapplyPending) { importShadowReapplyPending = false; runImportShadowReapply(); }
+    else importShadowDropCache();
+  });
+}
 function initImportShadowPanel() {
   var angle = document.getElementById('import-shadow-angle');
   var x = document.getElementById('import-shadow-x');
@@ -12150,27 +12293,30 @@ function initImportShadowPanel() {
   if (!angle || !x || !y || !reset) return;
   syncImportShadowPanel();
   angle.addEventListener('change', function () {
-    importShadowSettings.angle = IMPORT_SHADOW_ANGLES.indexOf(angle.value) >= 0 ? angle.value : 'top';
+    importShadowSettings.angle = IMPORT_SHADOW_ANGLES.indexOf(angle.value) >= 0 ? angle.value : 'left';
     saveImportShadowSettings(importShadowSettings);
-    reapplyImportShadowToUploads();
+    scheduleImportShadowReapply(true);
   });
-  x.addEventListener('input', function () { document.getElementById('import-shadow-x-val').textContent = x.value + '%'; });
-  x.addEventListener('change', function () {
+  /* 拖動中（input）只更新畫布上用到的圖；放開（change）才全部更新並存檔。 */
+  x.addEventListener('input', function () {
+    document.getElementById('import-shadow-x-val').textContent = x.value + '%';
     importShadowSettings.offsetX = clampImportShadowOffset(x.value);
     saveImportShadowSettings(importShadowSettings);
-    reapplyImportShadowToUploads();
+    scheduleImportShadowReapply(false);
   });
-  y.addEventListener('input', function () { document.getElementById('import-shadow-y-val').textContent = y.value + '%'; });
-  y.addEventListener('change', function () {
+  x.addEventListener('change', function () { scheduleImportShadowReapply(true); });
+  y.addEventListener('input', function () {
+    document.getElementById('import-shadow-y-val').textContent = y.value + '%';
     importShadowSettings.offsetY = clampImportShadowOffset(y.value);
     saveImportShadowSettings(importShadowSettings);
-    reapplyImportShadowToUploads();
+    scheduleImportShadowReapply(false);
   });
+  y.addEventListener('change', function () { scheduleImportShadowReapply(true); });
   reset.addEventListener('click', function () {
-    importShadowSettings = { angle: 'top', offsetX: 0, offsetY: 0 };
+    importShadowSettings = { angle: 'left', offsetX: 0, offsetY: 0 };
     saveImportShadowSettings(importShadowSettings);
     syncImportShadowPanel();
-    reapplyImportShadowToUploads();
+    scheduleImportShadowReapply(true);
   });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initImportShadowPanel);
@@ -16690,13 +16836,14 @@ function fetchDemoImage(fileName, index, total, onError, runId) {
       return new Promise(function (resolve, reject) {
         var reader = new FileReader();
         reader.onload = function () {
-          trimImportImageWhiteBorder(reader.result).then(function (trimmed) {
+          /* 與手動上傳走同一條路：白邊裁切 → 烘商品影子，baseUrl 保留原圖供之後重新烘製。 */
+          prepareImportImage(reader.result).then(function (baked) {
             /* 已失敗或已開始下一次 Demo 匯入時，不可再把舊作業的進度蓋回畫面。 */
             if (runId === demoImportRunId) {
               appLoadingUpdate(12 + Math.round(((index + 1) / Math.max(total, 1)) * 40),
                 'LOADING · 匯入 demo 工單', '已讀取圖片 ' + (index + 1) + '/' + total);
             }
-            resolve({ name: fileName, url: trimmed, baseUrl: reader.result });
+            resolve({ name: fileName, url: baked, baseUrl: reader.result });
           });
         };
         reader.onerror = function () { reject(new Error('圖片轉換失敗')); };
