@@ -831,6 +831,11 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 .nav-item[data-view="exposure"]{order:3;}
 .nav-item[data-view="color"]{order:4;}
 .nav-item[data-view="maint"]{order:5;}
+/* 維修頁按鈕先隱藏（功能保留，之後要用再打開） */
+.nav-item[data-view="maint"]{display:none!important;}
+/* 直接預覽全部版位：畫布目前對到的版位項目，用跟匯入畫布一樣的綠框標示 */
+#import-preview-list .preview-all-item.is-active .preview-all-stage-wrap{
+  box-shadow:0 0 0 2px var(--teal),0 0 0 4px var(--teal-tint);}
 </style>
 </head>
 <body>
@@ -1081,7 +1086,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
               <svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m7 15 3-3 2.2 2.2 2.8-3.2 3 3"/></svg>
               直接預覽全部版位（不用匯入檔案）
             </button>
-            <div class="demo-hint">每個版位只顯示一次；此模式不提供欄位編輯</div>
+            <div class="demo-hint">每個版位只顯示一次；右側工具列可直接編輯，但不會寫進匯入工單暫存</div>
           </div>
 
           <div id="import-dl-bar">
@@ -6935,7 +6940,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <script src="core/core-engine.js"></script>
 <script src="core/schema-renderer.js?v=20261013-logoplate1"></script>
 <script src="shadow-module/shadow-plugin.js?v=20261012-shadow1"></script>
-<script src="JS/image-layout.js?v=20260924-2"></script>
+<script src="JS/image-layout.js?v=20261013-shadowgeom1"></script>
 <script src="JS/editor-plugin.js?v=20261012-shadowrm1"></script>
 <script src="jbp/js/logo-editor-plugin.js"></script>
 
@@ -11909,6 +11914,9 @@ function splitImageList(v) {
 function trimImportImageWhiteBorder(dataUrl) {
   return new Promise(function (resolve) {
     if (!dataUrl || !/^data:image\/(png|jpe?g|webp|bmp|gif);/i.test(String(dataUrl))) { resolve(dataUrl); return; }
+    /* 烘過影子的商品圖（PNG 內帶 bodaShadowGeom）本體早就裁好了，外圍那圈淡淡的影子是故意留的：
+       不能再裁，否則重新載入後影子被切掉、本體位置也對不上 */
+    if (importShadowReadGeometry(String(dataUrl).trim())) { resolve(dataUrl); return; }
     var img = new Image();
     img.onload = function () {
       try {
@@ -11950,8 +11958,9 @@ function trimImportImageWhiteBorder(dataUrl) {
 }
 
 /* ───── 商品影子：上傳時自動烘進圖片（引擎在 shadow-module/shadow-plugin.js） ─────
-   烘好的圖跟原圖同尺寸（商品縮到畫布 80%、底部對齊 84% 高度），所以版型的圖片框不會跑掉。
-   只對「有透明像素」的去背圖加影子；白底 JPG 加了會變成一整個黑框，直接略過。 */
+   烘好的圖＝商品原始像素大小＋影子實際延伸出去的範圍（畫布依影子大小長大，影子永遠完整）；
+   商品本體在圖裡的位置記在 importShadowGeometry，版位上由 image-layout 把本體擺回原本的錨點。
+   去背圖直接用；白底 JPG 先自動抽背（importCutoutImage），抽不出來才略過。 */
 var IMPORT_SHADOW_KEY = 'wo_import_shadow_v1';
 var IMPORT_SHADOW_ANGLES = ['off', 'left', 'top', 'right'];
 var importShadowSeq = 0;
@@ -12000,17 +12009,22 @@ function importCutoutImage(img) {
       cx.drawImage(img, 0, 0);
       var data = cx.getImageData(0, 0, W, H);
       var px = data.data;
-      var corners = [0, (W - 1) * 4, (H - 1) * W * 4, ((H - 1) * W + W - 1) * 4];
+      /* 背景色：取四條邊所有像素的平均（只看四個角，JPG 壓縮雜點或角落有水印就會誤判成「沒有背景」）。
+         四邊像素至少 85% 跟平均色相近才當作有單色背景可抽。 */
+      var border = [];
+      for (var bx = 0; bx < W; bx++) { border.push(bx); border.push((H - 1) * W + bx); }
+      for (var by = 1; by < H - 1; by++) { border.push(by * W); border.push(by * W + W - 1); }
       var bg = [0, 0, 0];
-      corners.forEach(function (p) { bg[0] += px[p]; bg[1] += px[p + 1]; bg[2] += px[p + 2]; });
-      bg = bg.map(function (v) { return v / 4; });
+      border.forEach(function (i) { var p = i * 4; bg[0] += px[p]; bg[1] += px[p + 1]; bg[2] += px[p + 2]; });
+      bg = bg.map(function (v) { return v / border.length; });
       function diffAt(i) {
         var p = i * 4;
         return Math.max(Math.abs(px[p] - bg[0]), Math.abs(px[p + 1] - bg[1]), Math.abs(px[p + 2] - bg[2]));
       }
-      var consistent = corners.every(function (p) { return diffAt(p / 4) <= 40; });
-      if (!consistent) { resolve(null); return; }
-      var TOL = 36, N = W * H;
+      var TOL = 40, N = W * H;
+      var near = 0;
+      border.forEach(function (i) { if (diffAt(i) <= TOL) near++; });
+      if (near < border.length * 0.85) { resolve(null); return; }
       var isBg = new Uint8Array(N), queue = new Int32Array(N), head = 0, tail = 0;
       function tryPush(i) { if (!isBg[i] && diffAt(i) <= TOL) { isBg[i] = 1; queue[tail++] = i; } }
       for (var x = 0; x < W; x++) { tryPush(x); tryPush((H - 1) * W + x); }
@@ -12053,21 +12067,22 @@ function noteImportShadowSkipped() {
   if (log) log.innerHTML = '<span class="err">有圖片的背景無法自動抽出，未加商品影子（可用圖片編輯按鈕手動去背後再套用）</span>';
 }
 
-/* 商品四邊保留的留白比例（相對於畫布）：商品盡量放大，只留這一點邊。 */
-var IMPORT_SHADOW_MARGIN = 0.03;
-/* 商品在畫布上的位置：商品縮到 fit 倍（底部貼齊 1 - 留白 的高度），再水平平移 shiftX 像素。 */
-function importShadowLayout(W, H, pw, ph, trim, fit, shiftX) {
-  var s = Math.min(W * fit / pw, H * fit / ph);
-  var dw = pw * s, dh = ph * s;
-  var dx = (W - dw) / 2 + shiftX, dy = H * (1 - IMPORT_SHADOW_MARGIN) - dh;
-  var pad = trim ? trim.bottom * dh : 0;
-  return { dw: dw, dh: dh, dx: dx, dy: dy, cx: W / 2 + shiftX, groundY: dy + dh - pad };
+/* 烘影子的畫布四邊預留多少空間（商品維持原始像素大小，影子往外長多少就留多少）。
+   數字來自 shadow-plugin 的幾何：主影子橫向最多延伸 tan(35°×0.55)×商品高≈0.35h，
+   再加霧化擴散、尾端模糊與「影子左右／上下位移」滑桿（±30%），這裡一律抓寬一點，
+   實際輸出會再依畫出來的像素範圍裁到剛好。 */
+function importShadowScenePad(pw, ph, offX, offY) {
+  return {
+    side: Math.ceil(ph * 0.55 + pw * (0.8 + Math.abs(offX)) + 48),
+    top: Math.ceil(ph * (0.15 + Math.abs(offY)) + 48),
+    bottom: Math.ceil(ph * (0.15 + Math.abs(offY)) + 48)
+  };
 }
 
-/* 影子（只含陰影、不含商品）碰到畫布哪一邊。左右方向的影子最容易超出去白邊後的緊貼畫布。 */
-function importShadowEdges(ctx, W, H) {
-  /* 只讀四條 1px 邊線，不用整張像素，搜尋時每個候選都會呼叫，省很多時間。 */
-  var TH = 40, e = { l: false, r: false, t: false, b: false };
+/* 畫布四條 1px 邊線上有沒有任何非透明像素（TH 預設 0＝只要有一點點影子碰到邊就算）。 */
+function importShadowEdges(ctx, W, H, TH) {
+  TH = TH || 0;
+  var e = { l: false, r: false, t: false, b: false };
   var hit = function (d) {
     for (var i = 3; i < d.length; i += 4) if (d[i] > TH) return true;
     return false;
@@ -12077,6 +12092,138 @@ function importShadowEdges(ctx, W, H) {
   e.t = hit(ctx.getImageData(0, 0, W, 1).data);
   e.b = hit(ctx.getImageData(0, H - 1, W, 1).data);
   return e;
+}
+
+/* 整張畫布上非透明像素的外框（回傳 null 代表整張全透明）。 */
+function importShadowAlphaBox(ctx, W, H) {
+  var d = ctx.getImageData(0, 0, W, H).data;
+  var x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (var y = 0; y < H; y++) {
+    var row = y * W * 4;
+    for (var x = 0; x < W; x++) {
+      if (d[row + x * 4 + 3] === 0) continue;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+  }
+  return x1 < 0 ? null : { x0: x0, y0: y0, x1: x1, y1: y1 };
+}
+
+/* 烘好的商品圖：商品本體在輸出圖裡的位置與大小（給 image-layout 用，
+   讓版位上的商品維持原本的錨點與大小，影子自然延伸到圖片框外）。key＝烘好的圖片網址。 */
+var importShadowGeometry = {};
+function importShadowGeometryOf(url) {
+  if (!url) return null;
+  var key = String(url).trim();
+  if (importShadowGeometry[key]) return importShadowGeometry[key];
+  /* 不在快取裡（例如重新載入後、或從下載的 .json 匯回來）：幾何寫在 PNG 本身的 tEXt chunk 裡，讀回來 */
+  var g = importShadowReadGeometry(key);
+  if (g) importShadowGeometry[key] = g;
+  return g;
+}
+/* 幾何跟著圖片走：烘好的 PNG 在 IHDR 後面插一個 tEXt chunk（keyword bodaShadowGeom），
+   圖片不管存到匯入狀態、吸底、下載的 .json，再回來都還知道商品本體在哪，不用另外存對照表。 */
+var IMPORT_SHADOW_PNG_KEY = 'bodaShadowGeom';
+var IMPORT_PNG_HEAD = 'data:image/png;base64,';
+var importShadowCrcTable = null;
+function importShadowCrc32(str) {
+  if (!importShadowCrcTable) {
+    importShadowCrcTable = [];
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      importShadowCrcTable[n] = c >>> 0;
+    }
+  }
+  var crc = 0xFFFFFFFF;
+  for (var i = 0; i < str.length; i++) crc = importShadowCrcTable[(crc ^ str.charCodeAt(i)) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function importShadowU32(n) {
+  return String.fromCharCode((n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255);
+}
+function importShadowEmbedGeometry(dataUrl, geom) {
+  if (!dataUrl || dataUrl.indexOf(IMPORT_PNG_HEAD) !== 0 || !geom) return dataUrl;
+  var bin;
+  try { bin = atob(dataUrl.slice(IMPORT_PNG_HEAD.length)); } catch (e) { return dataUrl; }
+  /* PNG 簽名 8 bytes＋IHDR chunk 25 bytes＝33，tEXt 插在這之後 */
+  if (bin.length < 33 || bin.substr(12, 4) !== 'IHDR') return dataUrl;
+  var text = IMPORT_SHADOW_PNG_KEY + '\0' + JSON.stringify(geom);
+  var body = 'tEXt' + text;
+  var chunk = importShadowU32(text.length) + body + importShadowU32(importShadowCrc32(body));
+  try { return IMPORT_PNG_HEAD + btoa(bin.slice(0, 33) + chunk + bin.slice(33)); } catch (e) { return dataUrl; }
+}
+function importShadowReadGeometry(dataUrl) {
+  if (!dataUrl || dataUrl.indexOf(IMPORT_PNG_HEAD) !== 0) return null;
+  /* 只解開前面幾百個 bytes 就夠了（簽名＋IHDR＋tEXt），不用解整張圖 */
+  var b64 = dataUrl.substr(IMPORT_PNG_HEAD.length, 1200);
+  b64 = b64.slice(0, b64.length - (b64.length % 4));
+  var bin;
+  try { bin = atob(b64); } catch (e) { return null; }
+  if (bin.length < 45 || bin.substr(12, 4) !== 'IHDR' || bin.substr(37, 4) !== 'tEXt') return null;
+  var len = ((bin.charCodeAt(33) << 24) | (bin.charCodeAt(34) << 16) | (bin.charCodeAt(35) << 8) | bin.charCodeAt(36)) >>> 0;
+  var text = bin.substr(41, len);
+  if (text.length !== len || text.indexOf(IMPORT_SHADOW_PNG_KEY + '\0') !== 0) return null;
+  try {
+    var g = JSON.parse(text.slice(IMPORT_SHADOW_PNG_KEY.length + 1));
+    if (!(g && g.sourceWidth > 0 && g.sourceHeight > 0 && g.outputWidth > 0 && g.outputHeight > 0)) return null;
+    return {
+      sourceWidth: Number(g.sourceWidth), sourceHeight: Number(g.sourceHeight),
+      outputWidth: Number(g.outputWidth), outputHeight: Number(g.outputHeight),
+      offsetX: Number(g.offsetX) || 0, offsetY: Number(g.offsetY) || 0
+    };
+  } catch (e) { return null; }
+}
+function importShadowGeometryFromState(img) {
+  if (!img || !img.url || !img.shadowGeom || typeof img.shadowGeom !== 'object') return;
+  var g = img.shadowGeom;
+  if (!(g.sourceWidth > 0 && g.sourceHeight > 0 && g.outputWidth > 0 && g.outputHeight > 0)) return;
+  if (img.url === img.baseUrl) return; /* 原圖本身沒有影子幾何 */
+  importShadowGeometry[img.url] = {
+    sourceWidth: Number(g.sourceWidth), sourceHeight: Number(g.sourceHeight),
+    outputWidth: Number(g.outputWidth), outputHeight: Number(g.outputHeight),
+    offsetX: Number(g.offsetX) || 0, offsetY: Number(g.offsetY) || 0
+  };
+}
+/* 畫布上每張 <img>：如果是烘過影子的圖，就掛上商品本體幾何；
+   image-layout 會依此把商品本體擺回原本的位置／大小，影子溢出到框外。
+   框本身會裁切（clipImage：白底商品框、LOGO 框等）時不掛，整張圖（含影子）改用 contain 完整縮進框內，
+   影子才不會被框切掉。使用者用編輯器改過的圖（已有自己的幾何）不覆蓋。 */
+function applyImportShadowGeometry(mountEl) {
+  if (!mountEl || !mountEl.querySelectorAll) return;
+  Array.prototype.forEach.call(mountEl.querySelectorAll('img.bn-imggroup-img'), function (img) {
+    var geom = importShadowGeometryOf(img.getAttribute('src') || img.src);
+    var ds = img.dataset;
+    if (!ds) return;
+    if (!geom) {
+      if (ds.importShadowGeom === '1') {
+        ['layoutSourceWidth', 'layoutSourceHeight', 'layoutOutputWidth', 'layoutOutputHeight', 'layoutOffsetX', 'layoutOffsetY', 'importShadowGeom']
+          .forEach(function (k) { delete ds[k]; });
+      }
+      return;
+    }
+    if (ds.layoutSourceWidth && ds.importShadowGeom !== '1') return;
+    var zone = img.closest ? img.closest('[data-img-field]') : null;
+    var clips = false;
+    if (zone && window.getComputedStyle) {
+      var cs = window.getComputedStyle(zone);
+      clips = (cs.overflow && cs.overflow !== 'visible') || (cs.clipPath && cs.clipPath !== 'none');
+    }
+    if (clips) {
+      ['layoutSourceWidth', 'layoutSourceHeight', 'layoutOutputWidth', 'layoutOutputHeight', 'layoutOffsetX', 'layoutOffsetY', 'importShadowGeom']
+        .forEach(function (k) { delete ds[k]; });
+      return;
+    }
+    ds.layoutSourceWidth = String(geom.sourceWidth);
+    ds.layoutSourceHeight = String(geom.sourceHeight);
+    ds.layoutOutputWidth = String(geom.outputWidth);
+    ds.layoutOutputHeight = String(geom.outputHeight);
+    ds.layoutOffsetX = String(geom.offsetX);
+    ds.layoutOffsetY = String(geom.offsetY);
+    ds.importShadowGeom = '1';
+  });
 }
 
 /* 把影子烘進 dataURL，回傳新的 PNG dataURL；不需要影子時原樣回傳。 */
@@ -12115,57 +12262,77 @@ function importShadowRelease(prep) {
   if (prep && prep.id && window.ShadowPlugin) window.ShadowPlugin.removeProduct(prep.id);
 }
 
-/* 依目前設定，在前處理好的商品上重畫影子，回傳 PNG dataURL。畫布尺寸一律是原圖尺寸。 */
+/* 依目前設定，在前處理好的商品上重畫影子，回傳 PNG dataURL。
+   2026-10 改版：以前畫布固定成原圖尺寸，影子塞不下就把商品縮小、平移，
+   細長商品（例如直立的軟管）怎麼縮都塞不下，最後只好放棄 → 影子被畫布邊切掉或整個看不到。
+   現在反過來：商品維持原始像素大小不縮不移，畫布依「影子實際畫出來的範圍」決定，
+   影子一定完整；商品本體在輸出圖裡的位置記在 importShadowGeometry，
+   版位上由 image-layout 把本體擺回原本的錨點，影子自然延伸到框外。 */
 function importShadowRender(prep, st) {
   var SP = window.ShadowPlugin;
   if (st.angle === 'off') return prep.trimmed;
   if (!prep.product) { noteImportShadowSkipped(); return prep.trimmed; }
-  var W = prep.W, H = prep.H, pw = prep.pw, ph = prep.ph, id = prep.id, productImg = prep.product;
+  var pw = prep.pw, ph = prep.ph, id = prep.id, productImg = prep.product;
   SP.setAngle(st.angle);
-  /* 位置搜尋很耗時（每個候選都要渲染＋讀像素），所以在縮小過的畫布上做：
-     尺寸、位移、影子幾何都等比例縮放，碰邊與否的結果一樣；最後只用原尺寸畫一次。 */
-  var sc = Math.min(1, 400 / Math.max(W, H));
-  var sW = Math.max(1, Math.round(W * sc)), sH = Math.max(1, Math.round(H * sc));
-  var spw = pw * sc, sph = ph * sc;
-  var sCanvas = document.createElement('canvas'); sCanvas.width = sW; sCanvas.height = sH;
-  /* 搜尋時會一直讀像素，告訴瀏覽器用 CPU 端的畫布，比 GPU 回讀快很多。 */
-  var sctx = sCanvas.getContext('2d', { willReadFrequently: true });
   var offX = st.offsetX / 100, offY = st.offsetY / 100;
-  var layoutAt = function (f, sx) {
-    var lay = importShadowLayout(sW, sH, spw, sph, prep.trim, f, sx);
-    sctx.clearRect(0, 0, sW, sH);
-    SP.renderScene(sctx, [{
-      id: id, x: lay.cx + offX * lay.dw, y: lay.groundY + offY * lay.dh,
-      w: lay.dw, h: lay.dh, groundAnchorX: lay.cx, groundAnchorY: lay.groundY
+  var pad = importShadowScenePad(pw, ph, offX, offY);
+  var fullW = pw + pad.side * 2, fullH = pad.top + ph + pad.bottom;
+  var groundPad = prep.trim ? prep.trim.bottom * ph : 0;
+  /* 場景座標（商品左上角在 (pad.side, pad.top)），再平移 -ox/-oy 畫到輸出畫布上。 */
+  var drawScene = function (ctx, s, ox, oy) {
+    var dw = pw * s, dh = ph * s;
+    var dx = pad.side * s - ox, dy = pad.top * s - oy;
+    var cx = dx + dw / 2, groundY = dy + dh - groundPad * s;
+    SP.renderScene(ctx, [{
+      id: id, x: cx + offX * dw, y: groundY + offY * dh,
+      w: dw, h: dh, groundAnchorX: cx, groundAnchorY: groundY
     }], true);
-    return { lay: lay, e: importShadowEdges(sctx, sW, sH) };
+    return { dx: dx, dy: dy, dw: dw, dh: dh };
   };
-  /* 畫布尺寸不變（版型不跑）。商品從「四邊只留一點留白」的最大尺寸開始；
-     影子碰到哪一邊，就先把商品往反方向平移；找不到不碰邊的位置才一點一點縮小（每次只縮 3%）。 */
-  var fit = 1 - 2 * IMPORT_SHADOW_MARGIN, found = false, foundFit = fit, foundSx = 0;
-  var step = Math.max(1, Math.round(sW * 0.02));
-  while (!found && fit >= 0.3) {
-    var maxShift = Math.max(0, (sW - spw * Math.min(sW * fit / spw, sH * fit / sph)) / 2 - 1);
-    for (var k = 0; k * step <= maxShift + step && !found; k++) {
-      var cands = k === 0 ? [0] : [k * step, -k * step];
-      for (var c = 0; c < cands.length && !found; c++) {
-        if (Math.abs(cands[c]) > maxShift) continue;
-        var r = layoutAt(fit, cands[c]);
-        if (!r.e.l && !r.e.r && !r.e.t && !r.e.b) { found = true; foundFit = fit; foundSx = cands[c]; }
-      }
-    }
-    if (!found) fit *= 0.97;
+  /* 第一遍：縮小畫布量影子範圍（讀整張像素，縮到 500px 內才快）。 */
+  var sc = Math.min(1, 500 / Math.max(fullW, fullH));
+  var sW = Math.max(1, Math.ceil(fullW * sc)), sH = Math.max(1, Math.ceil(fullH * sc));
+  var sCanvas = document.createElement('canvas'); sCanvas.width = sW; sCanvas.height = sH;
+  var sctx = sCanvas.getContext('2d', { willReadFrequently: true });
+  drawScene(sctx, sc, 0, 0);
+  var box = importShadowAlphaBox(sctx, sW, sH);
+  /* 量測是在縮圖上做的，換回原尺寸時多留一圈保險（模糊邊緣在縮圖上可能量不到）。 */
+  var margin = Math.max(8, Math.ceil(ph * 0.03));
+  var x0 = pad.side, y0 = pad.top, x1 = pad.side + pw, y1 = pad.top + ph; /* 商品本體一定要在 */
+  if (box) {
+    x0 = Math.min(x0, Math.floor(box.x0 / sc) - margin);
+    y0 = Math.min(y0, Math.floor(box.y0 / sc) - margin);
+    x1 = Math.max(x1, Math.ceil((box.x1 + 1) / sc) + margin);
+    y1 = Math.max(y1, Math.ceil((box.y1 + 1) / sc) + margin);
   }
-  /* 最後用原尺寸重算一次位置（位移要從縮小座標換回原尺寸），把影子與商品畫上去。 */
-  var full = importShadowLayout(W, H, pw, ph, prep.trim, foundFit, foundSx / sc);
-  var canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
-  var cctx = canvas.getContext('2d');
-  SP.renderScene(cctx, [{
-    id: id, x: full.cx + offX * full.dw, y: full.groundY + offY * full.dh,
-    w: full.dw, h: full.dh, groundAnchorX: full.cx, groundAnchorY: full.groundY
-  }], true);
-  cctx.drawImage(productImg, full.dx, full.dy, full.dw, full.dh);
-  return canvas.toDataURL('image/png');
+  /* 第二遍：用原尺寸畫到剛好包住影子的畫布上；畫完檢查四邊，
+     真的還有影子碰到邊就再往外擴（理論上不會發生，保險用）。 */
+  var canvas = null, cctx = null, placed = null;
+  for (var attempt = 0; attempt < 4; attempt++) {
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0);
+    x1 = Math.min(fullW, x1); y1 = Math.min(fullH, y1);
+    var outW = Math.max(1, x1 - x0), outH = Math.max(1, y1 - y0);
+    canvas = document.createElement('canvas'); canvas.width = outW; canvas.height = outH;
+    cctx = canvas.getContext('2d', { willReadFrequently: true });
+    placed = drawScene(cctx, 1, x0, y0);
+    var e = importShadowEdges(cctx, outW, outH, 0);
+    var grow = Math.max(16, Math.ceil(ph * 0.05));
+    var touched = false;
+    if (e.l && x0 > 0) { x0 -= grow; touched = true; }
+    if (e.r && x1 < fullW) { x1 += grow; touched = true; }
+    if (e.t && y0 > 0) { y0 -= grow; touched = true; }
+    if (e.b && y1 < fullH) { y1 += grow; touched = true; }
+    if (!touched) break;
+  }
+  cctx.drawImage(productImg, placed.dx, placed.dy, placed.dw, placed.dh);
+  var geom = {
+    sourceWidth: pw, sourceHeight: ph,
+    outputWidth: canvas.width, outputHeight: canvas.height,
+    offsetX: Math.round(placed.dx), offsetY: Math.round(placed.dy)
+  };
+  var url = importShadowEmbedGeometry(canvas.toDataURL('image/png'), geom);
+  importShadowGeometry[url] = geom;
+  return url;
 }
 
 /* 原圖的前處理結果快取（以原圖網址為 key），拖動連續重烘時不用每次重做。 */
@@ -12213,6 +12380,9 @@ function reapplyImportShadowToUploads(commit) {
         swap[oldUrl] = baked;
         swap[img.baseUrl] = baked;
         img.url = baked;
+        /* 商品本體在烘好圖裡的位置要跟著素材存起來，重新載入後版位才知道怎麼擺 */
+        var geom = importShadowGeometryOf(baked);
+        if (geom) img.shadowGeom = geom; else delete img.shadowGeom;
         done++;
         if (overlay) appLoadingUpdate(8 + Math.round((done / list.length) * 84), 'LOADING · 套用影子', '已重製 ' + done + '/' + list.length + ' 張');
       });
@@ -12238,9 +12408,17 @@ function reapplyImportShadowToUploads(commit) {
       /* LOGO 欄位一律換成該素材的 logoUrl（白邊裁切／底色統一後的版本），舊的原圖或舊網址也一併換掉 */
       normalizeLogoImageFields(col, def);
     });
-    /* LOGO 重算過（吸色／換色）時，右側工具列的底板色號要跟著更新 */
-    if (commit && logo.changed && (currentImportColumns || []).length) renderImportColumns(currentImportColumns);
-    if ((currentImportColumns || []).length) refreshCanvasAfterChange('import', 0, true);
+    /* LOGO 重算過（吸色／換色）時，右側工具列的底板色號要跟著更新。
+       直接預覽中只能重建預覽的工具列與畫布，不能把匯入工單的工具列畫回來。 */
+    if (isPreviewAllCanvasActive()) {
+      var previewLayoutState = captureCanvasImageLayoutState();
+      if (commit && logo.changed) renderPreviewAllTools();
+      applyCanvasThemeToContext('preview');
+      restoreCanvasImageLayoutState(previewLayoutState);
+    } else if ((currentImportColumns || []).length) {
+      if (commit && logo.changed) renderImportColumns(currentImportColumns);
+      refreshCanvasAfterChange('import', 0, true);
+    }
     if (commit) {
       renderImageGallery();
       if (currentImportWorkbook) syncWorkbookOverviewTextToExposure(currentImportWorkbook);
@@ -12596,11 +12774,13 @@ function importLogoRefresh() {
 /* 存檔要帶著的 LOGO 狀態（底色設定＋處理後的 LOGO 網址），還原時才能認得出欄位裡的 LOGO 是哪一張。 */
 function importUploadStateFields(img) {
   var out = {};
-  ['logoBg', 'logoUrl', 'logoMode', 'logoAuto', 'logoKey'].forEach(function (k) { if (img[k]) out[k] = img[k]; });
+  ['logoBg', 'logoUrl', 'logoMode', 'logoAuto', 'logoKey', 'shadowGeom'].forEach(function (k) { if (img[k]) out[k] = img[k]; });
   return out;
 }
 function importUploadFromState(img) {
-  return Object.assign({ name: img.name, url: img.url, baseUrl: img.baseUrl || '' }, importUploadStateFields(img));
+  var out = Object.assign({ name: img.name, url: img.url, baseUrl: img.baseUrl || '' }, importUploadStateFields(img));
+  importShadowGeometryFromState(out);
+  return out;
 }
 /* 底部暫存檔：原圖只存一份（url＋orig 標記），還原時 url 同時當原圖用，商品才能再烘影子。 */
 function importUploadsForBottomPersist() {
@@ -12611,7 +12791,9 @@ function importUploadsForBottomPersist() {
   });
 }
 function importUploadFromPersist(img) {
-  return Object.assign({ name: img.name, url: img.url, baseUrl: img.orig ? img.url : '' }, importUploadStateFields(img));
+  var out = Object.assign({ name: img.name, url: img.url, baseUrl: img.orig ? img.url : '' }, importUploadStateFields(img));
+  importShadowGeometryFromState(out);
+  return out;
 }
 /* ───── LOGO 底板 ─────
    放 LOGO 的那塊圓角底（block.json 的 logoBg 圖片框）本來固定白色。
@@ -12650,18 +12832,22 @@ function setImportLogoBg(idx, value, commit) {
   img.logoBg = hex;
   if (commit) { scheduleImportShadowReapply(true); return; }
   var plate = importLogoPlateColorOf(img);
-  (currentImportColumns || []).forEach(function (col, colIdx) {
-    var def = BNCore.getBlock(col.blockId);
-    if (!def || !col.data) return;
-    (def.fields || []).forEach(function (field) {
-      if (field.type !== 'image' || !isImportLogoFieldKey(field.key)) return;
-      var first = splitImageList(col.data[field.key] || '')[0];
-      if (!first || importUploadIndexFor(String(first).trim()) !== idx) return;
-      if (plate) col.data[importLogoPlateKey(field.key)] = plate; else delete col.data[importLogoPlateKey(field.key)];
-      var mount = document.getElementById('imp-mount-' + colIdx);
-      if (!mount) return;
-      mount.querySelectorAll('[data-img-field]').forEach(function (box) {
-        if (box.getAttribute('data-img-field') === field.key) box.style.backgroundColor = plate || '';
+  /* 拖動色盤時即時反映到畫布：匯入工單與直接預覽兩種畫布都要更新 */
+  ['import', 'preview'].forEach(function (ctxName) {
+    var ctx = canvasCtx(ctxName);
+    (ctx.columns() || []).forEach(function (col, colIdx) {
+      var def = BNCore.getBlock(col.blockId);
+      if (!def || !col.data) return;
+      (def.fields || []).forEach(function (field) {
+        if (field.type !== 'image' || !isImportLogoFieldKey(field.key)) return;
+        var first = splitImageList(col.data[field.key] || '')[0];
+        if (!first || importUploadIndexFor(String(first).trim()) !== idx) return;
+        if (plate) col.data[importLogoPlateKey(field.key)] = plate; else delete col.data[importLogoPlateKey(field.key)];
+        var mount = document.getElementById(ctx.mountId(colIdx));
+        if (!mount) return;
+        mount.querySelectorAll('[data-img-field]').forEach(function (box) {
+          if (box.getAttribute('data-img-field') === field.key) box.style.backgroundColor = plate || '';
+        });
       });
     });
   });
@@ -13143,8 +13329,13 @@ function loadGeneratorSelectionIntoImport(options) {
 }
 
 
+function isPreviewAllCanvasActive() {
+  return activeImportCanvasContext === 'preview' && !!document.querySelector('[id^="prevall-mount-"]');
+}
 function renderImportFieldsForCurrentColumns() {
-  if (activeImportCanvasContext === 'preview' && document.querySelector('[id^="prevall-mount-"]')) {
+  if (isPreviewAllCanvasActive()) {
+    /* 直接預覽中：重建右側工具列＋重畫預覽畫布，不能切回匯入工單的工具列 */
+    renderPreviewAllTools();
     applyCanvasThemeToContext('preview');
     return;
   }
@@ -13178,13 +13369,9 @@ function renderPreviewAllStacked(columns) {
   activeImportCanvasContext = 'preview';
   var list = document.getElementById('import-preview-list');
   hideImportBottomPreview();
-  var scroll = document.getElementById('import-fields-scroll');
-  var actionRail = document.getElementById('import-block-tools');
-  if (actionRail) actionRail.innerHTML = '';
   list.classList.add('show');
   document.getElementById('import-empty2').style.display = 'none';
   showImportToolbar(false); /* 預覽全部版位是每張各自縮到 900 寬，跟畫布的縮放下拉無關 */
-  scroll.innerHTML = '<div style="padding:8px;font-size:11.5px;color:var(--ink3);">預覽版位可直接點擊文字編輯；若要使用完整欄位工具，請載入工單或上傳試算表。</div>';
 
   var html = '';
   for (var idx = 0; idx < columns.length; idx++) {
@@ -13196,13 +13383,15 @@ function renderPreviewAllStacked(columns) {
     var scale = Math.min(1, 900 / rowWidth);
     var renderedSize = renderedBlockSizeOf(def, col);
     var mounts = '';
+    var colList = [];
     for (var ri = 0; ri < repeatCount; ri++) {
+      colList.push(idx + ri);
       mounts += '<div class="preview-all-mount" id="prevall-mount-' + (idx + ri) + '" style="' +
         (repeatCount > 1 ? 'position:absolute;top:0;left:' + (Math.round(renderedSize.width * ri * scale)) + 'px;' : '') +
         'transform:scale(' + scale + ');transform-origin:top left;width:' + renderedSize.width + 'px;height:' + renderedSize.height + 'px;"></div>';
     }
     html +=
-      '<div class="preview-all-item" data-col="' + idx + '" data-scale="' + scale + '">' +
+      '<div class="preview-all-item" data-col="' + idx + '" data-col-list="' + colList.join(',') + '" data-scale="' + scale + '">' +
       '<div style="font-size:11px;color:var(--ink3);margin-bottom:4px;">' + esc(def.name) + '　' + def.width + '×' + def.height +
         (repeatCount > 1 ? '　一排 ' + repeatCount : '') + '</div>' +
       '<div class="preview-all-stage-wrap" style="' + (repeatCount > 1 ? 'position:relative;' : '') + 'width:' + Math.round(renderedSize.width * repeatCount * scale) + 'px;height:' + Math.round(renderedSize.height * scale) + 'px;overflow:hidden;">' +
@@ -13221,6 +13410,9 @@ function renderPreviewAllStacked(columns) {
       bindCanvasInteractions(mount, col, idx, 'preview');
     }
   });
+  /* 右側工具列跟匯入工單一樣有完整的圖片／色票工具，只是操作的是預覽資料 */
+  IMPORT_SYNC.activeIndex = 0;
+  renderPreviewAllTools();
   renderImportColorPanel();
 }
 
@@ -13360,6 +13552,7 @@ function updateRenderedImageField(ctxName, idx, fieldKey) {
     if (imgs[i].getAttribute('src') !== urls[i]) imgs[i].setAttribute('src', urls[i]);
   }
   restoreCanvasImageEditorState(mount, col);
+  applyImportShadowGeometry(mount);
 }
 function updateVisibleImageThumbnails(oldUrl, newUrl) {
   document.querySelectorAll('.if-thumb img').forEach(function (img) {
@@ -13607,7 +13800,7 @@ var CANVAS_CTX = {
     columns: function () { return previewAllColumns; },
     mountId: function (idx) { return 'prevall-mount-' + idx; },
     renderMode: 'preview',
-    sideRoot: null,
+    sideRoot: '#import-fields-scroll', /* 預覽也有同一套（隱藏的）欄位卡，畫布改字時一起同步 */
     afterChange: function () { renderImageGallery(); }
   }
 };
@@ -13655,7 +13848,11 @@ function refreshCanvasAfterChange(ctxName, idx, refreshTools) {
   /* 正式匯入的圖片／圖層操作需要同步右側工具；這支本身已重畫畫布，
      所以後面不可再重畫第二次。 */
   if (ctxName === 'import' && refreshTools) renderImportFieldsForCurrentColumns();
-  else rerenderCanvasMount(ctxName, idx);
+  else {
+    rerenderCanvasMount(ctxName, idx);
+    /* 直接預覽的右側工具列也要跟著圖片／圖層變動更新縮圖與按鈕狀態 */
+    if (ctxName === 'preview' && refreshTools) renderPreviewAllTools();
+  }
   restoreCanvasImageLayoutState(imageLayoutState);
 }
 
@@ -13845,7 +14042,9 @@ function importToolColMatchesIndex(el, idx) {
 }
 function markActiveImportCol(idx) {
   if (isFinite(Number(idx)) && Number(idx) >= 0) IMPORT_SYNC.activeIndex = Number(idx);
-  var activeCol = currentImportColumns && currentImportColumns[idx];
+  /* 目前畫布是匯入工單還是直接預覽，版位名稱就從對應的資料來源取 */
+  var activeColumns = canvasCtx(activeImportCanvasContext).columns();
+  var activeCol = activeColumns && activeColumns[idx];
   var activeDef = activeCol && BNCore.getBlock(activeCol.blockId);
   var activeNameEl = document.getElementById('import-active-col-name');
   if (activeNameEl) activeNameEl.textContent = activeDef ? '｜目前：' + String(activeDef.name || activeCol.blockId || '') : '';
@@ -13866,6 +14065,10 @@ function markActiveImportCol(idx) {
   /* 右邊畫布上對應的那一格也框起來，一眼看得出現在對到哪一格 */
   document.querySelectorAll('#imp-strip .imp-slot').forEach(function (slot) {
     slot.classList.toggle('is-active', Number(slot.getAttribute('data-col')) === idx);
+  });
+  /* 直接預覽的每個版位項目（含一排多格的展開索引）也一樣框起來 */
+  document.querySelectorAll('#import-preview-list .preview-all-item[data-col]').forEach(function (item) {
+    item.classList.toggle('is-active', importToolColMatchesIndex(item, idx));
   });
 }
 
@@ -13898,7 +14101,7 @@ function bindImportScrollSync() {
   if (!area.__importHoverBound) {
     area.__importHoverBound = true;
     area.addEventListener('pointerover', function (e) {
-      var slot = e.target && e.target.closest ? e.target.closest('.imp-slot') : null;
+      var slot = e.target && e.target.closest ? e.target.closest('.imp-slot, .preview-all-item') : null;
       if (!slot || !area.contains(slot)) return;
       var idx = Number(slot.getAttribute('data-col'));
       if (!isFinite(idx)) return;
@@ -13912,7 +14115,7 @@ function bindImportScrollSync() {
   area.addEventListener('scroll', function () {
     clearTimeout(IMPORT_SYNC.canvasTimer);
     IMPORT_SYNC.canvasTimer = setTimeout(function () {
-      var idx = activeIndexAt(area, area.querySelectorAll('.imp-slot'), area.clientHeight / 2);
+      var idx = activeIndexAt(area, area.querySelectorAll('.imp-slot, .preview-all-item'), area.clientHeight / 2);
       if (idx < 0) return;
       markActiveImportCol(idx);
       scrollImportToolsToCol(idx);
@@ -15255,6 +15458,154 @@ function renderImportColumns(columns, skipPreviewRerender) {
       return;
     }
 
+    var toolBand = bands.filter(function (band) { return band.key === bandKeyOf(col, idx); })[0];
+    buildImportColumnTools(col, idx, 'import', {
+      scroll: scroll,
+      actionRail: actionRail,
+      toolBlockColumns: toolBlockColumns,
+      bandKey: toolBand ? toolBand.key : ('c' + idx),
+      bandItems: toolBand ? toolBand.items : [idx],
+      commit: function () { saveImportState(); },
+      rerenderAll: function () { renderImportColumns(currentImportColumns, true); }
+    });
+
+    var myLeft = positions[idx].left || 0;
+    var myTop = positions[idx].top || 0;
+
+    if (!skipPreviewRerender && strip) {
+      var slot = document.createElement('div');
+      slot.className = 'imp-slot';
+      slot.setAttribute('data-col', idx);
+      slot.style.cssText = 'position:absolute;left:' + myLeft + 'px;top:' + myTop + 'px;width:' + colSizes[idx].width + 'px;height:' + colSizes[idx].height + 'px;overflow:hidden;';
+      slot.innerHTML = '<div class="imp-mount" id="imp-mount-' + idx + '" style="width:' + colSizes[idx].width + 'px;height:' + colSizes[idx].height + 'px"></div>';
+      strip.appendChild(slot);
+    }
+    var mountEl = document.getElementById('imp-mount-' + idx);
+    if (mountEl) {
+      mountEl.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import', col));
+      bindCanvasInteractions(mountEl, col, idx, 'import');
+    }
+  });
+
+  if (!skipPreviewRerender && strip && hasImportBottom && bottomSyncH) {
+    var resultMatchesCurrent = importBottomPreviewResult &&
+      (!Number(importBottomPreviewResult.workOrderVersion) ||
+       !latestBottomWorkOrder || importBottomPreviewResult.workOrderVersion === latestBottomWorkOrder.version) &&
+      importBottomPreviewResult.dataUrl;
+    if (resultMatchesCurrent) {
+      /* 吸底輸出圖的上方 20px 是透明留白。容器從最後一張 MSBN 的實際底部開始，
+         並以白色實底承接，避免透明區透出上一張 MSBN 而看起來像兩者重疊。 */
+      var bottomFrame = document.createElement('div');
+      bottomFrame.className = 'import-bottom-final-wrap';
+      bottomFrame.style.cssText = 'left:0;top:' + bottomSyncTop + 'px;width:' +
+        totalWidth + 'px;height:' + bottomSyncH + 'px;background:#fff;';
+      var bottomImg = document.createElement('img');
+      bottomImg.className = 'import-bottom-final';
+      bottomImg.src = importBottomPreviewResult.dataUrl;
+      bottomImg.alt = '吸底最終成品（含上方空白區）';
+      bottomImg.draggable = false;
+      bottomImg.style.cssText = 'width:' + totalWidth + 'px;height:' + bottomSyncH + 'px;';
+      bottomFrame.appendChild(bottomImg);
+      var bottomHint = document.createElement('span');
+      bottomHint.className = 'import-bottom-edit-hint';
+      bottomHint.textContent = '點一下編輯吸底';
+      bottomFrame.appendChild(bottomHint);
+      bindImportBottomOpenEditor(bottomFrame);
+      strip.appendChild(bottomFrame);
+    } else {
+      var bottomLoading = document.createElement('div');
+      bottomLoading.className = 'import-bottom-loading';
+      bottomLoading.textContent = '吸底成品產生中…（上方空白區會保留）';
+      bottomLoading.style.cssText = 'top:' + bottomSyncTop + 'px;width:' + totalWidth + 'px;height:' + bottomSyncH + 'px;';
+      bindImportBottomOpenEditor(bottomLoading);
+      strip.appendChild(bottomLoading);
+    }
+    ensureBottomPreviewLoaded(false);
+    if (bottomPreviewBridgeReady) {
+      if (latestBottomWorkOrder) sendLatestWorkOrderToBottomPreview('import-canvas');
+      else if (!resultMatchesCurrent) dispatchBottomPreviewForExport();
+    }
+  }
+  /* 重畫「統一顏色」區：沒有手動改過的顏色要把這批版位實際的色號吸進來顯示 */
+  renderImportColorPanel();
+  if (columns.length && document.querySelector('#import-block-tools .import-band-tool-col[data-col="0"], #import-block-tools .import-block-tool[data-col="0"]')) {
+    markActiveImportCol(preservedActiveIndex >= 0 ? preservedActiveIndex : 0);
+    if (preservedToolScrollTop != null) {
+      requestAnimationFrame(function () {
+        var tools = document.getElementById('import-canvas-tools');
+        if (tools) tools.scrollTop = preservedToolScrollTop;
+      });
+    }
+  }
+}
+
+/* 「直接預覽全部版位」的右側工具列：跟匯入工單共用同一套版位工具卡，
+   只是資料來源是 previewAllColumns、畫布是 prevall-mount-，
+   改動不寫進匯入工單暫存。每個預覽項目（含 F 系列一排 4 展開的幾格）算一段。 */
+function renderPreviewAllTools() {
+  var scroll = document.getElementById('import-fields-scroll');
+  var actionRail = document.getElementById('import-block-tools');
+  if (!scroll) return;
+  var columns = previewAllColumns || [];
+  var tools = document.getElementById('import-canvas-tools');
+  var preservedToolScrollTop = tools ? tools.scrollTop : null;
+  var preservedActiveIndex = Number(IMPORT_SYNC && IMPORT_SYNC.activeIndex);
+  if (!isFinite(preservedActiveIndex) || preservedActiveIndex < 0 || preservedActiveIndex >= columns.length) preservedActiveIndex = -1;
+  scroll.innerHTML = '';
+  if (actionRail) actionRail.innerHTML = '';
+  var toolBlockColumns = {};
+  var bandItems = [];
+  var bandKey = '';
+  for (var idx = 0; idx < columns.length; idx++) {
+    var col = columns[idx];
+    var def = BNCore.getBlock(col.blockId);
+    if (!def) continue;
+    if (bandItems.indexOf(idx) === -1) {
+      var repeatCount = repeatedRowCountForBlock(col.blockId);
+      bandItems = [];
+      for (var ri = 0; ri < repeatCount && idx + ri < columns.length; ri++) bandItems.push(idx + ri);
+      bandKey = 'p' + idx;
+    }
+    buildImportColumnTools(col, idx, 'preview', {
+      scroll: scroll,
+      actionRail: actionRail,
+      toolBlockColumns: toolBlockColumns,
+      bandKey: bandKey,
+      bandItems: bandItems,
+      commit: function () { canvasCtx('preview').afterChange(); },
+      rerenderAll: function () {
+        var imageLayoutState = captureCanvasImageLayoutState();
+        renderPreviewAllTools();
+        applyCanvasThemeToContext('preview');
+        restoreCanvasImageLayoutState(imageLayoutState);
+      }
+    });
+  }
+  if (columns.length) {
+    markActiveImportCol(preservedActiveIndex >= 0 ? preservedActiveIndex : 0);
+    if (preservedToolScrollTop != null) {
+      requestAnimationFrame(function () {
+        var toolsEl = document.getElementById('import-canvas-tools');
+        if (toolsEl) toolsEl.scrollTop = preservedToolScrollTop;
+      });
+    }
+  }
+}
+
+/* 一個版位的左側欄位卡（隱藏，只當事件／同步用）＋右側工具卡。
+   匯入工單與直接預覽共用；差別只在 ctxName（資料與畫布來源）跟 env：
+     env.scroll / env.actionRail：左側欄位區、右側工具列容器
+     env.toolBlockColumns：同一版位 ID 只建一張工具卡，之後的索引做別名
+     env.bandKey / env.bandItems：這一格所屬的段（同一排的索引）
+     env.commit()：資料改了之後的存檔動作（匯入＝寫暫存；預覽＝只更新素材清單）
+     env.rerenderAll()：需要整批重建工具列＋畫布時呼叫 */
+function buildImportColumnTools(col, idx, ctxName, env) {
+    var def = BNCore.getBlock(col.blockId);
+    if (!def) return;
+    var scroll = env.scroll;
+    var actionRail = env.actionRail;
+    var toolBlockColumns = env.toolBlockColumns;
+    var toolBand = { key: env.bandKey, items: env.bandItems || [idx] };
     /* 每個版位一張卡：
        - 圖片欄位：左側只顯示縮圖，操作集中在右側圖片工具列
        - 文字欄位：直接修改，並可一鍵清空（空白就是刪除該資訊）
@@ -15385,8 +15736,8 @@ function renderImportColumns(columns, skipPreviewRerender) {
       (function (colRef, colIdx, posMap) {
         function doSwap(posA, posB) {
           swapMsbnCSeriesPositions(colRef, posA, posB);
-          saveImportState();
-          renderImportColumns(currentImportColumns, true);
+          env.commit();
+          env.rerenderAll();
         }
         box.querySelectorAll('.imp-swap-arrow[data-swap-dir]').forEach(function (arrow) {
           arrow.addEventListener('click', function (e) {
@@ -15428,7 +15779,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
         });
       })(col, idx, couponPosMap);
     }
-    bindImportImageFieldTools(box, idx, 'import');
+    bindImportImageFieldTools(box, idx, ctxName);
     box.querySelectorAll('.local-color-add').forEach(function (addBtn) {
       addBtn.addEventListener('click', function () {
         var groupName = addBtn.getAttribute('data-color-group') || '';
@@ -15438,8 +15789,8 @@ function renderImportColumns(columns, skipPreviewRerender) {
         var nextIndex = group.fields.indexOf(next);
         var value = String(next.default || '').trim() || (nextIndex === 0 ? '#ffffff' : '#000000');
         col.data[next.key] = value;
-        saveImportState();
-        renderImportColumns(currentImportColumns);
+        env.commit();
+        env.rerenderAll();
       });
     });
     var localColorToolCol = null;
@@ -15518,8 +15869,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
           toolRowsHtml +
         '</div>';
       }).join('');
-      var toolBand = bands.filter(function (band) { return band.key === bandKeyOf(col, idx); })[0];
-      var toolBandKey = toolBand ? toolBand.key : ('c' + idx);
+      var toolBandKey = toolBand.key;
       var toolBox = actionRail.querySelector('.import-band-tool[data-tool-band="' + toolBandKey + '"]');
       if (!toolBox) {
         toolBox = document.createElement('div');
@@ -15548,8 +15898,8 @@ function renderImportColumns(columns, skipPreviewRerender) {
           (function (colRef, colIdx, posMap, tbx) {
             function doSwap(posA, posB) {
               swapMsbnCSeriesPositions(colRef, posA, posB);
-              saveImportState();
-              renderImportColumns(currentImportColumns, true);
+              env.commit();
+              env.rerenderAll();
             }
             tbx.querySelectorAll('.imp-swap-arrow[data-swap-dir]').forEach(function (arrow) {
               arrow.addEventListener('click', function (e) {
@@ -15610,7 +15960,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
           var key = btn.getAttribute('data-key');
           var act = btn.getAttribute('data-act');
           var imageIndex = Number(btn.getAttribute('data-image-index'));
-          handleImportImageAction(idx, key, act, imageIndex, 'import');
+          handleImportImageAction(idx, key, act, imageIndex, ctxName);
         });
       });
       toolCol.querySelectorAll('.import-logo-bg-row').forEach(function (bgRow) {
@@ -15631,12 +15981,8 @@ function renderImportColumns(columns, skipPreviewRerender) {
     function updateAndRerender(key, value) {
       var imageLayoutState = captureCanvasImageLayoutState();
       col.data[key] = value;
-      saveImportState();
-      var mount = document.getElementById('imp-mount-' + idx);
-      if (mount) {
-        mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import', col));
-        bindCanvasInteractions(mount, col, idx, 'import');
-      }
+      env.commit();
+      rerenderCanvasMount(ctxName, idx);
       restoreCanvasImageLayoutState(imageLayoutState);
     }
 
@@ -15673,7 +16019,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
         colorPicker.addEventListener('input', function () {
           pendingPickerColor = this.value;
           colorText.value = this.value;
-          updateCanvasLocalColorPreview(col, idx, 'import', key, this.value);
+          updateCanvasLocalColorPreview(col, idx, ctxName, key, this.value);
         });
         colorPicker.addEventListener('change', function () {
           var v = pendingPickerColor || this.value;
@@ -15719,74 +16065,6 @@ function renderImportColumns(columns, skipPreviewRerender) {
       localColorToolCol.setAttribute('data-local-colors-added', '1');
     }
 
-    var myLeft = positions[idx].left || 0;
-    var myTop = positions[idx].top || 0;
-
-    if (!skipPreviewRerender && strip) {
-      var slot = document.createElement('div');
-      slot.className = 'imp-slot';
-      slot.setAttribute('data-col', idx);
-      slot.style.cssText = 'position:absolute;left:' + myLeft + 'px;top:' + myTop + 'px;width:' + colSizes[idx].width + 'px;height:' + colSizes[idx].height + 'px;overflow:hidden;';
-      slot.innerHTML = '<div class="imp-mount" id="imp-mount-' + idx + '" style="width:' + colSizes[idx].width + 'px;height:' + colSizes[idx].height + 'px"></div>';
-      strip.appendChild(slot);
-    }
-    var mountEl = document.getElementById('imp-mount-' + idx);
-    if (mountEl) {
-      mountEl.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import', col));
-      bindCanvasInteractions(mountEl, col, idx, 'import');
-    }
-  });
-
-  if (!skipPreviewRerender && strip && hasImportBottom && bottomSyncH) {
-    var resultMatchesCurrent = importBottomPreviewResult &&
-      (!Number(importBottomPreviewResult.workOrderVersion) ||
-       !latestBottomWorkOrder || importBottomPreviewResult.workOrderVersion === latestBottomWorkOrder.version) &&
-      importBottomPreviewResult.dataUrl;
-    if (resultMatchesCurrent) {
-      /* 吸底輸出圖的上方 20px 是透明留白。容器從最後一張 MSBN 的實際底部開始，
-         並以白色實底承接，避免透明區透出上一張 MSBN 而看起來像兩者重疊。 */
-      var bottomFrame = document.createElement('div');
-      bottomFrame.className = 'import-bottom-final-wrap';
-      bottomFrame.style.cssText = 'left:0;top:' + bottomSyncTop + 'px;width:' +
-        totalWidth + 'px;height:' + bottomSyncH + 'px;background:#fff;';
-      var bottomImg = document.createElement('img');
-      bottomImg.className = 'import-bottom-final';
-      bottomImg.src = importBottomPreviewResult.dataUrl;
-      bottomImg.alt = '吸底最終成品（含上方空白區）';
-      bottomImg.draggable = false;
-      bottomImg.style.cssText = 'width:' + totalWidth + 'px;height:' + bottomSyncH + 'px;';
-      bottomFrame.appendChild(bottomImg);
-      var bottomHint = document.createElement('span');
-      bottomHint.className = 'import-bottom-edit-hint';
-      bottomHint.textContent = '點一下編輯吸底';
-      bottomFrame.appendChild(bottomHint);
-      bindImportBottomOpenEditor(bottomFrame);
-      strip.appendChild(bottomFrame);
-    } else {
-      var bottomLoading = document.createElement('div');
-      bottomLoading.className = 'import-bottom-loading';
-      bottomLoading.textContent = '吸底成品產生中…（上方空白區會保留）';
-      bottomLoading.style.cssText = 'top:' + bottomSyncTop + 'px;width:' + totalWidth + 'px;height:' + bottomSyncH + 'px;';
-      bindImportBottomOpenEditor(bottomLoading);
-      strip.appendChild(bottomLoading);
-    }
-    ensureBottomPreviewLoaded(false);
-    if (bottomPreviewBridgeReady) {
-      if (latestBottomWorkOrder) sendLatestWorkOrderToBottomPreview('import-canvas');
-      else if (!resultMatchesCurrent) dispatchBottomPreviewForExport();
-    }
-  }
-  /* 重畫「統一顏色」區：沒有手動改過的顏色要把這批版位實際的色號吸進來顯示 */
-  renderImportColorPanel();
-  if (columns.length && document.querySelector('#import-block-tools .import-band-tool-col[data-col="0"], #import-block-tools .import-block-tool[data-col="0"]')) {
-    markActiveImportCol(preservedActiveIndex >= 0 ? preservedActiveIndex : 0);
-    if (preservedToolScrollTop != null) {
-      requestAnimationFrame(function () {
-        var tools = document.getElementById('import-canvas-tools');
-        if (tools) tools.scrollTop = preservedToolScrollTop;
-      });
-    }
-  }
 }
 
 /* 畫布重畫之後要重新綁的所有互動，統一從這裡進。
@@ -16193,6 +16471,7 @@ function bindCanvasAddLineButtons(mountEl, col, idx, ctxName) {
 }
 function bindCanvasInteractions(mountEl, col, idx, ctxName) {
   restoreCanvasImageEditorState(mountEl, col);
+  applyImportShadowGeometry(mountEl);
   bindCanvasEditable(mountEl, col, idx, ctxName);
   bindCanvasAddLineButtons(mountEl, col, idx, ctxName);
   bindEndorserTextDrag(mountEl, col, idx, ctxName);

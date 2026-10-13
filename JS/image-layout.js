@@ -412,7 +412,11 @@
     var layoutGap = savedSlotRatios ? (savedGapPx == null ? GAP : savedGapPx) : GAP;
     var baseWidths = imgs.map(function (img, i) {
       if (savedSlotRatios) return savedSlotRatios[i] * containerW;
-      var ratio = (img.naturalWidth && img.naturalHeight) ? (img.naturalWidth / img.naturalHeight) : 1;
+      /* 烘過影子／編輯器輸出的圖：flex 佔位用「商品本體」的寬高比，不是整張輸出圖的；
+         影子多出來的寬度由 applyOffset 的矩陣延伸到框外，不會把商品本體擠小。 */
+      var geometry = imageEditorGeometry(img);
+      var ratio = geometry ? (geometry.sourceWidth / geometry.sourceHeight)
+        : ((img.naturalWidth && img.naturalHeight) ? (img.naturalWidth / img.naturalHeight) : 1);
       return containerH * ratio;
     });
     var baseTotalW = baseWidths.reduce(function (a, b) { return a + b; }, 0);
@@ -569,8 +573,12 @@
     if (!targets.length) return;
 
     var sourceImg = sourceImageOf(scope, sourceField);
-    /* 正方形沒有落在「寬小於高」，依需求與未上傳狀態一起使用 wide。 */
-    var mode = sourceImg && sourceImg.naturalWidth < sourceImg.naturalHeight ? 'tall' : 'wide';
+    /* 正方形沒有落在「寬小於高」，依需求與未上傳狀態一起使用 wide。
+       烘過影子的圖整張會比商品寬，要用商品本體的寬高比來判斷。 */
+    var sourceGeometry = sourceImg ? imageEditorGeometry(sourceImg) : null;
+    var sourceW = sourceGeometry ? sourceGeometry.sourceWidth : (sourceImg ? sourceImg.naturalWidth : 0);
+    var sourceH = sourceGeometry ? sourceGeometry.sourceHeight : (sourceImg ? sourceImg.naturalHeight : 0);
+    var mode = sourceImg && sourceW < sourceH ? 'tall' : 'wide';
     var attr = mode === 'tall' ? 'data-aspect-tall-box' : 'data-aspect-wide-box';
 
     targets.forEach(function (target) {
