@@ -228,9 +228,15 @@
     var radius = layer && layer.borderRadius != null ? String(layer.borderRadius).trim() : '15px';
     return 'inset(0 round ' + radius + ')';
   }
-  /* LOGO 圖層固定白底，不取原圖左上角顏色。 */
+  /* LOGO 圖層的底色改由匯入頁寫進資料（見 isLogoPlateLayer），畫面上不再自己取樣。 */
   function shouldSampleLogoBackground(layer, imageCount) {
     return false;
+  }
+  /* LOGO 底板：放 LOGO 的圖片框，本身是設計稿上一塊看得到的（通常是圓角白色）色塊。 */
+  function isLogoPlateLayer(layer) {
+    if (!layer || layer.type !== 'image') return false;
+    if (String(layer.id || '') === 'logoBg') return true;
+    return !!layer.keepBgWithImage && /^logoImg\d*$/i.test(String(layer.field || ''));
   }
 
   /* 尚未上傳圖片時的佔位卡：柔和的底色＋淡淡的虛線框＋小圖示，
@@ -1365,9 +1371,13 @@
          現在改成圖片框讓人可以把圖拖進去，但那個顏色欄位要留著
          （不然使用者在匯入頁改卡片顏色時，這一塊會變成改不到的死白）。 */
       var bgFieldKey = layer.bgField ? resolveFieldKey({ field: layer.bgField }, fieldPrefix) : null;
+      /* LOGO 底板（id=logoBg 那塊圓角白底）：匯入頁會依放進去的 LOGO 吸色／手動換色，
+         顏色存在資料的 <欄位key>BgColor（例如 logoImgBgColor）；沒有就用 block.json 的白底。 */
+      var logoPlateKey = isLogoPlateLayer(layer) && fieldKey ? fieldKey + 'BgColor' : null;
       var imgBgColor = derivedColorOf(layer, data, fieldPrefix, opts)
         || themeColorOf(layer, opts, data, fieldPrefix)
         || (bgFieldKey && data[bgFieldKey])
+        || (logoPlateKey && data[logoPlateKey])
         || layer.backgroundColor;
       /* 有 bgField 的圖片框，本身就是設計稿上一塊看得到的色塊（曝品範圍就是這種），
          圖片是疊在它上面，所以放了圖之後底色還是要留著；
