@@ -6938,7 +6938,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <script src="JS/fonts-embed.js"></script>
 <script src="JS/render-config.js"></script>
 <script src="core/core-engine.js"></script>
-<script src="core/schema-renderer.js?v=20261013-logoplate1"></script>
+<script src="core/schema-renderer.js?v=20261014-badgecenter"></script>
 <script src="shadow-module/shadow-plugin.js?v=20261012-shadow1"></script>
 <script src="JS/image-layout.js?v=20261013-shadowgeom1"></script>
 <script src="JS/editor-plugin.js?v=20261012-shadowrm1"></script>
@@ -10462,9 +10462,8 @@ function normalizeMsbnC14FixedRowValue(value, fieldKey) {
   var text = String(value == null ? '' : value).replace(/\r\n?/g, '\n');
   if (!/^(?:promo|copy)\d*$/i.test(String(fieldKey || ''))) return text;
   var perLine = /^promo/i.test(String(fieldKey || '')) ? 6 : 4;
-  return text.split('\n').slice(0, 2).map(function (line) {
-    return Array.from(line).slice(0, perLine).join('');
-  }).join('\n');
+  /* 與畫布同一套字數規則：中文 1、英數 0.5，每排上限依單位計算，不以字元數硬截。 */
+  return truncateImportCanvasText(text.split('\n').slice(0, 2).join('\n'), null, perLine);
 }
 function normalizeMsbnC14FixedRowEntry(entry, blockDef, fieldKey) {
   if (!isMsbnC14Block(blockDef)) return entry;
@@ -11386,9 +11385,102 @@ function workbookCellPlainString(cell) {
 /* 匯入試算表時，工單總覽 B14（通常是合併的 B14:D14）是本次工單的
    共用背景色來源。所有新版／舊版解析路徑都先走這個共用函式，
    確保匯入畫布與曝光資源使用同一個色號。 */
+/* BD 工單格式（例：BD 測試 1014.xlsx）的工單總覽不是固定儲存格，改以標籤定位：
+   1. 找到「【製作內容文案】」錨點，往下第一組
+      「主標(限8字內)」「副標(限7字內)」「日期/警語(限14字內)」右邊一格＝主標／副標／日期文案；
+      「商品品名-依序：(限1-3品內)」右邊三格＝三張曝品圖檔名（副檔名可不同）。
+   2. 「◆ 底色色號:」右邊是勾選框，再右邊是 #色碼；有勾選且有填色碼才匯入背景色。
+   找不到錨點或任何標籤時回 null，讓舊的 0918V3 固定儲存格路徑繼續運作。 */
+function parseWorkbookOverviewByLabels(wb) {
+  var ws = workOrderWorksheet(wb, '工單總覽');
+  if (!ws) return null;
+  var maxRow = Math.min(Number(ws.rowCount) || 0, 500);
+  var maxCol = Math.min(Number(ws.columnCount) || 0, 40);
+  if (!maxRow || !maxCol) return null;
+  function cellAt(r, c) { try { return ws.getCell(r, c); } catch (_) { return null; } }
+  function isMergedSlave(cell) { return !!(cell && cell.master && cell.master !== cell); }
+  function text(r, c) { return workbookCellPlainString(cellAt(r, c)); }
+  function norm(s) {
+    return String(s || '').replace(/\s+/g, '')
+      .replace(/：/g, ':').replace(/（/g, '(').replace(/）/g, ')').replace(/／/g, '/');
+  }
+  function rightText(r, c) {
+    for (var cc = c + 1; cc <= maxCol; cc++) {
+      var v = text(r, cc);
+      if (v) return v;
+    }
+    return '';
+  }
+  function isUnchecked(cell) {
+    var v = cell ? cell.value : null;
+    if (v && typeof v === 'object' && v.result != null) v = v.result;
+    if (v === false || v === 0) return true;
+    var s = norm(v == null ? '' : String(v)).toLowerCase();
+    return s === 'false' || s === '否' || s === 'x' || s === '✗' || s === '✕';
+  }
+  function hexOf(raw) {
+    var m = String(raw || '').replace(/\s+/g, '').match(/^#?([0-9a-fA-F]{6})$/);
+    return m ? ('#' + m[1]).toLowerCase() : '';
+  }
+
+  var result = { main: '', sub: '', date: '', productFiles: [], bg: '', bgChecked: null, found: false };
+  var anchorRow = 0, anchorCol = 0;
+  for (var r = 1; r <= maxRow && !anchorRow; r++) {
+    for (var c = 1; c <= maxCol; c++) {
+      var t = norm(text(r, c));
+      if (t.indexOf('製作內容文案') !== -1) { anchorRow = r; anchorCol = c; break; }
+    }
+  }
+  if (anchorRow) {
+    var got = { main: false, sub: false, date: false, products: false };
+    for (var rr = anchorRow + 1; rr <= maxRow; rr++) {
+      if (got.main && got.sub && got.date && got.products) break;
+      for (var cc = 1; cc <= maxCol; cc++) {
+        var cell = cellAt(rr, cc);
+        if (isMergedSlave(cell)) continue;
+        var label = norm(workbookCellPlainString(cell));
+        if (!label) continue;
+        if (!got.main && /^主標/.test(label)) { got.main = true; result.main = rightText(rr, cc); result.found = true; }
+        else if (!got.sub && /^副標/.test(label)) { got.sub = true; result.sub = rightText(rr, cc); result.found = true; }
+        else if (!got.date && (/^日期/.test(label) || /^警語/.test(label))) { got.date = true; result.date = rightText(rr, cc); result.found = true; }
+        else if (!got.products && /^商品品名/.test(label)) {
+          got.products = true; result.found = true;
+          var names = [];
+          for (var k = 1; k <= 3; k++) {
+            var pc = cellAt(rr, cc + k);
+            if (isMergedSlave(pc)) continue;
+            var pv = workbookCellPlainString(pc);
+            if (pv) names.push(pv);
+          }
+          result.productFiles = normalizeExposureAssetFileNames(names.join(','));
+        }
+      }
+    }
+  }
+  for (var br = 1; br <= maxRow && !result.bg; br++) {
+    for (var bc = 1; bc <= maxCol; bc++) {
+      var bl = norm(text(br, bc));
+      if (!bl || bl.indexOf('底色色號') === -1) continue;
+      result.found = true;
+      var checkCell = cellAt(br, bc + 1);
+      result.bgChecked = !isUnchecked(checkCell);
+      var hex = '';
+      for (var hc = bc + 1; hc <= Math.min(maxCol, bc + 5) && !hex; hc++) hex = hexOf(text(br, hc));
+      if (result.bgChecked && hex) result.bg = hex;
+      break;
+    }
+  }
+  return result.found ? result : null;
+}
+var currentImportOverviewByLabels = null;
 function applyWorkbookOverviewBackground(wb) {
   var overviewWs = workOrderWorksheet(wb, '工單總覽');
-  var workbookBg = overviewWs ? workbookCellPlainString(overviewWs.getCell('B14')) : '';
+  var byLabels = parseWorkbookOverviewByLabels(wb);
+  currentImportOverviewByLabels = byLabels;
+  var workbookBg = byLabels && byLabels.bg ? byLabels.bg : '';
+  if (!/^#[0-9a-fA-F]{6}$/.test(workbookBg || '')) {
+    workbookBg = overviewWs ? workbookCellPlainString(overviewWs.getCell('B14')) : '';
+  }
   /* 舊版相容：0918V3 沒有合法色碼時才讀 B10。 */
   if (!/^#[0-9a-fA-F]{6}$/.test(workbookBg || '')) {
     workbookBg = overviewWs ? workbookCellPlainString(overviewWs.getCell('B10')) : '';
@@ -11440,11 +11532,16 @@ function parseWorkbookExposureSpec(wb) {
       check: cell(row, 9)
     });
   }
+  var byLabels = currentImportOverviewByLabels || parseWorkbookOverviewByLabels(wb);
+  var useLabels = !!(byLabels && (byLabels.main || byLabels.sub || byLabels.date || byLabels.productFiles.length || byLabels.bg));
   return {
     version: WORK_ORDER_SPEC_VERSION,
     level: cell(3, 2),
-    background: cell(14, 2),
-    overview: {
+    background: useLabels ? byLabels.bg : cell(14, 2),
+    overview: useLabels ? {
+      brand: '', main: byLabels.main, sub: byLabels.sub, date: byLabels.date,
+      icon: '', ar: '', logoFiles: '', productFiles: byLabels.productFiles.join(',')
+    } : {
       brand: cell(17, 2), main: cell(10, 2), sub: cell(11, 2),
       date: cell(12, 2), icon: cell(18, 2), ar: cell(19, 2),
       logoFiles: '',
@@ -11470,6 +11567,18 @@ function syncWorkbookOverviewTextToExposure(wb) {
   var ws = workOrderWorksheet(wb, '工單總覽');
   if (!ws) return false;
   if (typeof syncImportedExposureOverviewText !== 'function') return false;
+  var byLabels = currentImportOverviewByLabels || parseWorkbookOverviewByLabels(wb);
+  if (byLabels && (byLabels.main || byLabels.sub || byLabels.date || byLabels.productFiles.length)) {
+    /* BD 標籤版：固定儲存格 B10～B19 在這種表裡是別的欄位，不能混用。 */
+    var labelData = {
+      brand: '', main: byLabels.main, sub: byLabels.sub, date: byLabels.date,
+      icon: '', ar: '', logoFiles: '',
+      productFiles: byLabels.productFiles.join(',')
+    };
+    syncImportedExposureOverviewText(labelData);
+    syncExposureOverviewAssets(labelData);
+    return true;
+  }
   var productRow = workbookOverviewAssetRow(ws, '曝光資源圖片', 13);
   var overviewData = {
     brand: workbookCellPlainString(ws.getCell('B17')),
@@ -14171,6 +14280,48 @@ function writeSharedCanvasBg(hex) {
   return true;
 }
 
+/* 「CTA 底色」也在匯入工單／維修、曝光資源、背景色三處共用：
+   值是 #RRGGBB＝使用者手動指定；空字串＝自動（曝光資源以品牌橘／副標色規則算、
+   背景色工具用它自己的建議色、匯入工單跟著曝光資源目前的自動色）。
+   任一處改背景色時，三處都會回到自動，與曝光資源／背景色工具既有行為一致。 */
+var SHARED_CTA_BG_KEY = 'wo_shared_cta_bg_v1';
+var EXPOSURE_CTA_BRAND_COLOR = '#ee4d2d';
+function readSharedCtaBg() {
+  try {
+    var v = localStorage.getItem(SHARED_CTA_BG_KEY);
+    if (v == null) return null; /* 從未設定 */
+    return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : '';
+  } catch (e) { return null; }
+}
+function writeSharedCtaBg(v) {
+  var next = /^#[0-9a-fA-F]{6}$/.test(v || '') ? String(v).toLowerCase() : '';
+  try { localStorage.setItem(SHARED_CTA_BG_KEY, next); } catch (e) {}
+  return next;
+}
+/* 「CTA 字色」同樣三處共用：#RRGGBB＝手動指定；''＝自動。
+   自動色以曝光資源算出的值為準（白字；CTA 底偏淺時依序試主標色／底色，再不行黑字），
+   匯入工單畫布與背景色工具的 CTA 文字都直接採用那個色。 */
+var SHARED_CTA_TEXT_KEY = 'wo_shared_cta_text_v1';
+function readSharedCtaText() {
+  try {
+    var v = localStorage.getItem(SHARED_CTA_TEXT_KEY);
+    if (v == null) return null; /* 從未設定 */
+    return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : '';
+  } catch (e) { return null; }
+}
+function writeSharedCtaText(v) {
+  var next = /^#[0-9a-fA-F]{6}$/.test(v || '') ? String(v).toLowerCase() : '';
+  try { localStorage.setItem(SHARED_CTA_TEXT_KEY, next); } catch (e) {}
+  return next;
+}
+function contrastRatioForDefaultColor(a, b) {
+  var la = relativeLuminanceForDefaultColor(a);
+  var lb = relativeLuminanceForDefaultColor(b);
+  if (la == null || lb == null) return null;
+  var hi = Math.max(la, lb), lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 /* 工單總覽 B10～B19 與曝光資源的品牌名／主標／副標／日期／ICON／AR 文案共用。
    先存到 localStorage：即使曝光資源 iframe 尚未載入，之後切過去仍可套用；
    再用 postMessage 即時推給已載入的曝光資源。 */
@@ -14421,6 +14572,15 @@ var importTheme = (function () {
     t.bg = EXPOSURE_DEFAULT_BG;
     writeSharedCanvasBg(t.bg);
   }
+  /* CTA 底色以共用值為準；共用值還沒建立時，把自己既有的手動色發佈出去。 */
+  var sharedCta = readSharedCtaBg();
+  if (sharedCta != null) t.ctaBg = sharedCta;
+  else if (/^#[0-9a-fA-F]{6}$/.test(t.ctaBg || '')) writeSharedCtaBg(t.ctaBg);
+  else t.ctaBg = '';
+  var sharedCtaText = readSharedCtaText();
+  if (sharedCtaText != null) t.ctaText = sharedCtaText;
+  else if (/^#[0-9a-fA-F]{6}$/.test(t.ctaText || '')) writeSharedCtaText(t.ctaText);
+  else t.ctaText = '';
   return t;
 })();
 
@@ -14546,6 +14706,163 @@ function pushImportBgToExposure(hex) {
   } catch (e) { return false; } /* file:// 或跨網域被擋，安靜略過 */
 }
 
+/* 曝光資源目前的「自動 CTA 底色」：iframe 已載入就直接讀它算好的值；
+   還沒載入時用同一套規則在本頁算（品牌橘對背景 CR ≥ 3 → 品牌橘；
+   不足用副標色；再不足用主標色），兩邊結果一致。 */
+function getExposureAutoCtaBg(sharedBg) {
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var win = frame && frame.contentWindow;
+    if (win && win.colorState && win.colorState.ctaBgAuto !== false &&
+        /^#[0-9a-fA-F]{6}$/.test(win.colorState.ctaBg || '')) {
+      return String(win.colorState.ctaBg).toLowerCase();
+    }
+  } catch (e) { /* 跨網域被擋，改用本頁規則 */ }
+  var bg = sharedBg || resolvedImportBg();
+  var palette = getExposureTextPalette();
+  var brandCr = contrastRatioForDefaultColor(EXPOSURE_CTA_BRAND_COLOR, bg);
+  if (brandCr == null || brandCr >= 3) return EXPOSURE_CTA_BRAND_COLOR;
+  var sub = palette.subText;
+  var subCr = sub ? contrastRatioForDefaultColor(sub, bg) : null;
+  if (subCr != null && subCr >= 3) return String(sub).toLowerCase();
+  var main = palette.mainText;
+  if (main) return String(main).toLowerCase();
+  return sub ? String(sub).toLowerCase() : EXPOSURE_CTA_BRAND_COLOR;
+}
+
+/* 把 CTA 底色推到曝光資源（'' ＝ 回到自動）。 */
+function pushImportCtaBgToExposure(v) {
+  var next = /^#[0-9a-fA-F]{6}$/.test(v || '') ? String(v).toLowerCase() : '';
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var win = frame && frame.contentWindow;
+    if (!win) return false;
+    if (typeof win._bnApplySharedCtaBg === 'function') { win._bnApplySharedCtaBg(next, true); return true; }
+    win.postMessage({ type: 'wo-cta-bg', color: next, manual: !!next }, '*');
+    return true;
+  } catch (e) { return false; }
+}
+/* 把 CTA 底色推到背景色工具（'' ＝ 清除手動覆寫，用它自己的建議色）。 */
+var _colorToolCtaSyncing = false;
+function pushImportCtaBgToColorTool(v) {
+  if (!colorToolLinked || !colorToolLoaded || _colorToolCtaSyncing) return false;
+  var next = /^#[0-9a-fA-F]{6}$/.test(v || '') ? String(v).toLowerCase() : '';
+  _colorToolCtaSyncing = true;
+  try {
+    var frame = document.getElementById('color-frame');
+    var win = frame && frame.contentWindow;
+    if (win) {
+      if (typeof win._colorToolSetCtaBg === 'function') win._colorToolSetCtaBg(next);
+      else win.postMessage({ type: 'wo-color-tool-set-cta', hex: next }, '*');
+    }
+  } catch (e) {}
+  _colorToolCtaSyncing = false;
+  return true;
+}
+/* 匯入工單／維修這邊的 CTA 底色入口：記到 importTheme、共用值，並推給另外兩處。
+   opts.skipExposure / opts.skipColorTool 用在「值就是從那一處來的」情境，避免來回循環。 */
+function setImportCtaBg(v, opts) {
+  opts = opts || {};
+  var next = /^#[0-9a-fA-F]{6}$/.test(v || '') ? String(v).toLowerCase() : '';
+  importTheme.ctaBg = next;
+  writeSharedCtaBg(next);
+  if (!opts.skipExposure) pushImportCtaBgToExposure(next);
+  if (!opts.skipColorTool) {
+    pushImportCtaBgToColorTool(next);
+    /* CTA 底色變了，自動 CTA 字色跟著變：把目前實際字色再推給背景色工具。 */
+    syncCtaTextToColorTool();
+  }
+  return next;
+}
+
+/* 匯入工單目前實際使用的 CTA 底色（手動值，否則曝光資源的自動色）。 */
+function effectiveImportCtaBg(sharedBg) {
+  return importTheme.ctaBg || getExposureAutoCtaBg(sharedBg || resolvedImportBg());
+}
+/* 曝光資源目前的「自動 CTA 字色」：iframe 已載入且它的 CTA 底色與這裡一致時直接讀它算好的值；
+   否則用同一套規則在本頁算（白字對 CTA 底 CR ≥ 3 → 白字；
+   否則淺底試主標色、深底依序試背景色／主標色，需 CR ≥ 4.5；都不行 → 黑字）。 */
+function getExposureAutoCtaText(ctaBg, sharedBg) {
+  var bg = sharedBg || resolvedImportBg();
+  var cta = /^#[0-9a-fA-F]{6}$/.test(ctaBg || '') ? String(ctaBg).toLowerCase() : '';
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var win = frame && frame.contentWindow;
+    if (win && typeof win.getColorData === 'function') {
+      var data = win.getColorData();
+      if (data && data.ctaTextAuto !== false && /^#[0-9a-fA-F]{6}$/.test(data.ctaText || '') &&
+          (!cta || String(data.ctaBg || '').toLowerCase() === cta)) {
+        return String(data.ctaText).toLowerCase();
+      }
+    }
+  } catch (e) { /* 跨網域被擋，改用本頁規則 */ }
+  if (!cta) return '#ffffff';
+  if ((contrastRatioForDefaultColor('#ffffff', cta) || 0) >= 3) return '#ffffff';
+  var main = getExposureTextPalette().mainText;
+  var tries = [];
+  var bgLight = (contrastRatioForDefaultColor('#000000', bg) || 0) >= (contrastRatioForDefaultColor('#ffffff', bg) || 0);
+  if (bgLight) { if (main) tries.push(main); }
+  else { tries.push(bg); if (main) tries.push(main); }
+  for (var i = 0; i < tries.length; i++) {
+    if ((contrastRatioForDefaultColor(tries[i], cta) || 0) >= 4.5) return String(tries[i]).toLowerCase();
+  }
+  return '#000000';
+}
+/* 匯入工單目前實際使用的 CTA 字色（手動值，否則曝光資源的自動色）。 */
+function effectiveImportCtaText(sharedBg) {
+  if (importTheme.ctaText) return importTheme.ctaText;
+  var bg = sharedBg || resolvedImportBg();
+  return getExposureAutoCtaText(effectiveImportCtaBg(bg), bg);
+}
+/* 把 CTA 字色推到曝光資源（'' ＝ 回到自動）。 */
+function pushImportCtaTextToExposure(v) {
+  var next = /^#[0-9a-fA-F]{6}$/.test(v || '') ? String(v).toLowerCase() : '';
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var win = frame && frame.contentWindow;
+    if (!win) return false;
+    if (typeof win._bnApplySharedCtaText === 'function') { win._bnApplySharedCtaText(next, true); return true; }
+    win.postMessage({ type: 'wo-cta-text', color: next, manual: !!next }, '*');
+    return true;
+  } catch (e) { return false; }
+}
+/* 把 CTA 字色推到背景色工具：manual=true 是手動覆寫；manual=false 是目前的自動色（它的模擬畫布直接採用）。 */
+var _colorToolCtaTextSyncing = false;
+var _lastCtaTextPushedToColorTool = null;
+function pushImportCtaTextToColorTool(v, manual) {
+  if (!colorToolLinked || !colorToolLoaded || _colorToolCtaTextSyncing) return false;
+  var next = /^#[0-9a-fA-F]{6}$/.test(v || '') ? String(v).toLowerCase() : '';
+  var sig = next + '|' + (manual ? 1 : 0);
+  if (sig === _lastCtaTextPushedToColorTool) return true;
+  _colorToolCtaTextSyncing = true;
+  try {
+    var frame = document.getElementById('color-frame');
+    var win = frame && frame.contentWindow;
+    if (win) {
+      _lastCtaTextPushedToColorTool = sig;
+      if (typeof win._colorToolSetCtaText === 'function') win._colorToolSetCtaText(next, !!manual);
+      else win.postMessage({ type: 'wo-color-tool-set-cta-text', hex: next, manual: !!manual }, '*');
+    }
+  } catch (e) {}
+  _colorToolCtaTextSyncing = false;
+  return true;
+}
+/* 背景色工具的 CTA 文字永遠顯示匯入工單／曝光資源目前實際的 CTA 字色。 */
+function syncCtaTextToColorTool() {
+  if (!colorToolLinked || !colorToolLoaded) return;
+  pushImportCtaTextToColorTool(effectiveImportCtaText(), !!importTheme.ctaText);
+}
+/* 匯入工單／維修這邊的 CTA 字色入口：記到 importTheme、共用值，並推給另外兩處。 */
+function setImportCtaText(v, opts) {
+  opts = opts || {};
+  var next = /^#[0-9a-fA-F]{6}$/.test(v || '') ? String(v).toLowerCase() : '';
+  importTheme.ctaText = next;
+  writeSharedCtaText(next);
+  if (!opts.skipExposure) pushImportCtaTextToExposure(next);
+  if (!opts.skipColorTool) syncCtaTextToColorTool();
+  return next;
+}
+
 /* 背景色只有一個共用來源：localStorage 的 SHARED_CANVAS_BG_KEY。
    不再拿第一個版位原色覆蓋它，避免工具列、曝光資源與畫布看到不同色號。 */
 function resolvedImportBg() {
@@ -14594,9 +14911,14 @@ function importLinkedDefaultColors(colorState, sampled, sharedBg) {
   var promoBgLuminance = relativeLuminanceForDefaultColor(linkedPromoBg);
   var linkedPromoText = promoBgLuminance != null && promoBgLuminance >= 0.52
     ? (sharedBg || '#111827') : '#ffffff';
+  var linkedCtaBg = getExposureAutoCtaBg(sharedBg);
   return {
     promoBg: getExposureSubTextColor(),
     promoText: linkedPromoText,
+    /* CTA 底色未手動指定時，跟曝光資源目前的自動 CTA 底色（品牌橘／副標色規則）。 */
+    ctaBg: linkedCtaBg,
+    /* CTA 字色未手動指定時，跟曝光資源目前的自動 CTA 字色（三處同色）。 */
+    ctaText: getExposureAutoCtaText(colorState.ctaBg || linkedCtaBg, sharedBg),
     cardBg: sharedBg || badgeBg || sampled.cardBg || '',
     /* A-2-3 左右卡片有固定的設計預設，不隨圓標底色連動。 */
     cardBgA23Left: A23_CARD_DEFAULTS.left,
@@ -14628,6 +14950,13 @@ function dynamicRowRowsForColumn(col) {
 function relinkImportPromoColorsToBackground() {
   importTheme.promoBg = '';
   importTheme.promoText = '';
+  /* CTA 底色同樣回到自動：曝光資源換背景時會重算 CTA、背景色工具換底色時會清除手動覆寫，
+     三處才會一致。 */
+  if (importTheme.ctaBg) setImportCtaBg('');
+  else writeSharedCtaBg('');
+  /* CTA 字色也回到自動，跟著新的 CTA 底色重算。 */
+  if (importTheme.ctaText) setImportCtaText('');
+  else writeSharedCtaText('');
 }
 /* 交給 BNCore.renderInstance 的 opts（畫布上可直接點著改文字＋統一顏色覆寫） */
 function importRenderOpts(editable, mode, col) {
@@ -14653,6 +14982,10 @@ function importRenderOpts(editable, mode, col) {
     cardBgA23Left: a23LeftCardBg, cardBgA23Right: a23RightCardBg,
     promoBg: colorState.promoBg || linkedDefaults.promoBg,
     promoText: colorState.promoText || linkedDefaults.promoText,
+    ctaBg: colorState.ctaBg || linkedDefaults.ctaBg,
+    /* CTA 字色與曝光資源／背景色工具同色：renderer 直接採用，不再各自判斷。 */
+    ctaText: colorState.ctaText || linkedDefaults.ctaText,
+    ctaTextLinked: true,
     endorserText: colorState.endorserText || linkedDefaults.endorserText,
     endorserTextAuto: !colorState.endorserText,
     warnText: colorState.warnText || linkedDefaults.warnText,
@@ -14771,6 +15104,8 @@ function renderImportColorPanel() {
     if (it.key === 'endorserText') note = overridden ? '' : '自動：預設黑字；圖片偏深時切換白字';
     if (it.key === 'warnText') note = overridden ? '' : '自動：淺色底深灰；深色底淡灰';
     if (it.key === 'itemText') note = overridden ? '' : '項目文字與內文共用此字色';
+    if (it.key === 'ctaBg') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源／背景色的 CTA 底色';
+    if (it.key === 'ctaText') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源的 CTA 字色：白字；CTA 底偏淺時改深色字';
     return '<div class="ic-color-row' + (overridden ? '' : ' is-off') + '" data-key="' + it.key + '">' +
       '<span class="icc-label">' + esc(it.label) +
         (note ? '<span class="icc-auto">' + esc(note) + '</span>' : '') + '</span>' +
@@ -14801,6 +15136,13 @@ function renderImportColorPanel() {
           writeSharedCanvasBg(normalized);
           pushImportBgToExposure(normalized);
         }
+      } else if (key === 'ctaBg') {
+        /* 完整色碼或清空才同步到曝光資源／背景色；輸入到一半先只記在本頁。 */
+        if (!v || /^#[0-9a-fA-F]{6}$/.test(v)) setImportCtaBg(v);
+        else importTheme[key] = v;
+      } else if (key === 'ctaText') {
+        if (!v || /^#[0-9a-fA-F]{6}$/.test(v)) setImportCtaText(v);
+        else importTheme[key] = v;
       } else {
         importTheme[key] = v;
       }
@@ -14939,6 +15281,8 @@ function renderMaintColorPanel() {
     if (it.key === 'endorserText') note = overridden ? '' : '自動：預設黑字；圖片偏深時切換白字';
     if (it.key === 'warnText') note = overridden ? '' : '自動：淺色底深灰；深色底淡灰';
     if (it.key === 'itemText') note = overridden ? '' : '項目文字與內文共用此字色';
+    if (it.key === 'ctaBg') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源／背景色的 CTA 底色';
+    if (it.key === 'ctaText') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源的 CTA 字色：白字；CTA 底偏淺時改深色字';
     return '<div class="ic-color-row' + (overridden ? '' : ' is-off') + '" data-key="' + it.key + '">' +
       '<span class="icc-label">' + esc(it.label) +
         (note ? '<span class="icc-auto">' + esc(note) + '</span>' : '') + '</span>' +
@@ -14963,6 +15307,12 @@ function renderMaintColorPanel() {
           writeSharedCanvasBg(normalized);
           pushImportBgToExposure(normalized);
         }
+      } else if (key === 'ctaBg') {
+        if (!v || /^#[0-9a-fA-F]{6}$/.test(v)) setImportCtaBg(v);
+        else importTheme[key] = v;
+      } else if (key === 'ctaText') {
+        if (!v || /^#[0-9a-fA-F]{6}$/.test(v)) setImportCtaText(v);
+        else importTheme[key] = v;
       } else {
         importTheme[key] = v;
       }
@@ -15014,6 +15364,8 @@ function resetMaintTheme() {
   importTheme.bgAuto = false;
   writeSharedCanvasBg(importTheme.bg);
   pushImportBgToExposure(importTheme.bg);
+  setImportCtaBg('');
+  setImportCtaText('');
   saveImportTheme();
   applyImportTheme();
   applyMaintTheme();
@@ -15068,6 +15420,19 @@ window.addEventListener('message', function (e) {
   if (d.type === 'wo-exposure-palette' && d.palette && typeof d.palette === 'object') {
     writeSharedExposureTextPalette(d.palette);
     refreshImportAndMaintColorLinks();
+    /* 曝光資源的自動 CTA 字色可能跟著主標／CTA 底色變了：把目前實際字色再推給背景色工具。 */
+    syncCtaTextToColorTool();
+    return;
+  }
+  /* 曝光資源手動改 CTA 字色（或回到自動）→ 匯入工單／維修與背景色工具跟著走。 */
+  if (d.type === 'wo-cta-text') {
+    var ctaTextNext = (d.manual && /^#[0-9a-fA-F]{6}$/.test(d.color || '')) ? String(d.color).toLowerCase() : '';
+    if ((importTheme.ctaText || '') !== ctaTextNext || readSharedCtaText() !== ctaTextNext) {
+      setImportCtaText(ctaTextNext, { skipExposure: true });
+      saveImportTheme();
+    }
+    refreshImportAndMaintColorLinks();
+    syncCtaTextToColorTool();
     return;
   }
   if (d.type === 'wo-exposure-color' && EXPOSURE_TEXT_COLOR_KEYS.indexOf(d.key) >= 0 && /^#[0-9a-fA-F]{6}$/.test(d.color || '')) {
@@ -15075,6 +15440,17 @@ window.addEventListener('message', function (e) {
     nextPalette[d.key] = d.color;
     writeSharedExposureTextPalette(nextPalette);
     refreshImportAndMaintColorLinks();
+    return;
+  }
+  /* 曝光資源手動改 CTA 底色（或換背景後回到自動）→ 匯入工單／維修與背景色工具跟著走。 */
+  if (d.type === 'wo-cta-bg') {
+    var ctaNext = (d.manual && /^#[0-9a-fA-F]{6}$/.test(d.color || '')) ? String(d.color).toLowerCase() : '';
+    if ((importTheme.ctaBg || '') !== ctaNext || readSharedCtaBg() !== ctaNext) {
+      setImportCtaBg(ctaNext, { skipExposure: true });
+      saveImportTheme();
+    }
+    refreshImportAndMaintColorLinks();
+    syncCtaTextToColorTool();
     return;
   }
   if (d.type !== 'wo-bg' || !/^#[0-9a-fA-F]{6}$/.test(d.color || '')) return;
@@ -15092,6 +15468,25 @@ window.addEventListener('message', function (e) {
 
 /* 其他分頁／視窗變更共用背景色時也跟著更新。 */
 window.addEventListener('storage', function (e) {
+  if (e.key === SHARED_CTA_BG_KEY) {
+    var ctaFromStorage = /^#[0-9a-fA-F]{6}$/.test(e.newValue || '') ? String(e.newValue).toLowerCase() : '';
+    if ((importTheme.ctaBg || '') === ctaFromStorage) return;
+    importTheme.ctaBg = ctaFromStorage;
+    saveImportTheme();
+    refreshImportAndMaintColorLinks();
+    pushImportCtaBgToColorTool(ctaFromStorage);
+    syncCtaTextToColorTool();
+    return;
+  }
+  if (e.key === SHARED_CTA_TEXT_KEY) {
+    var ctaTextFromStorage = /^#[0-9a-fA-F]{6}$/.test(e.newValue || '') ? String(e.newValue).toLowerCase() : '';
+    if ((importTheme.ctaText || '') === ctaTextFromStorage) return;
+    importTheme.ctaText = ctaTextFromStorage;
+    saveImportTheme();
+    refreshImportAndMaintColorLinks();
+    syncCtaTextToColorTool();
+    return;
+  }
   if (e.key !== SHARED_CANVAS_BG_KEY || !/^#[0-9a-fA-F]{6}$/.test(e.newValue || '')) return;
   var hex = colorToHex(e.newValue);
   importTheme.bg = hex;
@@ -15109,6 +15504,8 @@ document.getElementById('btn-color-reset-all').addEventListener('click', functio
   importTheme.bgAuto = false;
   writeSharedCanvasBg(importTheme.bg);
   pushImportBgToExposure(importTheme.bg);
+  setImportCtaBg('');
+  setImportCtaText('');
   saveImportTheme();
   applyImportTheme();
   if (maintColumns.length) applyMaintTheme();
@@ -16660,6 +17057,20 @@ function restoreEditableLogicalCaret(el, logicalOffset) {
   } catch (e) {}
 }
 
+/* 把游標放到純文字（含換行）的第 offset 個字元前；textContent 設定後只有一個文字節點。 */
+function placeEditableCaretAtRawOffset(el, offset) {
+  var node = el && el.firstChild;
+  var selection = window.getSelection && window.getSelection();
+  if (!node || node.nodeType !== 3 || !selection) return;
+  try {
+    var range = document.createRange();
+    range.setStart(node, Math.max(0, Math.min(offset, (node.nodeValue || '').length)));
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  } catch (e) {}
+}
+
 function setEditableTextPreserveCaret(el, text) {
   var logicalOffset = editableLogicalCaretOffset(el);
   el.textContent = text;
@@ -16676,8 +17087,8 @@ function importCanvasTextField(col, key) {
   return def && (def.fields || []).find(function (item) { return item.key === key; });
 }
 
-/* 只有圓標允許使用者用 Enter 手動分成兩行；其他畫布文字一律單行。 */
-function canvasTextAllowsManualBreak(col, key) {
+/* 圓標文字：匯入時依字數自動斷行；畫布上可用 Enter 手動斷成兩行，不顯示「+」。 */
+function isCanvasBadgeTextField(col, key) {
   var field = importCanvasTextField(col, key);
   return !!(field && (/badge/i.test(String(field.key || '')) || /圓標/.test(String(field.label || ''))));
 }
@@ -16691,41 +17102,120 @@ function normalizeCanvasTextBreaks(text, col, key, sourceType) {
   if (col && /^msbn_C_1_4$/i.test(String(col.blockId || '')) && /^(?:promo|copy)\d*$/i.test(String(key || ''))) {
     value = normalizeMsbnC14FixedRowValue(value, key);
   }
-  /* 版型原本的兩行資料必須保留；只有新增的貼上內容才依規則移除換行。
-     Enter 本身仍由 bindCanvasEditable 的 beforeinput 直接攔截，
-     因此「保留既有換行」不會重新開放其他文字欄位手動斷行。 */
-  if (!canvasTextAllowsManualBreak(col, key) && sourceType === 'paste') {
+  /* 貼上的內容一律移除換行；只有圓標允許使用者在畫布用 Enter 手動斷行。
+     版型原本的兩行資料（案型、文案等）在初始載入時仍會保留，不受此規則影響。 */
+  if (sourceType === 'paste') {
     value = value.replace(/\n/g, '');
   }
-  /* 圓標最多兩行。把既有換行收斂成字串後，依每行 4 個全形字的容量重新分配；
-     7 字會固定為 4 + 3，無論鍵盤輸入、貼上或舊資料都不可能殘留第三行。 */
-  if (canvasTextAllowsManualBreak(col, key)) {
+  if (isCanvasBadgeTextField(col, key)) {
+    /* 圓標從試算表進來是一行資訊，匯入時依字數自動斷行。
+       使用者在畫布編輯（sourceType === 'edit'）時解除自動斷行：按 Enter 分、
+       Backspace 接回一行都照使用者的意思，只守住最多兩行。 */
+    if (sourceType === 'edit') return capCanvasTextLines(value, 2);
+    var badgeLines = value.split('\n').filter(function (line) { return line !== ''; });
+    if (badgeLines.length >= 2) {
+      return badgeLines[0] + '\n' + badgeLines.slice(1).join('');
+    }
     var chars = Array.from(value.replace(/\n/g, ''));
     var totalUnits = chars.reduce(function (sum, ch) {
       return sum + (/^[\x00-\x7f]$/.test(ch) ? 0.5 : 1);
     }, 0);
     /* 圓標沿用原始版配的斷行節奏：4 個中文字固定 2+2；5～7 字為
        3+2、3+3、4+3。其他短字串維持單行。 */
+    var hasAscii = chars.some(function (ch) { return /^[\x00-\x7f]$/.test(ch); });
     var isFourFullWidthChars = chars.length === 4 && totalUnits >= 3.5;
-    var firstLineLimit = isFourFullWidthChars ? 2
+    /* 含英數、合計剛好 4 單位（例如「狂降62折」＝1+1+0.5+0.5+1）也視為 4 個字，
+       依 2+2 單位斷行；英數連在一起的一段不拆開，所以會斷成「狂降／62折」。 */
+    var isFourUnitsMixed = hasAscii && chars.length >= 4 && totalUnits >= 3.5 && totalUnits <= 4;
+    var firstLineLimit = (isFourFullWidthChars || isFourUnitsMixed) ? 2
       : (totalUnits <= 4 ? 4 : Math.min(4, Math.ceil(totalUnits / 2)));
     var first = '', second = '', firstUnits = 0;
     chars.forEach(function (ch) {
       var units = /^[\x00-\x7f]$/.test(ch) ? 0.5 : 1;
-      if (firstUnits + units <= firstLineLimit) {
+      if (!second && firstUnits + units <= firstLineLimit) {
         first += ch;
         firstUnits += units;
       } else {
         second += ch;
       }
     });
+    /* 英數一段（如「62」「1000」）不能被斷行切成兩半：若斷點落在英數中間，
+       整段英數移到第二行。 */
+    var trailingAscii = /[\x00-\x7f]+$/.exec(first);
+    if (second && trailingAscii && /^[\x00-\x7f]/.test(second) && trailingAscii[0].length < first.length) {
+      first = first.slice(0, first.length - trailingAscii[0].length);
+      second = trailingAscii[0] + second;
+    }
     value = second ? first + '\n' + second : first;
   }
   return value;
 }
 
-function limitCanvasTextLineCount(text, col, key) {
-  return normalizeCanvasTextBreaks(text, col, key);
+function limitCanvasTextLineCount(text, col, key, sourceType) {
+  return normalizeCanvasTextBreaks(text, col, key, sourceType);
+}
+
+/* 超過最多排數時，多出來的排接回最後一排（不丟字）。 */
+function capCanvasTextLines(text, maxLines) {
+  var lines = String(text == null ? '' : text).replace(/\r\n?/g, '\n').split('\n');
+  if (maxLines == null || !(maxLines > 0) || lines.length <= maxLines) return lines.join('\n');
+  return lines.slice(0, maxLines - 1).concat(lines.slice(maxLines - 1).join('')).join('\n');
+}
+
+/* 這個欄位在畫布上最多幾排：有每排字數的兩排欄位（品名 16/8、券文案 12/6…）依
+   總字數÷每排字數計算；圓標與原稿兩行欄位（案型／文案）固定兩排；其餘單排。 */
+function canvasTextMaxLines(el, col, key) {
+  var lineLimit = importCanvasTextLineLimit(col, key);
+  var total = importCanvasTextLimit(col, key);
+  if (lineLimit != null && lineLimit > 0 && total != null) return Math.max(1, Math.floor(total / lineLimit));
+  if (lineLimit != null) return 2;
+  if (isCanvasBadgeTextField(col, key)) return 2;
+  if (el && el.closest && el.closest('[data-twoline-text="' + key + '"]')) return 2;
+  return 1;
+}
+
+/* 兩排欄位的「重新排版」：某一排超過每排字數時，多出來的字往下一排推，而不是切掉。
+   把兩排接回一排、貼上超過一排的字、第一排打滿繼續打，都會自然流到第二排；
+   超過最多排數才會真的被截掉。使用者自己按 Enter 分好的、沒超量的排不會被動到。 */
+function reflowCanvasTextLines(text, lineLimit, maxLines) {
+  var source = String(text == null ? '' : text).replace(/\r\n?/g, '\n');
+  if (lineLimit == null || !(lineLimit > 0)) return source;
+  var unitsOf = function (ch) { return /^[\x00-\x7f]$/.test(ch) ? 0.5 : 1; };
+  /* 排數超過時先把多出來的排接回最後一排，再重新排版；真的裝不下的字才會被截掉。 */
+  var lines = capCanvasTextLines(source, maxLines).split('\n');
+  var out = [];
+  var carry = '';
+  var i = 0;
+  while (i < lines.length || carry) {
+    var line = carry + (i < lines.length ? lines[i] : '');
+    i++;
+    carry = '';
+    var kept = '', keptUnits = 0, rest = '';
+    Array.from(line).forEach(function (ch) {
+      var units = unitsOf(ch);
+      if (!rest && keptUnits + units <= lineLimit) {
+        kept += ch;
+        keptUnits += units;
+      } else {
+        rest += ch;
+      }
+    });
+    out.push(kept);
+    carry = rest;
+  }
+  if (maxLines != null && out.length > maxLines) out = out.slice(0, maxLines);
+  return out.join('\n');
+}
+
+/* 畫布文字套用字數規則的唯一入口：有每排字數的欄位先重新排版再截掉超過排數的部分；
+   沒有每排字數的欄位只看總字數。 */
+function fitCanvasText(el, text, col, key) {
+  var limit = importCanvasTextTotalLimit(col, key);
+  var lineLimit = importCanvasTextLineLimit(col, key);
+  if (lineLimit != null) {
+    return reflowCanvasTextLines(text, lineLimit, canvasTextMaxLines(el, col, key));
+  }
+  return capCanvasTextLines(truncateImportCanvasText(text, limit, null), canvasTextMaxLines(el, col, key));
 }
 
 function importCanvasTextLimit(col, key) {
@@ -16755,22 +17245,14 @@ function importCanvasTextUnits(text) {
   }, 0);
 }
 
-/* 圓標維持原始 35px 字級；7 字時以較寬的內層完整置中，
-   不壓縮字形，四字那一行可自然呈現。 */
+/* 圓標維持原始 35px 字級、不壓縮字形。置中由渲染器負責（內層 min-width:max-content
+   ＋外層 flex 置中，字比框寬時左右對稱溢出），這裡只清掉舊版留下的寬度／縮放覆寫。 */
 function applyBadgeTwoLineFit(el, col, key) {
-  if (!el || !canvasTextAllowsManualBreak(col, key)) return;
-  var isSevenChars = importCanvasTextUnits(readEditableText(el)) > 6;
-  if (isSevenChars) {
-    el.style.width = '140px';
-    el.style.maxWidth = 'none';
-    el.style.transform = '';
-    el.style.transformOrigin = '';
-  } else {
-    el.style.width = '100%';
-    el.style.maxWidth = '100%';
-    el.style.transform = '';
-    el.style.transformOrigin = '';
-  }
+  if (!el || !isCanvasBadgeTextField(col, key)) return;
+  el.style.width = '100%';
+  el.style.maxWidth = 'none';
+  el.style.transform = '';
+  el.style.transformOrigin = '';
 }
 
 /* limit：整欄總字數（null ＝不限總數）；lineLimit：每排字數（null ＝不限每排）。
@@ -16856,10 +17338,9 @@ function rerenderDynamicCanvasRow(col, idx, ctxName, key) {
 function applyImportCanvasTextRules(el, col, idx, ctxName, key) {
   if (!el || !col || !key) return;
   var originalRaw = readEditableText(el);
-  var raw = normalizeCanvasTextBreaks(originalRaw, col, key);
-  var limit = canvasTextRulesEnabled(ctxName) ? importCanvasTextTotalLimit(col, key) : null;
-  var lineLimit = canvasTextRulesEnabled(ctxName) ? importCanvasTextLineLimit(col, key) : null;
-  var limited = truncateImportCanvasText(raw, limit, lineLimit);
+  /* 失焦時沿用編輯模式：使用者分好的排不重新自動斷行。 */
+  var raw = normalizeCanvasTextBreaks(originalRaw, col, key, 'edit');
+  var limited = canvasTextRulesEnabled(ctxName) ? fitCanvasText(el, raw, col, key) : raw;
   var textChanged = limited !== originalRaw;
   if (textChanged) {
     raw = limited;
@@ -16902,7 +17383,9 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
     el.setAttribute('data-import-text-limit', importCanvasTextLimit(col, key) == null
       ? '' : String(importCanvasTextLimit(col, key)));
     var initialRawText = readEditableText(el);
-    var initialNormalizedText = normalizeCanvasTextBreaks(initialRawText, col, key);
+    /* 使用者在畫布親手改過排法的欄位，重畫時不再自動斷行（否則接回一行的圓標會被重新拆開）。 */
+    var manualBreaks = col._manualText && col._manualText[key];
+    var initialNormalizedText = normalizeCanvasTextBreaks(initialRawText, col, key, manualBreaks ? 'edit' : undefined);
     if (initialNormalizedText !== initialRawText) {
       el.textContent = initialNormalizedText;
       col.data[key] = initialNormalizedText;
@@ -16912,10 +17395,26 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       if (!canvasTextRulesEnabled(ctxName)) return;
       var inputType = String(event.inputType || '');
       if (/^insert(?:Paragraph|LineBreak)$/i.test(inputType)) {
-        if (!canvasTextAllowsManualBreak(col, key) || readEditableText(el).split('\n').length >= 2) {
-          event.preventDefault();
-          return;
-        }
+        /* 兩排欄位（品名、文案、圓標…）可以手動 Enter 斷行：游標後面的字會進到下一排。
+           單排欄位不接受 Enter。 */
+        var maxLines = canvasTextMaxLines(el, col, key);
+        var currentText = readEditableText(el);
+        if (currentText.split('\n').length < maxLines) return;
+        event.preventDefault();
+        /* 已經是兩排時（例如把第二排接回第一排、多出來的字被自動流到第二排），
+           Enter 代表「改成在游標這裡斷」：游標前留在第一排，後面的字接到第二排，
+           整段重新排版；只有重排後會掉字才不動。 */
+        if (maxLines < 2) return;
+        var caret = editableLogicalCaretOffset(el);
+        if (caret == null) return;
+        var flat = currentText.replace(/\n/g, '');
+        var candidate = flat.slice(0, caret) + '\n' + flat.slice(caret);
+        var fitted = fitCanvasText(el, normalizeCanvasTextBreaks(candidate, col, key, 'edit'), col, key);
+        if (fitted === currentText || importCanvasTextUnits(fitted) < importCanvasTextUnits(candidate)) return;
+        el.textContent = fitted;
+        placeEditableCaretAtRawOffset(el, fitted.indexOf('\n') + 1);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
       }
       var limit = importCanvasTextTotalLimit(col, key);
       var lineLimit = importCanvasTextLineLimit(col, key);
@@ -16954,10 +17453,10 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
             afterRange.selectNodeContents(el);
             afterRange.setStart(range.endContainer, range.endOffset);
             var candidate = beforeRange.toString() + incoming + afterRange.toString();
-            var lineTooLong = candidate.split('\n').some(function (line) {
-              return importCanvasTextUnits(line) > lineLimit;
-            });
-            if (lineTooLong) event.preventDefault();
+            /* 某一排打滿不直接擋住：多出來的字會自動流到下一排。只有連下一排都裝不下
+               （重新排版後會掉字）才擋掉這次輸入。 */
+            var reflowed = reflowCanvasTextLines(candidate, lineLimit, canvasTextMaxLines(el, col, key));
+            if (importCanvasTextUnits(reflowed) < importCanvasTextUnits(candidate)) event.preventDefault();
           } catch (e) {}
         }
       }
@@ -16976,9 +17475,15 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       var selected = importCanvasSelectionText(el);
       var available = limit == null ? null : Math.max(0, limit - importCanvasTextUnits(current) + importCanvasTextUnits(selected));
       var isCtaText = isCanvasCtaTextField(col, key);
+      /* 兩排欄位貼上時只看整欄還能裝多少（每排字數 × 排數），貼進去後由 input 流程重新排版，
+         超過第一排的字自然流到第二排，不在貼上階段就被切掉。 */
+      if (lineLimit != null && available == null) {
+        var capacity = lineLimit * canvasTextMaxLines(el, col, key);
+        available = Math.max(0, capacity - importCanvasTextUnits(current) + importCanvasTextUnits(selected));
+      }
       var allowed = isCtaText
         ? Array.from(normalizedIncoming).slice(0, Math.max(0, 3 - Array.from(current).length + Array.from(selected).length)).join('')
-        : truncateImportCanvasText(normalizedIncoming, available, lineLimit);
+        : truncateImportCanvasText(normalizedIncoming, available, null);
       var selection = window.getSelection && window.getSelection();
       if (!selection || !selection.rangeCount || !el.contains(selection.getRangeAt(0).commonAncestorContainer)) return;
       var range = selection.getRangeAt(0);
@@ -16991,14 +17496,12 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
     });
     el.addEventListener('input', function () {
       var rawText = readEditableText(el);
-      var text = normalizeCanvasTextBreaks(rawText, col, key);
+      var text = normalizeCanvasTextBreaks(rawText, col, key, 'edit');
       if (canvasTextRulesEnabled(ctxName)) {
-        var limit = importCanvasTextTotalLimit(col, key);
-        var lineLimit = importCanvasTextLineLimit(col, key);
         var limited = isCanvasCtaTextField(col, key)
           ? Array.from(text).slice(0, 3).join('')
-          : truncateImportCanvasText(text, limit, lineLimit);
-        limited = limitCanvasTextLineCount(limited, col, key);
+          : fitCanvasText(el, text, col, key);
+        limited = limitCanvasTextLineCount(limited, col, key, 'edit');
         if (limited !== rawText) {
           text = limited;
           setEditableTextPreserveCaret(el, limited);
@@ -17010,6 +17513,7 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       var beforeRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
         ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
       col.data[key] = text;
+      (col._manualText = col._manualText || {})[key] = true;
       syncCanvasAddLineButton(el, col, idx, ctxName, key);
       var afterRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
         ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
@@ -17957,6 +18461,9 @@ function restoreImportSnapshot(snap) {
       if (typeof snap.theme[it.key] === 'string') importTheme[it.key] = snap.theme[it.key];
     });
     importTheme.bgAuto = snap.theme.bgAuto !== false;
+    /* 暫存檔帶的 CTA 底色／字色也要發佈給曝光資源／背景色，三處保持一致。 */
+    if (typeof snap.theme.ctaBg === 'string') setImportCtaBg(snap.theme.ctaBg);
+    if (typeof snap.theme.ctaText === 'string') setImportCtaText(snap.theme.ctaText);
     saveImportTheme();
     renderImportColorPanel();
   }
@@ -18163,15 +18670,51 @@ function normalizedTicketColor(value, fallback) {
 }
 function currentImportColorTicketValues() {
   var background = normalizedTicketColor(resolvedImportBg(), '#FFFFFF');
-  var columns = activeImportPaletteColumns();
-  var sampled = sampledRoleColors(columns);
-  var linked = importLinkedDefaultColors(importTheme, sampled, background);
-  return {
+  var colors = {
     background: background,
-    promoText: normalizedTicketColor(importTheme.promoText || linked.promoText || sampled.promoText, '#FFFFFF'),
-    promoBg: normalizedTicketColor(importTheme.promoBg || linked.promoBg || sampled.promoBg, '#d12f60'),
-    warnText: normalizedTicketColor(importTheme.warnText || linked.warnText || sampled.warnText, '#4b5563')
+    btnHover: '#d12f60',        /* 預設值；來自取色工具的模擬結果 */
+    btnHoverTxt: '#FFFFFF',
+    btnNormal: '#FFFFFF',
+    btnNormalTxt: '#d12f60',
+    btnActive: '#f3f3f3',
+    btnActiveTxt: '#d12f60',
+    subText: '#2540b5',         /* 副標色，來自曝光資源 */
+    warnText: '#4b5563'
   };
+
+  /* 嘗試從「背景色工具」iframe 讀取最新的按鈕顏色狀態。
+     背景色工具中 simState 與 res 都是 script-level 變數，需要用 eval() 存取。 */
+  try {
+    var colorFrame = document.getElementById('color-frame');
+    var ctWin = colorFrame && colorFrame.contentWindow;
+    if (ctWin && typeof ctWin.eval === 'function') {
+      /* 建構取色工具的結果物件；getColorData() 應該提供完整的 res 與 ref。
+         優先用 getColorData()；若無則直接 eval 讀 simState.res 與 simState.ref。 */
+      var toolData = null;
+      if (typeof ctWin.getColorData === 'function') {
+        toolData = ctWin.getColorData();
+      }
+      if (!toolData) {
+        try {
+          var evalRes = ctWin.eval('({btnHover: hex(simState.res.btnHover), btnHoverTxt: hex(simState.res.btnHoverTxt), btnNormal: hex(simState.res.btnNormal), btnNormalTxt: hex(simState.res.btnNormalTxt), btnActive: hex(simState.res.btnActive), btnActiveTxt: hex(simState.res.btnActiveTxt)})');
+          if (evalRes) toolData = evalRes;
+        } catch (e) {}
+      }
+      if (toolData) {
+        if (/^#[0-9a-f]{6}$/i.test(toolData.btnHover || '')) colors.btnHover = toolData.btnHover;
+        if (/^#[0-9a-f]{6}$/i.test(toolData.btnHoverTxt || '')) colors.btnHoverTxt = toolData.btnHoverTxt;
+        if (/^#[0-9a-f]{6}$/i.test(toolData.btnNormal || '')) colors.btnNormal = toolData.btnNormal;
+        if (/^#[0-9a-f]{6}$/i.test(toolData.btnNormalTxt || '')) colors.btnNormalTxt = toolData.btnNormalTxt;
+        if (/^#[0-9a-f]{6}$/i.test(toolData.btnActive || '')) colors.btnActive = toolData.btnActive;
+        if (/^#[0-9a-f]{6}$/i.test(toolData.btnActiveTxt || '')) colors.btnActiveTxt = toolData.btnActiveTxt;
+      }
+    }
+  } catch (e) { /* 取色工具尚未載入或被跨域擋住，使用預設值 */ }
+
+  /* 副標色（來自曝光資源，用於 D27、D28）。 */
+  colors.subText = normalizedTicketColor(getExposureSubTextColor(), '#2540b5');
+
+  return colors;
 }
 function csvCell(value) {
   var text = String(value == null ? '' : value);
@@ -18180,11 +18723,20 @@ function csvCell(value) {
 function buildImportColorTicketCsv() {
   var colors = currentImportColorTicketValues();
   var rows = IMPORT_COLOR_TICKET_ROWS.map(function (row) { return row.slice(); });
-  [2, 9, 10, 12].forEach(function (rowNumber) { rows[rowNumber - 1][3] = colors.background; });
-  [8, 11, 13, 28].forEach(function (rowNumber) { rows[rowNumber - 1][3] = colors.promoText; });
-  rows[27 - 1][3] = colors.promoBg;
-  rows[32 - 1][3] = colors.warnText;
-  rows[33 - 1][3] = '#EE4E68';
+  /* 依「色票.xlsx」格式對應（來自 HBN Banner 取色工具）：
+     D2 背景色、D8/D9 滑過底/字、D10/D11 一般底/字、D12/D13 按下底/字、
+     D27/D28 副標、D32 活動價、D33 原價灰。 */
+  rows[2 - 1][3] = colors.background;       /* D2 背景色 */
+  rows[8 - 1][3] = colors.btnHover;         /* D8 滑過底 */
+  rows[9 - 1][3] = colors.btnHoverTxt;      /* D9 滑過字 */
+  rows[10 - 1][3] = colors.btnNormal;       /* D10 一般底 */
+  rows[11 - 1][3] = colors.btnNormalTxt;    /* D11 一般字 */
+  rows[12 - 1][3] = colors.btnActive;       /* D12 按下底 */
+  rows[13 - 1][3] = colors.btnActiveTxt;    /* D13 按下字 */
+  rows[27 - 1][3] = colors.subText;         /* D27 副標 */
+  rows[28 - 1][3] = colors.subText;         /* D28 副標 */
+  rows[32 - 1][3] = '#9D1500';              /* D32 活動價（原價灰） */
+  rows[33 - 1][3] = '#EE4E68';              /* D33 原價灰（活動價） */
   /* 原色票公式的實際結果。 */
   rows[3 - 1][3] = rows[2 - 1][3];
   rows[4 - 1][3] = rows[11 - 1][3];
@@ -21031,6 +21583,10 @@ function ensureExposureLoaded() {
     if (typeof window.woBroadcastLevel === 'function') setTimeout(window.woBroadcastLevel, 300);
     setTimeout(function () {
       if (typeof resolvedImportBg === 'function') pushImportBgToExposure(colorToHex(resolvedImportBg()));
+      /* 背景推過去會讓曝光資源重算自動 CTA；若使用者有手動指定的共用 CTA 底色／字色，接著再推一次。 */
+      if (typeof pushImportCtaBgToExposure === 'function' && importTheme.ctaBg) pushImportCtaBgToExposure(importTheme.ctaBg);
+      if (typeof pushImportCtaTextToExposure === 'function' && importTheme.ctaText) pushImportCtaTextToExposure(importTheme.ctaText);
+      if (typeof syncCtaTextToColorTool === 'function') syncCtaTextToColorTool();
       if (typeof pushExposureOverviewText === 'function') pushExposureOverviewText();
       /* 工單可能在曝光資源 iframe 建立前就已匯入；載入完成後要重送
          工單總覽的版位勾選規則，避免只剩 Shopee 自己的預設勾選狀態。 */
@@ -21116,6 +21672,11 @@ function pushImportBgToColorTool(hex) {
     else { win.postMessage({ type: 'wo-color-tool-set-bg', hex: bg }, '*'); }
   } catch (e) {}
   _colorToolSyncing = false;
+  /* 背景色工具換底色會清掉它的手動 CTA 覆寫；共用的手動 CTA 底色要再補推一次，
+     CTA 字色（手動或目前的自動色）也一併補推。 */
+  if (importTheme.ctaBg) pushImportCtaBgToColorTool(importTheme.ctaBg);
+  _lastCtaTextPushedToColorTool = null;
+  syncCtaTextToColorTool();
 }
 window.addEventListener('message', function (e) {
   var d = e.data || {};
@@ -21127,15 +21688,49 @@ window.addEventListener('message', function (e) {
   if (d.type === 'wo-color-tool-request-bg') {
     pushImportBgToColorTool();
   }
+  /* 背景色工具手動覆寫 CTA 底色（或還原建議色）→ 匯入工單／維修與曝光資源跟著走。 */
+  if (d.type === 'wo-color-tool-cta' && d.linked && !_colorToolCtaSyncing) {
+    var ctaHex = (d.manual && /^#[0-9a-fA-F]{6}$/.test(d.ctaBg || '')) ? String(d.ctaBg).toLowerCase() : '';
+    if ((importTheme.ctaBg || '') !== ctaHex || readSharedCtaBg() !== ctaHex) {
+      _colorToolCtaSyncing = true;
+      setImportCtaBg(ctaHex, { skipColorTool: true });
+      _colorToolCtaSyncing = false;
+      saveImportTheme();
+      refreshImportAndMaintColorLinks();
+      syncCtaTextToColorTool();
+    }
+    return;
+  }
+  /* 背景色工具手動覆寫 CTA 文字色（或還原）→ 匯入工單／維修與曝光資源跟著走。 */
+  if (d.type === 'wo-color-tool-cta-text' && d.linked && !_colorToolCtaTextSyncing) {
+    var ctaTextHex = (d.manual && /^#[0-9a-fA-F]{6}$/.test(d.ctaText || '')) ? String(d.ctaText).toLowerCase() : '';
+    if ((importTheme.ctaText || '') !== ctaTextHex || readSharedCtaText() !== ctaTextHex) {
+      _colorToolCtaTextSyncing = true;
+      setImportCtaText(ctaTextHex, { skipColorTool: true });
+      _colorToolCtaTextSyncing = false;
+      saveImportTheme();
+      refreshImportAndMaintColorLinks();
+    }
+    /* 還原後，把目前的自動字色推回去讓它的模擬畫布同色。 */
+    _lastCtaTextPushedToColorTool = null;
+    syncCtaTextToColorTool();
+    return;
+  }
   if (d.type === 'wo-color-tool-colors' && d.linked && d.bg && !_colorToolSyncing) {
     _colorToolSyncing = true;
     var hex = d.bg;
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+      hex = hex.toLowerCase();
       importTheme.bg = hex;
+      importTheme.bgAuto = false;
+      /* 背景色工具換底色時它自己的 CTA 覆寫已清除；這裡同步讓三處都回到自動 CTA。 */
+      relinkImportPromoColorsToBackground();
       writeSharedCanvasBg(hex);
       saveImportTheme();
       applyImportTheme();
+      if (maintColumns.length) applyMaintTheme();
       if (typeof renderImportColorPanel === 'function') renderImportColorPanel();
+      if (typeof renderMaintColorPanel === 'function') renderMaintColorPanel();
       try {
         var exFrame = document.getElementById('exposure-frame');
         var exWin = exFrame && exFrame.contentWindow;

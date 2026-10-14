@@ -671,12 +671,50 @@
     if (role === 'promoText' || role === 'badgeText' || role === 'ctaText') {
       var surfaceRole = role === 'promoText' ? 'promoBg' : (role === 'badgeText' ? 'badgeBg' : 'ctaBg');
       var shapeSurface = roleSurfaceForLayer(layer, surfaceRole, opts, data, fieldPrefix);
+      if (role === 'ctaText') {
+        /* CTA 字色與曝光資源／背景色工具共用同一個值（含自動色）時直接採用，
+           三處的 CTA 文字與三角形才會是同一個色；吃色防護由曝光資源那邊統一處理。 */
+        if (theme.ctaTextLinked && roleColor) return roleColor;
+        /* 同一版位的所有 CTA（左右兩組的字與三角形）必須得到同一個字色：
+           底色一律以統一的 CTA 底色為準（找不到壓在底下的色塊時也不例外），
+           基準色則統一取該版位第一個 CTA 文字層的設計色，不讓各圖層各自判斷。 */
+        if (!shapeSurface && theme.ctaBg && String(theme.ctaBg).trim() && schemaHasRoleLayer(opts, 'ctaBg')) {
+          shapeSurface = String(theme.ctaBg).trim();
+        }
+        var ctaBase = roleColor || canonicalCtaTextColor(opts) || layer.color ||
+          (layer.type !== 'text' ? layer.backgroundColor : null);
+        return shapeSurface ? readableLargeTextColor(ctaBase, shapeSurface) : ctaBase;
+      }
       if (shapeSurface) {
         var baseColor = roleColor || layer.color || (layer.type !== 'text' ? layer.backgroundColor : null);
         return readableLargeTextColor(baseColor, shapeSurface);
       }
     }
     return roleColor;
+  }
+
+  function schemaHasRoleLayer(opts, role) {
+    var layers = (opts && opts._schemaLayers) || [];
+    for (var i = 0; i < layers.length; i++) {
+      if (layers[i] && themeRoleOf(layers[i], opts && opts._schemaId) === role) return true;
+    }
+    return false;
+  }
+
+  /* 版位內第一個 CTA 文字層的設計字色；沒有文字 CTA 時用第一個三角形的顏色。 */
+  function canonicalCtaTextColor(opts) {
+    var layers = (opts && opts._schemaLayers) || [];
+    var fallback = null;
+    for (var i = 0; i < layers.length; i++) {
+      var candidate = layers[i];
+      if (!candidate || themeRoleOf(candidate, opts && opts._schemaId) !== 'ctaText') continue;
+      if (candidate.type === 'text') {
+        if (candidate.color && String(candidate.color).trim()) return String(candidate.color).trim();
+      } else if (!fallback && candidate.backgroundColor && String(candidate.backgroundColor).trim()) {
+        fallback = String(candidate.backgroundColor).trim();
+      }
+    }
+    return fallback;
   }
 
   function readableLargeTextColor(candidate, surface) {
@@ -699,19 +737,25 @@
     var bySuffix = candidates.filter(function (candidate) {
       return (((String(candidate.field || '').match(/(\d+)$/) || [])[1]) || '') === suffix;
     });
-    var pool = bySuffix.length ? bySuffix : candidates;
     var tl = Number(textLayer.left || 0), tt = Number(textLayer.top || 0);
     var tw = Number(textLayer.width || 0), th = Number(textLayer.height || textLayer.fontSize || 0);
     var cx = tl + tw / 2, cy = tt + th / 2;
-    var best = null;
-    pool.forEach(function (candidate) {
-      var l = Number(candidate.left || 0), t = Number(candidate.top || 0);
-      var w = Number(candidate.width || 0), h = Number(candidate.height || 0);
-      var dx = Math.max(l - cx, 0, cx - (l + w));
-      var dy = Math.max(t - cy, 0, cy - (t + h));
-      var distance = dx * dx + dy * dy;
-      if (!best || distance < best.distance) best = { layer: candidate, distance: distance };
-    });
+    function nearestIn(pool) {
+      var found = null;
+      pool.forEach(function (candidate) {
+        var l = Number(candidate.left || 0), t = Number(candidate.top || 0);
+        var w = Number(candidate.width || 0), h = Number(candidate.height || 0);
+        var dx = Math.max(l - cx, 0, cx - (l + w));
+        var dy = Math.max(t - cy, 0, cy - (t + h));
+        var distance = dx * dx + dy * dy;
+        if (!found || distance < found.distance) found = { layer: candidate, distance: distance };
+      });
+      return found;
+    }
+    /* 先用同編號的色塊；沒有欄位編號的圖層（例如右邊那組 CTA 的三角形）
+       會被歸到「無編號」而配到左邊那組，距離太遠時改用全部候選就近配對。 */
+    var best = bySuffix.length ? nearestIn(bySuffix) : null;
+    if (!best || best.distance > 120 * 120) best = nearestIn(candidates);
     if (!best) return null;
     /* 文字離色塊太遠（不是壓在它上面），就不以它當底色判斷 */
     if (best.distance > 120 * 120) return null;
@@ -1197,8 +1241,9 @@
       if (layer.topExact == null) top -= textPadV;
     }
 
+    /* 副區的警語（小字）與品名之間再多留一點距離：原本 2px，再加 2px。 */
     var warnNudge = opts && opts._subareaWarnNudge &&
-      layer.type === 'text' && /^warn\d*$/i.test(String(layer.field || '')) ? 2 : 0;
+      layer.type === 'text' && /^warn\d*$/i.test(String(layer.field || '')) ? 4 : 0;
     var movableTextFieldKey = isMovableCanvasTextLayer(layer) ? resolveFieldKey(layer, fieldPrefix) : null;
     var savedCanvasTextPosition = movableTextFieldKey && data && data.__canvasTextPositions
       ? data.__canvasTextPositions[movableTextFieldKey] : null;
@@ -1631,7 +1676,10 @@
           style: [
             'display:' + (fullTextHitbox ? 'block' : 'inline-block'),
             (isInlineCtaText ? 'width:auto' : (fullTextHitbox ? 'width:100%' : 'width:auto')),
-            'max-width:100%',
+            /* 圓標文字比框寬時（例如一行 3.5～4 字），內層跟著字面長寬、由外層 flex 置中，
+               左右對稱溢出；否則 text-align:center 只能在框內置中，多出的部分全往右邊跑。 */
+            (forceBadgeCenter ? 'max-width:none' : 'max-width:100%'),
+            (forceBadgeCenter ? 'min-width:max-content' : ''),
             /* 空白文字欄位只需要底部虛線提示；不能把可編輯內層撐滿圓標，
                否則 flex 會把圓標文字的行框推到錯誤位置。 */
             '',
@@ -1707,7 +1755,8 @@
       content = '<span' + editableTextInner.attrs + ' style="' + editableTextInner.style.join(';') + ';">' + content + '</span>';
     }
     var addLineBtn = '';
-    if (isTwoLineCenterText && opts && opts.editable && fieldKey) {
+    /* 圓標是試算表裡的一行資訊，只靠字數規則自動斷行，畫布不提供「+」加回第二行。 */
+    if (isTwoLineCenterText && !forceBadgeCenter && opts && opts.editable && fieldKey) {
       attrs += ' data-twoline-text="' + esc(fieldKey) + '"';
       if (!hasSecondLineText(data[fieldKey])) addLineBtn = addLineButtonHtml(fieldKey);
     }
