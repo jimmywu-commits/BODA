@@ -12589,8 +12589,13 @@ function runImportShadowReapply() {
   var commit = importShadowReapplyCommit;
   importShadowReapplyCommit = false;
   importShadowReapplyRunning = true;
-  reapplyImportShadowToUploads(commit).catch(function (err) {
+  var run;
+  try { run = reapplyImportShadowToUploads(commit); }
+  catch (err) { run = Promise.reject(err); }
+  Promise.resolve(run).catch(function (err) {
     console.warn('商品影子重烘失敗', err);
+    /* 烘影子途中任何一步出錯都要把 LOADING 收掉，否則畫面會一直卡在「套用影子」 */
+    if (APP_LOADING.active) appLoadingFail('商品影子套用失敗，已保留原圖');
   }).then(function () {
     importShadowReapplyRunning = false;
     if (importShadowReapplyPending) { importShadowReapplyPending = false; runImportShadowReapply(); }
@@ -12673,15 +12678,22 @@ function handleImageFiles(fileList) {
     if (--remaining > 0) return;
     /* 讀失敗的空項目剔除掉，再一次性重畫 */
     uploadedImages = uploadedImages.filter(function (x) { return x && x.url; });
-    renderImageGallery();
-    autoMatchImagesToColumns();
-    renderImportFieldsForCurrentColumns();
-    if (currentImportWorkbook) syncWorkbookOverviewTextToExposure(currentImportWorkbook);
-    broadcastBottomImageAssets();
-    queueBottomPersist();
+    try {
+      renderImageGallery();
+      autoMatchImagesToColumns();
+      renderImportFieldsForCurrentColumns();
+      if (currentImportWorkbook) syncWorkbookOverviewTextToExposure(currentImportWorkbook);
+      broadcastBottomImageAssets();
+      queueBottomPersist();
+    } catch (err) {
+      /* 重畫途中出錯也要把 LOADING 收掉，不然畫面會卡住 */
+      console.error('圖片上傳後重畫失敗', err);
+      appLoadingFail('圖片已上傳，但畫面更新失敗');
+      return;
+    }
     /* 自動比對到的商品圖，這時才去背＋加影子 */
-    scheduleImportShadowReapply(true);
     appLoadingFinish('圖片素材已上傳');
+    scheduleImportShadowReapply(true);
   }
   files.forEach(function (f, i) {
     uploadedImages[startIndex + i] = { name: f.name, url: '' }; /* 先佔位，保持上傳順序 */
@@ -14025,7 +14037,14 @@ function readImageFilesAsUrls(fileList, done) {
     appLoadingUpdate(8 + Math.round((completed / files.length) * 84),
       'LOADING · 讀取圖片', '已讀取 ' + completed + '/' + files.length + ' 張');
     if (--remaining === 0) {
-      done(urls.filter(Boolean));
+      try {
+        done(urls.filter(Boolean));
+      } catch (err) {
+        /* 放進欄位時出錯也要把 LOADING 收掉，不然畫面會卡住 */
+        console.error('圖片放入欄位失敗', err);
+        appLoadingFail('圖片已讀取，但放入欄位失敗');
+        return;
+      }
       appLoadingFinish('圖片讀取完成');
     }
   }
