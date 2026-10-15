@@ -1407,6 +1407,23 @@
           stateZIndex = opts._imageZSlots[orderedImageIndex];
         }
       }
+      if (layer.boundaryOnly) {
+        /* 隱形邊界框壓在內容圖之下（但仍在卡片背景之上，拖放才接得到）：
+           對方的圖拖進這塊時，滑鼠事件要落在圖片上才能繼續拖曳。 */
+        /* 內容圖的 z-index 可能來自統一值、圖片排序槽（右側工具列上下移）或 schema 原值，
+           隱形框一定要比「所有」可能的值都低，否則晚畫的隱形框會蓋住同層的圖片，
+           圖片就點不到、拖不動（msbn_A_2_2 右半邊的商品圖就曾這樣失效）。 */
+        var boundaryCandidates = [Number(layer.zIndex)];
+        if (!isSubareaSchema && opts && opts._contentImageZIndex != null) boundaryCandidates.push(Number(opts._contentImageZIndex));
+        if (opts && Array.isArray(opts._imageZSlots)) {
+          opts._imageZSlots.forEach(function (z) { boundaryCandidates.push(Number(z)); });
+        }
+        (opts && opts._schemaLayers || []).forEach(function (l) {
+          if (l && l.type === 'image' && isContentImageField(l.field) && l.zIndex != null) boundaryCandidates.push(Number(l.zIndex));
+        });
+        boundaryCandidates = boundaryCandidates.filter(function (z) { return isFinite(z); });
+        stateZIndex = boundaryCandidates.length ? Math.min.apply(null, boundaryCandidates) - 1 : 0;
+      }
       if (stateZIndex != null) style.push('z-index:' + stateZIndex);
       /* LOGO 圖是內縮70%，周圍留白要看得到白色底色，所以底色要一直鋪著（keepBgWithImage:true）；
          商品圖是滿版contain顯示，一旦有圖片，原本的灰色佔位底色就該完全消失，不能透出來。
@@ -1428,13 +1445,22 @@
          圖片是疊在它上面，所以放了圖之後底色還是要留著；
          一般商品圖框的底色只是佔位用的灰底，一放圖就該完全消失。 */
       var keepBg = layer.keepBgWithImage || !!layer.bgField;
+      if (layer.boundaryOnly) {
+        /* 隱形邊界框：同編號的曝品／贈品其中一格已有圖時，空的那格不畫佔位卡，
+           但仍以透明框留在畫布上並帶 data-img-field。image-layout 會把同編號的框
+           聯集成共同可移動範圍，圖片才能拖到對方的預設空間；框本身也仍可接受拖放。 */
+        style.push('background:transparent');
+        style.push('pointer-events:auto');
+        content = '';
+      } else {
       if (imgBgColor && (!url || keepBg)) style.push('background-color:' + imgBgColor);
       if (!url && rangePlaceholderOpacity != null) {
         style.push('opacity:' + rangePlaceholderOpacity);
       } else if (!url && layer.opacity != null) {
         style.push('opacity:' + layer.opacity); /* 半透明佔位色只在「還沒放圖片」時套用 */
       }
-      if (!url) {
+      }
+      if (!url && !layer.boundaryOnly) {
         /* 尚未上傳圖片：不畫 <img>（不會出現破圖跟滾輪提示文字），改放柔和的佔位卡 */
         style.push('display:flex');
         style.push('align-items:center');
@@ -1732,7 +1758,8 @@
           isMsbnB34ProductBoundary(opts && opts._schemaId, fieldKey)) {
         attrs += ' data-image-boundary="own"';
       }
-      if (rangePlaceholderOpacityOf(layer) != null && !url) attrs += ' data-bn-range-placeholder="1"';
+      if (rangePlaceholderOpacityOf(layer) != null && !url && !layer.boundaryOnly) attrs += ' data-bn-range-placeholder="1"';
+      if (layer.boundaryOnly) attrs += ' data-bn-boundary-only="1"';
       if (shouldSampleLogoBackground(layer, urls.length)) attrs += ' data-logo-bg-sample="adaptive"';
 
       /* aspectSource + aspectBoxes：同一組曝品／贈品範圍會依曝品原圖方向一起切換。
@@ -1769,20 +1796,26 @@
      「贈品圖」沒填也一樣，商品圖的範圍可以含進贈品圖原本的位置。
      判斷「沒填」＝欄位是空的，或還是原本的預設內容（例如簽名小字還是「簽名小字」）。
      被讓出來的圖層不會畫出來（不然會留下佔位卡或預設文字在那邊）。
-     有編號的欄位各自成一組：productImg 配 endorserImg/signImg/signNote/giftImg，
-     productImg2 配 endorserImg2/signImg2/signNote2/giftImg2，以此類推。 */
+     有編號的欄位各自成一組：productImg 配 endorserImg/signImg/signNote，
+     productImg2 配 endorserImg2/signImg2/signNote2，以此類推。
+     贈品圖不走這條：曝品／贈品的原始框只是各自的預設擺放位置，
+     可移動範圍永遠是兩框的聯集（不論贈品圖有沒有給、反過來也一樣），
+     由下方 hide 規則改畫成隱形邊界框交給 image-layout 聯集處理，不放大任何一方的預設框。 */
   var ABSORB_GROUPS = [
     /* 每一種可選圖片各自歸還空間，不綁成同一大組：
        只補簽名圖時只還簽名範圍；代言人仍空白時，那一塊仍可由曝品使用。 */
     { target: 'productImg', donors: ['endorserImg'] },
-    { target: 'productImg', donors: ['signImg', 'signNote'] },
-    { target: 'productImg', donors: ['giftImg'] }
+    { target: 'productImg', donors: ['signImg', 'signNote'] }
   ];
 
   function isFieldUnfilled(layer, data, key) {
     /* 文字有圖片依賴、但圖片尚未真正上傳時，視為空白。
        這讓代言人小字不會單獨佔住圖片空間。 */
     if (layer.requiresImageField && !hasRenderableImageValue(data && data[layer.requiresImageField])) return true;
+    /* 圖片欄位只有真的載得進來的圖（data:／http／blob）才算有填。
+       只有檔名（例如工單寫了贈品圖檔名但還沒上傳）會顯示成佔位卡、仍佔住版面，
+       所以這裡視為空白，讓曝品可以共用它的空間。 */
+    if (layer.type === 'image') return !hasRenderableImageValue(data ? data[key] : null);
     var v = data ? data[key] : null;
     if (v == null) return true;
     v = String(v).trim();
@@ -1819,44 +1852,11 @@
         }
       });
     });
-    /* MSBN A-3-1 的曝品／贈品是一個共用可移動範圍：只要其中一張有圖，
-       實際圖片的拖曳框就使用兩個範圍的聯集；空白的另一格只保留資料欄位，
-       不再蓋住畫布，也不會把圖片限制在原本較小的單格。 */
-    if (/^msbn_A_3_1$/i.test(String(schema && schema.id || ''))) {
-      ['','2','3'].forEach(function (suffix) {
-        var members = layers.filter(function (layer) {
-          return layer && layer.type === 'image' &&
-            (layer.field === 'productImg' + suffix || layer.field === 'giftImg' + suffix);
-        });
-        var active = members.filter(function (layer) {
-          return hasRenderableImageValue(data && data[layer.field]);
-        });
-        if (!active.length || !members.length) return;
-        var left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
-        members.forEach(function (layer) {
-          left = Math.min(left, Number(layer.left || 0));
-          top = Math.min(top, Number(layer.top || 0));
-          right = Math.max(right, Number(layer.left || 0) + Number(layer.width || 0));
-          bottom = Math.max(bottom, Number(layer.top || 0) + Number(layer.height || 0));
-          if (!hasRenderableImageValue(data && data[layer.field]) && res.hide.indexOf(layer) === -1) res.hide.push(layer);
-        });
-        var box = { left: left, top: top, width: right - left, height: bottom - top };
-        active.forEach(function (layer) {
-          var ti = res.targets.indexOf(layer);
-          if (ti === -1) {
-            res.targets.push(layer);
-            res.boxes.push(box);
-          } else {
-            res.boxes[ti] = box;
-          }
-        });
-      });
-    }
     ABSORB_GROUPS.forEach(function (group) {
       layers.forEach(function (target) {
         if (target.type !== 'image' || !target.field) return;
         if (target.width == null || target.height == null) return;
-        var m = new RegExp('^' + group.target + '(\d*)$').exec(target.field);
+        var m = new RegExp('^' + group.target + '(\\d*)$').exec(target.field);
         if (!m) return;
         /* 只有曝品真的已上傳時才接收其他空白圖片範圍。
            尚未上傳任何圖的預設狀態仍要把曝品／贈品／代言人／簽名各自的
@@ -1899,6 +1899,46 @@
       });
     });
     return res;
+  }
+
+  /* 兩個圖層原始框的聯集 */
+  function unionBoxOfLayers(a, b) {
+    var al = Number(a.left || 0), at = Number(a.top || 0);
+    var ar = al + Number(a.width || 0), ab = at + Number(a.height || 0);
+    var bl = Number(b.left || 0), bt = Number(b.top || 0);
+    var br = bl + Number(b.width || 0), bb = bt + Number(b.height || 0);
+    var l = Math.min(al, bl), t = Math.min(at, bt);
+    return { left: l, top: t, width: Math.max(ar, br) - l, height: Math.max(ab, bb) - t };
+  }
+
+  /* 曝品／贈品只有一張時的預設空間要避開同編號的圓標：
+     在 box 裡找「不壓到圓標底圓」的最大矩形（上／下／左／右四個候選取面積最大）。
+     版位沒有圓標、圓標被隱藏、或圓標根本沒壓到 box 時，原樣回傳 box。 */
+  function boxAvoidingBadge(schema, data, suffix, box) {
+    var badgeField = 'badgeColor' + (suffix || '');
+    var badge = null;
+    (schema.layers || []).some(function (l) {
+      if (l && l.type === 'circle' && l.field === badgeField && l.width != null && l.height != null) { badge = l; return true; }
+      return false;
+    });
+    if (!badge) return box;
+    if (badge.optionalColor && String(data && data[badgeField] == null ? '' : data[badgeField]).trim() === '') return box;
+    var bl = Number(badge.left || 0), bt = Number(badge.top || 0);
+    var br = bl + Number(badge.width || 0), bb = bt + Number(badge.height || 0);
+    var xl = box.left, xt = box.top, xr = box.left + box.width, xb = box.top + box.height;
+    if (br <= xl || bl >= xr || bb <= xt || bt >= xb) return box; /* 沒有重疊 */
+    var candidates = [
+      { left: xl, top: xt, width: xr - xl, height: bt - xt },  /* 圓標上方 */
+      { left: xl, top: bb, width: xr - xl, height: xb - bb },  /* 圓標下方 */
+      { left: xl, top: xt, width: bl - xl, height: xb - xt },  /* 圓標左側 */
+      { left: br, top: xt, width: xr - br, height: xb - xt }   /* 圓標右側 */
+    ];
+    var best = null;
+    candidates.forEach(function (c) {
+      if (c.width <= 0 || c.height <= 0) return;
+      if (!best || c.width * c.height > best.width * best.height) best = c;
+    });
+    return best || box;
   }
 
   /* 淺複製圖層並換掉範圍（不動到原始 schema，schema 是全部實例共用的） */
@@ -2137,7 +2177,50 @@
         var dynamicLayer = dynamicRowLayerOf(layer, dynamicRows);
         if (!dynamicLayer) return;
         if (absorb.skip.indexOf(layer) !== -1) return;
-        if (absorb.hide.indexOf(layer) !== -1 && !hasRenderableImageValue(data && layer.field && data[layer.field])) return;
+        var pairMatch = layer.type === 'image' && /^(productImg|giftImg)(\d*)$/.exec(String(layer.field || ''));
+        if (pairMatch) {
+          /* 曝品／贈品同編號為一對：原始框只是各自的預設擺放位置，可移動範圍永遠是兩框聯集。
+             - 對方已有圖而自己是空的 → 不畫佔位卡（不然圖片拖過去會被佔位卡擋住），
+               改畫隱形邊界框，讓 image-layout 聯集時仍算進這塊空間。
+             - 自己有圖而對方是空的 → 匯入時就直接用兩框的聯集當預設擺放空間與圖片大小，
+               不必再手動拖大。兩張都有圖時才各自回到原本的框。 */
+          var partnerField = (pairMatch[1] === 'productImg' ? 'giftImg' : 'productImg') + pairMatch[2];
+          var partnerLayer = null;
+          (schema.layers || []).some(function (l) {
+            if (l && l.type === 'image' && l.field === partnerField) { partnerLayer = l; return true; }
+            return false;
+          });
+          var selfFilled = hasRenderableImageValue(data && data[layer.field]);
+          var partnerFilled = !!partnerLayer && hasRenderableImageValue(data && data[partnerField]);
+          if (partnerLayer && !selfFilled && partnerFilled) {
+            /* 隱形邊界框直接畫成兩框聯集：對方的預設框可能為了避開圓標而縮小，
+               但可拖曳範圍仍要是完整聯集，所以由這個隱形框把空間補齊。 */
+            var pairBoundary = layerWithBox(layer, unionBoxOfLayers(layer, partnerLayer));
+            pairBoundary.boundaryOnly = true;
+            delete pairBoundary.aspectSource;
+            delete pairBoundary.aspectBoxes;
+            html += renderLayer(pairBoundary, pairBoundary.left, pairBoundary.top, data, null, renderOpts);
+            return;
+          }
+          if (partnerLayer && selfFilled && !partnerFilled) {
+            var unionBox = unionBoxOfLayers(layer, partnerLayer);
+            /* 預設擺放位置要避開圓標：在聯集裡取不壓到圓標的最大矩形。 */
+            var grownPair = layerWithBox(layer, boxAvoidingBadge(schema, data, pairMatch[2], unionBox));
+            /* 放大後的框就是預設空間本身，不能再被方／橫向切換用原本的小框蓋回去 */
+            delete grownPair.aspectSource;
+            delete grownPair.aspectBoxes;
+            html += renderLayer(grownPair, grownPair.left, grownPair.top, data, null, renderOpts);
+            return;
+          }
+        }
+        if (absorb.hide.indexOf(layer) !== -1 && !hasRenderableImageValue(data && layer.field && data[layer.field])) {
+          /* 同編號的曝品／贈品／代言人已有其中一張圖：空的那格不畫佔位卡，
+             但要以隱形邊界框留在畫布上，image-layout 才會把兩框聯集成共同可移動範圍。
+             雙向都成立：沒給贈品圖時曝品可移到贈品空間，沒給曝品時贈品也可移到曝品空間。 */
+          var boundary = Object.assign({}, layer, { boundaryOnly: true });
+          html += renderLayer(boundary, boundary.left, boundary.top, data, null, renderOpts);
+          return;
+        }
         var ti = absorb.targets.indexOf(layer);
         if (ti !== -1) {
           var grown = layerWithBox(layer, absorb.boxes[ti]);

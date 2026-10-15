@@ -11423,7 +11423,7 @@ function parseWorkbookOverviewByLabels(wb) {
     return m ? ('#' + m[1]).toLowerCase() : '';
   }
 
-  var result = { main: '', sub: '', date: '', productFiles: [], bg: '', bgChecked: null, found: false };
+  var result = { main: '', sub: '', date: '', productFiles: [], logoFiles: [], bg: '', bgChecked: null, found: false };
   var anchorRow = 0, anchorCol = 0;
   for (var r = 1; r <= maxRow && !anchorRow; r++) {
     for (var c = 1; c <= maxCol; c++) {
@@ -11432,9 +11432,9 @@ function parseWorkbookOverviewByLabels(wb) {
     }
   }
   if (anchorRow) {
-    var got = { main: false, sub: false, date: false, products: false };
+    var got = { main: false, sub: false, date: false, products: false, logos: false };
     for (var rr = anchorRow + 1; rr <= maxRow; rr++) {
-      if (got.main && got.sub && got.date && got.products) break;
+      if (got.main && got.sub && got.date && got.products && got.logos) break;
       for (var cc = 1; cc <= maxCol; cc++) {
         var cell = cellAt(rr, cc);
         if (isMergedSlave(cell)) continue;
@@ -11453,6 +11453,33 @@ function parseWorkbookOverviewByLabels(wb) {
             if (pv) names.push(pv);
           }
           result.productFiles = normalizeExposureAssetFileNames(names.join(','));
+        }
+        /* LOGO(限0-3個內)依序：右邊三格分別是左邊／中間／右邊的 LOGO 檔名。
+           只認第一組（DD Card 那一列）；同一張表的 HBN 列重複寫的 LOGO 不再覆蓋。 */
+        else if (!got.logos && /^LOGO\(限/.test(label)) {
+          got.logos = true; result.found = true;
+          /* 欄位位置不寫死：先找上方「左邊／中間／右邊」標題的欄，再讀標籤列（合併格可能往下延伸一列）。
+             找不到標題時，退回標籤右側三格。 */
+          var logoCols = [];
+          for (var lh = anchorRow; lh < rr; lh++) {
+            for (var lhc = 1; lhc <= maxCol; lhc++) {
+              var ht = norm(text(lh, lhc));
+              var side = ['左邊', '中間', '右邊'].indexOf(ht);
+              if (side !== -1 && !logoCols.some(function (p) { return p.side === side; })) logoCols.push({ side: side, col: lhc });
+            }
+          }
+          if (logoCols.length) {
+            logoCols.sort(function (a, b) { return a.side - b.side; });
+            logoCols = logoCols.map(function (p) { return p.col; });
+          } else {
+            logoCols = [cc + 1, cc + 2, cc + 3];
+          }
+          var logoNames = [];
+          logoCols.forEach(function (lcol) {
+            var lv = text(rr, lcol) || text(rr + 1, lcol);
+            if (lv) logoNames.push(lv);
+          });
+          result.logoFiles = normalizeExposureAssetFileNames(logoNames.join(','));
         }
       }
     }
@@ -11533,14 +11560,14 @@ function parseWorkbookExposureSpec(wb) {
     });
   }
   var byLabels = currentImportOverviewByLabels || parseWorkbookOverviewByLabels(wb);
-  var useLabels = !!(byLabels && (byLabels.main || byLabels.sub || byLabels.date || byLabels.productFiles.length || byLabels.bg));
+  var useLabels = !!(byLabels && (byLabels.main || byLabels.sub || byLabels.date || byLabels.productFiles.length || byLabels.logoFiles.length || byLabels.bg));
   return {
     version: WORK_ORDER_SPEC_VERSION,
     level: cell(3, 2),
     background: useLabels ? byLabels.bg : cell(14, 2),
     overview: useLabels ? {
       brand: '', main: byLabels.main, sub: byLabels.sub, date: byLabels.date,
-      icon: '', ar: '', logoFiles: '', productFiles: byLabels.productFiles.join(',')
+      icon: '', ar: '', logoFiles: byLabels.logoFiles.join(','), productFiles: byLabels.productFiles.join(',')
     } : {
       brand: cell(17, 2), main: cell(10, 2), sub: cell(11, 2),
       date: cell(12, 2), icon: cell(18, 2), ar: cell(19, 2),
@@ -11568,11 +11595,11 @@ function syncWorkbookOverviewTextToExposure(wb) {
   if (!ws) return false;
   if (typeof syncImportedExposureOverviewText !== 'function') return false;
   var byLabels = currentImportOverviewByLabels || parseWorkbookOverviewByLabels(wb);
-  if (byLabels && (byLabels.main || byLabels.sub || byLabels.date || byLabels.productFiles.length)) {
+  if (byLabels && (byLabels.main || byLabels.sub || byLabels.date || byLabels.productFiles.length || byLabels.logoFiles.length)) {
     /* BD 標籤版：固定儲存格 B10～B19 在這種表裡是別的欄位，不能混用。 */
     var labelData = {
       brand: '', main: byLabels.main, sub: byLabels.sub, date: byLabels.date,
-      icon: '', ar: '', logoFiles: '',
+      icon: '', ar: '', logoFiles: byLabels.logoFiles.join(','),
       productFiles: byLabels.productFiles.join(',')
     };
     syncImportedExposureOverviewText(labelData);
@@ -14555,6 +14582,17 @@ function isImportColorGloballyManagedField(blockId, fieldKey, fieldLabel) {
 
 /* 值是空字串＝沒有覆寫，維持版位自己原本的顏色。
    背景色是唯一有「自動預設值」的，bgAuto=true 代表還沒手動改過、要跟著曝光資源。 */
+/* 「品名字色 (深底區)」只會套在深色底上，存起來的值若本身是深色（舊版預設或誤存），
+   套上去會整個吃色、看不見；這種值視為無效，清掉後回到自動的白色高對比字。
+   「淺底區」同理：淺色值在淺底上看不見，清掉回到自動深色字。 */
+function sanitizeProductNameThemeColors(t) {
+  if (!t || typeof t !== 'object') return t;
+  var darkLuma = relativeLuminanceForDefaultColor(t.nameOnDarkBg);
+  if (darkLuma != null && darkLuma < 0.4) t.nameOnDarkBg = '';
+  var lightLuma = relativeLuminanceForDefaultColor(t.nameOnLightBg);
+  if (lightLuma != null && lightLuma > 0.6) t.nameOnLightBg = '';
+  return t;
+}
 var importTheme = (function () {
   var saved = null;
   try { saved = JSON.parse(localStorage.getItem(IMPORT_THEME_KEY)); } catch (e) {}
@@ -14564,6 +14602,7 @@ var importTheme = (function () {
     IMPORT_COLOR_ITEMS.forEach(function (it) {
       if (typeof saved[it.key] === 'string') t[it.key] = saved[it.key];
     });
+    sanitizeProductNameThemeColors(t);
   }
   var shared = readSharedCanvasBg();
   if (shared) t.bg = shared;
@@ -16193,14 +16232,22 @@ function buildImportColumnTools(col, idx, ctxName, env) {
     var localColorToolCol = null;
     if (actionRail) {
       var toolBlockId = String(col.blockId || '').toLowerCase();
-      var existingToolCol = toolBlockColumns[toolBlockId];
+      /* 同一排裡同一個版位 ID 可能出現多次（例如副區一排三：左、中都是 B-1-1，
+         但各自放不同商品）。只有「同一份資料」才合併成別名；資料不同的就各自一張工具卡，
+         不然第二格的商品圖在右側工具列會整個消失、沒辦法編輯或調整圖層。 */
+      var existingToolCol = null;
+      Object.keys(toolBlockColumns).forEach(function (k) {
+        var cand = toolBlockColumns[k];
+        if (!existingToolCol && cand && cand._bnToolBlockId === toolBlockId && cand._bnToolColData === col.data) existingToolCol = cand;
+      });
+      var toolBlockKey = toolBlockId + '#' + idx;
       if (existingToolCol) {
         var existingCols = (existingToolCol.getAttribute('data-col-list') || '').split(',').filter(Boolean);
         if (existingCols.indexOf(String(idx)) === -1) existingCols.push(String(idx));
         existingToolCol.setAttribute('data-col-list', existingCols.join(','));
         localColorToolCol = existingToolCol;
       } else {
-        toolBlockColumns[toolBlockId] = null;
+        toolBlockColumns[toolBlockKey] = null;
       var toolGroupsHtml = imageToolDefs.map(function (toolDef) {
         var toolRowsHtml = toolDef.partLayerOrder.map(function (imageIndex, layerIndex) {
           var part = toolDef.parts[imageIndex] || '';
@@ -16370,7 +16417,9 @@ function buildImportColumnTools(col, idx, ctxName, env) {
         hexInput.addEventListener('change', function () { setImportLogoBg(up, hexInput.value, true); });
         resetBtn.addEventListener('click', function () { setImportLogoBg(up, '', true); });
       });
-      toolBlockColumns[toolBlockId] = toolCol;
+      toolCol._bnToolBlockId = toolBlockId;
+      toolCol._bnToolColData = col.data;
+      toolBlockColumns[toolBlockKey] = toolCol;
       localColorToolCol = toolCol;
       }
     }
@@ -18460,6 +18509,7 @@ function restoreImportSnapshot(snap) {
     IMPORT_COLOR_ITEMS.forEach(function (it) {
       if (typeof snap.theme[it.key] === 'string') importTheme[it.key] = snap.theme[it.key];
     });
+    sanitizeProductNameThemeColors(importTheme);
     importTheme.bgAuto = snap.theme.bgAuto !== false;
     /* 暫存檔帶的 CTA 底色／字色也要發佈給曝光資源／背景色，三處保持一致。 */
     if (typeof snap.theme.ctaBg === 'string') setImportCtaBg(snap.theme.ctaBg);
