@@ -218,15 +218,22 @@ window.ShadowPlugin = (function () {
   function registerProduct(id, imgEl, type) {
     return new Promise(function (resolve) {
       function build() {
-        var silhouette = buildSilhouette(imgEl);
-        var trim = detectAlphaTrim(imgEl);
-        products[id] = { img: imgEl, silhouette: silhouette, tinted: null, trim: trim, type: type || 'product' };
-        // 2026-10：註冊時不再先把整張輪廓上色(每張都跟原圖一樣大，21格就是21張)，
-        // 等真的要畫陰影時再由tintedAtSize()依要畫的大小上色。
-        resolve(products[id]);
+        try {
+          var silhouette = buildSilhouette(imgEl);
+          var trim = detectAlphaTrim(imgEl);
+          products[id] = { img: imgEl, silhouette: silhouette, tinted: null, trim: trim, type: type || 'product' };
+          // 2026-10：註冊時不再先把整張輪廓上色(每張都跟原圖一樣大，21格就是21張)，
+          // 等真的要畫陰影時再由tintedAtSize()依要畫的大小上色。
+          resolve(products[id]);
+        } catch (e) {
+          // 建輪廓失敗（例如跨網域圖片污染畫布）也要讓 Promise 結束，呼叫端才不會一直等
+          console.warn('ShadowPlugin: 商品註冊失敗', e);
+          resolve(null);
+        }
       }
       if (imgEl.complete && imgEl.naturalWidth) build();
-      else imgEl.onload = build;
+      else if (imgEl.complete) resolve(null); // 已載入但壞圖：onload 永遠不會來
+      else { imgEl.onload = build; imgEl.onerror = function () { resolve(null); }; }
     });
   }
 
