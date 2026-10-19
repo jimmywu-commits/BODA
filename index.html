@@ -97,7 +97,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;}
 @keyframes appLoadingSpin{to{transform:rotate(360deg);}}
 
-/* ══════════════ 曝光資源（iframe 載入 shopee/jbpbn.html） ══════════════ */
+/* ══════════════ 曝光資源（iframe 載入 shopee/index.html） ══════════════ */
 #view-exposure.active{display:block;}
 #exposure-wrap{position:relative;width:100%;height:100%;background:#0d1117;}
 #exposure-frame{width:100%;height:100%;border:none;display:block;background:#0d1117;}
@@ -236,6 +236,10 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-toolbar{display:none;align-items:center;gap:10px;margin-bottom:14px;}
 #import-toolbar.show{display:flex;}
 #import-toolbar h2{font-size:15px;font-weight:800;margin-right:auto;}
+#import-history-actions{display:flex;align-items:center;gap:6px;}
+#import-history-actions button{height:34px;padding:0 11px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:#fff;color:var(--ink2);font-size:12px;font-weight:750;cursor:pointer;}
+#import-history-actions button:hover:not(:disabled){border-color:var(--teal);color:var(--teal-dark);background:var(--teal-tint);}
+#import-history-actions button:disabled{opacity:.38;cursor:not-allowed;}
 #import-canvas-layout{display:flex;align-items:stretch;gap:18px;flex:1;min-width:0;min-height:0;}
 #import-canvas-main{position:relative;flex:1;min-width:0;min-height:100%;}
 #import-canvas-tools{width:340px;flex:0 0 340px;height:100%;align-self:stretch;position:relative;
@@ -348,6 +352,12 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
   padding:26px 14px;text-align:center;cursor:pointer;transition:.12s;font-size:11px;color:var(--ink2);}
 #import-img-drop .id-icon{font-size:28px;margin-bottom:8px;}
 #import-img-drop:hover,#import-img-drop.dragover{border-color:var(--teal);background:var(--teal-tint);}
+#import-img-actions{display:flex;gap:8px;margin-top:8px;}
+#import-img-actions .btn{flex:1;min-height:34px;border:1.5px dashed var(--border-strong);background:#fff;color:var(--ink2);}
+#import-img-actions .btn:hover{border-color:var(--teal);background:var(--teal-tint);color:var(--teal-dark);}
+/* 暫存還原屬於匯入流程，緊接 STEP 2；尺寸沿用原本按鈕，只改成同區的虛線語彙。 */
+#btn-upload-snapshot{width:100%;margin-top:8px;border:1.5px dashed var(--border-strong);background:#fff;color:var(--ink2);}
+#btn-upload-snapshot:hover{border-color:var(--teal);background:var(--teal-tint);color:var(--teal-dark);}
 /* 左側僅負責上傳；已上傳素材不再顯示縮圖，避免工具列冗長。 */
 #import-img-gallery{display:none !important;}
 #import-img-gallery .im-empty{font-size:10.5px;color:var(--ink3);line-height:1.6;}
@@ -356,8 +366,17 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-shadow-panel .ishd-title{font-weight:600;color:var(--teal-dark);margin-bottom:6px;}
 #import-shadow-panel .ishd-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5px 0;}
 #import-shadow-panel .ishd-row input[type=range]{flex:1;max-width:130px;}
+#import-shadow-panel .ishd-auto-color{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink3);}
+#import-shadow-panel .ishd-color-chip{width:18px;height:18px;border:1px solid rgba(20,40,35,.18);border-radius:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.45);}
+#import-shadow-panel .ishd-note{margin:5px 0 2px;color:var(--ink3);font-size:9.5px;line-height:1.45;}
 #import-shadow-panel select{font-size:11px;}
 #import-shadow-panel button{margin-top:4px;font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background:#fff;cursor:pointer;}
+#import-shadow-panel .ishd-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:5px;}
+#import-shadow-panel .ishd-actions button{margin-top:0;}
+#import-shadow-panel #import-shadow-apply{border-color:var(--teal-dark);background:var(--teal-dark);color:#fff;font-weight:700;}
+#import-shadow-panel #import-shadow-apply:disabled{opacity:.55;cursor:wait;}
+#import-shadow-panel .ishd-status{margin-top:6px;font-size:9.5px;line-height:1.35;color:var(--ink3);}
+#import-shadow-panel .ishd-status.err{color:var(--danger);}
 #import-img-gallery .im-empty b{color:var(--teal-dark);}
 /* 已上傳素材的縮圖：可以直接拖到右邊畫布的圖片框裡 */
 #import-img-gallery .im-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
@@ -407,6 +426,11 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .bn-empty-text-placeholder{border-bottom:1px dashed rgba(90,110,106,.42);box-sizing:border-box;}
 .bn-empty-text-placeholder:hover{border-bottom-color:rgba(34,145,136,.72);}
 .bn-export-capture .bn-empty-text-placeholder{border-bottom-color:transparent !important;border-bottom-style:none !important;}
+/* 一行／二行文字與動態列的灰底 ICON 都是編輯輔助，不屬於成品內容。
+   合成圖、獨立副區、MSBN 與 ZIP 截圖都會先套用 .bn-export-capture。 */
+.bn-export-capture [data-add-line-field],
+.bn-export-capture .bn-dynamic-row-action,
+.bn-export-capture [data-bn-edit-only]{display:none !important;visibility:hidden !important;opacity:0 !important;}
 /* 有字 CTA 的文字與三角形是同一個水平群組；群組寬度跟著 CTA 底色，
    文字縮短時仍整組置中，且保留固定間距。 */
 .bn-cta-inline-group::after{content:"";display:block;flex:0 0 var(--bn-cta-triangle-width,0px);
@@ -857,11 +881,11 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     <button class="nav-item" data-view="exposure" title="曝光資源">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></span><span class="lbl">曝光資源</span>
     </button>
-    <button class="nav-item" data-view="color" title="背景色">
-      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 3.87 7 13 7 13s7-9.13 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="3" fill="var(--bg,#fff)" stroke="none"/></svg></span><span class="lbl">背景色</span>
+    <button class="nav-item" data-view="color" title="取色工具">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 3.87 7 13 7 13s7-9.13 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="3" fill="var(--bg,#fff)" stroke="none"/></svg></span><span class="lbl">取色工具</span>
     </button>
-    <button class="nav-item" data-view="bottom" title="吸底">
-      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12v5H6z"/><path d="M4 12h16v8H4z"/><path d="M8 12V9M16 12V9"/><path d="M8 16h8"/></svg></span><span class="lbl">吸底</span>
+    <button class="nav-item" data-view="bottom" title="吸底工具">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12v5H6z"/><path d="M4 12h16v8H4z"/><path d="M8 12V9M16 12V9"/><path d="M8 16h8"/></svg></span><span class="lbl">吸底工具</span>
     </button>
     <button class="nav-item" data-view="maint" title="維修">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.1a4.4 4.4 0 0 0-5.8 5.8L3.6 17.2a2.2 2.2 0 0 0 3.2 3.2l5.3-5.3a4.4 4.4 0 0 0 5.8-5.8l-3 3-3.2-.8-.8-3.2Z"/></svg></span><span class="lbl">維修</span>
@@ -898,7 +922,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
               </button>
               <button class="home-card" data-goto="bottom">
                 <div class="hc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12v5H6z"/><path d="M4 12h16v8H4z"/><path d="M8 12V9M16 12V9"/><path d="M8 16h8"/></svg></div>
-                <div class="hc-title">吸底</div>
+                <div class="hc-title">吸底工具</div>
                 <div class="hc-desc">依匯入資料編輯吸底成品</div>
               </button>
             </div>
@@ -936,7 +960,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           <div id="palette-tabs">
             <button class="ptab active" data-ptab="subarea">副區</button>
             <button class="ptab" data-ptab="msbn">MSBN</button>
-            <button class="ptab" data-ptab="sticky">吸底</button>
+            <button class="ptab" data-ptab="sticky">吸底工具</button>
           </div>
           <div id="palette-scroll"></div>
           <div id="generator-actions" aria-label="檔案操作">
@@ -1009,9 +1033,9 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
         <div id="exposure-fallback">
           <div class="ef-icon">🖼️</div>
           <div class="ef-title">找不到「曝光資源」的程式檔</div>
-          <div class="ef-desc">請把整包 JBP 編輯器（jbpbn.html、js/、html/、bgimg/、fonts/、bn測底圖 …）<br>
+          <div class="ef-desc">請把整包 JBP 編輯器（index.html、js/、html/、bgimg/、fonts/、bn測底圖 …）<br>
             放到跟這個 index.html 同一層的 <b>jbp/</b> 資料夾裡，重新整理即可。</div>
-          <div class="ef-desc">目前找的路徑：<b>shopee/jbpbn.html</b></div>
+          <div class="ef-desc">目前找的路徑：<b>shopee/index.html</b></div>
         </div>
       </div>
     </div>
@@ -1045,12 +1069,18 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           <div id="import-log"></div>
 
           <div id="import-img-section">
-            <div id="import-img-head"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg> 圖片素材（可一次選多張）</div>
+            <div id="import-img-head"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg> 圖片素材（可多選或整包資料夾）</div>
             <div id="import-img-drop">
               <div class="id-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></div>
-              <div class="id-text"><b>STEP 2<br>拖曳全部圖片到這裡</b>，或點擊選擇</div>
+              <div class="id-text"><b>STEP 2<br>拖曳圖片或整個資料夾到這裡</b>，或點擊選擇</div>
               <input type="file" id="import-img-input" accept="image/*" multiple hidden>
             </div>
+            <div id="import-img-actions">
+              <button class="btn" type="button" id="btn-import-img-folder">選擇圖片資料夾</button>
+              <input type="file" id="import-img-folder-input" accept="image/*" webkitdirectory directory multiple hidden>
+            </div>
+            <button class="btn" id="btn-upload-snapshot"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V10"/><path d="m7.8 13.8 4.2-4.2 4.2 4.2"/><path d="M4 4h16v5"/></svg> 上傳暫存檔還原編輯</button>
+            <input type="file" id="snapshot-file-input" accept=".json" hidden>
             <input type="file" id="imp-field-img-input" accept="image/*" hidden>
             <div id="import-shadow-panel">
               <div class="ishd-title">商品影子（上傳時自動套用）</div>
@@ -1062,9 +1092,15 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
                   <option value="right">右</option>
                 </select>
               </div>
+              <div class="ishd-row"><span>陰影顏色</span><span class="ishd-auto-color"><i id="import-shadow-color-chip" class="ishd-color-chip"></i><b id="import-shadow-color-val">自動</b></span></div>
+              <div class="ishd-note">依實際畫布背景色自動產生同色相深色；編輯預覽底色不參與計算。</div>
               <div class="ishd-row"><span>左右位移 <b id="import-shadow-x-val">0%</b></span><input type="range" id="import-shadow-x" min="-30" max="30" step="1" value="0"></div>
               <div class="ishd-row"><span>上下位移 <b id="import-shadow-y-val">0%</b></span><input type="range" id="import-shadow-y" min="-30" max="30" step="1" value="0"></div>
-              <button type="button" id="import-shadow-reset">還原預設</button>
+              <div class="ishd-actions">
+                <button type="button" id="import-shadow-reset">還原預設</button>
+                <button type="button" id="import-shadow-apply" title="強制以目前設定重製已放進商品欄位的圖片">套用修改</button>
+              </div>
+              <div id="import-shadow-status" class="ishd-status" aria-live="polite">上傳或調整設定後會自動套用；未更新時可按「套用修改」。</div>
             </div>
             <div id="import-img-gallery" aria-hidden="true"><div class="im-empty">還沒有上傳圖片</div></div>
           </div>
@@ -1090,9 +1126,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           </div>
 
           <div id="import-dl-bar">
-            <button class="btn" id="btn-upload-snapshot" style="width:100%;"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V10"/><path d="m7.8 13.8 4.2-4.2 4.2 4.2"/><path d="M4 4h16v5"/></svg> 上傳暫存檔還原編輯</button>
-            <input type="file" id="snapshot-file-input" accept=".json" hidden>
-            <button class="btn primary" id="btn-download-import-package" style="margin-top:8px;"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 20h16"/></svg> 下載工單＋圖片＋暫存檔</button>
+            <button class="btn primary" id="btn-download-import-package"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 20h16"/></svg> 下載工單＋圖片＋暫存檔</button>
             <div class="dl-hint">會回填目前文字、色碼與共用文案至原 Excel，並下載合成 PNG、各版位獨立 PNG（副區整排、MSBN 逐顆、吸底多狀態圖）與編輯暫存 .json。</div>
           </div>
 
@@ -1101,6 +1135,10 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
         <div id="import-canvas-area">
           <div id="import-toolbar">
             <h2>匯入預覽</h2>
+            <div id="import-history-actions" aria-label="圖片編輯歷史">
+              <button type="button" id="import-image-undo" title="返回圖片移動／縮放的上一步（Ctrl/Cmd+Z）" disabled>↶ 上一步</button>
+              <button type="button" id="import-image-redo" title="重做圖片移動／縮放（Ctrl/Cmd+Shift+Z）" disabled>↷ 下一步</button>
+            </div>
             <label id="import-zoom-wrap">顯示
               <select id="import-canvas-zoom">
                 <option value="0.5">50%</option>
@@ -6935,13 +6973,14 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <!-- SheetJS：純前端產生 .xlsx，不需要伺服器 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="JS/fonts-embed.js"></script>
 <script src="JS/render-config.js"></script>
 <script src="core/core-engine.js"></script>
 <script src="core/schema-renderer.js?v=20261014-badgecenter"></script>
-<script src="shadow-module/shadow-plugin.js?v=20261015-shadow2"></script>
-<script src="JS/image-layout.js?v=20261013-shadowgeom1"></script>
-<script src="JS/editor-plugin.js?v=20261012-shadowrm1"></script>
+<script src="shadow-module/shadow-plugin.js?v=20261019-shadow3"></script>
+<script src="JS/image-layout.js?v=20261016-history1"></script>
+<script src="JS/editor-plugin.js?v=20261019-rotate3"></script>
 <script src="jbp/js/logo-editor-plugin.js"></script>
 
 <script>
@@ -7112,7 +7151,7 @@ function appLoadingPulse(label) {
 /* 頁面切換不是重工作業，但常會接著初始化 iframe、字體或大型畫布。
    先以共用視窗接住切換，再由真正的載入流程覆蓋進度；一般頁面至少等一個繪製週期才淡出。 */
 function appLoadingStartView(name) {
-  var labels = { home: '首頁', generator: '工單生成器', import: '匯入工單', exposure: '曝光資源', bottom: '吸底', maint: '維修' };
+  var labels = { home: '首頁', generator: '工單生成器', import: '匯入工單', exposure: '曝光資源', bottom: '吸底工具', maint: '維修' };
   APP_LOADING.viewToken++;
   var token = APP_LOADING.viewToken;
   appLoadingStart('LOADING · 正在開啟' + (labels[name] || '工具'), 12, '正在準備畫面與必要資源…');
@@ -10794,6 +10833,35 @@ function layoutTemplateWorksheet(wb) {
   return candidates[0] || null;
 }
 
+/* Layout_Output 沒有吸底區塊時，匯入工單畫布不應沿用上一份工單的吸底結果。
+   只認正式 Layout_Output（舊格式則退回 Layout_Template）中的吸底標記，
+   不以 _BODA_BOTTOM_STATE 或瀏覽器暫存 state 推測，避免空白工單誤顯示吸底。 */
+function workbookHasLayoutOutputBottom(wb) {
+  var ws = workOrderWorksheet(wb, 'Layout_Output') || layoutTemplateWorksheet(wb);
+  if (!ws) return false;
+  var maxRow = Number(ws.rowCount) || 0;
+  var maxCol = Math.min(Number(ws.columnCount) || 0, 80);
+  function plain(cell) {
+    var v = cell ? cell.value : '';
+    if (v && typeof v === 'object' && v.richText) v = v.richText.map(function (part) { return part.text; }).join('');
+    if (v && typeof v === 'object' && v.text != null) v = v.text;
+    if (v && typeof v === 'object' && v.result != null) v = v.result;
+    return v == null ? '' : String(v).replace(/[\s\u3000]+/g, '');
+  }
+  for (var row = 1; row <= maxRow; row++) {
+    for (var col = 1; col <= maxCol; col++) {
+      var text = plain(ws.getCell(row, col));
+      if (/^吸底(?:[_-](?:兩|二|三|四|五|\d+)格)?$/.test(text)) return true;
+    }
+  }
+  return false;
+}
+
+function markImportColumnsBottomSource(columns, hasBottomWorkOrder) {
+  if (Array.isArray(columns)) columns.hasBottomWorkOrder = !!hasBottomWorkOrder;
+  return columns;
+}
+
 /* Layout_Output（舊版為 Layout_Template 2.0）的左側 B:S 是資料契約；U 欄以後只是版位參考圖。
    同一列可以放 3 個（A/B）或 2 個（C/D/E）不同副區，band 保留該橫列，
    因此匯入畫布會維持試算表由左到右、再由上到下的原始順序。 */
@@ -11382,15 +11450,211 @@ function workbookCellPlainString(cell) {
   if (v && typeof v === 'object' && v.result != null) v = v.result;
   return v == null ? '' : String(v).trim();
 }
-/* 匯入試算表時，工單總覽 B14（通常是合併的 B14:D14）是本次工單的
-   共用背景色來源。所有新版／舊版解析路徑都先走這個共用函式，
-   確保匯入畫布與曝光資源使用同一個色號。 */
+
+/* 工單的「包套」欄位不再綁死 B3：在「工單總覽」找出包套／包套(等級)，
+   讀取同列右側第一個有值的儲存格。這樣欄位左右移動或改成合併儲存格仍可匯入。 */
+function normalizeWorkbookLevelText(value) {
+  return String(value == null ? '' : value)
+    .replace(/[\s\u3000]+/g, '')
+    .replace(/＋/g, '+')
+    .replace(/（/g, '(').replace(/）/g, ')')
+    .toLowerCase();
+}
+var WORKBOOK_DEFAULT_LEVEL_ID = 'brand_star_mega';
+var pendingWorkbookLevelId = '';
+function workbookLevelFuzzyKey(value) {
+  return normalizeWorkbookLevelText(value).replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
+}
+function workbookLevelDiceScore(left, right) {
+  var a = workbookLevelFuzzyKey(left), b = workbookLevelFuzzyKey(right);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.length >= 3 && b.indexOf(a) !== -1) return 0.78 + Math.min(0.2, (a.length / b.length) * 0.2);
+  if (b.length >= 3 && a.indexOf(b) !== -1) return 0.78 + Math.min(0.2, (b.length / a.length) * 0.2);
+  if (a.length < 2 || b.length < 2) return 0;
+  var pairs = {}, matches = 0;
+  for (var i = 0; i < a.length - 1; i++) {
+    var pair = a.slice(i, i + 2);
+    pairs[pair] = (pairs[pair] || 0) + 1;
+  }
+  for (var j = 0; j < b.length - 1; j++) {
+    var target = b.slice(j, j + 2);
+    if (pairs[target] > 0) { pairs[target]--; matches++; }
+  }
+  return (2 * matches) / ((a.length - 1) + (b.length - 1));
+}
+function workbookLevelIdFromValue(value) {
+  var normalized = normalizeWorkbookLevelText(value);
+  if (!normalized || typeof LEVELS === 'undefined') return '';
+  for (var i = 0; i < LEVELS.length; i++) {
+    if (normalizeWorkbookLevelText(LEVELS[i].id) === normalized ||
+        normalizeWorkbookLevelText(LEVELS[i].label) === normalized) return LEVELS[i].id;
+  }
+
+  /* 相容外部工單略去 A／B 等級前綴或改用全形括號的寫法；先判斷「資交」，
+     避免 BOD A 資交被較寬鬆的 BOD A 規則吃掉。 */
+  var isExchange = normalized.indexOf('資交') !== -1;
+  if (/brandstar.*mega/.test(normalized)) return isExchange ? 'brand_star_mega_zj' : 'brand_star_mega';
+  if (normalized.indexOf('精選套裝') !== -1) return 'select_pkg';
+  if (normalized.indexOf('品牌旗艦mdd') !== -1 || normalized.indexOf('mdd') !== -1) return isExchange ? 'mdd_zj' : 'mdd';
+  if (/boda/.test(normalized)) return isExchange ? 'bod_a_zj' : 'bod_a';
+  if (/bodb/.test(normalized) && normalized.indexOf('mega') !== -1) return 'bod_b_mega';
+  if (normalized.indexOf('基礎套裝') !== -1) return 'basic';
+  /* 既有人工單同時出現 JBP／JPB 兩種拼法，並可能帶「B級」「多店活動」等字樣。
+     兩者都視為同一個「B JBP多店」，避免因三個英文字母順序不同而掉回預設 A。 */
+  if (normalized.indexOf('jbp多店') !== -1 || normalized.indexOf('jpb多店') !== -1 ||
+      (normalized.indexOf('多店') !== -1 && /j(?:bp|pb)/.test(normalized))) return 'jbp_multi';
+  if (normalized.indexOf('金牌') !== -1 && normalized.indexOf('mega') !== -1) return 'gold_mega';
+
+  /* 最後一層才做真正的模糊比對，容許少字、空格、括號及輕微拼字差異。
+     分數不足不硬猜，由呼叫端統一回到 A Brand star (Mega)。 */
+  var bestId = '', bestScore = 0;
+  LEVELS.forEach(function (level) {
+    [level.label, level.id].forEach(function (candidate) {
+      var score = workbookLevelDiceScore(value, candidate);
+      if (score > bestScore) { bestScore = score; bestId = level.id; }
+    });
+  });
+  return bestScore >= 0.62 ? bestId : '';
+}
+function parseWorkbookOverviewLevel(wb) {
+  var ws = workOrderWorksheet(wb, '工單總覽');
+  if (!ws) return null;
+  var maxRow = Math.min(Number(ws.rowCount) || 0, 120);
+  var maxCol = Math.min(Number(ws.columnCount) || 0, 30);
+  function masterCell(row, col) {
+    var cell = ws.getCell(row, col);
+    return cell && cell.isMerged && cell.master ? cell.master : cell;
+  }
+  function labelKey(value) {
+    return normalizeWorkbookLevelText(value).replace(/[()：:]/g, '');
+  }
+  for (var row = 1; row <= maxRow; row++) {
+    for (var col = 1; col <= maxCol; col++) {
+      var labelCell = masterCell(row, col);
+      if (!labelCell || (labelCell.address !== ws.getCell(row, col).address)) continue;
+      var key = labelKey(workbookCellPlainString(labelCell));
+      if (key !== '包套' && key !== '包套等級') continue;
+      for (var valueCol = col + 1; valueCol <= Math.min(maxCol, col + 6); valueCol++) {
+        var valueCell = masterCell(row, valueCol);
+        if (!valueCell || (valueCell.address !== ws.getCell(row, valueCol).address)) continue;
+        var raw = workbookCellPlainString(valueCell);
+        if (!raw) continue;
+        return { raw: raw, id: workbookLevelIdFromValue(raw), row: row, col: valueCol };
+      }
+    }
+  }
+
+  /* 向下相容早期固定 B3 的 BODA 工單。 */
+  var fallback = workbookCellPlainString(ws.getCell('B3'));
+  return fallback ? { raw: fallback, id: workbookLevelIdFromValue(fallback), row: 3, col: 2 } : null;
+}
+function applyWorkbookOverviewLevel(wb) {
+  var parsed = parseWorkbookOverviewLevel(wb);
+  var matchedId = parsed && parsed.id ? parsed.id : '';
+  var targetId = matchedId || WORKBOOK_DEFAULT_LEVEL_ID;
+  if (!parsed) parsed = { raw: '', row: 0, col: 0 };
+  parsed.id = targetId;
+  parsed.usedDefault = !matchedId;
+  if (parsed.usedDefault) console.warn('[BODA] 工單總覽的包套無法對應，已使用預設等級 A Brand star (Mega)：', parsed.raw || '空白');
+  /* STEP 1 有可能在等級控制器完成初始化前就讀完活頁簿。先記住結果並延後補套，
+     不能因為當下函式尚未掛到 window 就安靜留在舊等級。 */
+  pendingWorkbookLevelId = targetId;
+  function flushWorkbookLevel() {
+    if (!pendingWorkbookLevelId || typeof window.woApplyLevelFromWorkOrder !== 'function') return false;
+    var nextId = pendingWorkbookLevelId;
+    pendingWorkbookLevelId = '';
+    window.woApplyLevelFromWorkOrder(nextId);
+    return true;
+  }
+  if (!flushWorkbookLevel()) [0, 80, 250, 800].forEach(function (delay) {
+    setTimeout(flushWorkbookLevel, delay);
+  });
+  return parsed;
+}
+/* 匯入試算表時，工單總覽的「◆ 底色色號:」右邊第二格是本次工單的
+   共用背景色來源。欄位位置不固定，新舊工單都以標籤相對位置讀取；
+   找不到標籤時才保留 B14／B10 的舊版退路。 */
 /* BD 工單格式（例：BD 測試 1014.xlsx）的工單總覽不是固定儲存格，改以標籤定位：
    1. 找到「【製作內容文案】」錨點，往下第一組
       「主標(限8字內)」「副標(限7字內)」「日期/警語(限14字內)」右邊一格＝主標／副標／日期文案；
       「商品品名-依序：(限1-3品內)」右邊三格＝三張曝品圖檔名（副檔名可不同）。
-   2. 「◆ 底色色號:」右邊是勾選框，再右邊是 #色碼；有勾選且有填色碼才匯入背景色。
+   2. 「◆ 底色色號:」右邊第二格是 #色碼（第一格可保留勾選框或其他提示）；
+      只要第二格有合法 #RRGGBB 就匯入，不受第一格勾選狀態影響。
    找不到錨點或任何標籤時回 null，讓舊的 0918V3 固定儲存格路徑繼續運作。 */
+function parseWorkbookOverviewLogoFiles(ws, maxRow, maxCol) {
+  if (!ws) return [];
+  maxRow = Math.min(Number(maxRow || ws.rowCount) || 0, 500);
+  maxCol = Math.min(Number(maxCol || ws.columnCount) || 0, 40);
+  function sourceCell(r, c) {
+    try {
+      var cell = ws.getCell(r, c);
+      return cell && cell.master && cell.master !== cell ? cell.master : cell;
+    } catch (_) { return null; }
+  }
+  function text(r, c) { return workbookCellPlainString(sourceCell(r, c)); }
+  function compact(value) {
+    return String(value || '').replace(/[\s\u3000]+/g, '')
+      .replace(/：/g, ':').replace(/（/g, '(').replace(/）/g, ')').replace(/／/g, '/').toLowerCase();
+  }
+  function sideIndex(value) {
+    var key = compact(value).replace(/logo|圖檔|圖片|位置|欄位|[:：()\-_／/]/g, '');
+    if (/^(左|左邊|左側)$/.test(key)) return 0;
+    if (/^(中|中間|中央)$/.test(key)) return 1;
+    /* 部分人工單把第三格標成「下面／下方」；與標準「右邊」同視為第 3 張。 */
+    if (/^(右|右邊|右側|下面|下方)$/.test(key)) return 2;
+    return -1;
+  }
+  function isLogoContext(row, firstCol, lastCol) {
+    var fromRow = Math.max(1, row - 5), toRow = Math.min(maxRow, row + 4);
+    var fromCol = Math.max(1, firstCol - 5), toCol = Math.min(maxCol, lastCol + 3);
+    for (var r = fromRow; r <= toRow; r++) {
+      for (var c = fromCol; c <= toCol; c++) {
+        var value = compact(text(r, c));
+        if (!value || value.indexOf('logo') === -1) continue;
+        if (/限0?-?3|最多3|上傳|依序|圖檔|圖片/.test(value)) return true;
+      }
+    }
+    return false;
+  }
+  function firstValueBelow(headerRow, col) {
+    for (var offset = 1; offset <= 4 && headerRow + offset <= maxRow; offset++) {
+      var cell = sourceCell(headerRow + offset, col);
+      /* 標題若是縱向合併格，合併範圍內仍屬同一個標題，不算「正下方資料」。 */
+      if (cell && Number(cell.row) <= headerRow) continue;
+      var value = text(headerRow + offset, col);
+      if (!value) continue;
+      if (sideIndex(value) !== -1) continue;
+      var key = compact(value);
+      if (/^logo\(限|^logo限|^logo上傳|^檔案格式|^規範字數|^內容$/.test(key)) continue;
+      return value;
+    }
+    return '';
+  }
+
+  var candidates = [];
+  for (var row = 1; row <= maxRow; row++) {
+    var slots = [];
+    for (var col = 1; col <= maxCol; col++) {
+      var side = sideIndex(text(row, col));
+      if (side < 0 || slots.some(function (item) { return item.side === side; })) continue;
+      slots.push({ side: side, col: col });
+    }
+    if (slots.length < 2) continue;
+    slots.sort(function (a, b) { return a.side - b.side; });
+    var firstCol = slots[0].col, lastCol = slots[slots.length - 1].col;
+    if (!isLogoContext(row, firstCol, lastCol)) continue;
+    var names = [];
+    slots.forEach(function (slot) {
+      var value = firstValueBelow(row, slot.col);
+      if (value) names.push(value);
+    });
+    names = normalizeExposureLogoFileNames(names.join(','));
+    if (names.length) candidates.push({ names: names, score: slots.length * 10 + names.length * 8 });
+  }
+  candidates.sort(function (a, b) { return b.score - a.score; });
+  return candidates.length ? candidates[0].names.slice(0, 3) : [];
+}
 function parseWorkbookOverviewByLabels(wb) {
   var ws = workOrderWorksheet(wb, '工單總覽');
   if (!ws) return null;
@@ -11479,10 +11743,17 @@ function parseWorkbookOverviewByLabels(wb) {
             var lv = text(rr, lcol) || text(rr + 1, lcol);
             if (lv) logoNames.push(lv);
           });
-          result.logoFiles = normalizeExposureAssetFileNames(logoNames.join(','));
+          result.logoFiles = normalizeExposureLogoFileNames(logoNames.join(','));
         }
       }
     }
+  }
+  /* Logo 欄位不綁死 H16:J17，也不要求 LOGO 標籤與檔名在同一列：
+     先找 Logo 區塊附近的左／中／右（或下面）標題，再讀各標題正下方第一個有效值。 */
+  var dynamicLogoFiles = parseWorkbookOverviewLogoFiles(ws, maxRow, maxCol);
+  if (dynamicLogoFiles.length) {
+    result.logoFiles = dynamicLogoFiles;
+    result.found = true;
   }
   for (var br = 1; br <= maxRow && !result.bg; br++) {
     for (var bc = 1; bc <= maxCol; bc++) {
@@ -11491,9 +11762,10 @@ function parseWorkbookOverviewByLabels(wb) {
       result.found = true;
       var checkCell = cellAt(br, bc + 1);
       result.bgChecked = !isUnchecked(checkCell);
-      var hex = '';
-      for (var hc = bc + 1; hc <= Math.min(maxCol, bc + 5) && !hex; hc++) hex = hexOf(text(br, hc));
-      if (result.bgChecked && hex) result.bg = hex;
+      /* 統一契約：標籤右邊第 2 格才是色碼。第一格即使是未勾選、空白或提示文字，
+         都不影響色碼匯入，讓新舊工單可共用同一個欄位規則。 */
+      var hex = hexOf(text(br, bc + 2));
+      if (hex) result.bg = hex;
       break;
     }
   }
@@ -11521,6 +11793,9 @@ function applyWorkbookOverviewBackground(wb) {
   if (typeof writeSharedCanvasBg === 'function') writeSharedCanvasBg(workbookBg);
   if (typeof saveImportTheme === 'function') saveImportTheme();
   if (typeof pushImportBgToExposure === 'function') pushImportBgToExposure(workbookBg);
+  /* 工單匯入不要求使用者先切到「取色工具」；主標配色在背景匯入時即建立，
+     曝光資源稍後載入也會從共用色回放。 */
+  if (typeof scheduleMainTextPaletteFromBackground === 'function') scheduleMainTextPaletteFromBackground(workbookBg);
   return workbookBg;
 }
 function workbookOverviewAssetRow(ws, label, fallbackRow) {
@@ -11540,6 +11815,9 @@ function parseWorkbookExposureSpec(wb) {
   var ws = workOrderWorksheet(wb, '工單總覽');
   if (!ws) return null;
   function cell(row, col) { return row > 0 ? workbookCellPlainString(ws.getCell(row, col)) : ''; }
+  var levelInfo = parseWorkbookOverviewLevel(wb);
+  var resolvedLevelId = levelInfo && levelInfo.id ? levelInfo.id : WORKBOOK_DEFAULT_LEVEL_ID;
+  var resolvedLevelLabel = (typeof getLevel === 'function') ? getLevel(resolvedLevelId).label : 'A Brand star (Mega)';
   var resources = [];
   for (var row = 23; row <= Math.max(23, ws.rowCount || 23); row++) {
     var key = cell(row, 1);
@@ -11563,7 +11841,7 @@ function parseWorkbookExposureSpec(wb) {
   var useLabels = !!(byLabels && (byLabels.main || byLabels.sub || byLabels.date || byLabels.productFiles.length || byLabels.logoFiles.length || byLabels.bg));
   return {
     version: WORK_ORDER_SPEC_VERSION,
-    level: cell(3, 2),
+    level: resolvedLevelLabel,
     background: useLabels ? byLabels.bg : cell(14, 2),
     overview: useLabels ? {
       brand: '', main: byLabels.main, sub: byLabels.sub, date: byLabels.date,
@@ -11880,6 +12158,13 @@ function parseImportXlsx(arrayBuffer, options) {
   return new ExcelJS.Workbook().xlsx.load(arrayBuffer).then(function (wb) {
     currentImportWorkbook = wb;
     currentImportWorkbookName = options.filename || currentImportWorkbookName || '';
+    var hasBottomWorkOrder = workbookHasLayoutOutputBottom(wb);
+    function finishImportColumns(columns) {
+      return markImportColumnsBottomSource(columns, hasBottomWorkOrder);
+    }
+    /* 匯入工單與吸底拖入工單共用同一個入口：先讀「工單總覽」包套右側欄位，
+       再同步主頁、吸底與曝光資源的等級下拉，後續解析／渲染才會使用正確額度。 */
+    applyWorkbookOverviewLevel(wb);
     applyWorkbookOverviewBackground(wb);
     syncWorkbookExposureSpec(wb);
     var hasOverviewText = syncWorkbookOverviewTextToExposure(wb);
@@ -11887,14 +12172,14 @@ function parseImportXlsx(arrayBuffer, options) {
     /* 以 Layout_Output 的可見欄位為主要來源，文字及圖片檔名都依同一張表解析；
        舊 Layout_Template／_BODA_META／MS Layout 僅作向下相容。 */
     var layoutTemplate = parseLayoutTemplateWorkbook(wb);
-    if (layoutTemplate !== null) return layoutTemplate;
+    if (layoutTemplate !== null) return finishImportColumns(layoutTemplate);
     var v2 = parseImportXlsxV2Workbook(wb);
-    if (v2 !== null) return v2;
+    if (v2 !== null) return finishImportColumns(v2);
     var visibleV2 = parseVisibleWorkOrderLayout(wb);
-    if (visibleV2 !== null) return visibleV2;
+    if (visibleV2 !== null) return finishImportColumns(visibleV2);
     /* 舊版相容：優先找原本的「工單」頁簽；再退回第一張可見工作表。 */
     var ws = workOrderWorksheet(wb, '工單') || workOrderWorksheet(wb, 'MS Layout') || wb.worksheets[0];
-    if (!ws) return [];
+    if (!ws) return finishImportColumns([]);
     var maxRow = ws.rowCount, maxCol = Math.max(ws.columnCount, 2);
 
     function cellStr(row, col) {
@@ -11997,7 +12282,7 @@ function parseImportXlsx(arrayBuffer, options) {
       r++;
     }
 
-    return out;
+    return finishImportColumns(out);
   });
 }
 
@@ -12031,6 +12316,64 @@ var demoImportRunId = 0;
 
 var uploadedImages = []; /* { name, url }，url 一律是 dataURL */
 
+/* 商品影子需要建立數張工作畫布（去背、量測、影子與輸出）。高解析原圖若直接以原尺寸
+   處理，除了記憶體會暴增，PNG 的 Base64 字串也可能超出 Chromium 上限而出現
+   RangeError: Invalid string length。這些是「運算用」上限，版位顯示尺寸、手動縮放與
+   ↻ 任意角度旋轉都不會被改小。 */
+var IMPORT_SHADOW_MAX_PRODUCT_PIXELS = 1600000; /* 約 1600 × 1000；足夠供 1200px 版位輸出 */
+var IMPORT_SHADOW_MAX_PRODUCT_EDGE = 1800;
+var IMPORT_SHADOW_MAX_OUTPUT_PIXELS = 3000000;
+var IMPORT_SHADOW_MAX_OUTPUT_EDGE = 2600;
+var IMPORT_SHADOW_EMBED_MAX_BASE64 = 1000000;
+
+function importShadowScaleForLimit(width, height, maxPixels, maxEdge) {
+  var w = Math.max(1, Number(width) || 1), h = Math.max(1, Number(height) || 1);
+  var byEdge = maxEdge > 0 ? maxEdge / Math.max(w, h) : 1;
+  var byPixels = maxPixels > 0 ? Math.sqrt(maxPixels / (w * h)) : 1;
+  return Math.min(1, byEdge, byPixels);
+}
+function importShadowLimitedCanvas(source, maxPixels, maxEdge) {
+  if (!source || !source.width || !source.height) return source;
+  var scale = importShadowScaleForLimit(source.width, source.height, maxPixels, maxEdge);
+  if (scale >= 0.9999) return source;
+  var out = document.createElement('canvas');
+  out.width = Math.max(1, Math.round(source.width * scale));
+  out.height = Math.max(1, Math.round(source.height * scale));
+  var outCtx = out.getContext('2d');
+  if (!outCtx) return source;
+  outCtx.imageSmoothingEnabled = true;
+  outCtx.imageSmoothingQuality = 'high';
+  outCtx.drawImage(source, 0, 0, source.width, source.height, 0, 0, out.width, out.height);
+  return out;
+}
+/* 回傳適合影子／去背運算的 Image。僅在原圖超出安全上限時縮圖，最後版位仍依影子幾何
+   對齊商品本體，所以不會造成使用者拖曳旋轉時看起來持續縮小。 */
+function importShadowWorkImage(img) {
+  return new Promise(function (resolve) {
+    if (!img || !img.naturalWidth || !img.naturalHeight) { resolve(img); return; }
+    var scale = importShadowScaleForLimit(img.naturalWidth, img.naturalHeight,
+      IMPORT_SHADOW_MAX_PRODUCT_PIXELS, IMPORT_SHADOW_MAX_PRODUCT_EDGE);
+    if (scale >= 0.9999) { resolve(img); return; }
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      var ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(img); return; }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, canvas.width, canvas.height);
+      var scaled = new Image();
+      scaled.onload = function () { resolve(scaled); };
+      scaled.onerror = function () { resolve(img); };
+      scaled.src = canvas.toDataURL('image/png');
+    } catch (err) {
+      console.warn('[BODA] 商品影子縮圖失敗，改用原圖處理。', err);
+      resolve(img);
+    }
+  });
+}
+
 /* 把「逗號分隔的多張圖」欄位值拆成陣列。
    dataURL（data:image/png;base64,xxxx）本身固定含有一個逗號，
    不能直接用逗號切，切開後遇到 data: 開頭的片段，
@@ -12052,7 +12395,7 @@ function trimImportImageWhiteBorder(dataUrl) {
     if (!dataUrl || !/^data:image\/(png|jpe?g|webp|bmp|gif);/i.test(String(dataUrl))) { resolve(dataUrl); return; }
     /* 烘過影子的商品圖（PNG 內帶 bodaShadowGeom）本體早就裁好了，外圍那圈淡淡的影子是故意留的：
        不能再裁，否則重新載入後影子被切掉、本體位置也對不上 */
-    if (importShadowReadGeometry(String(dataUrl).trim())) { resolve(dataUrl); return; }
+    if (importShadowGeometryOf(String(dataUrl).trim())) { resolve(dataUrl); return; }
     var img = new Image();
     img.onload = function () {
       try {
@@ -12083,8 +12426,16 @@ function trimImportImageWhiteBorder(dataUrl) {
         var right = Math.min(fullW - 1, Math.ceil((x1 + 1) / scale)), bottom = Math.min(fullH - 1, Math.ceil((y1 + 1) / scale));
         var cropW = right - left + 1, cropH = bottom - top + 1;
         if (left === 0 && top === 0 && right === fullW - 1 && bottom === fullH - 1) { resolve(dataUrl); return; }
-        var out = document.createElement('canvas'); out.width = cropW; out.height = cropH;
-        out.getContext('2d').drawImage(img, left, top, cropW, cropH, 0, 0, cropW, cropH);
+        /* 裁白邊後不需要保留過大的工作圖；後續仍會依商品／影子幾何對齊畫布。 */
+        var trimScale = importShadowScaleForLimit(cropW, cropH,
+          IMPORT_SHADOW_MAX_PRODUCT_PIXELS, IMPORT_SHADOW_MAX_PRODUCT_EDGE);
+        var out = document.createElement('canvas');
+        out.width = Math.max(1, Math.round(cropW * trimScale));
+        out.height = Math.max(1, Math.round(cropH * trimScale));
+        var outCtx = out.getContext('2d');
+        outCtx.imageSmoothingEnabled = true;
+        outCtx.imageSmoothingQuality = 'high';
+        outCtx.drawImage(img, left, top, cropW, cropH, 0, 0, out.width, out.height);
         resolve(out.toDataURL('image/png'));
       } catch (err) { resolve(dataUrl); }
     };
@@ -12100,6 +12451,72 @@ function trimImportImageWhiteBorder(dataUrl) {
 var IMPORT_SHADOW_KEY = 'wo_import_shadow_v1';
 var IMPORT_SHADOW_ANGLES = ['off', 'left', 'top', 'right'];
 var importShadowSeq = 0;
+var importShadowBackgroundHex = '';
+var importShadowBackgroundTimer = null;
+
+/* 影子不再使用固定 #5a5a5a。以「實際輸出畫布背景」為來源，保留少量同色相、
+   壓低亮度並適度去飽和；ShadowPlugin 原本的透明度與模糊漸層仍完整保留。
+   #e8e4df 等編輯器預覽底色只負責看透明邊，不會傳進這個函式。 */
+function importShadowColorForBackground(backgroundHex) {
+  var hex = String(backgroundHex || '').trim();
+  if (/^#[0-9a-f]{3}$/i.test(hex)) hex = '#' + hex.slice(1).split('').map(function (c) { return c + c; }).join('');
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) hex = '#ffffff';
+  var n = parseInt(hex.slice(1), 16);
+  var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  var luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  /* 淺底壓到約 40%，深底保留約 55%；暖底會得到暖灰、藍底會得到深藍灰。 */
+  var factor = 0.38 + 0.18 * (1 - luma);
+  var gray = (0.2126 * r + 0.7152 * g + 0.0722 * b) * factor;
+  var desaturate = 0.28;
+  function channel(value) {
+    return Math.max(0, Math.min(255, Math.round(value * factor * (1 - desaturate) + gray * desaturate)));
+  }
+  return '#' + [channel(r), channel(g), channel(b)].map(function (value) {
+    return value.toString(16).padStart(2, '0');
+  }).join('');
+}
+
+function importShadowActualBackground() {
+  try {
+    var bg = typeof resolvedImportBg === 'function' ? resolvedImportBg() : '';
+    if (/^#[0-9a-f]{6}$/i.test(bg || '')) return String(bg).toLowerCase();
+  } catch (e) {}
+  return '#ffffff';
+}
+
+function updateImportShadowColorLabel() {
+  var color = importShadowColorForBackground(importShadowActualBackground());
+  var chip = document.getElementById('import-shadow-color-chip');
+  var label = document.getElementById('import-shadow-color-val');
+  if (chip) chip.style.background = color;
+  if (label) label.textContent = '自動 · ' + color;
+  return color;
+}
+
+/* 實際背景色改變後，把已使用的商品圖以新影子色重製；連續拖色盤時只在停下後跑一次。 */
+function syncImportShadowBackgroundSoon() {
+  var next = importShadowActualBackground();
+  updateImportShadowColorLabel();
+  if (!importShadowBackgroundHex) { importShadowBackgroundHex = next; return; }
+  if (next === importShadowBackgroundHex) return;
+  importShadowBackgroundHex = next;
+  clearTimeout(importShadowBackgroundTimer);
+  importShadowBackgroundTimer = setTimeout(function () {
+    scheduleImportShadowReapply(true);
+  }, 280);
+}
+
+function recolorImportShadowCanvas(ctx, width, height, color) {
+  var m = /^#([0-9a-f]{6})$/i.exec(String(color || ''));
+  if (!m || !(width > 0 && height > 0)) return;
+  var n = parseInt(m[1], 16), rr = (n >> 16) & 255, gg = (n >> 8) & 255, bb = n & 255;
+  var image = ctx.getImageData(0, 0, width, height), data = image.data;
+  for (var i = 0; i < data.length; i += 4) {
+    if (!data[i + 3]) continue;
+    data[i] = rr; data[i + 1] = gg; data[i + 2] = bb;
+  }
+  ctx.putImageData(image, 0, 0);
+}
 
 function clampImportShadowOffset(v) {
   var n = Number(v);
@@ -12122,6 +12539,33 @@ function saveImportShadowSettings(s) {
   try { localStorage.setItem(IMPORT_SHADOW_KEY, JSON.stringify(s)); } catch (e) {}
 }
 var importShadowSettings = loadImportShadowSettings();
+var importShadowEngineNoticeAt = 0;
+
+function isImportShadowEngineReady() {
+  var SP = window.ShadowPlugin;
+  return !!(SP && typeof SP.registerProduct === 'function' && typeof SP.setAngle === 'function' && typeof SP.renderScene === 'function');
+}
+function setImportShadowStatus(message, isError) {
+  var el = document.getElementById('import-shadow-status');
+  if (!el) return;
+  el.textContent = message || '';
+  el.classList.toggle('err', !!isError);
+}
+function setImportShadowApplyBusy(busy) {
+  var btn = document.getElementById('import-shadow-apply');
+  if (!btn) return;
+  btn.disabled = !!busy;
+  btn.textContent = busy ? '套用中…' : '套用修改';
+}
+function noteImportShadowEngineMissing() {
+  var now = Date.now();
+  if (now - importShadowEngineNoticeAt < 2000) return;
+  importShadowEngineNoticeAt = now;
+  console.error('[BODA] 商品影子引擎未載入：shadow-module/shadow-plugin.js');
+  setImportShadowStatus('商品影子引擎未載入，請確認 shadow-module/shadow-plugin.js 是否存在。', true);
+  var log = document.getElementById('import-log');
+  if (log) log.innerHTML = '<span class="err">商品影子引擎未載入，無法套用影子；請確認 shadow-module/shadow-plugin.js 是否與 index.html 一起部署。</span>';
+}
 
 function importImageHasTransparency(img) {
   var fullW = img.naturalWidth, fullH = img.naturalHeight;
@@ -12199,6 +12643,7 @@ function noteImportShadowSkipped() {
   var now = Date.now();
   if (now - importShadowSkipNoticeAt < 3000) return;
   importShadowSkipNoticeAt = now;
+  setImportShadowStatus('部分商品背景無法自動去背，因此未套用影子；可先用「編輯」去背後再按「套用修改」。', true);
   var log = document.getElementById('import-log');
   if (log) log.innerHTML = '<span class="err">有圖片的背景無法自動抽出，未加商品影子（可用圖片編輯按鈕手動去背後再套用）</span>';
 }
@@ -12259,8 +12704,10 @@ function importShadowGeometryOf(url) {
   if (g) importShadowGeometry[key] = g;
   return g;
 }
-/* 幾何跟著圖片走：烘好的 PNG 在 IHDR 後面插一個 tEXt chunk（keyword bodaShadowGeom），
-   圖片不管存到匯入狀態、吸底、下載的 .json，再回來都還知道商品本體在哪，不用另外存對照表。 */
+/* 幾何跟著圖片走：小型 PNG 會在 IHDR 後面插一個 tEXt chunk（keyword bodaShadowGeom）。
+   大型 PNG 若把整張 Base64 解開再重編，瀏覽器會產生數倍暫存字串並可能超出字串上限；
+   這時幾何改由 uploadedImages.shadowGeom 與暫存檔保存，載回時 importShadowGeometryFromState
+   會還原，不必拿穩定性換 PNG 內嵌資訊。 */
 var IMPORT_SHADOW_PNG_KEY = 'bodaShadowGeom';
 var IMPORT_PNG_HEAD = 'data:image/png;base64,';
 var importShadowCrcTable = null;
@@ -12282,6 +12729,9 @@ function importShadowU32(n) {
 }
 function importShadowEmbedGeometry(dataUrl, geom) {
   if (!dataUrl || dataUrl.indexOf(IMPORT_PNG_HEAD) !== 0 || !geom) return dataUrl;
+  /* atob/btoa 會同時建立原始 binary、插入 chunk 後的 binary 與 Base64 三份大字串。
+     大圖一律略過內嵌，幾何仍會在呼叫端存入 importShadowGeometry 與 img.shadowGeom。 */
+  if (dataUrl.length > IMPORT_SHADOW_EMBED_MAX_BASE64) return dataUrl;
   var bin;
   try { bin = atob(dataUrl.slice(IMPORT_PNG_HEAD.length)); } catch (e) { return dataUrl; }
   /* PNG 簽名 8 bytes＋IHDR chunk 25 bytes＝33，tEXt 插在這之後 */
@@ -12375,11 +12825,15 @@ function importShadowLoad(trimmedUrl) {
     var img = new Image();
     img.onerror = function () { resolve(fallback); };
     img.onload = function () {
-      if (!img.naturalWidth || !img.naturalHeight || !SP || typeof SP.registerProduct !== 'function') { resolve(fallback); return; }
-      /* 去背圖（有透明像素）直接用；白底 JPG 等不透明圖先摳掉背景，
-         否則整張底圖會把影子蓋住。畫布尺寸一律是原圖尺寸，版型不變。 */
-      var sourcePromise = importImageHasTransparency(img) ? Promise.resolve(img) : importCutoutImage(img);
-      sourcePromise.then(function (productImg) {
+      if (!img.naturalWidth || !img.naturalHeight) { resolve(fallback); return; }
+      if (!isImportShadowEngineReady()) { noteImportShadowEngineMissing(); resolve(fallback); return; }
+      /* 先把超大原圖縮成影子工作尺寸，再去背。這只影響內部點陣解析度，
+         不改版位中的商品比例、已調好的位置或 ↻ 旋轉角度。 */
+      importShadowWorkImage(img).then(function (workImg) {
+        /* 去背圖（有透明像素）直接用；白底 JPG 等不透明圖先摳掉背景，
+           否則整張底圖會把影子蓋住。 */
+        return importImageHasTransparency(workImg) ? Promise.resolve(workImg) : importCutoutImage(workImg);
+      }).then(function (productImg) {
         if (!productImg) { resolve(fallback); return; }
         var id = 'import_shadow_' + (++importShadowSeq);
         return SP.registerProduct(id, productImg, 'product').then(function (p) {
@@ -12407,6 +12861,7 @@ function importShadowRelease(prep) {
 function importShadowRender(prep, st) {
   var SP = window.ShadowPlugin;
   if (st.angle === 'off') return prep.trimmed;
+  if (!isImportShadowEngineReady()) { noteImportShadowEngineMissing(); return prep.trimmed; }
   if (!prep.product) { noteImportShadowSkipped(); return prep.trimmed; }
   var pw = prep.pw, ph = prep.ph, id = prep.id, productImg = prep.product;
   SP.setAngle(st.angle);
@@ -12415,7 +12870,8 @@ function importShadowRender(prep, st) {
   var fullW = pw + pad.side * 2, fullH = pad.top + ph + pad.bottom;
   var groundPad = prep.trim ? prep.trim.bottom * ph : 0;
   /* 場景座標（商品左上角在 (pad.side, pad.top)），再平移 -ox/-oy 畫到輸出畫布上。 */
-  var drawScene = function (ctx, s, ox, oy) {
+  var shadowColor = importShadowColorForBackground(importShadowActualBackground());
+  var drawScene = function (ctx, s, ox, oy, recolor) {
     var dw = pw * s, dh = ph * s;
     var dx = pad.side * s - ox, dy = pad.top * s - oy;
     var cx = dx + dw / 2, groundY = dy + dh - groundPad * s;
@@ -12423,6 +12879,7 @@ function importShadowRender(prep, st) {
       id: id, x: cx + offX * dw, y: groundY + offY * dh,
       w: dw, h: dh, groundAnchorX: cx, groundAnchorY: groundY
     }], true);
+    if (recolor) recolorImportShadowCanvas(ctx, ctx.canvas.width, ctx.canvas.height, shadowColor);
     return { dx: dx, dy: dy, dw: dw, dh: dh };
   };
   /* 第一遍：縮小畫布量影子範圍（讀整張像素，縮到 500px 內才快）。 */
@@ -12430,7 +12887,7 @@ function importShadowRender(prep, st) {
   var sW = Math.max(1, Math.ceil(fullW * sc)), sH = Math.max(1, Math.ceil(fullH * sc));
   var sCanvas = document.createElement('canvas'); sCanvas.width = sW; sCanvas.height = sH;
   var sctx = sCanvas.getContext('2d', { willReadFrequently: true });
-  drawScene(sctx, sc, 0, 0);
+  drawScene(sctx, sc, 0, 0, false);
   var box = importShadowAlphaBox(sctx, sW, sH);
   /* 量測是在縮圖上做的，換回原尺寸時多留一圈保險（模糊邊緣在縮圖上可能量不到）。 */
   var margin = Math.max(8, Math.ceil(ph * 0.03));
@@ -12450,7 +12907,7 @@ function importShadowRender(prep, st) {
     var outW = Math.max(1, x1 - x0), outH = Math.max(1, y1 - y0);
     canvas = document.createElement('canvas'); canvas.width = outW; canvas.height = outH;
     cctx = canvas.getContext('2d', { willReadFrequently: true });
-    placed = drawScene(cctx, 1, x0, y0);
+    placed = drawScene(cctx, 1, x0, y0, true);
     var e = importShadowEdges(cctx, outW, outH, 0);
     var grow = Math.max(16, Math.ceil(ph * 0.05));
     var touched = false;
@@ -12461,12 +12918,27 @@ function importShadowRender(prep, st) {
     if (!touched) break;
   }
   cctx.drawImage(productImg, placed.dx, placed.dy, placed.dw, placed.dh);
+  /* 影子邊界會讓輸出比商品本體大數倍。最後再限制輸出工作圖，避免 toDataURL
+     建立過長 Base64 字串；商品與影子位置的幾何一併等比縮放，畫布上的視覺大小不變。 */
+  var originalOutputWidth = canvas.width;
+  var limitedCanvas = importShadowLimitedCanvas(canvas,
+    IMPORT_SHADOW_MAX_OUTPUT_PIXELS, IMPORT_SHADOW_MAX_OUTPUT_EDGE);
+  var outputScale = originalOutputWidth > 0 ? (limitedCanvas.width / originalOutputWidth) : 1;
+  canvas = limitedCanvas;
   var geom = {
-    sourceWidth: pw, sourceHeight: ph,
+    sourceWidth: Math.max(1, Math.round(pw * outputScale)), sourceHeight: Math.max(1, Math.round(ph * outputScale)),
     outputWidth: canvas.width, outputHeight: canvas.height,
-    offsetX: Math.round(placed.dx), offsetY: Math.round(placed.dy)
+    offsetX: Math.round(placed.dx * outputScale), offsetY: Math.round(placed.dy * outputScale)
   };
-  var url = importShadowEmbedGeometry(canvas.toDataURL('image/png'), geom);
+  var encoded;
+  try {
+    encoded = canvas.toDataURL('image/png');
+  } catch (err) {
+    /* 極少數裝置仍可能無法把畫布轉成 dataURL；保留原圖繼續流程，避免一張圖拖垮整批。 */
+    console.warn('[BODA] 商品影子輸出過大，保留原圖。', err);
+    return prep.trimmed;
+  }
+  var url = importShadowEmbedGeometry(encoded, geom);
   importShadowGeometry[url] = geom;
   return url;
 }
@@ -12480,6 +12952,32 @@ function importShadowPrepared(originalDataUrl) {
   return hit;
 }
 
+/* 給商品圖片編輯器使用的單張即時合成入口。
+   編輯器會先輸出「沒有影子」的商品底圖（已包含任意角度旋轉），這裡立即用目前的
+   方向與位移重新合成。這與 Shopee 的 baseSrc → rotate → shadow 順序一致，旋轉時不會
+   把舊影子一起轉走，也讓後續調整光影能持續以這張新底圖重製。 */
+window.BODAImportShadow = window.BODAImportShadow || {};
+window.BODAImportShadow.composeProduct = function (baseUrl) {
+  if (!baseUrl || importShadowSettings.angle === 'off') {
+    return Promise.resolve({ url: baseUrl, geometry: null });
+  }
+  if (!isImportShadowEngineReady()) {
+    noteImportShadowEngineMissing();
+    return Promise.reject(new Error('商品影子引擎未載入'));
+  }
+  /* 把本次設定複製起來；合成中若使用者移動滑桿，這張圖仍會使用按下「完成套用」當下的設定。 */
+  var settings = {
+    angle: importShadowSettings.angle,
+    offsetX: importShadowSettings.offsetX,
+    offsetY: importShadowSettings.offsetY
+  };
+  return importShadowPrepared(baseUrl).then(function (prep) {
+    var baked = importShadowRender(prep, settings);
+    return { url: baked, geometry: importShadowGeometryOf(baked) };
+  });
+};
+window.BODAImportShadow.isReady = isImportShadowEngineReady;
+
 /* 拖完後清掉快取並釋放註冊的商品，避免大量圖片一直佔記憶體。 */
 function importShadowDropCache() {
   var old = importShadowPrepCache;
@@ -12487,13 +12985,321 @@ function importShadowDropCache() {
   Object.keys(old).forEach(function (k) { old[k].then(importShadowRelease, function () {}); });
 }
 
+/* 依畫布上的實際圖片值，補齊素材清單的對照。
+   暫存還原會裁白邊，裁後 dataURL 與 uploadedImages 原本保存的 dataURL 不再完全相同；
+   舊流程只從 uploadedImages 倒找，這些「畫布明明有圖、素材清單卻找不到」的圖片便會被
+   影子重製略過。每次重烘前先巡檢畫布，保證手動「套用修改」也能補救舊暫存檔。 */
+function isImportShadowImageUrl(value) {
+  return /^(?:data:image\/|blob:|https?:\/\/)/i.test(String(value || '').trim());
+}
+function importShadowAssetNameForUrl(url, ordinal) {
+  var raw = String(url || '').trim();
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      var name = decodeURIComponent(raw.split('?')[0].split('#')[0].split('/').pop() || '');
+      if (name) return name;
+    } catch (e) {}
+  }
+  return '畫布商品_' + String(ordinal || 1).padStart(3, '0') + '.png';
+}
+function importShadowAssetForCanvasValue(value) {
+  var key = String(value || '').trim();
+  if (!key) return null;
+  for (var i = (uploadedImages || []).length - 1; i >= 0; i--) {
+    var img = uploadedImages[i];
+    if (!img) continue;
+    if (img.url === key || img.baseUrl === key || img.logoUrl === key) return img;
+  }
+  if (!isImportShadowImageUrl(key)) {
+    for (var j = (uploadedImages || []).length - 1; j >= 0; j--) {
+      var named = uploadedImages[j];
+      if (named && sameImageFilename(named.name, key)) return named;
+    }
+  }
+  return null;
+}
+function importShadowActiveColumns() {
+  return typeof isPreviewAllCanvasActive === 'function' && isPreviewAllCanvasActive()
+    ? (previewAllColumns || []) : (currentImportColumns || []);
+}
+function auditImportShadowCanvasAssets() {
+  var result = { checked: 0, linked: 0, repaired: 0, alreadyShadow: 0, unresolved: 0,
+    missing: [], shadowCandidates: [], recovered: 0, needsOriginal: [] };
+  var generated = 0;
+  importShadowActiveColumns().forEach(function (col) {
+    var def = BNCore.getBlock(col && col.blockId);
+    if (!def || !col.data) return;
+    (def.fields || []).forEach(function (field) {
+      if (field.type !== 'image' || isImportLogoFieldKey(field.key)) return;
+      var parts = splitImageList(col.data[field.key] || '');
+      var changed = false;
+      parts = parts.map(function (part) {
+        var key = String(part || '').trim();
+        if (!key) return part;
+        result.checked++;
+        var asset = importShadowAssetForCanvasValue(key);
+        var location = String(col.header || def.name || col.blockId) + '／' + String(field.label || field.key);
+        function trackShadowBase(item, geometry) {
+          if (!item.shadowGeom) item.shadowGeom = geometry;
+          if (!result.shadowCandidates.some(function (entry) { return entry.asset === item; })) {
+            result.shadowCandidates.push({ asset: item, geometry: geometry, locations: [location], editorBase: '' });
+          }
+          var entry = result.shadowCandidates.filter(function (entry) { return entry.asset === item; })[0];
+          if (entry.locations.indexOf(location) < 0) entry.locations.push(location);
+          var states = col.data.__canvasImageEditorState || {};
+          Object.keys(states).some(function (stateKey) {
+            var state = states[stateKey];
+            if (stateKey.indexOf(field.key + '::') !== 0 || !state || state.outputSrc !== key) return false;
+            if (isImportShadowImageUrl(state.baseSrc) && !importShadowGeometryOf(state.baseSrc)) {
+              entry.editorBase = state.baseSrc;
+              return true;
+            }
+            return false;
+          });
+        }
+        /* 欄位只留下檔名時，也把它換成實際圖片網址，否則後面的 shadow map 沒有可替換的 key。 */
+        if (asset && !isImportShadowImageUrl(key) && asset.url) {
+          result.linked++;
+          changed = true;
+          if (!asset.baseUrl) {
+            var namedGeom = importShadowGeometryOf(asset.url);
+            if (namedGeom) trackShadowBase(asset, namedGeom);
+            else { asset.baseUrl = asset.url; result.repaired++; }
+          }
+          return asset.url;
+        }
+        if (asset) {
+          if (!asset.baseUrl) {
+            /* 沒有 baseUrl 的舊素材：原圖本身還沒烘影子時，可安全地補成新的重製基底。
+               如果 PNG 已內嵌影子幾何，代表只剩烘好版本，不能把它當底圖再疊一層影子。 */
+            if (importShadowGeometryOf(asset.url || key)) {
+              result.alreadyShadow++;
+              trackShadowBase(asset, importShadowGeometryOf(asset.url || key));
+            }
+            else { asset.baseUrl = asset.url || key; result.repaired++; }
+          }
+          result.linked++;
+          /* 商品欄位若誤存成 LOGO 處理版本，改回商品版，才能走影子管線。 */
+          if (asset.logoUrl === key && asset.url && asset.url !== key) { changed = true; return asset.url; }
+          return part;
+        }
+        if (!isImportShadowImageUrl(key)) {
+          result.unresolved++;
+          result.missing.push(location + '：' + key.slice(0, 120));
+          return part;
+        }
+        /* 這是裁白邊後才出現的 dataURL，或舊暫存直接把圖片寫在欄位裡。
+           建一筆可追溯素材，baseUrl 指向這張乾淨圖，接著同一輪就會烘影子。 */
+        if (importShadowGeometryOf(key)) {
+          result.alreadyShadow++;
+          asset = { name: importShadowAssetNameForUrl(key, uploadedImages.length + 1), url: key,
+            baseUrl: '', shadowGeom: importShadowGeometryOf(key) };
+          uploadedImages.push(asset);
+          trackShadowBase(asset, asset.shadowGeom);
+          return part;
+        }
+        generated++;
+        uploadedImages.push({ name: importShadowAssetNameForUrl(key, (uploadedImages || []).length + generated), url: key, baseUrl: key });
+        result.repaired++;
+        return part;
+      });
+      if (changed) col.data[field.key] = parts.join(',');
+    });
+  });
+  return result;
+}
+
+/* 舊暫存只留下含影子 PNG 時，先用編輯器保存的原圖；否則與已上傳原圖的商品像素
+   比對。必須唯一且像素相符才補回，不能只憑尺寸相同就猜商品，更不能再疊一層舊影子。 */
+function importShadowSameProductPixels(prep, target, geometry) {
+  if (!prep || !prep.product) return false;
+  var w = Math.round(geometry.sourceWidth), h = Math.round(geometry.sourceHeight);
+  if (!(w > 0 && h > 0) || w * h > IMPORT_SHADOW_MAX_OUTPUT_PIXELS) return false;
+  if (Math.abs(prep.pw / prep.ph - w / h) > 2 / Math.max(w, h)) return false;
+  var canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+  var ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(prep.product, 0, 0, w, h);
+  var original = ctx.getImageData(0, 0, w, h).data;
+  var baked = target.data;
+  var opaque = 0;
+  for (var i = 0; i < original.length; i += 4) {
+    if (original[i + 3] === 255) {
+      opaque++;
+      if (baked[i + 3] < 254 || original[i] !== baked[i] || original[i + 1] !== baked[i + 1] || original[i + 2] !== baked[i + 2]) return false;
+    } else if (original[i + 3] < 235 && baked[i + 3] === 255) return false;
+  }
+  return opaque >= Math.max(16, w * h * 0.02);
+}
+function recoverImportShadowCanvasAssets(audit, progress) {
+  var candidates = audit.shadowCandidates || [];
+  if (!candidates.length) return Promise.resolve(audit);
+  var bases = [];
+  (uploadedImages || []).forEach(function (asset) {
+    var base = asset && (asset.baseUrl || (!importShadowGeometryOf(asset.url) ? asset.url : ''));
+    if (base && isImportShadowImageUrl(base) && !bases.some(function (item) { return item.base === base; })) bases.push({ base: base, name: asset.name });
+  });
+  if (progress) progress(5, 'LOADING · 檢查商品原圖', '正在重新連結暫存中的商品與原圖…');
+  return candidates.reduce(function (chain, entry, index) {
+    return chain.then(function () {
+      var asset = entry.asset;
+      if (asset.baseUrl) return;
+      if (entry.editorBase) { asset.baseUrl = entry.editorBase; audit.recovered++; return; }
+      return importLoadImage(asset.url).then(function (image) {
+        var g = entry.geometry;
+        var w = Math.round(g.sourceWidth), h = Math.round(g.sourceHeight);
+        if (!(w > 0 && h > 0) || w * h > IMPORT_SHADOW_MAX_OUTPUT_PIXELS) return;
+        var canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(image, g.offsetX, g.offsetY, w, h, 0, 0, w, h);
+        var target = ctx.getImageData(0, 0, w, h);
+        var matches = [];
+        return bases.reduce(function (previous, source) {
+          return previous.then(function () {
+            return importShadowPrepared(source.base).then(function (prep) {
+              if (importShadowSameProductPixels(prep, target, g)) matches.push(source);
+            }).catch(function () {});
+          });
+        }, Promise.resolve()).then(function () {
+          if (matches.length !== 1) return;
+          asset.baseUrl = matches[0].base;
+          asset.name = matches[0].name || asset.name;
+          audit.recovered++;
+        });
+      }).catch(function (err) { console.warn('[BODA] 舊影子原圖對照無法恢復：', entry.locations, err); });
+    }).then(function () {
+      if (!entry.asset.baseUrl) audit.needsOriginal.push(entry.locations.join('、'));
+      if (progress) progress(5 + Math.round((index + 1) / candidates.length * 40), 'LOADING · 檢查商品原圖', '已檢查 ' + (index + 1) + '/' + candidates.length + ' 種商品');
+      return new Promise(function (resolve) { setTimeout(resolve, 0); });
+    });
+  }, Promise.resolve()).then(function () { return audit; });
+}
+
+/* 影子重算只換既有 img 的 src／幾何，不呼叫 refreshCanvasAfterChange。
+   後者會為每張商品反覆序列化整份工單、重建所有素材縮圖與側欄，既昂貴又會把
+   所有 Base64 再串成 HTML；保留 DOM 也能保留使用者已調好的位置與縮放。 */
+function refreshImportShadowView() {
+  var ctxName = isPreviewAllCanvasActive() ? 'preview' : 'import';
+  var columns = ctxName === 'preview' ? previewAllColumns : currentImportColumns;
+  (columns || []).forEach(function (col, index) {
+    var mount = document.getElementById((ctxName === 'preview' ? 'prevall-mount-' : 'imp-mount-') + index);
+    if (!mount || !col || !col.data) return;
+    var changed = [];
+    var needsRender = false;
+    var fieldValues = {};
+    var def = BNCore.getBlock(col.blockId);
+    (def && def.fields || []).forEach(function (field) {
+      if (field.type === 'image') fieldValues[field.key] = splitImageList(col.data[field.key] || '').filter(isUsableImageValue);
+    });
+    mount.querySelectorAll('.bn-imggroup').forEach(function (group) {
+      var key = group.getAttribute('data-field-key');
+      if (!Object.prototype.hasOwnProperty.call(fieldValues, key)) return;
+      if (isImportLogoFieldKey(key) && group.closest) {
+        var logoPlate = group.closest('[data-img-field]');
+        if (logoPlate) logoPlate.style.backgroundColor = col.data[importLogoPlateKey(key)] || '#ffffff';
+      }
+      var urls = fieldValues[key];
+      var imgs = group.querySelectorAll('img.bn-imggroup-img');
+      /* 只有檔名佔位剛補成真正圖片、需要建立 img 時，才重建這一格版位。 */
+      if (imgs.length !== urls.length) { needsRender = true; return; }
+      imgs.forEach(function (img, imageIndex) {
+        var next = urls[imageIndex];
+        if (img.getAttribute('src') === next) return;
+        if (!isImportLogoFieldKey(key)) {
+          var geom = importShadowGeometryOf(next);
+          if (geom) img.dataset.importShadowGeom = '1';
+          else {
+            ['layoutSourceWidth', 'layoutSourceHeight', 'layoutOutputWidth', 'layoutOutputHeight',
+              'layoutOffsetX', 'layoutOffsetY', 'importShadowGeom'].forEach(function (name) { delete img.dataset[name]; });
+          }
+        }
+        img.setAttribute('src', next);
+        changed.push(img);
+      });
+    });
+    if (needsRender) { rerenderCanvasMount(ctxName, index); return; }
+    if (!changed.length) return;
+    restoreCanvasImageEditorState(mount, col);
+    applyImportShadowGeometry(mount);
+    changed.forEach(function (img) {
+      function refreshLayout() {
+        if (window.BNImageLayout && typeof BNImageLayout.refreshEditedImage === 'function') BNImageLayout.refreshEditedImage(img);
+      }
+      if (!img.complete) img.addEventListener('load', refreshLayout, { once: true });
+      refreshLayout();
+    });
+  });
+  /* 左側隱藏欄位與右側工具縮圖直接更新，不重建帶 Base64 的整張工具卡。 */
+  document.querySelectorAll('#import-fields-scroll .if-row, #import-block-tools .import-image-tool-row').forEach(function (row) {
+    var card = row.closest('.imp-col[data-col], .import-band-tool-col[data-col]');
+    var col = card && columns[Number(card.getAttribute('data-col'))];
+    var field = row.closest('.img-field');
+    var button = row.querySelector('[data-key][data-image-index]');
+    var key = field ? field.getAttribute('data-key') : button && button.getAttribute('data-key');
+    var imageIndex = Number(field ? row.getAttribute('data-image-index') : button && button.getAttribute('data-image-index'));
+    if (!col || !key || !isFinite(imageIndex)) return;
+    var url = splitImageList(col.data[key] || '')[imageIndex] || '';
+    if (!isUsableImageValue(url)) return;
+    var holder = row.querySelector('.if-thumb, .import-tool-mini-preview');
+    if (!holder) return;
+    var thumb = holder.querySelector('img');
+    if (!thumb) {
+      holder.textContent = '';
+      holder.classList.remove('is-empty');
+      thumb = document.createElement('img');
+      thumb.alt = '';
+      holder.appendChild(thumb);
+    }
+    if (thumb.getAttribute('src') !== url) thumb.setAttribute('src', url);
+    row.querySelectorAll('[data-act="edit"], [data-act="del"]').forEach(function (btn) { btn.disabled = false; });
+  });
+  document.querySelectorAll('#import-block-tools .import-logo-bg-row').forEach(function (row) {
+    var asset = uploadedImages[Number(row.getAttribute('data-upload-idx'))];
+    if (!asset) return;
+    var color = importLogoPlateColorOf(asset) || '#ffffff';
+    var picker = row.querySelector('.import-logo-bg-input');
+    var hex = row.querySelector('.import-logo-bg-hex');
+    var reset = row.querySelector('.import-logo-bg-reset');
+    if (picker) picker.value = color;
+    if (hex) hex.value = color;
+    if (reset) reset.disabled = !asset.logoBg;
+  });
+}
+var importShadowReapplyStage = '';
+
 /* 設定改動後：用每張圖的原圖重新烘一次，再把欄位裡的舊網址換成新的。
-   沒有原圖（baseUrl）的素材是從底部暫存還原的，網址已經烘過影子，再烘會疊兩層，所以略過。 */
+   執行前一定先巡檢畫布，避免暫存還原／裁白邊後有圖片脫離素材清單而沒有影子。 */
 function reapplyImportShadowToUploads(commit) {
+  importShadowReapplyStage = '巡檢商品素材';
+  /* Loading 包含巡檢、找回原圖及重製；沒有可重製素材時也必須確實收掉。 */
+  var overlay = false;
+  var overlayTimer = null;
+  function showShadowLoading(note) {
+    if (overlay) return;
+    overlay = true;
+    appLoadingStart('LOADING · 套用影子', 3, note || '正在檢查目前畫布的商品圖…');
+  }
+  if (commit) showShadowLoading();
+  else overlayTimer = setTimeout(function () {
+    if (!importShadowReapplyRunning) return;
+    showShadowLoading('正在更新商品影子，請稍候…');
+  }, 180);
   /* 只有放在商品類圖片欄位的素材才烘影子（去背＋影子）；LOGO 欄位一律保留原圖，不烘。
      commit=false（拖動中）只重烘畫布上用到的商品圖；commit=true（放開、換角度、重置、放入新圖）才重烘全部用到的商品圖並存檔。 */
+  /* 先做輕量巡檢；手動套用與暫存還原都會走這裡，失聯的圖片會被補回素材清單。 */
+  /* 巡檢只負責補回失聯素材，不能因一筆舊暫存資料格式不完整就中止整批影子。
+     即使巡檢意外失敗，仍沿用原有 uploadedImages 繼續重烘，讓「套用修改」有自救能力。 */
+  var audit = { checked: 0, linked: 0, repaired: 0, alreadyShadow: 0, unresolved: 0, failed: false };
+  try {
+    audit = auditImportShadowCanvasAssets();
+  } catch (err) {
+    audit.failed = true;
+    console.warn('[BODA] 商品影子畫布巡檢略過，改用既有素材繼續處理。', err);
+  }
+  return recoverImportShadowCanvasAssets(audit, function (percent, title, note) {
+    if (overlay) appLoadingUpdate(percent, title, note);
+  }).then(function () {
   var productUsed = {};
-  (currentImportColumns || []).concat(previewAllColumns || []).forEach(function (col) {
+  importShadowActiveColumns().forEach(function (col) {
     var def = BNCore.getBlock(col.blockId);
     if (!def || !col.data) return;
     (def.fields || []).forEach(function (field) {
@@ -12501,42 +13307,134 @@ function reapplyImportShadowToUploads(commit) {
       splitImageList(col.data[field.key] || '').forEach(function (part) { productUsed[String(part || '').trim()] = true; });
     });
   });
+  var productUsedUrls = Object.keys(productUsed);
+  var seenBases = new Set();
   var list = (uploadedImages || []).filter(function (img) {
-    return img && img.url && img.baseUrl && (productUsed[img.url] || productUsed[img.baseUrl]);
+    if (!(img && img.url && img.baseUrl)) return false;
+    if (productUsed[img.url] || productUsed[img.baseUrl] || (img.logoUrl && productUsed[img.logoUrl])) return true;
+    /* 編輯過的素材可能已換成新的 dataURL；用同一素材名稱再比一次，不能因此漏掉重烘。 */
+    return productUsedUrls.some(function (url) {
+      return sameImageAsset(url, img.url) || sameImageAsset(url, img.baseUrl);
+    });
+  }).filter(function (img) {
+    if (seenBases.has(img.baseUrl)) return false;
+    seenBases.add(img.baseUrl);
+    return true;
   });
   var swap = {};
+  var appliedUrls = new Set();
   var done = 0;
-  var overlay = commit && list.length > 0;
-  if (overlay) appLoadingStart('LOADING · 套用影子', 5, '正在重新套用商品影子…');
-  return list.reduce(function (chain, img) {
-    return chain.then(function () {
-      var oldUrl = img.url;
-      return importShadowPrepared(img.baseUrl).then(function (prep) {
-        var baked = importShadowRender(prep, importShadowSettings);
-        swap[oldUrl] = baked;
-        swap[img.baseUrl] = baked;
-        img.url = baked;
-        /* 商品本體在烘好圖裡的位置要跟著素材存起來，重新載入後版位才知道怎麼擺 */
-        var geom = importShadowGeometryOf(baked);
-        if (geom) img.shadowGeom = geom; else delete img.shadowGeom;
-        done++;
-        if (overlay) appLoadingUpdate(8 + Math.round((done / list.length) * 84), 'LOADING · 套用影子', '已重製 ' + done + '/' + list.length + ' 張');
-      });
-    });
-  }, Promise.resolve()).then(function () {
-    return importLogoRefresh();
-  }).then(function (logo) {
+  var processed = 0;
+  var skipped = [];
+  var failed = [];
+  var warnings = [];
+  if (commit) {
+    if (list.length) setImportShadowStatus('正在檢查畫布 ' + audit.checked + ' 張商品圖，重製 ' + list.length + ' 張…');
+    else setImportShadowStatus(audit.checked
+      ? '已檢查畫布 ' + audit.checked + ' 張商品圖；沒有找到可重新合成的原圖。'
+      : '尚未偵測到已放入商品欄位的上傳圖片。', audit.checked > 0);
+  }
+  /* 方向／位移改變時，不能等所有商品都重烘完才整批換畫布；
+     每一張完成就先換掉目前使用中的網址並重畫，使用者會立即看到新光影。 */
+  function applyShadowSwapToColumns(map) {
+    var changed = false;
     (currentImportColumns || []).concat(previewAllColumns || []).forEach(function (col) {
       var def = BNCore.getBlock(col.blockId);
       if (!def || !col.data) return;
       (def.fields || []).forEach(function (field) {
-        if (field.type !== 'image') return;
-        var map = isImportLogoFieldKey(field.key) ? logo.swap : swap;
+        if (field.type !== 'image' || isImportLogoFieldKey(field.key)) return;
+        var parts = splitImageList(col.data[field.key] || '');
+        var fieldChanged = false;
+        parts = parts.map(function (part) {
+          var key = String(part || '').trim();
+          if (map[key] && map[key] !== part) { fieldChanged = true; changed = true; return map[key]; }
+          return part;
+        });
+        if (fieldChanged) col.data[field.key] = parts.join(',');
+      });
+      /* 商品編輯器保留的幾何也要跟著新影子更新，避免還原時拿舊影子覆蓋新結果。 */
+      var states = col.data.__canvasImageEditorState || {};
+      Object.keys(states).forEach(function (key) {
+        if (isImportLogoFieldKey(key.slice(0, key.lastIndexOf('::')))) return;
+        var state = states[key];
+        if (!state || !map[state.outputSrc]) return;
+        state.outputSrc = map[state.outputSrc];
+        var geom = importShadowGeometryOf(state.outputSrc);
+        if (geom) {
+          state.outputRatio = String(geom.outputWidth / geom.outputHeight);
+          state.productOnlyRatio = String(geom.sourceWidth / geom.sourceHeight);
+        } else {
+          delete state.outputRatio;
+          delete state.productOnlyRatio;
+        }
+        ['sourceWidth', 'sourceHeight', 'outputWidth', 'outputHeight', 'offsetX', 'offsetY'].forEach(function (name) {
+          var layoutKey = 'layout' + name.charAt(0).toUpperCase() + name.slice(1);
+          if (geom) state[layoutKey] = String(geom[name]);
+          else delete state[layoutKey];
+        });
+      });
+    });
+    return changed;
+  }
+  function refreshShadowCanvasNow() {
+    importShadowReapplyStage = '更新畫布圖片與縮圖';
+    refreshImportShadowView();
+  }
+  return list.reduce(function (chain, img) {
+    return chain.then(function () {
+      importShadowReapplyStage = '合成商品影子';
+      var oldUrl = img.url;
+      return importShadowPrepared(img.baseUrl).then(function (prep) {
+        var baked = importShadowRender(prep, importShadowSettings);
+        /* 商品本體在烘好圖裡的位置要跟著素材存起來，重新載入後版位才知道怎麼擺 */
+        var geom = importShadowGeometryOf(baked);
+        (uploadedImages || []).forEach(function (related) {
+          if (!related || related.baseUrl !== img.baseUrl) return;
+          if (related.url) swap[related.url] = baked;
+          swap[related.baseUrl] = baked;
+          if (related.logoUrl) swap[related.logoUrl] = baked;
+          related.url = baked;
+          if (geom) related.shadowGeom = geom; else delete related.shadowGeom;
+        });
+        swap[oldUrl] = baked;
+        if (!geom) {
+          if (importShadowSettings.angle !== 'off') skipped.push(img.name || ('商品圖 ' + (done + 1)));
+        }
+        if (applyShadowSwapToColumns(swap)) refreshShadowCanvasNow();
+        if (geom || importShadowSettings.angle === 'off') { done++; appliedUrls.add(baked); }
+        processed++;
+        if (overlay) appLoadingUpdate(8 + Math.round((processed / list.length) * 84), 'LOADING · 套用影子', '已處理 ' + processed + '/' + list.length + ' 張');
+      }).catch(function (err) {
+        /* 單一圖片壞檔、過大、或瀏覽器無法讀取時，保留它原本的畫面，不可讓整批商品影子失敗。 */
+        failed.push({ name: img.name || ('商品圖 ' + (processed + 1)), message: String(err && err.message || err || '圖片無法處理') });
+        processed++;
+        console.warn('[BODA] 商品影子略過單張圖片：' + (img.name || '(未命名)'), err);
+        if (overlay) appLoadingUpdate(8 + Math.round((processed / list.length) * 84), 'LOADING · 套用影子', '已處理 ' + processed + '/' + list.length + ' 張（' + failed.length + ' 張保留原圖）');
+      }).then(function () {
+        /* 即使前處理快取命中，也交還一個繪製週期，讓 Loading 進度有機會顯示。 */
+        return new Promise(function (resolve) { setTimeout(resolve, 0); });
+      });
+    });
+  }, Promise.resolve()).then(function () {
+    /* LOGO 的裁白邊／底板色是獨立功能；它讀取失敗也不應回頭讓商品影子被判定為失敗。 */
+    return importLogoRefresh().catch(function (err) {
+      console.warn('[BODA] LOGO 重算略過，不影響商品影子。', err);
+      return { swap: {}, changed: false, modeChanged: false, failed: true };
+    });
+  }).then(function (logo) {
+    importShadowReapplyStage = '更新商品與 LOGO 資料';
+    logo = logo || { swap: {}, changed: false, modeChanged: false };
+    applyShadowSwapToColumns(swap);
+    (currentImportColumns || []).concat(previewAllColumns || []).forEach(function (col) {
+      var def = BNCore.getBlock(col.blockId);
+      if (!def || !col.data) return;
+      (def.fields || []).forEach(function (field) {
+        if (field.type !== 'image' || !isImportLogoFieldKey(field.key)) return;
         var parts = splitImageList(col.data[field.key] || '');
         var changed = false;
         parts = parts.map(function (part) {
           var key = String(part || '').trim();
-          if (map[key]) { changed = true; return map[key]; }
+          if (logo.swap[key]) { changed = true; return logo.swap[key]; }
           return part;
         });
         if (changed) col.data[field.key] = parts.join(',');
@@ -12544,26 +13442,50 @@ function reapplyImportShadowToUploads(commit) {
       /* LOGO 欄位一律換成該素材的 logoUrl（白邊裁切／底色統一後的版本），舊的原圖或舊網址也一併換掉 */
       normalizeLogoImageFields(col, def);
     });
-    /* LOGO 重算過（吸色／換色）時，右側工具列的底板色號要跟著更新。
-       直接預覽中只能重建預覽的工具列與畫布，不能把匯入工單的工具列畫回來。 */
-    if (isPreviewAllCanvasActive()) {
-      var previewLayoutState = captureCanvasImageLayoutState();
-      if (commit && logo.changed) renderPreviewAllTools();
-      applyCanvasThemeToContext('preview');
-      restoreCanvasImageLayoutState(previewLayoutState);
-    } else if ((currentImportColumns || []).length) {
-      if (commit && logo.changed) renderImportColumns(currentImportColumns);
-      refreshCanvasAfterChange('import', 0, true);
-    }
+    /* LOGO 重算過（吸色／換色）時，同步更新底板色號；匯入與預覽都只更新既有 DOM。 */
+    refreshShadowCanvasNow();
     if (commit) {
-      renderImageGallery();
-      if (currentImportWorkbook) syncWorkbookOverviewTextToExposure(currentImportWorkbook);
-      broadcastBottomImageAssets();
-      syncExposureOverviewAssets();
-      queueBottomPersist();
-      saveImportState();
+      /* 影子已寫回畫布，後續同步／儲存是獨立階段。不能把暫存或 iframe 錯誤誤報為
+         商品合成失敗，更不能顯示不實的「已保留原圖」。每項分別執行且記錄失敗原因。 */
+      function finishStep(label, task) {
+        importShadowReapplyStage = label;
+        try { task(); }
+        catch (err) {
+          warnings.push(label + '：' + String(err && err.message || err));
+          console.warn('[BODA] 影子已更新，但' + label + '失敗。', err);
+        }
+      }
+      finishStep('更新素材清單', renderImageGallery);
+      if (currentImportWorkbook) finishStep('同步工單總覽', function () { syncWorkbookOverviewTextToExposure(currentImportWorkbook); });
+      finishStep('同步吸底素材', broadcastBottomImageAssets);
+      finishStep('同步曝光資源', syncExposureOverviewAssets);
+      finishStep('儲存吸底暫存', queueBottomPersist);
+      finishStep('儲存工單暫存', saveImportState);
       if (overlay) appLoadingFinish('商品影子已更新');
     }
+    clearTimeout(overlayTimer);
+    /* 滑桿重畫若花超過 180ms 才顯示 Loading，成功時也由這裡確實收掉。 */
+    if (overlay && !commit) appLoadingFinish('商品影子已更新');
+    var appliedSlots = 0;
+    importShadowActiveColumns().forEach(function (col) {
+      var def = BNCore.getBlock(col.blockId);
+      (def && def.fields || []).forEach(function (field) {
+        if (field.type !== 'image' || isImportLogoFieldKey(field.key)) return;
+        splitImageList(col.data[field.key] || '').forEach(function (url) { if (appliedUrls.has(url)) appliedSlots++; });
+      });
+    });
+    return {
+      total: list.length, done: done, angle: importShadowSettings.angle,
+      checked: audit.checked, repaired: audit.repaired, alreadyShadow: audit.alreadyShadow,
+      unresolved: audit.unresolved, missing: audit.missing || [], recovered: audit.recovered || 0,
+      needsOriginal: audit.needsOriginal || [], appliedSlots: appliedSlots,
+      skipped: skipped, failed: failed, auditFailed: !!audit.failed, warnings: warnings
+    };
+  });
+  }).catch(function (err) {
+    clearTimeout(overlayTimer);
+    if (overlay) appLoadingFail('商品影子套用失敗，已保留原圖');
+    throw err;
   });
 }
 
@@ -12577,27 +13499,61 @@ function syncImportShadowPanel() {
   y.value = importShadowSettings.offsetY;
   document.getElementById('import-shadow-x-val').textContent = importShadowSettings.offsetX + '%';
   document.getElementById('import-shadow-y-val').textContent = importShadowSettings.offsetY + '%';
+  updateImportShadowColorLabel();
 }
 /* 重烘排隊：拖動時會連續觸發，同一時間只跑一輪；跑的途中又有新設定，跑完後再補跑一輪。 */
 var importShadowReapplyRunning = false, importShadowReapplyPending = false, importShadowReapplyCommit = false;
 function scheduleImportShadowReapply(commit) {
   importShadowReapplyCommit = importShadowReapplyCommit || !!commit;
-  if (importShadowReapplyRunning) { importShadowReapplyPending = true; return; }
+  if (importShadowReapplyRunning) {
+    importShadowReapplyPending = true;
+    if (commit) setImportShadowStatus('已收到套用要求，會在目前處理完成後再重製一次。');
+    return;
+  }
   runImportShadowReapply();
 }
 function runImportShadowReapply() {
   var commit = importShadowReapplyCommit;
   importShadowReapplyCommit = false;
   importShadowReapplyRunning = true;
-  var run;
-  try { run = reapplyImportShadowToUploads(commit); }
-  catch (err) { run = Promise.reject(err); }
-  Promise.resolve(run).catch(function (err) {
+  setImportShadowApplyBusy(true);
+  if (commit) appLoadingStart('LOADING · 套用影子', 3, '正在準備商品影子…');
+  /* 手動套用先顯示 Loading，再進巡檢；不能先做大量同步工作，最後才亮 Loading。 */
+  var ready = commit ? new Promise(function (resolve) {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function () { setTimeout(resolve, 0); });
+    else setTimeout(resolve, 0);
+  }) : Promise.resolve();
+  return ready.then(function () { return reapplyImportShadowToUploads(commit); }).then(function (result) {
+    if (!commit || !result) return;
+    if (isImportShadowEngineReady() || result.angle === 'off') {
+      var detail = result.repaired ? '；已補回 ' + result.repaired + ' 張失聯素材' : '';
+      if (result.recovered) detail += '；已重新連結 ' + result.recovered + ' 種商品原圖';
+      if (result.unresolved) detail += '；' + result.unresolved + ' 個位置尚未上傳或檔名未對上' +
+        (result.missing.length ? '：' + result.missing.slice(0, 3).join('、') + (result.missing.length > 3 ? '等' : '') : '');
+      if (result.needsOriginal.length) detail += '；' + result.needsOriginal.length + ' 種商品只有舊影子圖、缺少可確認的原圖，請補上原圖：' + result.needsOriginal.slice(0, 3).join('、');
+      if (result.skipped && result.skipped.length) detail += '；' + result.skipped.length + ' 張背景無法自動去背，保留原圖';
+      if (result.failed && result.failed.length) detail += '；' + result.failed.length + ' 張無法重製，已保留原圖';
+      if (result.auditFailed) detail += '；畫布巡檢略過，已改用現有素材處理';
+      if (result.warnings && result.warnings.length) detail += '；影子已更新，但' + result.warnings.join('；');
+      setImportShadowStatus(result.angle === 'off'
+        ? '已檢查 ' + result.checked + ' 個圖片位置，移除 ' + result.done + ' 種商品圖的影子（套用至 ' + result.appliedSlots + ' 個位置）' + detail + '。'
+        : '已套用修改：檢查 ' + result.checked + ' 個圖片位置，更新 ' + result.done + ' 種商品圖（套用至 ' + result.appliedSlots + ' 個位置）' + detail + '。',
+        !!(result.unresolved || (result.skipped && result.skipped.length) ||
+          (result.failed && result.failed.length) || result.needsOriginal.length || result.auditFailed || (result.warnings && result.warnings.length)));
+    }
+  }).catch(function (err) {
     console.warn('商品影子重烘失敗', err);
+    /* 只剩流程本身被意外中止時才會走到這裡。顯示可辨識的原因，避免把每一種錯誤都誤導成模組遺失。 */
+    var reason = String(err && err.message || err || '').replace(/\s+/g, ' ').trim();
+    var stage = importShadowReapplyStage ? '（階段：' + importShadowReapplyStage + '）' : '';
+    setImportShadowStatus(reason
+      ? '商品影子處理中斷：' + reason.slice(0, 72) + stage
+      : '商品影子處理中斷' + stage + '；請重新套用一次。', true);
     /* 烘影子途中任何一步出錯都要把 LOADING 收掉，否則畫面會一直卡在「套用影子」 */
-    if (APP_LOADING.active) appLoadingFail('商品影子套用失敗，已保留原圖');
+    if (APP_LOADING.active) appLoadingFail('商品影子處理中斷' + stage);
   }).then(function () {
     importShadowReapplyRunning = false;
+    setImportShadowApplyBusy(false);
     if (importShadowReapplyPending) { importShadowReapplyPending = false; runImportShadowReapply(); }
     else importShadowDropCache();
   });
@@ -12607,8 +13563,11 @@ function initImportShadowPanel() {
   var x = document.getElementById('import-shadow-x');
   var y = document.getElementById('import-shadow-y');
   var reset = document.getElementById('import-shadow-reset');
-  if (!angle || !x || !y || !reset) return;
+  var apply = document.getElementById('import-shadow-apply');
+  if (!angle || !x || !y || !reset || !apply) return;
+  importShadowBackgroundHex = importShadowActualBackground();
   syncImportShadowPanel();
+  if (!isImportShadowEngineReady() && importShadowSettings.angle !== 'off') noteImportShadowEngineMissing();
   angle.addEventListener('change', function () {
     importShadowSettings.angle = IMPORT_SHADOW_ANGLES.indexOf(angle.value) >= 0 ? angle.value : 'left';
     saveImportShadowSettings(importShadowSettings);
@@ -12633,6 +13592,20 @@ function initImportShadowPanel() {
     importShadowSettings = { angle: 'left', offsetX: 0, offsetY: 0 };
     saveImportShadowSettings(importShadowSettings);
     syncImportShadowPanel();
+    scheduleImportShadowReapply(true);
+  });
+  apply.addEventListener('click', function () {
+    if (!(currentImportColumns || []).length) {
+      setImportShadowStatus('請先匯入工單並把圖片放入商品欄位，再套用商品影子。', true);
+      return;
+    }
+    if (importShadowSettings.angle !== 'off' && !isImportShadowEngineReady()) {
+      noteImportShadowEngineMissing();
+      return;
+    }
+    /* 手動套用時清掉前一輪前處理快取，確保會從目前原圖完整重製。 */
+    if (!importShadowReapplyRunning) importShadowDropCache();
+    setImportShadowStatus('正在套用目前的光源與位移設定…');
     scheduleImportShadowReapply(true);
   });
 }
@@ -12664,8 +13637,80 @@ function trimImportColumnImages(columns) {
   });
   return Promise.all(jobs).then(function () { return columns; });
 }
+function isImportImageFile(file) {
+  if (!file) return false;
+  return /^image\//i.test(String(file.type || '')) ||
+    /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(String(file.name || ''));
+}
+/* 瀏覽器拖曳資料夾時，dataTransfer.files 可能是空的；改走
+   FileSystemEntry 遞迴把資料夾內所有圖片攤平成 File[]。 */
+function readImportDroppedFiles(dataTransfer) {
+  var direct = Array.prototype.slice.call((dataTransfer && dataTransfer.files) || []);
+  var items = Array.prototype.slice.call((dataTransfer && dataTransfer.items) || []);
+  var entries = items.map(function (item) {
+    try { return item && typeof item.webkitGetAsEntry === 'function' ? item.webkitGetAsEntry() : null; }
+    catch (e) { return null; }
+  }).filter(Boolean);
+  if (!entries.length) return Promise.resolve(direct);
+
+  function readAll(reader) {
+    return new Promise(function (resolve, reject) {
+      var result = [];
+      function next() {
+        reader.readEntries(function (batch) {
+          if (!batch || !batch.length) { resolve(result); return; }
+          result = result.concat(Array.prototype.slice.call(batch));
+          next();
+        }, reject);
+      }
+      next();
+    });
+  }
+  function walk(entry) {
+    if (!entry) return Promise.resolve([]);
+    if (entry.isFile) {
+      return new Promise(function (resolve) {
+        entry.file(function (file) {
+          if (file) {
+            /* 保留拖曳資料夾的相對路徑，讓第二／第三層同名圖片不會互相去重。 */
+            try { Object.defineProperty(file, '__bodaDropPath', { value: entry.fullPath || '', configurable: true }); }
+            catch (e) { try { file.__bodaDropPath = entry.fullPath || ''; } catch (_) {} }
+          }
+          resolve(file ? [file] : []);
+        }, function () { resolve([]); });
+      });
+    }
+    if (!entry.isDirectory) return Promise.resolve([]);
+    var reader = entry.createReader();
+    return readAll(reader).then(function (children) {
+      return Promise.all(children.map(walk)).then(function (groups) {
+        return groups.reduce(function (all, group) { return all.concat(group); }, []);
+      });
+    }).catch(function () { return []; });
+  }
+  return Promise.all(entries.map(walk)).then(function (groups) {
+    function pathOf(file) {
+      return String(file && (file.webkitRelativePath || file.__bodaDropPath) || '').replace(/\\/g, '/');
+    }
+    function sameFile(a, b) {
+      if (a === b) return true;
+      if (!a || !b || a.name !== b.name || a.size !== b.size || a.lastModified !== b.lastModified) return false;
+      var ap = pathOf(a), bp = pathOf(b);
+      return ap && bp ? ap === bp : true;
+    }
+    /* FileSystemEntry 是資料夾遞迴的權威來源；direct 只補瀏覽器沒有回傳 entry 的檔案。 */
+    var found = [];
+    groups.reduce(function (all, group) { return all.concat(group); }, []).forEach(function (file) {
+      if (!found.some(function (existing) { return sameFile(existing, file); })) found.push(file);
+    });
+    direct.forEach(function (file) {
+      if (!found.some(function (existing) { return sameFile(existing, file); })) found.push(file);
+    });
+    return found;
+  });
+}
 function handleImageFiles(fileList) {
-  var files = Array.prototype.filter.call(fileList, function (f) { return f.type.indexOf('image/') === 0; });
+  var files = Array.prototype.filter.call(fileList || [], isImportImageFile);
   if (!files.length) return;
   var startIndex = uploadedImages.length;
   var remaining = files.length;
@@ -12930,16 +13975,18 @@ function importUploadFromState(img) {
   importShadowGeometryFromState(out);
   return out;
 }
-/* 底部暫存檔：原圖只存一份（url＋orig 標記），還原時 url 同時當原圖用，商品才能再烘影子。 */
+/* 底部暫存：url＋orig 保存原圖，shadowUrl 保存目前的影子版本，還原後仍能重新合成。 */
 function importUploadsForBottomPersist() {
   return (uploadedImages || []).filter(function (img) { return img && img.url; }).map(function (img) {
     var out = { name: img.name, url: img.baseUrl || img.url };
     if (img.baseUrl) out.orig = true;
+    /* 原圖與目前影子圖的網址要一起保存，重新整理後才能把欄位中的影子圖對回原圖。 */
+    if (img.baseUrl && img.url !== img.baseUrl) out.shadowUrl = img.url;
     return Object.assign(out, importUploadStateFields(img));
   });
 }
 function importUploadFromPersist(img) {
-  var out = Object.assign({ name: img.name, url: img.url, baseUrl: img.orig ? img.url : '' }, importUploadStateFields(img));
+  var out = Object.assign({ name: img.name, url: img.shadowUrl || img.url, baseUrl: img.orig ? img.url : '' }, importUploadStateFields(img));
   importShadowGeometryFromState(out);
   return out;
 }
@@ -13024,21 +14071,37 @@ function normalizeLogoImageFields(col, def) {
 function renderImageGallery() {
   var wrap = document.getElementById('import-img-gallery');
   if (!wrap) return;
+  /* 不把所有原圖的 Base64 拼成一條 HTML。即使影子工作圖已縮小，baseUrl 仍是原圖，
+     多張相加仍會突破字串上限；改用節點逐張設定 src，原圖與下載品質完全保留。 */
+  var fragment = document.createDocumentFragment();
+  var hint = document.createElement('div');
+  hint.className = 'im-empty';
+  fragment.appendChild(hint);
   if (!uploadedImages.length) {
-    wrap.innerHTML = '<div class="im-empty">還沒有上傳圖片</div>';
+    hint.textContent = '還沒有上傳圖片';
+    wrap.replaceChildren(fragment);
     return;
   }
-  var html = '<div class="im-empty">已上傳 <b>' + uploadedImages.length + '</b> 張，檔名對得上的欄位會自動帶入；' +
-    '也可以把下面的縮圖<b>直接拖到右邊畫布的圖片框</b>。</div><div class="im-grid">';
+  hint.innerHTML = '已上傳 <b>' + uploadedImages.length + '</b> 張，檔名對得上的欄位會自動帶入；' +
+    '也可以把下面的縮圖<b>直接拖到右邊畫布的圖片框</b>。';
+  var grid = document.createElement('div');
+  grid.className = 'im-grid';
+  fragment.appendChild(grid);
   uploadedImages.forEach(function (img, i) {
     if (!img || !img.url) return;
-    html += '<div class="im-thumb" draggable="true" data-asset-index="' + i + '" title="' + esc(img.name || '') + '">' +
-      '<img src="' + esc(img.baseUrl || img.url) + '" alt="' + esc(img.name || '') + '" draggable="false">' +
-      '</div>';
-  });
-  wrap.innerHTML = html + '</div>';
-
-  wrap.querySelectorAll('.im-thumb').forEach(function (el) {
+    var el = document.createElement('div');
+    el.className = 'im-thumb';
+    el.draggable = true;
+    el.setAttribute('data-asset-index', String(i));
+    el.title = img.name || '';
+    var thumb = document.createElement('img');
+    thumb.setAttribute('src', img.baseUrl || img.url);
+    thumb.alt = img.name || '';
+    thumb.draggable = false;
+    thumb.loading = 'lazy';
+    thumb.decoding = 'async';
+    el.appendChild(thumb);
+    grid.appendChild(el);
     el.addEventListener('dragstart', function (e) {
       e.dataTransfer.setData(CANVAS_ASSET_DND_TYPE, el.getAttribute('data-asset-index'));
       e.dataTransfer.effectAllowed = 'copy';
@@ -13046,6 +14109,7 @@ function renderImageGallery() {
     });
     el.addEventListener('dragend', function () { el.classList.remove('is-dragging'); });
   });
+  wrap.replaceChildren(fragment);
 }
 
 /* 目前畫面上的匯入結果（重新上傳圖片後要重畫欄位面板用）。
@@ -13064,6 +14128,11 @@ var currentImportHasBottomWorkOrder = false;
 var currentImportSource = 'saved';
 var currentGeneratorSignature = '';
 var IMPORT_STORAGE_KEY = 'wo_import_state_v1';
+var IMPORT_IMAGE_LAYOUT_STORAGE_KEY = 'wo_import_image_layout_v1';
+var currentImportImageLayoutId = '';
+var importImageLayoutSavedAt = 0;
+var importImageLayoutEditRevision = 0;
+var importPersistDisabled = false;
 var IMPORT_IDB_NAME = 'boda-import-persist';
 var IMPORT_IDB_STORE = 'kv';
 function importIdbOpen() {
@@ -13237,6 +14306,8 @@ function handleImportImageAction(idx, key, act, imageIndex, ctxName) {
 /* 首次匯入會同時建立大量 dataURL；localStorage 的 JSON 序列化改在畫面完成後
    再合併執行，避免畫布、縮圖與儲存三件事卡在同一個同步迴圈。 */
 var importStateSaveTimer = null;
+var importStateRestorePending = false;
+var importStateSaveAfterRestore = false;
 function queueImportStateSave() {
   clearTimeout(importStateSaveTimer);
   importStateSaveTimer = setTimeout(function () {
@@ -13245,12 +14316,86 @@ function queueImportStateSave() {
   }, 180);
 }
 
+/* 商品縮放／拖曳另外保存成小型資料，操作完成與離頁時可同步寫入。
+   不包含圖片 Base64，避免為了保存幾個座標又序列化整份大型工單。 */
+function newImportImageLayoutId() {
+  return 'import-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+function importOnlyImageLayout(state) {
+  var out = { weights: {}, offsets: {} };
+  ['weights', 'offsets'].forEach(function (kind) {
+    Object.keys(state && state[kind] || {}).forEach(function (key) {
+      if (/^imp-mount-\d+::/.test(key)) out[kind][key] = state[kind][key];
+    });
+  });
+  return out;
+}
+function currentImportImageLayout() {
+  return importOnlyImageLayout(captureImportImageHistoryState());
+}
+function applyPersistedImportImageLayout(state) {
+  if (!window.BNImageLayout) return;
+  var merged = captureImportImageHistoryState();
+  var saved = importOnlyImageLayout(state);
+  ['weights', 'offsets'].forEach(function (kind) {
+    merged[kind] = merged[kind] || {};
+    Object.keys(merged[kind]).forEach(function (key) {
+      if (/^imp-mount-\d+::/.test(key)) delete merged[kind][key];
+    });
+    Object.keys(saved[kind]).forEach(function (key) { merged[kind][key] = saved[kind][key]; });
+  });
+  if (typeof BNImageLayout.setState === 'function') BNImageLayout.setState(merged);
+  else {
+    if (typeof BNImageLayout.setWeights === 'function') BNImageLayout.setWeights(merged.weights);
+    if (typeof BNImageLayout.setOffsets === 'function') BNImageLayout.setOffsets(merged.offsets);
+  }
+}
+function beginImportImageLayoutDocument(keepLayout) {
+  currentImportImageLayoutId = newImportImageLayoutId();
+  importImageLayoutSavedAt = 0;
+  importImageUndoStack = [];
+  importImageRedoStack = [];
+  importImageGestureBefore = null;
+  if (!keepLayout) applyPersistedImportImageLayout({ weights: {}, offsets: {} });
+}
+function saveImportImageLayout() {
+  if (importPersistDisabled || !currentImportColumns.length || !window.BNImageLayout) return;
+  if (!currentImportImageLayoutId) currentImportImageLayoutId = newImportImageLayoutId();
+  var layout = currentImportImageLayout();
+  importImageLayoutSavedAt = Math.max(Date.now(), importImageLayoutSavedAt + 1);
+  try {
+    localStorage.setItem(IMPORT_IMAGE_LAYOUT_STORAGE_KEY, JSON.stringify({
+      version: 1, documentId: currentImportImageLayoutId, ts: importImageLayoutSavedAt,
+      imageZoomWeights: layout.weights, imageOffsets: layout.offsets
+    }));
+  } catch (err) { console.warn('[BODA] 商品縮放／位移即時暫存失敗：', err); }
+}
+function restoreImportImageLayout(state) {
+  /* 舊版工單用原儲存時間形成穩定 ID，升級後第一次重新整理也能對回小型暫存。 */
+  currentImportImageLayoutId = String(state.imageLayoutId || ('legacy-' + (state.ts || 0)));
+  importImageLayoutSavedAt = Number(state.imageLayoutSavedAt) || 0;
+  var layout = { weights: state.imageZoomWeights || {}, offsets: state.imageOffsets || {} };
+  try {
+    var saved = JSON.parse(localStorage.getItem(IMPORT_IMAGE_LAYOUT_STORAGE_KEY) || 'null');
+    if (saved && saved.documentId === currentImportImageLayoutId && saved.ts >= importImageLayoutSavedAt) {
+      layout = { weights: saved.imageZoomWeights || {}, offsets: saved.imageOffsets || {} };
+      importImageLayoutSavedAt = Number(saved.ts) || 0;
+    }
+  } catch (err) {}
+  applyPersistedImportImageLayout(layout);
+}
 function buildImportStateSavePayload() {
+  if (!currentImportImageLayoutId) currentImportImageLayoutId = newImportImageLayoutId();
+  var layout = currentImportImageLayout();
   return {
-    version: 2,
+    version: 3,
     ts: Date.now(),
     source: currentImportSource,
     generatorSignature: currentGeneratorSignature,
+    imageLayoutId: currentImportImageLayoutId,
+    imageLayoutSavedAt: importImageLayoutSavedAt,
+    imageZoomWeights: layout.weights,
+    imageOffsets: layout.offsets,
     columns: currentImportColumns.map(function (c) {
       return {
         blockId: c.blockId,
@@ -13268,11 +14413,34 @@ function buildImportStateSavePayload() {
     })
   };
 }
+/* localStorage 只作小型備援；大量圖片直接走 IDB 的結構化儲存。
+   必須在 JSON.stringify 之前檢查，catch 無法避免先分配一條超大型 JSON 字串。 */
+function importStateFitsLocalStorage(value) {
+  var budget = 1024 * 1024;
+  function visit(item) {
+    if (budget < 0) return false;
+    if (typeof item === 'string') { budget -= item.length + 2; return budget >= 0; }
+    if (item && typeof item === 'object') {
+      return Object.keys(item).every(function (key) {
+        budget -= key.length + 4;
+        return budget >= 0 && visit(item[key]);
+      });
+    }
+    budget -= 24;
+    return budget >= 0;
+  }
+  try { return visit(value); } catch (err) { return false; }
+}
 function saveImportState() {
+  if (importPersistDisabled) return;
+  /* IDB 的舊狀態讀完前，不讓初始化重畫把舊 localStorage 當新資料寫回 IDB。 */
+  if (importStateRestorePending) { importStateSaveAfterRestore = true; return; }
+  saveImportImageLayout();
   var toSave = buildImportStateSavePayload();
   importIdbPut(toSave);
   try {
-    localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(toSave));
+    if (importStateFitsLocalStorage(toSave)) localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(toSave));
+    /* 大型狀態由 IDB 保存；不刪既有的小型備援，以免 IDB 不可用時連舊備援也遺失。 */
   } catch (e) { /* localStorage 可能滿，IDB 已寫入 */ }
 }
 
@@ -13285,6 +14453,10 @@ function normalizeImportState(saved) {
     version: saved.version || 2,
     source: saved.source || 'saved',
     generatorSignature: saved.generatorSignature || '',
+    imageLayoutId: saved.imageLayoutId || '',
+    imageLayoutSavedAt: Number(saved.imageLayoutSavedAt) || 0,
+    imageZoomWeights: saved.imageZoomWeights || {},
+    imageOffsets: saved.imageOffsets || {},
     columns: Array.isArray(saved.columns) ? saved.columns : [],
     ts: saved.ts || 0
   };
@@ -13313,9 +14485,15 @@ function applyImportState(state) {
       _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder)
     };
   });
+  restoreImportImageLayout(state);
 }
 function loadImportStateFromIdb() {
+  importStateRestorePending = true;
+  var columnsAtStart = currentImportColumns;
+  var editRevisionAtStart = importImageLayoutEditRevision;
   return importIdbGet().then(function (idbState) {
+    /* 使用者已載入另一份工單或開始移動／縮放時，較慢的啟動還原不可覆蓋新操作。 */
+    if (importPersistDisabled || currentImportColumns !== columnsAtStart || importImageLayoutEditRevision !== editRevisionAtStart) return false;
     var idb = normalizeImportState(idbState);
     if (!idb || !idb.columns || !idb.columns.length) return false;
     var localTs = 0;
@@ -13329,7 +14507,11 @@ function loadImportStateFromIdb() {
       return true;
     }
     return false;
-  }).catch(function () { return false; });
+  }).catch(function () { return false; }).then(function (restored) {
+    importStateRestorePending = false;
+    if (importStateSaveAfterRestore) { importStateSaveAfterRestore = false; saveImportState(); }
+    return restored;
+  });
 }
 
 /* 原始工單格 → BNCore 的 block id。檔案匯入與「工單生成器直接帶入」共用
@@ -13759,6 +14941,13 @@ function openImportFieldImageEditor(idx, fieldKey, imageIndex, ctxName) {
   if (!imgEl || !imgEl.src) { alert('這個欄位的第 ' + (selectedIndex + 1) + ' 張圖片目前還沒有渲染完成'); return; }
   var oldUrl = parts[selectedIndex];
   var isLogoField = /^logoImg\d*$/i.test(String(fieldKey || ''));
+  /* 畫布上顯示的通常是「商品＋影子」版本；進入編輯時改拿素材保存的無影子底圖，
+     完成套用才依最新方向／位移重新合成。這樣拖曳 ↻ 不會把舊影子一起旋轉。 */
+  if (!isLogoField && imgEl.dataset && !imgEl.dataset.baseSrc) {
+    var sourceIndex = importUploadIndexFor(oldUrl);
+    var sourceAsset = sourceIndex >= 0 ? uploadedImages[sourceIndex] : null;
+    if (sourceAsset && sourceAsset.baseUrl) imgEl.dataset.baseSrc = sourceAsset.baseUrl;
+  }
   /* 監看這張<img>的src有沒有被外掛編輯器改掉；直接更新資料與既有 DOM，
      保留 image-layout 的縮放、位移和 flex 佔位，不重畫整張畫布。 */
   var mo = new MutationObserver(function (mutations) {
@@ -13795,9 +14984,11 @@ function openImportFieldImageEditor(idx, fieldKey, imageIndex, ctxName) {
           }
         });
       });
-      var linked = replaceImageInUsages(others, oldUrl, rawNewUrl, ctxName);
-      syncImageAssetsByName(oldUrl, rawNewUrl);
       var editorState = canvasImageEditorStateFrom(imgEl, rawNewUrl, !isLogoField);
+      var linked = replaceImageInUsages(others, oldUrl, rawNewUrl, ctxName);
+      /* 更新素材清單前先讀出外掛寫回的 baseSrc。後續調整影子才會從旋轉／去背後的
+         無影子商品底圖重製，而不是從舊的含影子版本再疊一層。 */
+      syncImageAssetsByName(oldUrl, rawNewUrl, !isLogoField && editorState && editorState.baseSrc);
       rememberCanvasImageEditorState(col, fieldKey, renderedIndex, editorState);
       updateRenderedImageField(ctxName, idx, fieldKey);
       linkedLayoutStates.forEach(function (linkedState) {
@@ -13860,15 +15051,18 @@ function sameImageAsset(a, b) {
   });
 
 }
-function syncImageAssetsByName(oldUrl, newUrl) {
+function syncImageAssetsByName(oldUrl, newUrl, editedBaseUrl) {
   var names = imageAssetNamesForUrl(oldUrl);
+  var editedGeom = importShadowGeometryOf(newUrl);
   (uploadedImages || []).forEach(function (img) {
     if (!img) return;
     var name = String(img.name || '').trim().toLowerCase();
     var sameName = name && names.indexOf(name) !== -1;
     if (img.url !== oldUrl && img.baseUrl !== oldUrl && !sameName) return;
-    img.baseUrl = img.baseUrl || oldUrl;
+    img.baseUrl = editedBaseUrl || img.baseUrl || oldUrl;
     img.url = newUrl;
+    if (editedGeom) img.shadowGeom = editedGeom;
+    else delete img.shadowGeom;
   });
 }
 /* 找出「還有哪些欄位也在用同一張圖」（exclude＝要排除的那一格，通常是正在編輯的那格）。
@@ -14301,7 +15495,7 @@ function bindImportScrollSync() {
    顏色寫死在版位裡」的地方（例如很多版位的 CTA 底色）也一起吃得到。
 
    背景顏色的預設值＝「曝光資源」目前的背景色：
-   曝光資源是同一個網站裡用 iframe 載入的 jbp/jbpbn.html，直接去問它目前的背景色，
+   曝光資源是同一個網站裡用 iframe 載入的 shopee/index.html，直接去問它目前的背景色，
    還沒開過那一頁（iframe 還沒載入）就先用它的預設藍 #6bc0ec，
    之後只要去過曝光資源再回到這一頁，就會自動同步成實際的顏色
    （已經手動改過背景色的話就以手動的為準，不會被蓋掉）。
@@ -14309,7 +15503,7 @@ function bindImportScrollSync() {
 var IMPORT_THEME_KEY = 'wo_import_theme_v1';
 var SHARED_CANVAS_BG_KEY = 'wo_shared_canvas_bg_v1';
 var SHARED_EXPOSURE_TEXT_KEY = 'wo_shared_exposure_text_v1';
-var EXPOSURE_DEFAULT_BG = '#6bc0ec'; /* jbp/jbpbn.html 裡 colorState.canvasBg 的預設值 */
+var EXPOSURE_DEFAULT_BG = '#6bc0ec'; /* shopee/index.html 裡 colorState.canvasBg 的預設值 */
 
 /* 「曝光資源」與「匯入工單 → 統一顏色 → 背景顏色」共用同一個色號。
    MSBN D 系列卡片背景也由 importRenderOpts() 的 theme.bg 吃這個值，
@@ -14433,6 +15627,17 @@ function normalizeExposureAssetFileNames(value) {
     return true;
   }).slice(0, 3);
 }
+/* 空白工單的「XXX品牌／XXX」只是提示文字，不是實際 Logo 檔名。
+   僅在 Logo 流程排除，避免影響商品或其他曝光資源的同名檔案。 */
+function isExposureLogoPlaceholder(value) {
+  var key = String(value || '').replace(/[\s\u3000]+/g, '').toLowerCase();
+  return key === 'xxx' || key === 'xxx品牌' || key === 'xxxbrand';
+}
+function normalizeExposureLogoFileNames(value) {
+  return normalizeExposureAssetFileNames(value).filter(function (name) {
+    return !isExposureLogoPlaceholder(name);
+  }).slice(0, 3);
+}
 function currentExposureAssetFileText(assetKey, sharedKey) {
   var names = [];
   try {
@@ -14440,14 +15645,14 @@ function currentExposureAssetFileText(assetKey, sharedKey) {
     var assets = frame && frame.contentWindow && frame.contentWindow[assetKey];
     if (Array.isArray(assets)) names = assets.map(function (asset) { return asset && asset.name; });
   } catch (_) {}
-  names = normalizeExposureAssetFileNames(names.join(','));
+    names = normalizeExposureAssetFileNames(names.join(','));
   if (!names.length) {
     var shared = readSharedExposureOverviewText();
     names = normalizeExposureAssetFileNames(shared && shared[sharedKey]);
   }
   return names.join(', ');
 }
-function currentExposureLogoFileText() { return currentExposureAssetFileText('_bnLogos', 'logoFiles'); }
+function currentExposureLogoFileText() { return normalizeExposureLogoFileNames(currentExposureAssetFileText('_bnLogos', 'logoFiles')).join(', '); }
 function currentExposureProductFileText() { return currentExposureAssetFileText('_bnProducts', 'productFiles'); }
 var DEFAULT_EXPOSURE_PRODUCT_FILE_TEXT = '圖片1,圖片2,圖片3';
 function exposureProductFileTextForWorkbook() {
@@ -14468,7 +15673,7 @@ function exposureAssetsForNames(value) {
 function pushExposureOverviewAssets(payload) {
   payload = payload || readSharedExposureOverviewText();
   if (!payload) return false;
-  var logoNames = normalizeExposureAssetFileNames(payload.logoFiles);
+  var logoNames = normalizeExposureLogoFileNames(payload.logoFiles);
   var productNames = normalizeExposureAssetFileNames(payload.productFiles);
   if (!logoNames.length && !productNames.length) return false;
   var message = {
@@ -14736,17 +15941,274 @@ function getExposureTextPalette() {
   if (legacySubText && !stored.subText) stored.subText = legacySubText;
   return Object.assign({}, EXPOSURE_DEFAULT_TEXT_PALETTE, stored);
 }
+
+/* 背景色工具與曝光資源的「主標顏色」共用同一份色碼。
+   背景色工具歷來有數種欄位命名，這裡用鍵名／標籤做相容判斷，
+   不把主標綁死在某一個物件路徑。 */
+var _mainTextColorSyncing = false;
+var _lastSharedMainTextColor = '';
+function normalizeSharedHexColor(value) {
+  var raw = String(value == null ? '' : value).trim();
+  if (/^#[0-9a-f]{3}$/i.test(raw)) raw = '#' + raw.slice(1).split('').map(function (ch) { return ch + ch; }).join('');
+  return /^#[0-9a-f]{6}$/i.test(raw) ? raw.toLowerCase() : '';
+}
+function colorValueFromTool(value) {
+  var direct = normalizeSharedHexColor(value);
+  if (direct) return direct;
+  if (!value || typeof value !== 'object') return '';
+  var nestedKeys = ['hex', 'color', 'value', 'result', 'text', 'fg', 'foreground'];
+  for (var i = 0; i < nestedKeys.length; i++) {
+    var nested = normalizeSharedHexColor(value[nestedKeys[i]]);
+    if (nested) return nested;
+  }
+  if ([value.r, value.g, value.b].every(function (part) { return isFinite(Number(part)); })) {
+    return '#' + [value.r, value.g, value.b].map(function (part) {
+      return Math.max(0, Math.min(255, Math.round(Number(part)))).toString(16).padStart(2, '0');
+    }).join('');
+  }
+  return '';
+}
+function mainTextToolKeyScore(path) {
+  var key = String(path || '').replace(/[\s_\-.()[\]：:／/]+/g, '').toLowerCase();
+  var score = 0;
+  if (/maintext|maintitle|headline|主標/.test(key)) score += 220;
+  else if (/pagetitletext|titletext|titlecolor|標題文字/.test(key)) score += 150;
+  else return 0;
+  if (/background|bg|底色|背景|cta|button|subtext|subtitle|副標|date|日期|selected|unselected|hover|active/.test(key)) score -= 260;
+  return score;
+}
+function mainTextColorFromObject(root) {
+  var candidates = [], seen = [];
+  function visit(value, path, depth) {
+    if (depth > 5 || value == null) return;
+    if (typeof value === 'object') {
+      if (seen.indexOf(value) !== -1) return;
+      seen.push(value);
+      var label = String(value.label || value.name || value.title || value.key || '');
+      var labelScore = mainTextToolKeyScore(label);
+      if (labelScore > 0) {
+        var objectColor = colorValueFromTool(value);
+        if (objectColor) candidates.push({ color: objectColor, score: labelScore + 40 });
+      }
+      Object.keys(value).forEach(function (key) {
+        var next = value[key];
+        var keyPath = path ? path + '.' + key : key;
+        var score = mainTextToolKeyScore(keyPath);
+        var color = colorValueFromTool(next);
+        if (score > 0 && color) candidates.push({ color: color, score: score });
+        if (typeof next === 'object') visit(next, keyPath, depth + 1);
+      });
+    }
+  }
+  visit(root, '', 0);
+  candidates.sort(function (a, b) { return b.score - a.score; });
+  return candidates.length && candidates[0].score > 0 ? candidates[0].color : '';
+}
+function readColorToolMainTextColor(seed) {
+  var fromSeed = mainTextColorFromObject(seed);
+  if (fromSeed) return fromSeed;
+  try {
+    var frame = document.getElementById('color-frame');
+    var win = frame && frame.contentWindow;
+    var doc = frame && (frame.contentDocument || (win && win.document));
+    if (win) {
+      /* 取色工具嵌在 BODA 時公開的是 _colorToolGetResult；舊版則可能只有
+         getColorData。兩者都讀，讓背景匯入時不必先切到取色工具頁籤。 */
+      var data = typeof win._colorToolGetResult === 'function'
+        ? win._colorToolGetResult()
+        : (typeof win.getColorData === 'function' ? win.getColorData() : null);
+      var fromData = mainTextColorFromObject(data);
+      if (fromData) return fromData;
+    }
+    if (doc && doc.querySelectorAll) {
+      var rows = doc.querySelectorAll('label,tr,[class*="row"],[class*="item"],[class*="field"]');
+      for (var i = 0; i < Math.min(rows.length, 800); i++) {
+        var labelText = String(rows[i].textContent || '').replace(/\s+/g, '');
+        if (!/(主標|MainTitle|TitleText|標題文字)/i.test(labelText) || /(副標|背景|底色|CTA)/i.test(labelText)) continue;
+        var inputs = rows[i].querySelectorAll('input[type="color"],input[type="text"],[data-color],[data-hex]');
+        for (var j = 0; j < inputs.length; j++) {
+          var value = inputs[j].value || inputs[j].getAttribute('data-color') || inputs[j].getAttribute('data-hex');
+          var fromDom = normalizeSharedHexColor(value);
+          if (fromDom) return fromDom;
+        }
+      }
+    }
+  } catch (_) {}
+  return '';
+}
+function pushExposureTextPalette(palette) {
+  if (!palette || typeof palette !== 'object') return false;
+  var normalized = {};
+  EXPOSURE_TEXT_COLOR_KEYS.forEach(function (key) {
+    var color = normalizeSharedHexColor(palette[key]);
+    if (color) normalized[key] = color;
+  });
+  if (!Object.keys(normalized).length) return false;
+  writeSharedExposureTextPalette(normalized);
+  [0, 180, 650].forEach(function (delay) {
+    setTimeout(function () {
+      try {
+        var frame = document.getElementById('exposure-frame');
+        var win = frame && frame.contentWindow;
+        if (!win) return;
+        win.postMessage({ type: 'wo-shared-text-palette', palette: normalized, source: 'BODA_PARENT' }, '*');
+        /* 同源時直接補套，讓尚未載入新版 plugin 的部署也能即時連動。 */
+        if (win.colorState) {
+          Object.keys(normalized).forEach(function (key) { win.colorState[key] = normalized[key]; });
+          if (typeof win.renderColorPickers === 'function') win.renderColorPickers();
+          if (typeof win.broadcastColors === 'function') win.broadcastColors();
+        }
+      } catch (_) {}
+    }, delay);
+  });
+  return true;
+}
+function pushMainTextColorToColorTool(hex) {
+  hex = normalizeSharedHexColor(hex);
+  if (!hex || !colorToolLoaded) return false;
+  _mainTextColorSyncing = true;
+  var changed = false;
+  try {
+    var frame = document.getElementById('color-frame');
+    var win = frame && frame.contentWindow;
+    var doc = frame && (frame.contentDocument || (win && win.document));
+    if (win) {
+      ['_colorToolSetMainText', '_colorToolSetMainTextColor', '_colorToolSetTitleText'].some(function (name) {
+        if (typeof win[name] !== 'function') return false;
+        win[name](hex); changed = true; return true;
+      });
+      win.postMessage({ type: 'wo-color-tool-set-main-text', hex: hex }, '*');
+    }
+    if (!changed && doc && doc.querySelectorAll) {
+      var rows = doc.querySelectorAll('label,tr,[class*="row"],[class*="item"],[class*="field"]');
+      for (var i = 0; i < Math.min(rows.length, 800) && !changed; i++) {
+        var labelText = String(rows[i].textContent || '').replace(/\s+/g, '');
+        if (!/(主標|MainTitle|TitleText|標題文字)/i.test(labelText) || /(副標|背景|底色|CTA)/i.test(labelText)) continue;
+        var input = rows[i].querySelector('input[type="color"],input[type="text"]');
+        if (!input) continue;
+        input.value = hex;
+        input.dispatchEvent(new win.Event('input', { bubbles: true }));
+        input.dispatchEvent(new win.Event('change', { bubbles: true }));
+        changed = true;
+      }
+    }
+  } catch (_) {}
+  setTimeout(function () { _mainTextColorSyncing = false; }, 320);
+  return changed;
+}
+function applySharedMainTextColor(hex, source) {
+  hex = normalizeSharedHexColor(hex);
+  if (!hex) return false;
+  _lastSharedMainTextColor = hex;
+  writeSharedExposureTextPalette({ mainText: hex });
+  pushExposureTextPalette({ mainText: hex });
+  if (source !== 'color-tool') pushMainTextColorToColorTool(hex);
+  if (typeof refreshImportAndMaintColorLinks === 'function') refreshImportAndMaintColorLinks();
+  return true;
+}
+function syncMainTextFromColorTool(seed) {
+  if (_mainTextColorSyncing) return false;
+  var hex = readColorToolMainTextColor(seed);
+  return hex ? applySharedMainTextColor(hex, 'color-tool') : false;
+}
+
+/* 取色工具的「主標」規則在取色 iframe 尚未開啟時也要生效。
+   這裡保留 color-tool.html suggest() 的主標計算（同色相、淺底降明度、
+   對背景至少 CR 3；深底使用白字），把結果先寫入共用色，等曝光資源
+   載入或重繪時再由 wo-shared-text-palette 套到實際畫布。 */
+function colorToolMainTextForBackground(bg) {
+  var hex = normalizeSharedHexColor(bg);
+  if (!hex) return '';
+  var channels = [1, 3, 5].map(function (offset) { return parseInt(hex.slice(offset, offset + 2), 16); });
+  var rgb = channels.map(function (channel) {
+    var n = channel / 255;
+    return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
+  });
+  var lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+  var blackCr = (Math.max(lum, 0) + 0.05) / (Math.min(lum, 0) + 0.05);
+  var whiteCr = (Math.max(lum, 1) + 0.05) / (Math.min(lum, 1) + 0.05);
+  /* color-tool.html 的 suggest() 以黑／白對比決定淺底；深底主標固定白色。 */
+  if (blackCr < whiteCr) return '#ffffff';
+
+  var max = Math.max(channels[0], channels[1], channels[2]) / 255;
+  var min = Math.min(channels[0], channels[1], channels[2]) / 255;
+  var lightness = (max + min) / 2;
+  var saturation = 0, hue = 0;
+  if (max !== min) {
+    var delta = max - min;
+    saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+    if (max === channels[0] / 255) hue = ((channels[1] / 255 - channels[2] / 255) / delta) + (channels[1] < channels[2] ? 6 : 0);
+    else if (max === channels[1] / 255) hue = (channels[2] / 255 - channels[0] / 255) / delta + 2;
+    else hue = (channels[0] / 255 - channels[1] / 255) / delta + 4;
+    hue *= 60;
+  }
+  saturation = Math.max(saturation * 100, 35);
+  var hslToHex = function (h, s, l) {
+    h = ((h % 360) + 360) % 360; s = Math.max(0, Math.min(100, s)) / 100; l = Math.max(0, Math.min(100, l)) / 100;
+    var c = (1 - Math.abs(2 * l - 1)) * s;
+    var x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    var m = l - c / 2, out;
+    if (h < 60) out = [c, x, 0];
+    else if (h < 120) out = [x, c, 0];
+    else if (h < 180) out = [0, c, x];
+    else if (h < 240) out = [0, x, c];
+    else if (h < 300) out = [x, 0, c];
+    else out = [c, 0, x];
+    return '#' + out.map(function (v) {
+      var n = Math.round((v + m) * 255).toString(16);
+      return n.length === 1 ? '0' + n : n;
+    }).join('');
+  };
+  /* 與 color-tool.html fitL() 一樣，從 L-40 往更深方向找 CR 3。 */
+  var candidateL = Math.max(0, Math.min(100, lightness * 100 - 40));
+  for (var i = 0; i < 120; i++) {
+    var candidate = hslToHex(hue, saturation, candidateL);
+    if ((contrastRatioForDefaultColor(candidate, hex) || 0) >= 3) return candidate;
+    candidateL -= 1;
+    if (candidateL < 0) break;
+  }
+  return hslToHex(hue, saturation, Math.max(0, candidateL));
+}
+
+/* 背景色是工單匯入契約的一部分；即使取色工具 iframe 沒載入，也先建立
+   主標共用色。若 iframe 已載入，優先採用它當下實際算出的主標色。 */
+function syncMainTextPaletteFromBackground(bg) {
+  var hex = normalizeSharedHexColor(bg);
+  if (!hex) return false;
+  var main = '';
+  try {
+    var frame = document.getElementById('color-frame');
+    var win = frame && frame.contentWindow;
+    if (win && typeof win._colorToolGetResult === 'function') {
+      main = mainTextColorFromObject(win._colorToolGetResult());
+    }
+  } catch (_) {}
+  main = main || colorToolMainTextForBackground(hex);
+  return main ? applySharedMainTextColor(main, 'color-tool') : false;
+}
+
+function scheduleMainTextPaletteFromBackground(bg) {
+  var hex = normalizeSharedHexColor(bg);
+  if (!hex) return;
+  /* 背景套用、曝光 plugin 初始化、色票廣播各有自己的微任務，分段補送
+     可以涵蓋「工單先匯入／曝光後載入」與「已開啟曝光」兩種順序。 */
+  [0, 120, 420, 900].forEach(function (delay) {
+    setTimeout(function () { syncMainTextPaletteFromBackground(hex); }, delay);
+  });
+}
 /* 取得曝光資源目前副標色，供匯入工單／維修的促標底色作為預設連動來源。 */
 function getExposureSubTextColor() {
   return getExposureTextPalette().subText || EXPOSURE_DEFAULT_SUB_TEXT;
 }
 /* 把背景色推回「曝光資源」那個 iframe，兩邊連動。
-   jbp/jbpbn.html 的 applyColor() 是吃全域的 cpActiveKey 決定要改哪個顏色，
+   shopee/index.html 的 applyColor() 是吃全域的 cpActiveKey 決定要改哪個顏色，
    所以先暫時把它設成 canvasBg、改完再還原，避免影響它自己的取色面板狀態。 */
 function pushImportBgToExposure(hex) {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) return false;
   writeSharedCanvasBg(hex);
   if (typeof pushImportBgToColorTool === 'function') pushImportBgToColorTool(hex);
+  /* 先排程取色工具規則的主標色；即使 iframe 尚未存在，也會先寫入共用狀態。 */
+  if (typeof scheduleMainTextPaletteFromBackground === 'function') scheduleMainTextPaletteFromBackground(hex);
   try {
     var frame = document.getElementById('exposure-frame');
     var win = frame && frame.contentWindow;
@@ -15271,6 +16733,125 @@ function restoreCanvasImageLayoutState(snapshot) {
   if (typeof BNImageLayout.scanAndProcess === 'function') BNImageLayout.scanAndProcess(document.body);
 }
 
+/* 匯入工單圖片的移動／縮放歷史。只保存 BNImageLayout 的權重與位移，
+   不會在復原圖片時蓋掉使用者剛改的文字、顏色、Logo 或工單欄位。 */
+var importImageUndoStack = [];
+var importImageRedoStack = [];
+var importImageGestureBefore = null;
+var importImageHistoryRestoring = false;
+var IMPORT_IMAGE_HISTORY_MAX = 60;
+
+function captureImportImageHistoryState() {
+  if (!window.BNImageLayout) return { weights: {}, offsets: {} };
+  if (typeof BNImageLayout.getState === 'function') return BNImageLayout.getState();
+  return {
+    weights: typeof BNImageLayout.getWeights === 'function' ? BNImageLayout.getWeights() : {},
+    offsets: typeof BNImageLayout.getOffsets === 'function' ? BNImageLayout.getOffsets() : {}
+  };
+}
+function importImageHistoryClone(state) {
+  try { return JSON.parse(JSON.stringify(state || { weights: {}, offsets: {} })); }
+  catch (e) { return { weights: {}, offsets: {} }; }
+}
+function importImageHistoryEqual(a, b) {
+  try { return JSON.stringify(a) === JSON.stringify(b); }
+  catch (e) { return false; }
+}
+function updateImportImageHistoryButtons() {
+  var undo = document.getElementById('import-image-undo');
+  var redo = document.getElementById('import-image-redo');
+  if (undo) undo.disabled = importImageUndoStack.length <= 1;
+  if (redo) redo.disabled = !importImageRedoStack.length;
+}
+function beginImportImageHistoryGesture() {
+  if (importImageHistoryRestoring) return;
+  var current = importImageHistoryClone(captureImportImageHistoryState());
+  var last = importImageUndoStack[importImageUndoStack.length - 1];
+  /* 工單或暫存檔被替換後，舊歷史不應跨到新工單；偵測目前狀態不同就重建基準。 */
+  if (!last || !importImageHistoryEqual(last, current)) {
+    importImageUndoStack = [current];
+    importImageRedoStack = [];
+  }
+  importImageGestureBefore = current;
+  updateImportImageHistoryButtons();
+}
+function commitImportImageHistoryGesture() {
+  if (importImageHistoryRestoring) return;
+  var before = importImageGestureBefore || importImageHistoryClone(captureImportImageHistoryState());
+  var after = importImageHistoryClone(captureImportImageHistoryState());
+  importImageGestureBefore = null;
+  if (importImageHistoryEqual(before, after)) { updateImportImageHistoryButtons(); return; }
+  var last = importImageUndoStack[importImageUndoStack.length - 1];
+  if (!last || !importImageHistoryEqual(last, before)) importImageUndoStack.push(before);
+  importImageUndoStack.push(after);
+  if (importImageUndoStack.length > IMPORT_IMAGE_HISTORY_MAX) {
+    importImageUndoStack = importImageUndoStack.slice(importImageUndoStack.length - IMPORT_IMAGE_HISTORY_MAX);
+  }
+  importImageRedoStack = [];
+  updateImportImageHistoryButtons();
+}
+function applyImportImageHistoryState(state) {
+  if (!window.BNImageLayout) return;
+  importImageHistoryRestoring = true;
+  try {
+    var copy = importImageHistoryClone(state);
+    if (typeof BNImageLayout.setState === 'function') BNImageLayout.setState(copy);
+    else {
+      if (typeof BNImageLayout.setWeights === 'function') BNImageLayout.setWeights(copy.weights || {});
+      if (typeof BNImageLayout.setOffsets === 'function') BNImageLayout.setOffsets(copy.offsets || {});
+    }
+  } finally {
+    importImageHistoryRestoring = false;
+    updateImportImageHistoryButtons();
+  }
+  if (activeImportCanvasContext === 'import') {
+    importImageLayoutEditRevision++;
+    saveImportImageLayout();
+    queueImportStateSave();
+  }
+}
+function undoImportImageEdit() {
+  if (importImageUndoStack.length <= 1) return;
+  importImageRedoStack.push(importImageUndoStack.pop());
+  applyImportImageHistoryState(importImageUndoStack[importImageUndoStack.length - 1]);
+}
+function redoImportImageEdit() {
+  if (!importImageRedoStack.length) return;
+  var next = importImageRedoStack.pop();
+  importImageUndoStack.push(next);
+  applyImportImageHistoryState(next);
+}
+window.addEventListener('bn-image-layout-history', function (event) {
+  var detail = event.detail || {};
+  if (detail.context !== 'import' && detail.context !== 'preview') return;
+  if (detail.phase === 'begin') {
+    if (detail.context === 'import') importImageLayoutEditRevision++;
+    beginImportImageHistoryGesture();
+  } else if (detail.phase === 'commit') {
+    commitImportImageHistoryGesture();
+    if (detail.context === 'import') {
+      saveImportImageLayout();
+      queueImportStateSave();
+    }
+  }
+});
+(function initImportImageHistoryControls() {
+  var undo = document.getElementById('import-image-undo');
+  var redo = document.getElementById('import-image-redo');
+  if (undo) undo.addEventListener('click', undoImportImageEdit);
+  if (redo) redo.addEventListener('click', redoImportImageEdit);
+  document.addEventListener('keydown', function (event) {
+    var view = document.getElementById('view-import');
+    if (!view || !view.classList.contains('active') || !(event.ctrlKey || event.metaKey)) return;
+    var target = event.target;
+    if (target && target.closest && target.closest('input,textarea,select,[contenteditable="true"]')) return;
+    var key = String(event.key || '').toLowerCase();
+    if (key === 'z' && !event.shiftKey) { event.preventDefault(); undoImportImageEdit(); }
+    else if ((key === 'z' && event.shiftKey) || key === 'y') { event.preventDefault(); redoImportImageEdit(); }
+  });
+  updateImportImageHistoryButtons();
+})();
+
 /* 顏色改了：不用重建左側欄位面板，只把畫布上每一格重新渲染一次就好 */
 function applyCanvasThemeToContext(ctxName) {
   var ctx = canvasCtx(ctxName);
@@ -15282,6 +16863,7 @@ function applyImportTheme() {
   applyCanvasThemeToContext('import');
   applyCanvasThemeToContext('preview');
   restoreCanvasImageLayoutState(imageLayoutState);
+  syncImportShadowBackgroundSoon();
 }
 
 var maintThemeApplyTimer = null;
@@ -15477,6 +17059,13 @@ window.addEventListener('message', function (e) {
   var d = e.data || {};
   if (d.type === 'wo-exposure-palette' && d.palette && typeof d.palette === 'object') {
     writeSharedExposureTextPalette(d.palette);
+    /* 曝光資源手動改主標色時，這一側才是最新來源：推進背景色工具，
+       不能反過來讀背景色工具的舊值把剛選的顏色蓋掉。 */
+    var exposureMainText = normalizeSharedHexColor(d.palette.mainText);
+    if (exposureMainText) {
+      _lastSharedMainTextColor = exposureMainText;
+      if (colorToolLoaded) setTimeout(function () { pushMainTextColorToColorTool(exposureMainText); }, 0);
+    }
     refreshImportAndMaintColorLinks();
     /* 曝光資源的自動 CTA 字色可能跟著主標／CTA 底色變了：把目前實際字色再推給背景色工具。 */
     syncCtaTextToColorTool();
@@ -15494,6 +17083,10 @@ window.addEventListener('message', function (e) {
     return;
   }
   if (d.type === 'wo-exposure-color' && EXPOSURE_TEXT_COLOR_KEYS.indexOf(d.key) >= 0 && /^#[0-9a-fA-F]{6}$/.test(d.color || '')) {
+    if (d.key === 'mainText') {
+      applySharedMainTextColor(d.color, 'exposure');
+      return;
+    }
     var nextPalette = {};
     nextPalette[d.key] = d.color;
     writeSharedExposureTextPalette(nextPalette);
@@ -15522,6 +17115,7 @@ window.addEventListener('message', function (e) {
   refreshImportAndMaintColorLinks();
   if (!currentImportColumns.length) applyImportStripBg();
   if (typeof pushImportBgToColorTool === 'function') pushImportBgToColorTool(hex);
+  if (typeof scheduleMainTextPaletteFromBackground === 'function') scheduleMainTextPaletteFromBackground(hex);
 });
 
 /* 其他分頁／視窗變更共用背景色時也跟著更新。 */
@@ -15554,6 +17148,7 @@ window.addEventListener('storage', function (e) {
   refreshImportAndMaintColorLinks();
   if (!currentImportColumns.length) applyImportStripBg();
   if (typeof pushImportBgToColorTool === 'function') pushImportBgToColorTool(hex);
+  if (typeof scheduleMainTextPaletteFromBackground === 'function') scheduleMainTextPaletteFromBackground(hex);
 });
 
 document.getElementById('btn-color-reset-all').addEventListener('click', function () {
@@ -16874,10 +18469,20 @@ function bindEndorserTextDrag(mountEl, col, idx, ctxName) {
     });
   });
 }
+/* MSBN B-1-3 的「文案／促標」本來就是單行版位。
+   共用 schema 仍可能把它標成可加第二行的文字欄位，因此在 BODA 這層
+   以 blockId＋欄位 key 再鎖一次，讓匯入畫布、維修畫布與預覽都一致。 */
+function isSingleLinePromoField(col, key) {
+  if (!col) return false;
+  var identity = [col.blockId, col.header, col.file, col.sourceKey].join(' ');
+  if (!/(?:^|[^a-z])msbn[-_]B[-_]1[-_]3(?:\.jpg)?(?:$|[^0-9])/i.test(identity)) return false;
+  var fieldKey = String(key || '').trim().toLowerCase();
+  return /^(?:promo|promo\d*|copy|copy\d*)$/.test(fieldKey);
+}
 /* 「+」加回第二行：保留第一排，第二排預設「文案資訊」。
    第二排已有內容時不動作；尾端換行／空白行不算第二排，所以刪掉的那一排會被補回。 */
 function addCanvasSecondLine(col, idx, ctxName, key) {
-  if (!col || !key) return;
+  if (!col || !key || isSingleLinePromoField(col, key)) return;
   var current = String(col.data[key] == null ? '' : col.data[key]).replace(/\r\n?/g, '\n');
   if (BNSchemaRenderer.hasSecondLineText(current)) return;
   col.data[key] = current.split('\n')[0] + '\n文案資訊';
@@ -16915,6 +18520,12 @@ function syncCanvasAddLineButton(el, col, idx, ctxName, key) {
   var twoline = el && el.closest('[data-twoline-text="' + key + '"]');
   if (!twoline || !col || !col.data) return;
   var btn = twoline.querySelector('[data-add-line-field="' + key + '"]');
+  if (isSingleLinePromoField(col, key)) {
+    /* MSBN B-1-3 的促標設計只有一行；即使共用 renderer 產生了
+       twoline 容器，也不可提供「＋」新增第二行。 */
+    if (btn) btn.remove();
+    return;
+  }
   var needBtn = !BNSchemaRenderer.hasSecondLineText(col.data[key]);
   if (needBtn && !btn) {
     var holder = document.createElement('div');
@@ -16931,12 +18542,96 @@ function bindCanvasAddLineButtons(mountEl, col, idx, ctxName) {
   mountEl.querySelectorAll('[data-add-line-field]').forEach(function (btn) {
     var key = btn.getAttribute('data-add-line-field');
     if (!key) return;
+    if (isSingleLinePromoField(col, key)) {
+      btn.remove();
+      return;
+    }
     bindCanvasAddLineButton(btn, col, idx, ctxName, key);
   });
+}
+/* MSBN A-2-1：「品名」與「警語」（工單的「特色」也匯入 warn）各有獨立文字框。
+   左右兩組分別以品名的文字中心為準，移動警語；顏色由原來的品名／警語設定控制。 */
+function alignMsbnA21Text(mountEl, col) {
+  if (!mountEl || !col) return;
+  var identity = [col.blockId, col.header, col.file, col.msbnFile].join(' ');
+  if (!/(?:^|[^a-z])msbn[-_]A[-_]2[-_]1(?:\.jpg)?(?:$|[^0-9])/i.test(identity)) return;
+  function fieldKeyOf(el) {
+    return String(el.getAttribute('data-field') || el.getAttribute('data-text-field') || el.getAttribute('data-twoline-text') || '').trim();
+  }
+  function editableTextOf(el) {
+    return el && (el.matches && el.matches('[contenteditable="true"]') ? el : el.querySelector('[contenteditable="true"]')) || el;
+  }
+  function textBounds(el) {
+    if (!el) return null;
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      var rects = Array.prototype.slice.call(range.getClientRects()).filter(function (r) { return r && r.width > 0 && r.height > 0; });
+      if (rects.length) {
+        var left = rects[0].left, right = rects[0].right, top = rects[0].top, bottom = rects[0].bottom;
+        rects.forEach(function (r) { left = Math.min(left, r.left); right = Math.max(right, r.right); top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom); });
+        return { left: left, right: right, top: top, bottom: bottom, width: right - left, height: bottom - top };
+      }
+    } catch (e) {}
+    var fallback = el.getBoundingClientRect && el.getBoundingClientRect();
+    return fallback && fallback.width ? fallback : null;
+  }
+  var records = [], seenNodes = [];
+  Array.prototype.forEach.call(mountEl.querySelectorAll('[data-field], [data-text-field], [data-twoline-text]'), function (el) {
+    var key = fieldKeyOf(el);
+    var textEl = editableTextOf(el);
+    if (!key || !textEl || seenNodes.indexOf(textEl) !== -1) return;
+    seenNodes.push(textEl);
+    records.push({ key: key, el: textEl });
+  });
+  var names = records.filter(function (item) { return /^(?:name|productName)\d*$/i.test(item.key); });
+  var warnings = records.filter(function (item) { return /^warn\d*$/i.test(item.key); });
+  if (!names.length || !warnings.length) return;
+  function apply() {
+    warnings.forEach(function (item) {
+      item.el.style.textAlign = 'center';
+      item.el.style.textAlignLast = 'center';
+      /* 每次計算前先拿掉上一次位移，避免 requestAnimationFrame 後累積偏移。 */
+      item.el.style.translate = '';
+    });
+    names.forEach(function (item) { item.el.style.textAlign = 'center'; item.el.style.textAlignLast = 'center'; });
+    var orderedNames = names.filter(function (item) { return String(item.el.textContent || '').trim(); }).map(function (item) { return { item: item, rect: textBounds(item.el) }; }).filter(function (item) { return item.rect; });
+    var orderedWarnings = warnings.filter(function (item) { return String(item.el.textContent || '').trim(); }).map(function (item) { return { item: item, rect: textBounds(item.el) }; }).filter(function (item) { return item.rect; });
+    orderedNames.sort(function (a, b) { return (a.rect.left + a.rect.right) - (b.rect.left + b.rect.right); });
+    orderedWarnings.sort(function (a, b) { return (a.rect.left + a.rect.right) - (b.rect.left + b.rect.right); });
+    /* Range 回傳的是螢幕座標；畫布縮放時，要換回 CSS 座標才不會少移或多移。 */
+    var mountRect = mountEl.getBoundingClientRect();
+    var scaleX = mountEl.offsetWidth > 0 ? mountRect.width / mountEl.offsetWidth : 1;
+    if (!(scaleX > 0)) scaleX = 1;
+    orderedWarnings.forEach(function (warning, index) {
+      var warningCenter = (warning.rect.left + warning.rect.right) / 2;
+      var name = orderedNames.length === orderedWarnings.length ? orderedNames[index] : orderedNames.reduce(function (closest, candidate) {
+        var center = (candidate.rect.left + candidate.rect.right) / 2;
+        return !closest || Math.abs(center - warningCenter) < Math.abs((closest.rect.left + closest.rect.right) / 2 - warningCenter) ? candidate : closest;
+      }, null);
+      if (!name) return;
+      var nameCenter = (name.rect.left + name.rect.right) / 2;
+      var shift = Math.round((nameCenter - warningCenter) / scaleX * 100) / 100;
+      if (Math.abs(shift) >= 0.01) warning.item.el.style.translate = shift + 'px 0px';
+      warning.item.el.setAttribute('data-msbn-a21-name-centered', '1');
+    });
+  }
+  mountEl.__msbnA21Align = apply;
+  if (!mountEl.__msbnA21InputBound) {
+    mountEl.__msbnA21InputBound = true;
+    mountEl.addEventListener('input', function () {
+      requestAnimationFrame(function () { if (mountEl.__msbnA21Align) mountEl.__msbnA21Align(); });
+    });
+  }
+  apply();
+  requestAnimationFrame(apply);
+  setTimeout(apply, 80);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(apply);
 }
 function bindCanvasInteractions(mountEl, col, idx, ctxName) {
   restoreCanvasImageEditorState(mountEl, col);
   applyImportShadowGeometry(mountEl);
+  alignMsbnA21Text(mountEl, col);
   bindCanvasEditable(mountEl, col, idx, ctxName);
   bindCanvasAddLineButtons(mountEl, col, idx, ctxName);
   bindEndorserTextDrag(mountEl, col, idx, ctxName);
@@ -17606,6 +19301,11 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       setTimeout(function () {
         applyImportCanvasTextRules(el, col, idx, ctxName, key);
         if (twolineContainer) {
+          if (isSingleLinePromoField(col, key)) {
+            var singleLineButton = twolineContainer.querySelector('[data-add-line-field="' + key + '"]');
+            if (singleLineButton) singleLineButton.remove();
+            return;
+          }
           var lines = String(col.data[key] == null ? '' : col.data[key]).replace(/\r\n?/g, '\n').split('\n').length;
           var needBtn = lines < 2;
           if (needBtn !== hadBtn) rerenderCanvasMount(ctxName, idx);
@@ -17918,8 +19618,10 @@ function afterImportParsed(rawColumns, options) {
     currentImportHasBottomWorkOrder = !!options.hasBottomWorkOrder && !!latestBottomWorkOrder;
     queueBottomPersist();
     currentImportColumns = columns;
+    if (!options.preserveExisting) beginImportImageLayoutDocument(false);
     autoMatchImagesToColumns();
     renderImportColumns(columns);
+    saveImportImageLayout();
     scheduleImportShadowReapply(true);
     var importDoneMessage = currentImportSource === 'generator'
       ? '已從工單生成器載入 ' + columns.length + ' 格，可直接編輯'
@@ -18029,13 +19731,15 @@ function loadDemoImport() {
     if (runId !== demoImportRunId) throw new Error('__DEMO_IMPORT_CANCELLED__');
     uploadedImages = result.images;
     renderImageGallery();
-    rememberBottomWorkOrder(result.manifest.workorder, result.workOrderBuffer);
     appLoadingUpdate(54, 'LOADING · 匯入 demo 工單', '圖片素材已載入，正在解析工單…');
     return parseImportXlsx(result.workOrderBuffer, { filename: result.manifest.workorder }).then(function (rawColumns) {
       if (runId !== demoImportRunId) throw new Error('__DEMO_IMPORT_CANCELLED__');
+      /* parseImportXlsx 會先套用工單包套等級；之後才把檔案送進吸底，
+         避免吸底先收到上一份工單的舊等級。 */
+      rememberBottomWorkOrder(result.manifest.workorder, result.workOrderBuffer, rawColumns.hasBottomWorkOrder === true);
       afterImportParsed(rawColumns, {
         source: 'demo',
-        hasBottomWorkOrder: true,
+        hasBottomWorkOrder: rawColumns.hasBottomWorkOrder === true,
         demoImageCount: result.images.length
       });
       syncBottomAfterImportAction('import-sync');
@@ -18083,8 +19787,13 @@ function handleImportFile(file) {
       } else {
         /* 同一份工單也交給吸底工具原本的 WorkOrderImporter；如果使用者尚未開啟
            「吸底」頁簽，先暫存在記憶體，第一次開啟時再自動帶入。 */
-        rememberBottomWorkOrder(file.name, reader.result);
-        parseImportXlsx(reader.result, { filename: file.name }).then(function (raw) { afterImportParsed(raw, { source: 'file', hasBottomWorkOrder: true }); syncBottomAfterImportAction('import-sync'); }).catch(function (err) {
+        parseImportXlsx(reader.result, { filename: file.name }).then(function (raw) {
+          /* 先由工單總覽完成等級同步，再送入吸底，確保吸底／曝光資源同時吃到
+             「包套」右側欄位，而不是沿用 localStorage 的上一個等級。 */
+          rememberBottomWorkOrder(file.name, reader.result, raw.hasBottomWorkOrder === true);
+          afterImportParsed(raw, { source: 'file', hasBottomWorkOrder: raw.hasBottomWorkOrder === true });
+          syncBottomAfterImportAction('import-sync');
+        }).catch(function (err) {
           importLog.innerHTML = '<span class="err">解析失敗：' + esc(err.message) + '</span>';
           appLoadingFinish('工單解析失敗');
         });
@@ -18419,17 +20128,17 @@ function ensureImportBottomReadyForExport() {
       console.warn('[BODA] 吸底成品同步失敗，合成圖將不含最新吸底：', err);
     });
 }
-function downloadImportImage() {
-  return ensureImportBottomReadyForExport().then(downloadImportImageNow);
+function downloadImportImage(options) {
+  return ensureImportBottomReadyForExport().then(function () { return downloadImportImageNow(options); });
 }
-function downloadImportImageNow() {
+function downloadImportImageNow(options) {
+  options = options || {};
   appLoadingUpdate(22, 'LOADING · 輸出圖片', '正在準備成品 PNG…');
   var strip = document.getElementById('imp-strip');
   var wrap = document.getElementById('imp-strip-wrap');
-  if (!strip || !wrap) return Promise.resolve();
+  if (!strip || !wrap) return Promise.resolve({ files: [], failures: [] });
   if (!window.htmlToImage || !htmlToImage.toPng) {
-    alert('截圖元件(html-to-image)沒載入成功，圖片下載不了，但暫存檔會照常下載。\n（需要網路連線載入 cdnjs 上的 html-to-image）');
-    return Promise.resolve();
+    return Promise.reject(new Error('截圖元件 html-to-image 尚未載入，無法建立圖片'));
   }
   /* 暫時還原成 1:1 原始尺寸再輸出，輸出完馬上復原目前的縮放。
      html-to-image 是把畫面原封不動轉成 SVG 交給瀏覽器本身畫出來，
@@ -18449,7 +20158,10 @@ function downloadImportImageNow() {
   strip.style.transform = 'scale(1)';
   wrap.style.width = fullW + 'px';
   wrap.style.height = fullH + 'px';
+  var restored = false;
   function restore() {
+    if (restored) return;
+    restored = true;
     strip.style.transform = prevTransform;
     wrap.style.width = prevW;
     wrap.style.height = prevH;
@@ -18475,24 +20187,31 @@ function downloadImportImageNow() {
           return { files: (result.files || []).concat(bottomFiles || []), failures: result.failures };
         });
       }).then(function (result) {
-        appLoadingUpdate(86, 'LOADING · 輸出圖片', '合成圖與獨立版位圖片已產生，正在下載…');
-        triggerImportImageDownload(dataUrl, '版位成品_' + Date.now() + '.png');
-        (result.files || []).forEach(function (file, index) {
-          triggerImportImageDownload(file.dataUrl, file.filename, 140 + index * 160);
-        });
+        var files = [{ filename: '版位成品_' + Date.now() + '.png', dataUrl: dataUrl }]
+          .concat(result.files || []);
+        appLoadingUpdate(86, 'LOADING · 輸出圖片', '合成圖與獨立版位圖片已產生…');
+        if (!options.collectOnly) {
+          files.forEach(function (file, index) {
+            triggerImportImageDownload(file.dataUrl, file.filename, index * 160);
+          });
+        }
         if (result.failures && result.failures.length) {
           var failedNames = result.failures.map(function (item) { return item.filename; }).join('、');
           console.warn('BODA 獨立版位圖片輸出失敗：', failedNames, result.failures);
         }
+        return { files: files, failures: result.failures || [] };
       });
     })
     .catch(function (err) {
       restore();
-      alert('圖片輸出失敗：' + (err && err.message ? err.message : err) + '\n（外部網址圖片若不允許跨網域讀取就會失敗，改用「上傳圖片素材」的圖就沒問題）\n暫存檔仍會照常下載。');
+      throw err;
     });
 }
 
 function restoreImportSnapshot(snap) {
+  /* v3 暫存檔會把重複的大型 dataURL 收進共用素材表；還原前先展開，
+     舊版 v1/v2 沒有素材表時此函式會原樣回傳。 */
+  snap = expandImportSnapshotFromStorage(snap);
   /* 暫存 JSON 不包含原始 XLSX 二進位資料，不能誤用上一次開過的工單回填。 */
   currentImportWorkbook = null;
   currentImportWorkbookName = '';
@@ -18562,10 +20281,15 @@ function restoreImportSnapshot(snap) {
     });
     return trimImportColumnImages(restoredColumns).then(function () {
       currentImportColumns = restoredColumns;
+      beginImportImageLayoutDocument(true);
+      saveImportImageLayout();
       renderImportColumns(currentImportColumns);
       importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已從暫存檔還原 ' + currentImportColumns.length + ' 格（含編輯結果）</span>' +
         (hasDeadBlob ? '<br><span class="err">' + lineIcon('warning') + ' 這個暫存檔是舊版本存的，部分圖片連結已失效，請重新上傳那些圖片素材後再存一次新的暫存檔。</span>' : '');
       appLoadingFinish('暫存檔已還原');
+      /* 舊暫存檔可能把裁白邊後的圖片直接留在欄位裡，沒有對回 uploadedImages。
+         還原完成後立刻跑一次巡檢／重烘，確保畫布上的商品影子不會只靠舊網址碰運氣。 */
+      scheduleImportShadowReapply(true);
     });
     currentImportColumns = (snap.columns || []).map(function (c) {
       return {
@@ -18674,22 +20398,28 @@ function applyImportColumnsToWorkbook() {
   }
   return writeCount;
 }
-function downloadImportedWorkOrderXlsx() {
+function buildImportedWorkOrderXlsxFile() {
   if (!currentImportColumns.length) throw new Error('畫布上還沒有內容，請先匯入工單');
   if (typeof ExcelJS === 'undefined') throw new Error('試算表功能仍在載入，請稍後再試');
   appLoadingUpdate(24, 'LOADING · 回填工單', '正在將畫布內容寫回原始欄位…');
   var count = applyImportColumnsToWorkbook();
   appLoadingUpdate(66, 'LOADING · 回填工單', '已回填 ' + count + ' 個欄位，正在建立試算表…');
   return currentImportWorkbook.xlsx.writeBuffer().then(function (buffer) {
-    appLoadingUpdate(92, 'LOADING · 回填工單', '正在下載已回填的工單…');
+    appLoadingUpdate(66, 'LOADING · 回填工單', '已建立回填工單，準備加入 ZIP…');
     var rawName = currentImportWorkbookName || 'BODA工單';
     var baseName = rawName.replace(/\.xlsx$/i, '') || 'BODA工單';
     var blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    var url = URL.createObjectURL(blob);
+    return { filename: baseName + '_回填_' + Date.now() + '.xlsx', blob: blob };
+  });
+}
+function downloadImportedWorkOrderXlsx() {
+  return buildImportedWorkOrderXlsxFile().then(function (file) {
+    var url = URL.createObjectURL(file.blob);
     var a = document.createElement('a');
-    a.href = url; a.download = baseName + '_回填_' + Date.now() + '.xlsx';
+    a.href = url; a.download = file.filename;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    return file;
   });
 }
 
@@ -18825,6 +20555,256 @@ function downloadImportColorTicketCsv() {
   a.remove();
   setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
 }
+
+/* 「下載工單＋圖片＋暫存檔」只觸發一次瀏覽器下載；所有產物先收集到記憶體，
+   最後由 JSZip 組成一包。避免副區、MSBN、吸底與 JSON 各自跳出下載。 */
+function importPackageSafeName(name, fallback) {
+  var clean = String(name || fallback || '檔案')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_')
+    .replace(/^\.+|\.+$/g, '')
+    .trim();
+  return clean || String(fallback || '檔案');
+}
+
+/* 不再把整張圖的 Base64 交給 JSZip 解碼。大量圖片時，JSZip 內部會建立
+   一份同尺寸的 binary string，容易超過 Chromium 的字串上限而出現
+   RangeError: Invalid string length。先轉成 Blob，再以二進位加入 ZIP。 */
+function importDataUrlToBlob(dataUrl, path) {
+  var source = typeof dataUrl === 'string' ? dataUrl : String(dataUrl || '');
+  var comma = source.indexOf(',');
+  if (comma < 0) throw new Error('圖片資料格式不正確：' + path);
+  var header = source.slice(0, comma);
+  var mimeMatch = /^data:([^;,]+)/i.exec(header);
+  var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+
+  /* Chromium 對 data: URL 的 fetch 會在原生層完成解碼，不會先產生巨型 JS 字串。 */
+  if (typeof fetch === 'function') {
+    return fetch(source).then(function (response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.blob();
+    }).catch(function () {
+      return importDataUrlToBlobChunked(source, comma, header, mime);
+    });
+  }
+  return Promise.resolve(importDataUrlToBlobChunked(source, comma, header, mime));
+}
+function importDataUrlToBlobChunked(source, comma, header, mime) {
+  if (!/;base64/i.test(header)) {
+    return new Blob([decodeURIComponent(source.slice(comma + 1))], { type: mime });
+  }
+  /* 1 MiB 且可被 4 整除，確保每段都是完整 Base64 四字元群組。 */
+  var base64Chunk = 1024 * 1024;
+  var byteParts = [];
+  for (var pos = comma + 1; pos < source.length; pos += base64Chunk) {
+    var raw = atob(source.slice(pos, Math.min(source.length, pos + base64Chunk)));
+    var bytes = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    byteParts.push(bytes);
+  }
+  return new Blob(byteParts, { type: mime });
+}
+function addImportDataUrlToZip(zip, path, dataUrl) {
+  return importDataUrlToBlob(dataUrl, path).then(function (blob) {
+    zip.file(path, blob, { binary: true, compression: 'STORE' });
+  });
+}
+
+/* 暫存檔裡同一張原圖常同時存在 columns、uploadedImages、baseUrl、logoUrl
+   與吸底 state。v3 以素材表去重，仍維持單一 JSON 可獨立還原。 */
+var IMPORT_SNAPSHOT_ASSET_PREFIX = '__BODA_SNAPSHOT_ASSET_V3__:';
+var IMPORT_SNAPSHOT_ASSETS_KEY = '_bodaAssetsV3';
+var IMPORT_SNAPSHOT_PACKED_JSON_KEY = '_bodaPackedJsonV3';
+function compactImportSnapshotForStorage(snapshot) {
+  var assets = [];
+  var assetIndex = new Map();
+  function pack(value, key) {
+    if (typeof value === 'string') {
+      /* 吸底 state 本身是 JSON 字串；拆開後可與外層上傳素材一起去重。 */
+      if (key === 'bottomState' && value.length > 1024 && /^\s*[\[{]/.test(value)) {
+        try {
+          var holder = {};
+          holder[IMPORT_SNAPSHOT_PACKED_JSON_KEY] = pack(JSON.parse(value), '');
+          return holder;
+        } catch (ignore) { /* 非 JSON 就照一般字串保存 */ }
+      }
+      if (value.length > 1024 && /^data:/i.test(value)) {
+        var existing = assetIndex.get(value);
+        if (existing == null) {
+          existing = assets.length;
+          assetIndex.set(value, existing);
+          assets.push(value);
+        }
+        return IMPORT_SNAPSHOT_ASSET_PREFIX + existing;
+      }
+      return value;
+    }
+    if (Array.isArray(value)) return value.map(function (item) { return pack(item, ''); });
+    if (value && typeof value === 'object') {
+      var out = {};
+      Object.keys(value).forEach(function (name) { out[name] = pack(value[name], name); });
+      return out;
+    }
+    return value;
+  }
+  var compact = pack(snapshot || {}, '');
+  compact.version = Math.max(3, Number(compact.version) || 0);
+  compact[IMPORT_SNAPSHOT_ASSETS_KEY] = assets;
+  return compact;
+}
+function expandImportSnapshotFromStorage(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || !Array.isArray(snapshot[IMPORT_SNAPSHOT_ASSETS_KEY])) return snapshot;
+  var assets = snapshot[IMPORT_SNAPSHOT_ASSETS_KEY];
+  function unpack(value) {
+    if (typeof value === 'string' && value.indexOf(IMPORT_SNAPSHOT_ASSET_PREFIX) === 0) {
+      var index = Number(value.slice(IMPORT_SNAPSHOT_ASSET_PREFIX.length));
+      return Number.isInteger(index) && typeof assets[index] === 'string' ? assets[index] : '';
+    }
+    if (Array.isArray(value)) return value.map(unpack);
+    if (value && typeof value === 'object') {
+      if (Object.prototype.hasOwnProperty.call(value, IMPORT_SNAPSHOT_PACKED_JSON_KEY)) {
+        return JSON.stringify(unpack(value[IMPORT_SNAPSHOT_PACKED_JSON_KEY]));
+      }
+      var out = {};
+      Object.keys(value).forEach(function (name) {
+        if (name !== IMPORT_SNAPSHOT_ASSETS_KEY) out[name] = unpack(value[name]);
+      });
+      return out;
+    }
+    return value;
+  }
+  return unpack(snapshot);
+}
+
+/* JSON.stringify(整份暫存) 仍會先建立一條超大型字串。改成最多 256 KiB 一段的
+   JSON Blob；語法與 JSON.stringify 相同，但記憶體不需要容納連續巨型字串。 */
+function importSnapshotJsonBlob(value) {
+  var parts = [];
+  var active = typeof WeakSet === 'function' ? new WeakSet() : null;
+  function appendString(text) {
+    text = String(text);
+    parts.push('"');
+    var chunkSize = 256 * 1024;
+    for (var start = 0; start < text.length; start += chunkSize) {
+      var encoded = JSON.stringify(text.slice(start, start + chunkSize));
+      parts.push(encoded.slice(1, -1));
+    }
+    parts.push('"');
+  }
+  function append(item, inArray) {
+    if (item === null) { parts.push('null'); return true; }
+    var type = typeof item;
+    if (type === 'string') { appendString(item); return true; }
+    if (type === 'number') { parts.push(isFinite(item) ? String(item) : 'null'); return true; }
+    if (type === 'boolean') { parts.push(item ? 'true' : 'false'); return true; }
+    if (type === 'undefined' || type === 'function' || type === 'symbol') {
+      if (inArray) parts.push('null');
+      return !!inArray;
+    }
+    if (active) {
+      if (active.has(item)) throw new TypeError('暫存資料包含循環參照，無法輸出');
+      active.add(item);
+    }
+    if (Array.isArray(item)) {
+      parts.push('[');
+      item.forEach(function (entry, index) {
+        if (index) parts.push(',');
+        append(entry, true);
+      });
+      parts.push(']');
+    } else {
+      parts.push('{');
+      var first = true;
+      Object.keys(item).forEach(function (name) {
+        var field = item[name];
+        var fieldType = typeof field;
+        if (fieldType === 'undefined' || fieldType === 'function' || fieldType === 'symbol') return;
+        if (!first) parts.push(',');
+        first = false;
+        appendString(name);
+        parts.push(':');
+        append(field, false);
+      });
+      parts.push('}');
+    }
+    if (active) active.delete(item);
+    return true;
+  }
+  append(value, false);
+  return new Blob(parts, { type: 'application/json;charset=utf-8' });
+}
+function downloadImportPackageZip(bundle) {
+  if (typeof JSZip === 'undefined') {
+    throw new Error('ZIP 元件 JSZip 尚未載入，請確認網路連線後重試');
+  }
+  bundle = bundle || {};
+  var zip = new JSZip();
+  var usedPaths = {};
+  function uniquePath(folder, filename) {
+    var safe = importPackageSafeName(filename, '檔案');
+    var dot = safe.lastIndexOf('.');
+    var base = dot > 0 ? safe.slice(0, dot) : safe;
+    var ext = dot > 0 ? safe.slice(dot) : '';
+    var path = folder + '/' + safe;
+    var index = 2;
+    while (usedPaths[path.toLowerCase()]) path = folder + '/' + base + '_' + (index++) + ext;
+    usedPaths[path.toLowerCase()] = true;
+    return path;
+  }
+
+  if (bundle.workOrder && bundle.workOrder.blob) {
+    zip.file(uniquePath('工單', bundle.workOrder.filename), bundle.workOrder.blob, { compression: 'STORE' });
+  }
+  var imageCount = (bundle.images || []).length;
+  var imageChain = Promise.resolve();
+  (bundle.images || []).forEach(function (file, imageIndex) {
+    if (!file || !file.dataUrl) return;
+    imageChain = imageChain.then(function () {
+      appLoadingUpdate(89 + Math.floor(((imageIndex + 1) / Math.max(1, imageCount)) * 5),
+        'LOADING · 打包 ZIP', '正在加入圖片 ' + (imageIndex + 1) + '/' + imageCount + '…');
+      return addImportDataUrlToZip(zip, uniquePath('圖片', file.filename || '成品.png'), file.dataUrl).then(function () {
+        /* ZIP 已持有 Blob 後釋放暫時的 Base64 參照，降低產檔尖峰記憶體。 */
+        file.dataUrl = '';
+      });
+    });
+  });
+
+  return imageChain.then(function () {
+    zip.file('色票/色票.csv', buildImportColorTicketCsv());
+    var colorToolCsv = getColorToolCsvString();
+    if (colorToolCsv) zip.file('色票/色票_取色工具.csv', colorToolCsv);
+    if (bundle.snapshot) {
+      var compactSnapshot = compactImportSnapshotForStorage(bundle.snapshot);
+      bundle.snapshot = null;
+      zip.file(uniquePath('暫存檔', '匯入暫存_' + bundle.timestamp + '.json'), importSnapshotJsonBlob(compactSnapshot), {
+        binary: true,
+        compression: 'STORE'
+      });
+    }
+    if (bundle.warnings && bundle.warnings.length) {
+      zip.file('輸出提醒.txt', bundle.warnings.join('\r\n'));
+    }
+
+    appLoadingUpdate(96, 'LOADING · 打包 ZIP', '正在建立 ZIP 檔案（大型素材採二進位分段處理）…');
+    return zip.generateAsync({
+      type: 'blob',
+      streamFiles: true,
+      compression: 'STORE'
+    }, function (meta) {
+      var percent = Math.max(96, Math.min(99, 96 + Math.floor((Number(meta.percent) || 0) * 0.03)));
+      appLoadingUpdate(percent, 'LOADING · 打包 ZIP', 'ZIP 產生進度 ' + Math.round(Number(meta.percent) || 0) + '%');
+    });
+  }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'BODA_工單圖片暫存檔_' + bundle.timestamp + '.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+      return { filename: a.download, imageCount: imageCount };
+  });
+}
 document.getElementById('btn-upload-snapshot').addEventListener('click', function () {
   document.getElementById('snapshot-file-input').click();
 });
@@ -18841,45 +20821,51 @@ document.getElementById('btn-download-import-package').addEventListener('click',
   }
   var btn = this;
   var originalHtml = btn.innerHTML;
-  var workOrderError = null;
-  var workOrderSkipped = !currentImportWorkbook;
+  var timestamp = Date.now();
+  var bundle = { timestamp: timestamp, workOrder: null, images: [], snapshot: null, warnings: [] };
   btn.disabled = true;
-  btn.innerHTML = lineIcon('loading') + ' 輸出中…';
-  appLoadingStart('LOADING · 下載工單、圖片、色票與暫存檔', 8, '正在準備回填工單、成品圖片與色票 CSV…');
+  btn.innerHTML = lineIcon('loading') + ' 打包 ZIP 中…';
+  appLoadingStart('LOADING · 建立完整 ZIP', 8, '正在準備回填工單、成品圖片、色票與暫存檔…');
   Promise.resolve()
     .then(function () {
-      if (workOrderSkipped) return null;
-      /* downloadImportedWorkOrderXlsx 可能同步丟出錯誤（例如試算表格式不支援回填），
-         包在 Promise 裡才會被下面的 catch 接住，圖片與暫存檔仍照常下載。 */
-      return Promise.resolve().then(downloadImportedWorkOrderXlsx).catch(function (err) {
-        workOrderError = err;
-        return null; /* 工單回填失敗時，圖片與暫存仍可安全下載。 */
+      if (!currentImportWorkbook) {
+        bundle.warnings.push('工單未輸出：目前不是由原始 .xlsx 工單匯入。');
+        return null;
+      }
+      /* 回填失敗不阻擋圖片與暫存檔打包，原因會寫入 ZIP 內的「輸出提醒.txt」。 */
+      return Promise.resolve().then(buildImportedWorkOrderXlsxFile).then(function (file) {
+        bundle.workOrder = file;
+      }).catch(function (err) {
+        bundle.warnings.push('工單未輸出：' + (err && err.message ? err.message : err));
       });
     })
     .then(function () {
       appLoadingUpdate(72, 'LOADING · 輸出圖片', '正在建立目前畫布的成品 PNG…');
-      return downloadImportImage();
+      return downloadImportImage({ collectOnly: true }).then(function (result) {
+        bundle.images = result && result.files ? result.files : [];
+        if (result && result.failures && result.failures.length) {
+          bundle.warnings.push('部分獨立版位圖片輸出失敗：' + result.failures.map(function (item) {
+            return item.filename;
+          }).join('、'));
+        }
+      }).catch(function (err) {
+        bundle.warnings.push('圖片未輸出：' + (err && err.message ? err.message : err));
+      });
     })
     .then(function () {
-      appLoadingUpdate(82, 'LOADING · 匯出色票', '正在套用目前畫布色碼並下載 CSV…');
-      downloadImportColorTicketCsv();
-      if (colorToolLoaded) downloadColorToolCsv();
-      appLoadingUpdate(88, 'LOADING · 建立暫存檔', '正在整理可還原的編輯資料…');
+      appLoadingUpdate(88, 'LOADING · 建立暫存檔', '正在整理可還原的編輯資料與色票…');
       return buildImportSnapshot();
     })
     .then(function (snap) {
-      appLoadingUpdate(96, 'LOADING · 建立暫存檔', '正在下載編輯暫存檔…');
-      downloadJSON(snap, '匯入暫存_' + Date.now() + '.json');
-      if (workOrderError || workOrderSkipped) {
-        var reason = workOrderError ? workOrderError.message : '目前不是由原始 .xlsx 工單匯入';
-        appLoadingFinish('圖片、色票 CSV 與暫存檔已下載；工單未下載：' + reason);
-      } else {
-        appLoadingFinish('工單、圖片、色票 CSV 與暫存檔已下載');
-      }
+      bundle.snapshot = snap;
+      return downloadImportPackageZip(bundle);
+    })
+    .then(function (result) {
+      appLoadingFinish('完整 ZIP 已下載：工單、' + result.imageCount + ' 張圖片、色票與暫存檔');
     })
     .catch(function (err) {
-      alert('輸出失敗：' + (err && err.message ? err.message : err));
-      appLoadingFinish('下載失敗');
+      alert('ZIP 輸出失敗：' + (err && err.message ? err.message : err));
+      appLoadingFail('ZIP 下載失敗');
     })
     .then(function () {
       btn.disabled = false;
@@ -18909,7 +20895,7 @@ var LEVELS = [
   { id: 'gold_mega',          label: 'B 金牌 (Mega)',             msbnMax: 3 }
 ];
 var LEVEL_KEY = 'wo_level_v1';
-var DEFAULT_LEVEL_ID = 'bod_a'; /* 沒選過時的預設等級 */
+var DEFAULT_LEVEL_ID = 'brand_star_mega'; /* 沒選過時的預設等級 */
 function getLevel(id) {
   for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].id === id) return LEVELS[i];
   for (var j = 0; j < LEVELS.length; j++) if (LEVELS[j].id === DEFAULT_LEVEL_ID) return LEVELS[j];
@@ -19030,7 +21016,7 @@ var teachingMode = new URLSearchParams(window.location.search).get('teaching');
 var currentPaletteTab = teachingMode === 'msbn' ? 'msbn' : 'subarea'; /* 'subarea' | 'msbn' | 'sticky' */
 var PALETTE_TAB_INFO = {
   msbn: { label: 'MSBN', icon: '🧱' },
-  sticky: { label: '吸底', icon: '📌' }
+  sticky: { label: '吸底工具', icon: '📌' }
 };
 var bottomToolLoaded = false;
 var bottomBridgeReady = false;
@@ -19049,6 +21035,9 @@ var bottomGeneratorStateJson = '';
 var bottomStandaloneStateJson = '';
 var bottomSharedStateJson = ''; /* 兩個入口共用的唯一吸底編輯狀態來源 */
 var bottomLastEditedStateJson = '';
+/* 新 xlsx 送進 iframe 後，在工單解析完成前，工單解析結果優先於父頁暫存 state。
+   避免可見版型推導出的檔名 state 把剛建立的 LOGO 素材清掉。 */
+var bottomWorkOrderNeedsParserAuthority = false;
 var bottomExportSeq = 0;
 var bottomExportWaiters = {};
 
@@ -19191,8 +21180,12 @@ function queueBottomPersist() {
 }
 /* 開啟頁面時把上次的吸底狀態與工單原檔放回記憶體，再送給已開啟的吸底入口／預覽。 */
 function restoreBottomPersist() {
+  var restoreVersionAtStart = bottomWorkOrderVersion;
   return bottomPersistGet().then(function (saved) {
     if (!saved) return false;
+    /* IndexedDB 讀取是非同步的；若使用者在這段時間已匯入新工單，
+       舊暫存不可再回頭覆蓋新工單的吸底內容。 */
+    if (bottomWorkOrderVersion !== restoreVersionAtStart) return false;
     bottomPersistRestoring = true;
     try {
       if (saved.workOrderBuffer && !latestBottomWorkOrder) {
@@ -19222,10 +21215,14 @@ function restoreBottomPersist() {
         if (typeof renderImageGallery === 'function') renderImageGallery();
       }
       currentImportHasBottomWorkOrder = !!saved.hasBottomWorkOrder && !!(latestBottomWorkOrder || saved.bottomState);
+      /* 還原的是完整的既有編輯，允許它覆蓋 xlsx 解析結果。 */
+      bottomWorkOrderNeedsParserAuthority = false;
     } finally {
       bottomPersistRestoring = false;
     }
-    syncBottomAfterImportAction('state-ready');
+    /* 這是還原 IndexedDB 中的既有編輯，不是新工單的第二次 embedded-state-ready；
+       讓吸底 iframe 可以套回使用者上次保存的文字／LOGO。 */
+    syncBottomAfterImportAction('restore-state');
     if (bottomPreviewBridgeReady) dispatchBottomPreviewForExport();
     return true;
   });
@@ -19261,15 +21258,22 @@ function runImportPackageDownloadFromBottom() {
   })();
 }
 
-function rememberBottomWorkOrder(name, arrayBuffer) {
+function rememberBottomWorkOrder(name, arrayBuffer, hasBottomWorkOrder) {
   /* 換了新的匯入工單，上一份吸底成品不可沿用。 */
   importBottomPreviewResult = null;
+  bottomWorkOrderNeedsParserAuthority = false;
   /* 新工單進來時，舊工單的吸底編輯不能沿用；等新工單／內嵌狀態完成同步後再重新記錄。 */
   bottomGeneratorStateJson = '';
   bottomStandaloneStateJson = '';
   bottomSharedStateJson = '';
   bottomLastEditedStateJson = '';
   if (!arrayBuffer || !/\.(xlsx|xlsm)$/i.test(String(name || ''))) return;
+  if (hasBottomWorkOrder === false) {
+    /* Layout_Output 沒有吸底：清掉上一份工單的吸底來源，匯入畫布不會再接續舊成品。 */
+    latestBottomWorkOrder = null;
+    queueBottomPersist();
+    return;
+  }
   try {
     latestBottomWorkOrder = {
       name: name || '工單.xlsx',
@@ -19277,6 +21281,7 @@ function rememberBottomWorkOrder(name, arrayBuffer) {
       savedAt: Date.now(),
       version: ++bottomWorkOrderVersion
     };
+    bottomWorkOrderNeedsParserAuthority = true;
   } catch (e) {
     latestBottomWorkOrder = null;
     return;
@@ -19285,12 +21290,16 @@ function rememberBottomWorkOrder(name, arrayBuffer) {
   extractEmbeddedBottomState(latestBottomWorkOrder.buffer).then(function (stateJson) {
     if (!latestBottomWorkOrder || latestBottomWorkOrder.version !== bottomWorkOrderVersion) return;
     latestBottomWorkOrder.bottomState = stateJson || '';
-    bottomSharedStateJson = stateJson || '';
-    if (bottomBridgeReady && currentPaletteTab === 'sticky') sendLatestWorkOrderToBottom('state-ready');
-    if (bottomPreviewBridgeReady) sendLatestWorkOrderToBottomPreview('state-ready');
+    /* 新工單先保留 parser 權；可見版型推導 state 只能當 fallback，
+       不直接寫進共用 state，避免暫存檔先保存成「檔名 LOGO」的空白版本。 */
+    if (!bottomWorkOrderNeedsParserAuthority && !bottomSharedStateJson) {
+      bottomSharedStateJson = stateJson || '';
+    }
+    if (bottomBridgeReady && currentPaletteTab === 'sticky') sendLatestWorkOrderToBottom('embedded-state-ready');
+    if (bottomPreviewBridgeReady) sendLatestWorkOrderToBottomPreview('embedded-state-ready');
     if (standaloneBottomBridgeReady && document.getElementById('view-bottom') &&
         document.getElementById('view-bottom').classList.contains('active')) {
-      sendLatestWorkOrderToStandaloneBottom('state-ready');
+      sendLatestWorkOrderToStandaloneBottom('embedded-state-ready');
     }
   });
   if (bottomBridgeReady && currentPaletteTab === 'sticky') sendLatestWorkOrderToBottom('main-import');
@@ -19449,7 +21458,7 @@ function sendLatestWorkOrderToBottom(reason, requestId) {
     });
     return false;
   }
-  var isManual = !!requestId || reason === 'manual-request' || reason === 'state-ready' || reason === 'import-sync';
+  var isManual = !!requestId || reason === 'manual-request' || reason === 'state-ready' || reason === 'embedded-state-ready' || reason === 'restore-state' || reason === 'import-sync';
   /* 自動同步每份工單只做一次，避免切離／切回吸底時把使用者已編輯的內容重置。
      面板上的「同步主工具最近匯入的工單」屬於手動動作，不受此限制。 */
   if (!isManual && latestBottomWorkOrder.version <= bottomLastAutoSentVersion) return false;
@@ -19461,10 +21470,11 @@ function sendLatestWorkOrderToBottom(reason, requestId) {
     reason: reason || 'sync',
     name: latestBottomWorkOrder.name,
     bottomState: getBottomStateForSync(),
+    preferParsedWorkOrder: !!bottomWorkOrderNeedsParserAuthority,
     images: bottomHostImageAssets(),
     buffer: copy
   }, [copy]);
-  if (sent && (!isManual || reason === 'state-ready')) bottomLastAutoSentVersion = latestBottomWorkOrder.version;
+  if (sent && (!isManual || reason === 'state-ready' || reason === 'embedded-state-ready')) bottomLastAutoSentVersion = latestBottomWorkOrder.version;
   return sent;
 }
 function showImportBottomPreview(show) {
@@ -19485,7 +21495,7 @@ function hideImportBottomPreview() {
 
 function sendLatestWorkOrderToBottomPreview(reason) {
   if (!latestBottomWorkOrder || !latestBottomWorkOrder.buffer) return false;
-  if (latestBottomWorkOrder.version <= bottomPreviewLastSentVersion && reason !== 'state-ready') return false;
+  if (latestBottomWorkOrder.version <= bottomPreviewLastSentVersion && reason !== 'state-ready' && reason !== 'embedded-state-ready') return false;
   var copy = latestBottomWorkOrder.buffer.slice(0);
   var sent = postToBottomPreview({
     source: 'BODA_PARENT',
@@ -19495,6 +21505,7 @@ function sendLatestWorkOrderToBottomPreview(reason) {
     name: latestBottomWorkOrder.name,
     workOrderVersion: latestBottomWorkOrder.version,
     bottomState: getBottomStateForSync(),
+    preferParsedWorkOrder: !!bottomWorkOrderNeedsParserAuthority,
     images: bottomHostImageAssets(),
     buffer: copy
   }, [copy]);
@@ -19568,7 +21579,7 @@ function ensureBottomPreviewLoaded(forceReload) {
   };
 
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=import-preview&bridge=1&v=20260930-persist1';
+  frame.src = 'bottom/index.html?embed=import-preview&bridge=1&v=20261016-live-sync1';
 }
 /* bottom/index.html 是一套完整的吸底編輯器，仍用 iframe 隔離 CSS、Konva 與狀態。
    嵌入模式由 bottom 自己把面板排到左側，父頁只保留素材庫標題與三個頁簽。 */
@@ -19605,7 +21616,7 @@ function ensureBottomToolLoaded(forceReload) {
     }, 80);
   };
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20260930-persist1';
+  frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20261016-live-sync1';
 }
 
 function postToStandaloneBottom(message, transfer) {
@@ -19629,7 +21640,7 @@ function sendLatestWorkOrderToStandaloneBottom(reason, requestId) {
     });
     return false;
   }
-  var isManual = !!requestId || reason === 'manual-request' || reason === 'state-ready' || reason === 'import-sync';
+  var isManual = !!requestId || reason === 'manual-request' || reason === 'state-ready' || reason === 'embedded-state-ready' || reason === 'restore-state' || reason === 'import-sync';
   if (!isManual && latestBottomWorkOrder.version <= standaloneBottomLastSentVersion) return false;
   var copy = latestBottomWorkOrder.buffer.slice(0);
   var sent = postToStandaloneBottom({
@@ -19639,10 +21650,11 @@ function sendLatestWorkOrderToStandaloneBottom(reason, requestId) {
     reason: reason || 'sync',
     name: latestBottomWorkOrder.name,
     bottomState: getBottomStateForSync(),
+    preferParsedWorkOrder: !!bottomWorkOrderNeedsParserAuthority,
     images: bottomHostImageAssets(),
     buffer: copy
   }, [copy]);
-  if (sent && (!isManual || reason === 'state-ready')) standaloneBottomLastSentVersion = latestBottomWorkOrder.version;
+  if (sent && (!isManual || reason === 'state-ready' || reason === 'embedded-state-ready')) standaloneBottomLastSentVersion = latestBottomWorkOrder.version;
   return sent;
 }
 
@@ -19680,7 +21692,7 @@ function ensureStandaloneBottomLoaded(forceReload) {
     }, 80);
   };
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=standalone&bridge=1&v=20260930-persist1';
+  frame.src = 'bottom/index.html?embed=standalone&bridge=1&v=20261016-live-sync1';
 }
 function syncGeneratorToolMode() {
   var isSticky = currentPaletteTab === 'sticky';
@@ -19712,9 +21724,14 @@ function syncGeneratorToolMode() {
 
 /* 父頁與吸底 iframe 的同源/跨 file:// 安全橋：只接受目前這一個 iframe 的訊息。 */
 /* 任一入口編輯後都寫入同一份 state，再同步給另一個入口。 */
-function acceptBottomStateFromFrame(nextState, source) {
+function acceptBottomStateFromFrame(nextState, source, actionType) {
   nextState = String(nextState || '');
   if (!nextState) return;
+  /* PARENT_IMPORT 只是工單解析完成通知，不能把「新工單仍以 parser 為準」
+     提前解除；真正的使用者編輯（或等級套用）才切換到 iframe state。 */
+  if (bottomWorkOrderNeedsParserAuthority && source && actionType !== 'PARENT_IMPORT') {
+    bottomWorkOrderNeedsParserAuthority = false;
+  }
   if (nextState === bottomSharedStateJson) return; /* 同一份 state 不再重送，避免無效重繪 */
   bottomSharedStateJson = nextState;
   bottomLastEditedStateJson = nextState;
@@ -19863,12 +21880,12 @@ window.addEventListener('message', function (event) {
     if (typeof window.woApplyLevel === 'function') window.woApplyLevel(msg.levelId);
   } else if (msg.type === 'LEVEL_PRESET_STATE') {
     if (fromPreview) return; /* 預覽 iframe 的等級套用不得回寫正式吸底 state */
-    acceptBottomStateFromFrame(String(msg.state || ''), fromGenerator ? 'generator' : (fromStandalone ? 'standalone' : ''));
+    acceptBottomStateFromFrame(String(msg.state || ''), fromGenerator ? 'generator' : (fromStandalone ? 'standalone' : ''), 'LEVEL_PRESET');
   } else if (msg.type === 'STATE') {
     if (fromPreview) return; /* 預覽 iframe 不是編輯來源，不得覆蓋正式吸底 state */
     var nextBottomState = String(msg.state || '');
     var stateSource = fromGenerator ? 'generator' : (fromStandalone ? 'standalone' : '');
-    if (msg.changed) acceptBottomStateFromFrame(nextBottomState, stateSource);
+    if (msg.changed) acceptBottomStateFromFrame(nextBottomState, stateSource, msg.actionType || '');
     else if (!bottomSharedStateJson && !latestBottomWorkOrder) {
       /* 直接開啟吸底時，才接受 iframe 的初始預設 state；已有工單時不可覆蓋匯入資料。 */
       bottomSharedStateJson = nextBottomState;
@@ -20029,6 +22046,7 @@ var WO_CACHE_KEYS = [
   'wo_family_names_v1',  /* 系列改名 */
   'wo_unlocked_v1',       /* 編輯解鎖狀態 */
   'wo_import_state_v1',  /* 匯入工單頁的暫存 */
+  'wo_import_image_layout_v1', /* 商品縮放與拖曳位置 */
   'wo_import_theme_v1',  /* 匯入工單頁的統一顏色 */
   'wo_import_zoom_v1',   /* 匯入工單頁的預覽縮放比例 */
   'wo_canvas_zoom',       /* 畫布顯示縮放比例 */
@@ -20037,6 +22055,9 @@ var WO_CACHE_KEYS = [
 ];
 document.getElementById('btn-clear-cache').addEventListener('click', function () {
   if (!confirm('確定要清除本機暫存嗎？\n\n會清掉：上次畫面、目前畫布內容、系列改名、匯入工單暫存、縮放比例、解鎖狀態。\n清完會立刻重新整理回到全新狀態。')) return;
+  importPersistDisabled = true;
+  clearTimeout(importStateSaveTimer);
+  importStateSaveTimer = null;
   WO_CACHE_KEYS.forEach(function (k) {
     try { localStorage.removeItem(k); } catch (e) {}
     try { sessionStorage.removeItem(k); } catch (e) {}
@@ -21004,15 +23025,24 @@ function applyCanvasZoom(el) {
   paintHint();
 
   /* fromRemote＝曝光資源那頁改的，不再回傳訊息，避免兩邊互相通知形成迴圈 */
-  function applyLevelId(id, fromRemote) {
+  function applyLevelId(id, fromRemote, options) {
+    options = options || {};
     var next = getLevel(id);
     var newMax = next.msbnMax;
-    if (next.id === currentLevelId) { sel.value = next.id; syncLevelSelects(); return; }
+    if (next.id === currentLevelId) {
+      sel.value = next.id;
+      syncLevelSelects();
+      if (options.broadcastEvenIfSame) {
+        syncBottomLevelPreset();
+        if (!fromRemote) broadcastLevel();
+      }
+      return;
+    }
 
     /* 新等級可放的數量變少、而且畫布上已經超過 → 問過再砍掉多的 */
     if (state.msbn.length > newMax) {
       var over = state.msbn.length - newMax;
-      if (!confirm('「' + next.label + '」的 MSBN 只能放 ' + newMax + ' 顆，\n'
+      if (!options.force && !confirm('「' + next.label + '」的 MSBN 只能放 ' + newMax + ' 顆，\n'
         + '目前畫布上有 ' + state.msbn.length + ' 顆，會移除最後 ' + over + ' 顆。\n\n確定要切換嗎？')) {
         sel.value = currentLevelId; /* 取消就回到原本的選項 */
         syncLevelSelects();
@@ -21043,6 +23073,17 @@ function applyCanvasZoom(el) {
   }
   window.woBroadcastLevel = broadcastLevel;
   window.woApplyLevel = function (id) { applyLevelId(id, false); };
+  /* 工單是本次匯入的權威資料：不跳確認視窗，並且即使等級與目前相同，也要
+     重新通知吸底／曝光資源，避免 iframe 還停在上一份工單的等級。 */
+  window.woApplyLevelFromWorkOrder = function (id) {
+    applyLevelId(id, false, { force: true, broadcastEvenIfSame: true });
+  };
+  /* 若 STEP 1 的活頁簿比本控制器更早解析完成，現在立即補套該包套。 */
+  if (pendingWorkbookLevelId) {
+    var queuedWorkbookLevelId = pendingWorkbookLevelId;
+    pendingWorkbookLevelId = '';
+    window.woApplyLevelFromWorkOrder(queuedWorkbookLevelId);
+  }
 
   sel.addEventListener('change', function () { applyLevelId(sel.value, false); });
   if (bottomSel) bottomSel.addEventListener('change', function () { applyLevelId(bottomSel.value, false); });
@@ -21588,11 +23629,11 @@ function bindMaintControls() {
   if (reload) reload.addEventListener('click', function () { resetMaintTheme(); maintLoaded = false; ensureMaintLoaded(); });
 }
 
-/* 曝光資源＝shopee/jbpbn.html，用 iframe 載入（第一次進到這一頁才載）。
+/* 曝光資源＝shopee/index.html，用 iframe 載入（第一次進到這一頁才載）。
    file:// 和 GitHub Pages 用 ../shopee/（可跨目錄）；
    localhost dev server 透過 junction 用 shopee/（不能 ../）。 */
-var EXPOSURE_SRC_LOCAL  = 'shopee/jbpbn.html?host=boda&pluginBase=../jbp/js/';
-var EXPOSURE_SRC_REMOTE = '../shopee/jbpbn.html?host=boda&pluginBase=../BODA/jbp/js/';
+var EXPOSURE_SRC_LOCAL  = 'shopee/index.html?host=boda&pluginBase=../jbp/js/&v=20261016-b-level-export-icons2';
+var EXPOSURE_SRC_REMOTE = '../shopee/index.html?host=boda&pluginBase=../BODA/jbp/js/&v=20261016-b-level-export-icons2';
 var EXPOSURE_SRC = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? EXPOSURE_SRC_LOCAL : EXPOSURE_SRC_REMOTE;
 var exposureLoaded = false;
@@ -21655,6 +23696,10 @@ function ensureExposureLoaded() {
       /* 背景推過去會讓曝光資源重算自動 CTA；若使用者有手動指定的共用 CTA 底色／字色，接著再推一次。 */
       if (typeof pushImportCtaBgToExposure === 'function' && importTheme.ctaBg) pushImportCtaBgToExposure(importTheme.ctaBg);
       if (typeof pushImportCtaTextToExposure === 'function' && importTheme.ctaText) pushImportCtaTextToExposure(importTheme.ctaText);
+      if (typeof pushExposureTextPalette === 'function') {
+        var sharedExposurePalette = readSharedExposureTextPalette();
+        if (sharedExposurePalette) pushExposureTextPalette(sharedExposurePalette);
+      }
       if (typeof syncCtaTextToColorTool === 'function') syncCtaTextToColorTool();
       if (typeof pushExposureOverviewText === 'function') pushExposureOverviewText();
       /* 工單可能在曝光資源 iframe 建立前就已匯入；載入完成後要重送
@@ -21712,6 +23757,17 @@ function ensureColorToolLoaded() {
     wrap.classList.remove('missing');
     setTimeout(function () {
       pushImportBgToColorTool();
+      /* 切到背景色頁時，優先套用曝光資源最後一次主標色；只有從未建立共用色時
+         才讀背景色工具自己的既有值。 */
+      var sharedPalette = readSharedExposureTextPalette();
+      var sharedMainText = normalizeSharedHexColor(sharedPalette && sharedPalette.mainText);
+      if (sharedMainText) {
+        pushMainTextColorToColorTool(sharedMainText);
+        setTimeout(function () { pushMainTextColorToColorTool(sharedMainText); }, 500);
+      } else {
+        syncMainTextFromColorTool();
+        setTimeout(function () { syncMainTextFromColorTool(); }, 500);
+      }
     }, 300);
   });
   frame.addEventListener('error', function () {
@@ -21746,6 +23802,10 @@ function pushImportBgToColorTool(hex) {
   if (importTheme.ctaBg) pushImportCtaBgToColorTool(importTheme.ctaBg);
   _lastCtaTextPushedToColorTool = null;
   syncCtaTextToColorTool();
+  /* 背景色工具重算配色後，再把它的主標顏色推給曝光資源；避免工具顯示黑字、曝光仍留藍字。 */
+  [0, 120, 420].forEach(function (delay) {
+    setTimeout(function () { syncMainTextFromColorTool(); }, delay);
+  });
 }
 window.addEventListener('message', function (e) {
   var d = e.data || {};
@@ -21787,6 +23847,8 @@ window.addEventListener('message', function (e) {
   }
   if (d.type === 'wo-color-tool-colors' && d.linked && d.bg && !_colorToolSyncing) {
     _colorToolSyncing = true;
+    /* 先吃訊息內的主標欄位；不同版本欄位名不一時，背景套用完成後再讀一次工具現值。 */
+    syncMainTextFromColorTool(d);
     var hex = d.bg;
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
       hex = hex.toLowerCase();
@@ -21809,6 +23871,9 @@ window.addEventListener('message', function (e) {
       } catch (ex) {}
     }
     _colorToolSyncing = false;
+    [0, 100, 380].forEach(function (delay) {
+      setTimeout(function () { syncMainTextFromColorTool(); }, delay);
+    });
   }
 });
 function getColorToolCsvString() {
@@ -21953,13 +24018,22 @@ if (importDemoButton) importDemoButton.addEventListener('click', function () {
 
 var importImgDrop = document.getElementById('import-img-drop');
 var importImgInput = document.getElementById('import-img-input');
+var importImgFolderButton = document.getElementById('btn-import-img-folder');
+var importImgFolderInput = document.getElementById('import-img-folder-input');
 importImgDrop.addEventListener('click', function () { importImgInput.click(); });
 importImgInput.addEventListener('change', function (e) { handleImageFiles(e.target.files); e.target.value = ''; });
+if (importImgFolderButton && importImgFolderInput) {
+  importImgFolderButton.addEventListener('click', function () { importImgFolderInput.click(); });
+  importImgFolderInput.addEventListener('change', function (e) {
+    handleImageFiles(e.target.files);
+    e.target.value = '';
+  });
+}
 importImgDrop.addEventListener('dragover', function (e) { e.preventDefault(); importImgDrop.classList.add('dragover'); });
 importImgDrop.addEventListener('dragleave', function () { importImgDrop.classList.remove('dragover'); });
 importImgDrop.addEventListener('drop', function (e) {
   e.preventDefault(); importImgDrop.classList.remove('dragover');
-  handleImageFiles(e.dataTransfer.files);
+  readImportDroppedFiles(e.dataTransfer).then(handleImageFiles);
 });
 /* 各版位卡片上「🔄 換圖」共用的檔案選擇器 */
 document.getElementById('imp-field-img-input').addEventListener('change', function (e) {
@@ -22014,8 +24088,13 @@ if (teachingModeActive) document.body.classList.add('tutorial-' + teachingMode);
 var initialView = getSavedView();
 showView(initialView); /* 還原上次所在工具頁，不再每次強制回首頁 */
 window.addEventListener('beforeunload', function () {
+  saveImportImageLayout(); /* 滾輪 220ms 合併計時尚未結束、或拖曳中重新整理，也保存當下狀態 */
   if (importStateSaveTimer) { clearTimeout(importStateSaveTimer); saveImportState(); }
   if (bottomPersistTimer) { clearTimeout(bottomPersistTimer); bottomPersistTimer = null; queueBottomPersist(); }
+});
+window.addEventListener('pagehide', saveImportImageLayout);
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') saveImportImageLayout();
 });
 window.addEventListener('hashchange', function () {
   var hashView = String(window.location.hash || '').replace(/^#/, '');

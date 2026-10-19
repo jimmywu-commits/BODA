@@ -45,6 +45,39 @@
   var searchQuery = '';
   var cards = [];
   var selected = null;
+  var B_LEVEL_IDS = {
+    bod_a:true,
+    bod_a_zj:true,
+    bod_b_mega:true,
+    basic:true,
+    jbp_multi:true,
+    gold_mega:true
+  };
+
+  function currentBodaLevelId(){
+    var id = '';
+    try{
+      if(typeof window._bnGetCurrentLevelId === 'function') id = window._bnGetCurrentLevelId() || '';
+    }catch(_){ }
+    if(!id){
+      try{ id = localStorage.getItem('wo_level_v1') || ''; }catch(_){ }
+    }
+    return String(id || '').trim();
+  }
+  function isBLevel(id){
+    id = String(id || '').trim();
+    if(B_LEVEL_IDS[id]) return true;
+    /* 未來若新增等級但尚未補 ID，仍可由曝光資源下拉的顯示文字判斷 B／B+。 */
+    var select = document.getElementById('lv-select');
+    var option = select && select.options && select.options[select.selectedIndex];
+    return !!(option && /^B(?:\+|\s)/i.test(String(option.textContent || '').trim()));
+  }
+  function applyBLevelLibraryMode(levelId){
+    var bMode = isBLevel(levelId || currentBodaLevelId());
+    if(modal) modal.classList.toggle('bn-bglib-b-level', bMode);
+    return bMode;
+  }
+  window._bnBgLibraryApplyLevelMode = applyBLevelLibraryMode;
 
   function esc(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(ch){
@@ -689,7 +722,18 @@ function hasActiveBackgroundImage(){
       '.bn-bglib-apply:disabled{opacity:.45;cursor:not-allowed}',
       '.bn-bglib-hint{font-size:12px;color:#8b949e;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.bn-bglib-empty{border:1px dashed #30363d;border-radius:10px;padding:24px;text-align:center;color:#8b949e;line-height:1.7;grid-column:1/-1}',
-      '.bn-bglib-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}'
+      '.bn-bglib-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}',
+      /* B／B+ 包套只保留類別頁籤、背景圖片與套用動作；搜尋、自訂上傳及延伸篩選隱藏。 */
+      '.bn-bglib-overlay.bn-bglib-b-level .bn-bglib-search{display:none!important}',
+      '.bn-bglib-overlay.bn-bglib-b-level .bn-bglib-upload{display:none!important}',
+      '.bn-bglib-overlay.bn-bglib-b-level .bn-bglib-filter-style,'+
+        '.bn-bglib-overlay.bn-bglib-b-level .bn-bglib-filter-material,'+
+        '.bn-bglib-overlay.bn-bglib-b-level .bn-bglib-filter-color,'+
+        '.bn-bglib-overlay.bn-bglib-b-level .bn-bglib-filter-search,'+
+        '.bn-bglib-overlay.bn-bglib-b-level [data-bg-filter="style"],'+
+        '.bn-bglib-overlay.bn-bglib-b-level [data-bg-filter="material"],'+
+        '.bn-bglib-overlay.bn-bglib-b-level [data-bg-filter="color"],'+
+        '.bn-bglib-overlay.bn-bglib-b-level [data-bg-filter="search"]{display:none!important}'
     ].join('\n');
     document.head.appendChild(style);
   }
@@ -728,6 +772,7 @@ function hasActiveBackgroundImage(){
     applyBtn.addEventListener('click', function(){ if(selected) applyPreset(selected); });
     searchEl.addEventListener('input', function(){ searchQuery = searchEl.value || ''; renderGrid(); });
     document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
+    applyBLevelLibraryMode();
     renderTabs();
     return modal;
   }
@@ -935,6 +980,7 @@ function hasActiveBackgroundImage(){
   function openModal(nativeTarget){
     pendingNativeTarget = nativeTarget || pendingNativeTarget || findNativeUploadTarget();
     ensureModal();
+    applyBLevelLibraryMode();
     modal.classList.add('open');
     if(statusEl) statusEl.textContent = '載入背景圖庫中…';
     loadImages().then(function(){ renderTabs(); buildCards(); renderGrid(); }).catch(function(){
@@ -942,6 +988,15 @@ function hasActiveBackgroundImage(){
     });
   }
   function closeModal(){ if(modal) modal.classList.remove('open'); }
+
+  /* 主工具與曝光資源的等級下拉透過 wo-level 同步；若圖庫正開著，也要立即切換模式。 */
+  window.addEventListener('message', function(event){
+    var message = event && event.data;
+    if(message && message.type === 'wo-level' && message.level) applyBLevelLibraryMode(message.level);
+  });
+  window.addEventListener('bn-level-change', function(event){
+    applyBLevelLibraryMode(event && event.detail && event.detail.levelId);
+  });
 
   function findNativeUploadTarget(){
     return document.getElementById('bg-upload-input') ||
@@ -1159,6 +1214,44 @@ function hasActiveBackgroundImage(){
       return false;
     });
   }
+
+  /* BODA 父頁會把背景色工具的主標色送進來。這裡直接套到曝光資源的共用
+     colorState，再廣播給所有版位 iframe，確保工具列色票與實際畫布同色。 */
+  window.addEventListener('message', function(event){
+    if(window.parent !== window && event.source !== window.parent) return;
+    var message = event.data || {};
+    if(message.type !== 'wo-shared-text-palette' || !message.palette || !window.colorState) return;
+    var changed = false;
+    ['mainText','subText','dateText','brandText'].forEach(function(key){
+      var color = String(message.palette[key] || '').trim().toLowerCase();
+      if(!/^#[0-9a-f]{6}$/.test(color)) return;
+      if(String(window.colorState[key] || '').toLowerCase() !== color){
+        window.colorState[key] = color;
+        changed = true;
+      }
+      var dot = document.getElementById('dot-' + key);
+      if(dot) dot.style.background = color;
+    });
+    try{ window._bnLastUserColorState = JSON.parse(JSON.stringify(window.colorState)); }
+    catch(_){ window._bnLastUserColorState = Object.assign({}, window.colorState); }
+    if(typeof window.renderColorPickers === 'function') window.renderColorPickers();
+    if(typeof window.broadcastColors === 'function') window.broadcastColors();
+    /* colorState 已先被其他同步路徑更新時，changed 可能是 false，但右側版位 iframe
+       仍可能停在舊色。無論數值是否相同都直接補送 bn-color，確保畫布真正重畫。 */
+    var colorPayload = Object.assign({}, window.colorState);
+    Array.prototype.forEach.call(document.querySelectorAll('iframe'), function(frame){
+      try{ if(frame.contentWindow) frame.contentWindow.postMessage({ type:'bn-color', data:colorPayload }, '*'); }catch(_){ }
+    });
+    [80, 260, 800].forEach(function(delay){
+      setTimeout(function(){
+        Array.prototype.forEach.call(document.querySelectorAll('iframe'), function(frame){
+          try{ if(frame.contentWindow) frame.contentWindow.postMessage({ type:'bn-color', data:colorPayload }, '*'); }catch(_){ }
+        });
+      }, delay);
+    });
+    scheduleTextContrastAudit();
+    if(changed){ try{ document.dispatchEvent(new CustomEvent('bn-state-dirty')); }catch(_){ } }
+  });
 
   installBgColorSamplingHooks();
   installTextColorHooks();

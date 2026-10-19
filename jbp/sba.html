@@ -10634,6 +10634,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
       const target = e.target;
       if(!target || !target.closest) return;
       if(target.closest('.editor-item,.dd-product,.editor-bg,.brand,.logo-item')){
+        /* 先把拖曳／縮放開始前的狀態補進歷史，避免上一次非同步更新尚未入棧時，
+           返回一步跳過太多。mouseup 再存完成後狀態，所以整段拖曳只算一步。 */
+        pushHistory('before-move');
         pointerDown = true;
       }
     }, true);

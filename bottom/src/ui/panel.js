@@ -251,7 +251,13 @@
           "）。按錯可用 Ctrl+Z 整個退回。";
         ui.importDetail = window.WorkOrderImporter.summarise(blocks).concat(built.notes);
         rerender();
-        if (onDone) onDone(null);
+        /* 把「工單真的解析出幾條吸底」回傳給父頁；父頁不能用「沒有既有
+           bottomState」就套等級預設，否則會把剛匯入的第一顆 LOGO／文案蓋掉。 */
+        if (onDone) onDone(null, {
+          importedBanners: built.banners,
+          importedCount: built.banners.length,
+          pendingAssets: (built.pending || []).slice()
+        });
       },
       function (err) {
         ui.importMessage = "工單匯入失敗：" + err.message;
@@ -353,6 +359,72 @@
   var HOST_ICON_SHEET = '<svg class="host-step-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M9 12h6M9 16h6"/></svg>';
   var HOST_ICON_IMAGE = '<svg class="host-step-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg>';
 
+  /* Chrome 拖曳資料夾時，dataTransfer.files 可能沒有內容；用
+     FileSystemEntry 遞迴讀取，讓獨立吸底工具的 STEP 2 也能整包吃圖。 */
+  function readDroppedHostFiles(dataTransfer) {
+    var direct = Array.prototype.slice.call((dataTransfer && dataTransfer.files) || []);
+    var items = Array.prototype.slice.call((dataTransfer && dataTransfer.items) || []);
+    var entries = items.map(function (item) {
+      try { return item && typeof item.webkitGetAsEntry === "function" ? item.webkitGetAsEntry() : null; }
+      catch (e) { return null; }
+    }).filter(Boolean);
+    if (!entries.length) return Promise.resolve(direct);
+
+    function readAll(reader) {
+      return new Promise(function (resolve, reject) {
+        var result = [];
+        function next() {
+          reader.readEntries(function (batch) {
+            if (!batch || !batch.length) { resolve(result); return; }
+            result = result.concat(Array.prototype.slice.call(batch));
+            next();
+          }, reject);
+        }
+        next();
+      });
+    }
+    function walk(entry) {
+      if (!entry) return Promise.resolve([]);
+      if (entry.isFile) {
+        return new Promise(function (resolve) {
+          entry.file(function (file) {
+            if (file) {
+              /* 保留拖曳資料夾的相對路徑，讓第二／第三層同名圖片都能保留。 */
+              try { Object.defineProperty(file, "__bodaDropPath", { value: entry.fullPath || "", configurable: true }); }
+              catch (e) { try { file.__bodaDropPath = entry.fullPath || ""; } catch (_) {} }
+            }
+            resolve(file ? [file] : []);
+          }, function () { resolve([]); });
+        });
+      }
+      if (!entry.isDirectory) return Promise.resolve([]);
+      return readAll(entry.createReader()).then(function (children) {
+        return Promise.all(children.map(walk)).then(function (groups) {
+          return groups.reduce(function (all, group) { return all.concat(group); }, []);
+        });
+      }).catch(function () { return []; });
+    }
+    return Promise.all(entries.map(walk)).then(function (groups) {
+      function pathOf(file) {
+        return String(file && (file.webkitRelativePath || file.__bodaDropPath) || "").replace(/\\/g, "/");
+      }
+      function sameFile(a, b) {
+        if (a === b) return true;
+        if (!a || !b || a.name !== b.name || a.size !== b.size || a.lastModified !== b.lastModified) return false;
+        var ap = pathOf(a), bp = pathOf(b);
+        return ap && bp ? ap === bp : true;
+      }
+      var found = [];
+      groups.reduce(function (all, group) { return all.concat(group); }, []).forEach(function (file) {
+        if (!found.some(function (existing) { return sameFile(existing, file); })) found.push(file);
+      });
+      direct.forEach(function (file) {
+        if (!found.some(function (existing) { return sameFile(existing, file); })) found.push(file);
+      });
+      return found;
+    });
+  }
+
   function buildHostDropCard(opts) {
     var input = el("input", { type: "file", accept: opts.accept, style: "display:none;" });
     if (opts.multiple) input.multiple = true;
@@ -364,6 +436,21 @@
     card.appendChild(icon);
     card.appendChild(text);
     card.appendChild(input);
+    var folderInput = null;
+    if (opts.folder) {
+      folderInput = el("input", { type: "file", accept: opts.accept, style: "display:none;" });
+      folderInput.multiple = true;
+      folderInput.webkitdirectory = true;
+      folderInput.setAttribute("webkitdirectory", "");
+      folderInput.setAttribute("directory", "");
+      var folderButton = el("button", { class: "host-folder-btn", type: "button" }, ["選擇圖片資料夾"]);
+      folderButton.addEventListener("click", function (event) {
+        event.stopPropagation();
+        folderInput.click();
+      });
+      card.appendChild(folderButton);
+      card.appendChild(folderInput);
+    }
     function send(files) {
       var list = Array.prototype.slice.call(files || []);
       if (opts.filter) list = list.filter(opts.filter);
@@ -374,12 +461,13 @@
     }
     card.addEventListener("click", function () { input.click(); });
     input.addEventListener("change", function () { send(input.files); input.value = ""; });
+    if (folderInput) folderInput.addEventListener("change", function () { send(folderInput.files); folderInput.value = ""; });
     card.addEventListener("dragover", function (e) { e.preventDefault(); card.classList.add("dragover"); });
     card.addEventListener("dragleave", function () { card.classList.remove("dragover"); });
     card.addEventListener("drop", function (e) {
       e.preventDefault();
       card.classList.remove("dragover");
-      send(e.dataTransfer && e.dataTransfer.files);
+      readDroppedHostFiles(e.dataTransfer).then(send);
     });
     return card;
   }
@@ -401,22 +489,38 @@
         rerender();
       }
     }));
-    node.appendChild(el("div", { class: "host-step-subhead" }, ["圖片素材（可一次選多張）"]));
+    node.appendChild(el("div", { class: "host-step-subhead" }, ["圖片素材（可多選或整包資料夾）"]));
     node.appendChild(buildHostDropCard({
       kind: "images",
       accept: "image/*",
       multiple: true,
       step: "STEP 2",
       headline: "拖曳全部圖片到這裡",
-      tail: "，或點擊選擇",
+      tail: "，或點擊選擇圖片／資料夾",
       icon: HOST_ICON_IMAGE,
       title: "與「匯入工單」共用：試算表吸底填的 LOGO 圖檔名，會自動對到同檔名圖片",
-      filter: function (f) { return /^image\//.test(f.type || ""); },
+      folder: true,
+      filter: function (f) {
+        return /^image\//.test(f.type || "") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(f.name || "");
+      },
       onSent: function (list) {
         ui.importMessage = "已送出 " + list.length + " 張圖片，對到試算表 LOGO 檔名的會自動套用。";
         rerender();
       }
     }));
+    /* 暫存還原也是匯入的一部分，放在 STEP 2 正下方；動作仍交給主工具處理。 */
+    var snapWrap = el("div", { class: "host-snapshot-restore" });
+    var snapInput = el("input", { type: "file", accept: ".json", style: "display:none;" });
+    snapInput.addEventListener("change", function () {
+      if (snapInput.files && snapInput.files[0]) window.BottomParentBridge.sendHostFiles("snapshot", [snapInput.files[0]]);
+      snapInput.value = "";
+    });
+    var snapBtn = el("button", { class: "block host-dl-btn host-snapshot-btn" }, []);
+    snapBtn.innerHTML = '<svg class="host-btn-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V10"/><path d="m7.8 13.8 4.2-4.2 4.2 4.2"/><path d="M4 4h16v5"/></svg> 上傳暫存檔還原編輯';
+    snapBtn.addEventListener("click", function () { snapInput.click(); });
+    snapWrap.appendChild(snapBtn);
+    snapWrap.appendChild(snapInput);
+    node.appendChild(snapWrap);
     appendImportResult(node, ui);
     return node;
   }
@@ -433,23 +537,12 @@
     }
   }
 
-  /* 面板底部改成與「匯入工單」相同的常駐按鈕（上傳暫存檔／下載工單＋圖片＋暫存檔），
-     實際動作由主工具執行，吸底成品會跟著工單一起下載。 */
+  /* 面板底部只保留常駐下載；上傳暫存檔已移到 STEP 2 正下方。 */
   function buildHostActionFooter() {
     var node = el("div", { class: "panel-section export-section host-dl-bar" });
-    var snapInput = el("input", { type: "file", accept: ".json", style: "display:none;" });
-    snapInput.addEventListener("change", function () {
-      if (snapInput.files && snapInput.files[0]) window.BottomParentBridge.sendHostFiles("snapshot", [snapInput.files[0]]);
-      snapInput.value = "";
-    });
-    var upBtn = el("button", { class: "block host-dl-btn" }, []);
-    upBtn.innerHTML = '<svg class="host-btn-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V10"/><path d="m7.8 13.8 4.2-4.2 4.2 4.2"/><path d="M4 4h16v5"/></svg> 上傳暫存檔還原編輯';
-    upBtn.addEventListener("click", function () { snapInput.click(); });
-    var dlBtn = el("button", { class: "primary block host-dl-btn", style: "margin-top:8px;" }, []);
+    var dlBtn = el("button", { class: "primary block host-dl-btn" }, []);
     dlBtn.innerHTML = '<svg class="host-btn-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 20h16"/></svg> 下載工單＋圖片＋暫存檔';
     dlBtn.addEventListener("click", function () { window.BottomParentBridge.requestHostAction("download-package"); });
-    node.appendChild(upBtn);
-    node.appendChild(snapInput);
     node.appendChild(dlBtn);
     node.appendChild(el("div", { class: "host-dl-hint" }, [
       "會回填目前文字、色碼與共用文案至原 Excel，並下載合成 PNG、各版位獨立 PNG（副區整排、MSBN 逐顆、吸底多狀態圖）與編輯暫存 .json。"

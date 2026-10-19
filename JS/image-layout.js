@@ -45,6 +45,30 @@
   /* 每張圖被拖曳過的位移，跟權重一樣用同一組識別碼記住：{ groupKey: { index: {x,y} } } */
   var offsetStore = {};
 
+  /* 匯入工單的上一步／下一步由父頁管理；這裡只負責在真正改動圖片前後送出
+     一次 gesture 事件。滾輪會連續觸發，所以同一張圖 220ms 內的縮放合併成一步。 */
+  function imageHistoryContext(group) {
+    var el = group;
+    while (el && el.nodeType === 1) {
+      var id = el.id || '';
+      if (/^imp-mount-/i.test(id)) return 'import';
+      if (/^prevall-mount-/i.test(id)) return 'preview';
+      if (/^mnt-mount-/i.test(id)) return 'maint';
+      el = el.parentElement;
+    }
+    return '';
+  }
+
+  function emitImageHistory(group, phase, action) {
+    var context = imageHistoryContext(group);
+    if (context !== 'import' && context !== 'preview') return;
+    try {
+      window.dispatchEvent(new CustomEvent('bn-image-layout-history', {
+        detail: { phase: phase, action: action || 'edit', context: context }
+      }));
+    } catch (e) {}
+  }
+
   /* 匯入工單頁會在頁籤切換、統一換色、文字輸入時大量重建 DOM；另外畫布本身
      還會用 transform 縮放。某些瀏覽器在圖片載入時該頁仍是 display:none，
      clientWidth/clientHeight 會是 0，第一次排版就直接略過。
@@ -658,12 +682,18 @@
       img.addEventListener('wheel', function (e) {
         e.preventDefault();
         e.stopPropagation();
+        if (!img._bnImageLayoutWheelTimer) emitImageHistory(group, 'begin', 'zoom');
+        else clearTimeout(img._bnImageLayoutWheelTimer);
         var groupKey = getGroupKey(group);
         var w = getWeight(groupKey, i, img);
         w += (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
         w = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, w));
         setWeight(groupKey, i, w, img);
         applyLayout(group);
+        img._bnImageLayoutWheelTimer = setTimeout(function () {
+          img._bnImageLayoutWheelTimer = null;
+          emitImageHistory(group, 'commit', 'zoom');
+        }, 220);
       }, { passive: false });
 
       /* 按住左鍵拖曳移動這一張圖 */
@@ -672,9 +702,11 @@
         if (e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
+        emitImageHistory(group, 'begin', 'move');
         var groupKey = getGroupKey(group);
         var start = getOffset(groupKey, i);
         var startX = e.clientX, startY = e.clientY;
+        var moved = false;
         /* 匯入預覽整塊會被 CSS transform 縮放，滑鼠移動的距離要換算回原始尺寸，
            不然縮到 50% 時圖片會跑得比滑鼠快一倍 */
         var rect = img.getBoundingClientRect();
@@ -684,6 +716,7 @@
         img.style.cursor = 'grabbing';
 
         function onMove(ev) {
+          moved = true;
           var nextX = start.x + (ev.clientX - startX) / scale;
           var nextY = start.y + (ev.clientY - startY) / scale;
           setOffset(groupKey, i, nextX, nextY);
@@ -696,6 +729,7 @@
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
           img.style.cursor = prevCursor || 'grab';
+          emitImageHistory(group, 'commit', moved ? 'move' : 'noop');
         }
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -705,10 +739,12 @@
       img.addEventListener('dblclick', function (e) {
         e.preventDefault();
         e.stopPropagation();
+        emitImageHistory(group, 'begin', 'reset');
         var groupKey = getGroupKey(group);
         setWeight(groupKey, i, 1, img);
         setOffset(groupKey, i, 0, 0);
         applyLayout(group);
+        emitImageHistory(group, 'commit', 'reset');
       });
 
       img.style.cursor = 'grab';
@@ -797,6 +833,20 @@
     },
     setOffsets: function (o) {
       offsetStore = (o && typeof o === 'object') ? o : {};
+      scanAndProcess(document.body);
+    },
+    /* 復原時同時套用縮放與位移，只重排一次，避免先套大小、再套位置的閃動。 */
+    getState: function () {
+      try {
+        return JSON.parse(JSON.stringify({ weights: weightStore, offsets: offsetStore }));
+      } catch (e) {
+        return { weights: {}, offsets: {} };
+      }
+    },
+    setState: function (state) {
+      state = state && typeof state === 'object' ? state : {};
+      weightStore = state.weights && typeof state.weights === 'object' ? state.weights : {};
+      offsetStore = state.offsets && typeof state.offsets === 'object' ? state.offsets : {};
       scanAndProcess(document.body);
     }
   };

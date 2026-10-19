@@ -736,7 +736,7 @@
         var bgEl2 = cv.querySelector('.bg');
         if(bgEl2 && !cv.querySelector('.背景色')) bgEl2.style.backgroundColor = _bnCanvasBg;
       }
-      function ac(cls,col){ if(!col)return; document.querySelectorAll('.'+cls).forEach(function(el){ if(!el.querySelector('.cta-text')) el.style.color=col; }); }
+      function ac(cls,col){ if(!col)return; document.querySelectorAll('.'+cls).forEach(function(el){ if(!el.querySelector('.cta-text')) el.style.setProperty('color',col,'important'); }); }
       ac('主標',c.mainText); ac('副標',c.subText); ac('日期',c.dateText); ac('品牌名',c.brandText); ac('六字內',c.subText);
       /* SearchICON_TEXT 的圓形文案顏色跟著副標文字色同步。 */
       if (_bnSearchIconTemplate && /SearchICON_TEXT/i.test(fname || '')) ac('ICON獨立文案',c.subText);

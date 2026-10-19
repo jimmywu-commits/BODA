@@ -10,6 +10,9 @@
   var mounted = false;
   var seq = 0;
   var pending = {};
+  /* 文字連打或連續換 LOGO 時，舊的 canvas 匯出可能比新的更晚完成。
+     只允許最後一次要求回傳 PREVIEW_IMAGE，避免匯入工單畫布被舊圖反向覆蓋。 */
+  var previewRenderSeq = 0;
   /* 收到父頁同步時，store 仍會發出 change；這個旗標避免它再被誤判為使用者編輯而回傳，造成兩個入口無限互相覆蓋。 */
   var parentStateSyncDepth = 0;
 
@@ -70,13 +73,16 @@
 
   function sendPreviewImage(sourceMessage) {
     if (!isImportPreview() || !window.ExportBatch || !window.Selectors || !window.store) return;
+    var renderSeq = ++previewRenderSeq;
     var view = window.Selectors.viewState(window.store.getState());
     window.ExportBatch.exportView(view).then(function (results) {
+      if (renderSeq !== previewRenderSeq) return;
       var index = Math.max(0, Math.min(results.length - 1, Number(view.activeSlotIndex) || 0));
       var result = results[index] || results[0];
       if (!result || !result.dataUrl) throw new Error("吸底成品沒有可輸出的圖片");
       post({ type: "PREVIEW_IMAGE", workOrderVersion: Number(sourceMessage && sourceMessage.workOrderVersion) || 0, dataUrl: result.dataUrl, width: window.LAYOUT.canvasWidth, height: window.LAYOUT.canvasHeight });
     }).catch(function (err) {
+      if (renderSeq !== previewRenderSeq) return;
       post({ type: "PREVIEW_IMAGE_ERROR", workOrderVersion: Number(sourceMessage && sourceMessage.workOrderVersion) || 0, message: err && err.message ? err.message : String(err) });
     });
   }
@@ -140,12 +146,26 @@
     /* 這是父頁提供的檔案與既有編輯狀態，不是本入口的新編輯。
        匯入過程產生的 store change 不得再轉送回父頁。 */
     parentStateSyncDepth++;
-    panelApi.importWorkOrder(file, function (err) {
+    panelApi.importWorkOrder(file, function (err, importInfo) {
       try {
-        if (!err && msg.bottomState) applyStateFromParent({ state: msg.bottomState, requestId: msg.requestId || "" });
+        var importedBanners = importInfo && Number(importInfo.importedCount) || 0;
+        /*
+         * 新工單會有兩次同步：第一次只有 xlsx，第二次是父頁讀完背景後
+         * 帶著 bottomState 的補充同步。第二次的 bottomState 可能只是從
+         * 可見版型推導出的「檔名 state」（LOGO 尚未轉成素材庫 id），若
+         * 在工單已解析成功後再套用它，就會把剛吃進來的文字／LOGO 清掉。
+         * 因此父頁標記「新工單仍以 parser 為準」時，以 WorkOrderImporter
+         * 結果為唯一來源；沒解析出吸底，或是既有編輯同步時，才套外部 state。
+         */
+        var preferParsedWorkOrder = msg.preferParsedWorkOrder === true;
+        if (!err && msg.bottomState && (!importedBanners || !preferParsedWorkOrder)) {
+          applyStateFromParent({ state: msg.bottomState, requestId: msg.requestId || "" });
+        }
         /* 已有使用者的吸底編輯（重新整理、切換頁面後重送工單）時，不可再套等級預設，
-           否則第一顆的文字／LOGO 與反白顏色會被蓋回預設值。只有「全新匯入」才套等級預設。 */
-        if (!err && !msg.bottomState) applyLevelPreset(msg.levelId);
+           否則第一顆的文字／LOGO 與反白顏色會被蓋回預設值；工單本身解析出的吸底資料也同樣保留。 */
+        /* 工單本身若已解析出吸底資料，也算是既有內容；不可因為主頁的
+           extractEmbeddedBottomState 尚未完成，就用等級預設覆蓋剛匯入的資料。 */
+        if (!err && !msg.bottomState && !importedBanners) applyLevelPreset(msg.levelId);
         if (!err && window.StartupDialog && window.StartupDialog.close) window.StartupDialog.close();
         if (!err) sendPreviewImage(msg);
         /* 可編輯的吸底入口匯入完成後，把「匯入＋等級預設＋LOGO 補圖」後的完整狀態回報給主工具，

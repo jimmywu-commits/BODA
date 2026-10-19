@@ -2,7 +2,8 @@
 /*!
  * HBN Product Editor Plugin
  * External plugin replacement for HBN product image editor.
- * 影子已改由 shadow-module/shadow-plugin.js 在匯入工單上傳時烘進圖片，這裡不再處理影子。
+ * 匯入工單的影子由 shadow-module/shadow-plugin.js 合成。商品編輯器只處理乾淨的
+ * 商品底圖；按下完成套用時，會把目前的光影設定立即重新合成到編輯結果。
  */
 (function(){
   if (window.__HBN_PRODUCT_EDITOR_PLUGIN__) return;
@@ -27,8 +28,13 @@
   .hbn-plugin-history button.active{background:#fff !important;color:#111827 !important;border-color:#fff !important;}
   .hbn-plugin-history button:disabled{background:#fff !important;color:#fff !important;border-color:rgba(255,255,255,.5) !important;opacity:.35;}
   .hbn-plugin-chip{width:18px;height:18px;border-radius:99px;border:1px solid rgba(255,255,255,.2);background:transparent;}
-  .hbn-plugin-workspace{position:relative;min-height:0;margin:12px;border-radius:16px;border:1px solid #d1d5db;overflow:hidden;display:flex;align-items:center;justify-content:center;background-color:#fff;background-image:linear-gradient(45deg,#e5e7eb 25%,transparent 25%),linear-gradient(-45deg,#e5e7eb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e5e7eb 75%),linear-gradient(-45deg,transparent 75%,#e5e7eb 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;}
+  .hbn-plugin-workspace{position:relative;min-height:0;margin:12px;border-radius:16px;border:1px solid #d1d5db;overflow:visible;display:flex;align-items:center;justify-content:center;background-color:#fff;background-image:linear-gradient(45deg,#e5e7eb 25%,transparent 25%),linear-gradient(-45deg,#e5e7eb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e5e7eb 75%),linear-gradient(-45deg,transparent 75%,#e5e7eb 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;}
   .hbn-plugin-workspace canvas{position:relative;z-index:2;display:block;max-width:100%;max-height:100%;width:auto;height:auto;touch-action:none;border-radius:10px;}
+  .hbn-plugin-rotate-handle{position:absolute;z-index:12;width:28px;height:46px;display:none;pointer-events:auto;touch-action:none;user-select:none;}
+  .hbn-plugin-rotate-stem{position:absolute;left:13px;top:0;width:2px;height:22px;background:#4a90e2;border-radius:99px;box-shadow:0 0 0 1px rgba(255,255,255,.85);}
+  .hbn-plugin-rotate-button{position:absolute;left:1px;top:20px;width:26px;height:26px;display:grid;place-items:center;border:2px solid #fff;border-radius:50%;background:#4a90e2;color:#fff;font:700 16px/1 Arial,sans-serif;cursor:grab;box-shadow:0 1px 5px rgba(0,0,0,.35);}
+  .hbn-plugin-rotate-button:active{cursor:grabbing;}
+  .hbn-plugin-rotate-badge{position:absolute;z-index:13;display:none;pointer-events:none;padding:4px 7px;border:1px solid rgba(255,255,255,.8);border-radius:999px;background:rgba(15,23,42,.88);color:#fff;font:700 12px/1.1 ui-sans-serif,system-ui,sans-serif;white-space:nowrap;transform:translate(-50%,-50%);}
   .hbn-plugin-status{display:flex;justify-content:space-between;gap:10px;padding:10px 14px;border-top:1px solid rgba(255,255,255,.12);color:#94a3b8;font-size:13px;}
   .hbn-plugin-crop{position:absolute;border:2px solid #2563eb;background:rgba(37,99,235,.08);display:none;z-index:6;}
   .hbn-plugin-edge{position:absolute;background:rgba(37,99,235,.95);pointer-events:auto;}
@@ -79,6 +85,11 @@
       </div>
       <div class="hbn-plugin-workspace" data-role="wrap">
         <canvas data-role="canvas"></canvas>
+        <div class="hbn-plugin-rotate-handle" data-role="rotateHandle" title="拖曳旋轉（Shift：每 15°）" aria-label="拖曳旋轉">
+          <div class="hbn-plugin-rotate-stem"></div>
+          <div class="hbn-plugin-rotate-button">↻</div>
+        </div>
+        <div class="hbn-plugin-rotate-badge" data-role="rotateBadge"></div>
         <div class="hbn-plugin-crop" data-role="cropBox">
           <div class="hbn-plugin-edge top" data-edge="top"></div>
           <div class="hbn-plugin-edge right" data-edge="right"></div>
@@ -126,6 +137,8 @@
     const wrap = $('[data-role="wrap"]');
     const cropBox = $('[data-role="cropBox"]');
     const brushPreview = $('[data-role="brushPreview"]');
+    const rotateHandle = $('[data-role="rotateHandle"]');
+    const rotateBadge = $('[data-role="rotateBadge"]');
     const brush = $('[data-role="brush"]');
     const brushVal = $('[data-role="brushVal"]');
     const tol = $('[data-role="tol"]');
@@ -134,7 +147,10 @@
 
     let targetImg = null, targetBox = null, originalSrc = '';
     let mode = 'none', isDrawing=false, cropStart=null, cropEnd=null, activeCropEdge=null;
-    let lastPointerPoint=null, pickedBgColor=null;
+    let lastPointerPoint=null, pickedBgColor=null, rotateDrag=null;
+    /* 旋轉永遠從同一張未旋轉的底圖重算。這和 Shopee 的 baseSrc → rotate → shadow
+       管線相同，連續拖曳不會一輪一輪重採樣而越轉越小／越糊。 */
+    let rotationBase=null, rotationDegrees=0;
     let undoStack=[], redoStack=[];
     const minCropSize = 20;
 
@@ -166,6 +182,7 @@
         const label = input.closest('label');
         if(label) label.classList.toggle('is-disabled', locked);
       });
+      positionRotateHandle();
     }
 
     function setMode(next){
@@ -195,6 +212,145 @@
       canvas.style.height = Math.round(canvas.height * scale) + 'px';
       updateCropBox();
       updateBrushPreview(lastPointerPoint);
+      positionRotateHandle();
+    }
+
+    function normalizeRotation(degrees){
+      let n = Number(degrees) || 0;
+      n = ((n + 180) % 360 + 360) % 360 - 180;
+      return Math.abs(n) < 0.01 ? 0 : n;
+    }
+
+    function formatRotation(degrees){
+      const n = normalizeRotation(degrees);
+      return (n > 0 ? '+' : '') + Math.round(n) + '°';
+    }
+
+    function cloneCanvas(source){
+      const copy = document.createElement('canvas');
+      copy.width = source.width;
+      copy.height = source.height;
+      copy.getContext('2d').drawImage(source, 0, 0);
+      return copy;
+    }
+
+    function rebaseRotationFromCanvas(){
+      if(!hasImage()) { rotationBase = null; rotationDegrees = 0; return; }
+      rotationBase = cloneCanvas(canvas);
+      rotationDegrees = 0;
+    }
+
+    /* 擦除／去背／裁切是在目前可見的旋轉結果上操作；進入這些工具前先把它當成
+       下一次旋轉的基底，否則下一次拖曳會把剛剛的編輯還原掉。 */
+    function commitRotationForEditing(){
+      if(rotationDegrees || !rotationBase) rebaseRotationFromCanvas();
+    }
+
+    function positionRotateHandle(){
+      if(!rotateHandle || !wrap) return;
+      if(!hasImage() || mode === 'crop'){
+        rotateHandle.style.display = 'none';
+        if(rotateBadge) rotateBadge.style.display = 'none';
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const wrect = wrap.getBoundingClientRect();
+      if(!rect.width || !rect.height){ rotateHandle.style.display = 'none'; return; }
+      rotateHandle.style.left = (rect.left - wrect.left + rect.width / 2 - 14) + 'px';
+      rotateHandle.style.top = (rect.top - wrect.top - 46) + 'px';
+      rotateHandle.style.display = 'block';
+      if(rotateBadge && !rotateDrag) rotateBadge.style.display = 'none';
+    }
+
+    function setRotatePreview(degrees){
+      const n = normalizeRotation(degrees);
+      canvas.style.transformOrigin = '50% 50%';
+      canvas.style.transform = n ? 'rotate(' + n + 'deg)' : '';
+      positionRotateHandle();
+      if(rotateBadge){
+        const rect = canvas.getBoundingClientRect();
+        const wrect = wrap.getBoundingClientRect();
+        rotateBadge.style.left = (rect.left - wrect.left + rect.width / 2) + 'px';
+        rotateBadge.style.top = (rect.top - wrect.top + rect.height / 2) + 'px';
+        rotateBadge.textContent = formatRotation(n);
+        rotateBadge.style.display = 'block';
+      }
+    }
+
+    function beginRotate(e){
+      if(!hasImage() || mode === 'crop' || e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      rotateDrag = {
+        pointerId: e.pointerId,
+        cx: cx,
+        cy: cy,
+        start: Math.atan2(e.clientY - cy, e.clientX - cx),
+        delta: 0
+      };
+      rotateHandle.setPointerCapture(e.pointerId);
+      rotateHandle.classList.add('is-dragging');
+      setRotatePreview(0);
+      setStatus('拖曳旋轉中：Shift 可每 15° 對齊');
+    }
+
+    function moveRotate(e){
+      if(!rotateDrag || e.pointerId !== rotateDrag.pointerId) return;
+      e.preventDefault();
+      const angle = Math.atan2(e.clientY - rotateDrag.cy, e.clientX - rotateDrag.cx);
+      let degrees = normalizeRotation((angle - rotateDrag.start) * 180 / Math.PI);
+      if(e.shiftKey) degrees = Math.round(degrees / 15) * 15;
+      rotateDrag.delta = normalizeRotation(degrees);
+      setRotatePreview(rotateDrag.delta);
+    }
+
+    function finishRotate(e){
+      if(!rotateDrag || (e && e.pointerId !== rotateDrag.pointerId)) return;
+      const degrees = rotateDrag.delta;
+      rotateDrag = null;
+      try{ rotateHandle.releasePointerCapture(e && e.pointerId); }catch(_){ }
+      rotateHandle.classList.remove('is-dragging');
+      canvas.style.transform = '';
+      if(rotateBadge) rotateBadge.style.display = 'none';
+      if(Math.abs(degrees) > 0.5) rotateCanvas(degrees);
+      else { positionRotateHandle(); setStatus('Ready'); }
+    }
+
+    function rotateCanvas(degrees){
+      if(!hasImage()) return;
+      if(!rotationBase) rebaseRotationFromCanvas();
+      const source = rotationBase;
+      rotationDegrees = normalizeRotation(rotationDegrees + degrees);
+
+      pushHistory();
+      const radians = rotationDegrees * Math.PI / 180;
+      const absCos = Math.abs(Math.cos(radians));
+      const absSin = Math.abs(Math.sin(radians));
+      const out = document.createElement('canvas');
+      out.width = Math.max(1, Math.ceil(source.width * absCos + source.height * absSin));
+      out.height = Math.max(1, Math.ceil(source.width * absSin + source.height * absCos));
+      const outCtx = out.getContext('2d');
+      outCtx.imageSmoothingEnabled = true;
+      outCtx.imageSmoothingQuality = 'high';
+      outCtx.translate(out.width / 2, out.height / 2);
+      outCtx.rotate(radians);
+      outCtx.drawImage(source, -source.width / 2, -source.height / 2);
+
+      /* 去掉旋轉外接框的透明四角。若把整個外接框交給 image-layout，它會把那一圈
+         空白也當商品尺寸，畫布上的商品便會看起來愈轉愈小。 */
+      const trimmed = trimCanvasToVisibleBounds(out, 0);
+      canvas.width = trimmed.width;
+      canvas.height = trimmed.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(trimmed, 0, 0);
+      cropStart = cropEnd = null;
+      cropBox.style.display = 'none';
+      setMode('none');
+      updateCanvasCssSize();
+      setStatus('已旋轉 ' + formatRotation(rotationDegrees) + '（完成套用後會即時重算影子）');
     }
 
     new ResizeObserver(updateCanvasCssSize).observe(wrap);
@@ -209,9 +365,12 @@
     function restoreFrom(url){
       const img = new Image();
       img.onload = ()=>{
+        canvas.style.transform = '';
+        rotateDrag = null;
         canvas.width = img.width; canvas.height = img.height;
         ctx.clearRect(0,0,canvas.width,canvas.height);
         ctx.drawImage(img,0,0);
+        rebaseRotationFromCanvas();
         updateCanvasCssSize();
       };
       img.src = url;
@@ -290,6 +449,7 @@
 
     function removeBgByColor(bg){
       if(!hasImage()) return;
+      commitRotationForEditing();
       pushHistory();
       const tolerance = Number(tol.value);
       const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
@@ -300,6 +460,7 @@
         else if(dist < tolerance + 22) d[i+3] = Math.max(0, d[i+3] * ((dist - tolerance) / 22));
       }
       ctx.putImageData(imageData,0,0);
+      rebaseRotationFromCanvas();
     }
 
     function getVisibleBoundsFromCanvas(srcCanvas, alphaThreshold){
@@ -364,6 +525,7 @@
       const imageData = ctx.getImageData(x,y,w,h);
       canvas.width=w; canvas.height=h;
       ctx.putImageData(imageData,0,0);
+      rebaseRotationFromCanvas();
       cropStart=cropEnd=null; cropBox.style.display='none';
       setMode('none');
       updateCanvasCssSize();
@@ -374,10 +536,13 @@
       if(!originalSrc) return;
       const img = new Image();
       img.onload = ()=>{
+        canvas.style.transform = '';
+        rotateDrag = null;
         canvas.width = img.naturalWidth || img.width;
         canvas.height = img.naturalHeight || img.height;
         ctx.clearRect(0,0,canvas.width,canvas.height);
         ctx.drawImage(img,0,0);
+        rebaseRotationFromCanvas();
         undoStack = []; redoStack = [];
         pushHistory();
         cropStart = cropEnd = null;
@@ -391,9 +556,7 @@
     function applyToTarget(){
       if(!targetImg || !hasImage()) return;
       const productOnly = renderProductOnlyCanvas();
-      const final = productOnly;
       const productUrl = productOnly.toDataURL('image/png');
-      const finalUrl = productUrl;
 
       // Keep stable references before close() clears the editor state.
       // Otherwise the onload callback cannot restore the original product box size.
@@ -402,38 +565,66 @@
       const stateRef = boxRef || imgRef;
       const originalImgStyle = imgRef.getAttribute('style');
 
-      /* 圖片編輯狀態記在可重用的圖片節點上。畫布欄位沒有 .editor-item 包裝時，
-         仍能在重新渲染後還原去背底圖。 */
-      if(stateRef && stateRef.dataset){
-        stateRef.dataset.baseSrc = productUrl;
-        stateRef.dataset.outputRatio = String(final.width / Math.max(1, final.height));
-        stateRef.dataset.productOnlyRatio = String(productOnly.width / Math.max(1, productOnly.height));
-        stateRef.dataset.layoutSourceWidth = String(productOnly.width);
-        stateRef.dataset.layoutSourceHeight = String(productOnly.height);
-        stateRef.dataset.layoutOutputWidth = String(final.width);
-        stateRef.dataset.layoutOutputHeight = String(final.height);
-        stateRef.dataset.layoutOffsetX = '0';
-        stateRef.dataset.layoutOffsetY = '0';
+      function applyRenderedResult(finalUrl, geometry){
+        const sourceWidth = geometry && Number(geometry.sourceWidth) > 0 ? Number(geometry.sourceWidth) : productOnly.width;
+        const sourceHeight = geometry && Number(geometry.sourceHeight) > 0 ? Number(geometry.sourceHeight) : productOnly.height;
+        const outputWidth = geometry && Number(geometry.outputWidth) > 0 ? Number(geometry.outputWidth) : productOnly.width;
+        const outputHeight = geometry && Number(geometry.outputHeight) > 0 ? Number(geometry.outputHeight) : productOnly.height;
+        const offsetX = geometry ? Number(geometry.offsetX) || 0 : 0;
+        const offsetY = geometry ? Number(geometry.offsetY) || 0 : 0;
+
+        /* metadata 要寫回真正被 MutationObserver 監看的 img；有外層 .editor-item
+           時也同步寫一份，兩種既有畫布都能保留旋轉後商品本體的幾何。 */
+        [stateRef, imgRef].filter((node, index, list)=>node && node.dataset && list.indexOf(node) === index).forEach(node=>{
+          node.dataset.baseSrc = productUrl;
+          node.dataset.outputRatio = String(outputWidth / Math.max(1, outputHeight));
+          node.dataset.productOnlyRatio = String(sourceWidth / Math.max(1, sourceHeight));
+          node.dataset.layoutSourceWidth = String(sourceWidth);
+          node.dataset.layoutSourceHeight = String(sourceHeight);
+          node.dataset.layoutOutputWidth = String(outputWidth);
+          node.dataset.layoutOutputHeight = String(outputHeight);
+          node.dataset.layoutOffsetX = String(offsetX);
+          node.dataset.layoutOffsetY = String(offsetY);
+        });
+
+        imgRef.onload = ()=>{
+        /* 編輯結果只換圖片像素；保留 image-layout 設定的寬度、transform 與游標位置。 */
+          if(originalImgStyle == null) imgRef.removeAttribute('style');
+          else imgRef.setAttribute('style', originalImgStyle);
+          if(window.BNImageLayout && typeof window.BNImageLayout.refreshEditedImage === 'function'){
+            window.BNImageLayout.refreshEditedImage(imgRef);
+          }
+          if(typeof window.syncDdLinkedCanvases === 'function'){
+            setTimeout(()=>window.syncDdLinkedCanvases(), 80);
+          }
+        };
+        imgRef.src = finalUrl;
+        close();
+        if(typeof window.showToast === 'function') window.showToast('商品圖與目前影子已套用', 'ok', 1600);
       }
 
-      imgRef.onload = ()=>{
-        /* 編輯結果只換圖片像素；保留 image-layout 設定的寬度、transform 與游標位置。 */
-        if(originalImgStyle == null) imgRef.removeAttribute('style');
-        else imgRef.setAttribute('style', originalImgStyle);
-        if(window.BNImageLayout && typeof window.BNImageLayout.refreshEditedImage === 'function'){
-          window.BNImageLayout.refreshEditedImage(imgRef);
-        }
-        if(typeof window.syncDdLinkedCanvases === 'function'){
-          setTimeout(()=>window.syncDdLinkedCanvases(), 80);
-        }
-      };
-      imgRef.src = finalUrl;
-
-      close();
-      if(typeof window.showToast === 'function') window.showToast('商品圖已套用外掛編輯器結果', 'ok', 1600);
+      /* 對應 Shopee 的 baseSrc → rotate → shadow：先把編輯器中的旋轉結果當成新的
+         無影子底圖，再用匯入工單目前的方向／位移立即合成，不能拿舊的含影子圖旋轉。 */
+      const shadow = window.BODAImportShadow;
+      if(shadow && typeof shadow.composeProduct === 'function'){
+        setStatus('正在以目前光影設定重新合成影子…');
+        shadow.composeProduct(productUrl).then(result=>{
+          applyRenderedResult((result && result.url) || productUrl, result && result.geometry);
+        }).catch(err=>{
+          console.warn('[HBN editor] 商品影子重新合成失敗，改套用商品底圖', err);
+          applyRenderedResult(productUrl, null);
+        });
+      }else{
+        applyRenderedResult(productUrl, null);
+      }
     }
 
     function close(){
+      rotateDrag = null;
+      rotationBase = null;
+      rotationDegrees = 0;
+      canvas.style.transform = '';
+      if(rotateBadge) rotateBadge.style.display = 'none';
       modal.classList.remove('open');
       setMode('none');
       targetImg = null; targetBox = null; originalSrc = '';
@@ -459,11 +650,13 @@
       const p = getCanvasPoint(e);
       lastPointerPoint = p;
       if(mode === 'eraser'){
+        commitRotationForEditing();
         pushHistory(); isDrawing = true; eraseAt(p);
       }else if(mode === 'crop'){
         if(!cropStart || !cropEnd) resetCropToImageBounds();
         updateCropBox();
       }else if(mode === 'removeBgPick'){
+        commitRotationForEditing();
         const px = ctx.getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data;
         setPickedColor(px); removeBgByColor(pickedBgColor); setStatus('點選顏色去背完成');
       }
@@ -480,6 +673,12 @@
       activeCropEdge = null;
     });
     canvas.addEventListener('pointerleave', ()=>{ lastPointerPoint=null; brushPreview.style.display='none'; });
+
+    rotateHandle.addEventListener('pointerdown', beginRotate);
+    rotateHandle.addEventListener('pointermove', moveRotate);
+    rotateHandle.addEventListener('pointerup', finishRotate);
+    rotateHandle.addEventListener('pointercancel', finishRotate);
+    rotateHandle.addEventListener('lostpointercapture', function(){ finishRotate(); });
 
     cropBox.addEventListener('pointerdown', e=>{
       const edge = e.target.dataset.edge;
@@ -537,7 +736,10 @@
       targetImg = imgEl;
       targetBox = imgEl.closest('.editor-item');
       const stateRef = targetBox || imgEl;
-      originalSrc = (stateRef && stateRef.dataset && stateRef.dataset.baseSrc) ? stateRef.dataset.baseSrc : imgEl.src;
+      /* 匯入工單會把乾淨商品底圖寫在 img 自己身上；優先用它，避免外層舊狀態把
+         已烘好的影子圖帶回編輯器。 */
+      originalSrc = (imgEl.dataset && imgEl.dataset.baseSrc) ||
+        ((stateRef && stateRef.dataset && stateRef.dataset.baseSrc) ? stateRef.dataset.baseSrc : imgEl.src);
       modal.classList.add('open');
       const img = new Image();
       img.onload = ()=>{
@@ -545,6 +747,7 @@
         canvas.height = img.naturalHeight || img.height;
         ctx.clearRect(0,0,canvas.width,canvas.height);
         ctx.drawImage(img,0,0);
+        rebaseRotationFromCanvas();
         undoStack = []; redoStack = [];
         pushHistory();
         mode = 'none';
@@ -575,5 +778,5 @@
     return openPluginProductEditor(imgEl);
   };
 
-  window.HBNProductEditorPlugin = { open: openPluginProductEditor, version: '1.1.1-crop-button-and-upload-perf' };
+  window.HBNProductEditorPlugin = { open: openPluginProductEditor, version: '1.4.0-base-rotate-shadow-compose' };
 })();

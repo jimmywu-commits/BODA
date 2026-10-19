@@ -3049,6 +3049,23 @@
       }
     };
 
+    /* 工單總覽的 LOGO／曝品檔名由父層先配對成 data URL，再透過 postMessage
+       送到曝光資源。這裡是曝光資源端的唯一入口；沒有這個 listener 時，
+       父層雖然會重送訊息，素材仍只會停留在父頁而不會進入 _bnLogos。 */
+    if (!window.__BN_WORKORDER_ASSETS_MESSAGE__) {
+      window.__BN_WORKORDER_ASSETS_MESSAGE__ = true;
+      window.addEventListener('message', function(event){
+        var message = event && event.data;
+        if (!message || message.type !== 'wo-workorder-overview-assets') return;
+        try {
+          var payload = message.assets || message;
+          if (window._bnApplyWorkorderAssets) window._bnApplyWorkorderAssets(payload);
+        } catch (err) {
+          console.warn('工單曝光資源素材訊息處理失敗', err);
+        }
+      });
+    }
+
     /* ── init ── */
     function init(){
       if(document.getElementById('sidebar-scroll')){insertLogoUI();insertProductUI();insertDownloadBar();autoSelectLogoVariant(window._bnLogos || []);}

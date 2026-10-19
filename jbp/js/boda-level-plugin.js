@@ -26,7 +26,7 @@
     { id: 'gold_mega',          label: 'B 金牌 (Mega)' }
   ];
   var LEVEL_KEY = 'wo_level_v1';
-  var DEFAULT_LEVEL_ID = 'bod_a';
+  var DEFAULT_LEVEL_ID = 'brand_star_mega';
   var SHEET_FILE = 'BOD A曝光資源版位詳情表.xlsx';
 
   var SLOT_RULES = [
@@ -87,6 +87,13 @@
     try { localStorage.setItem(LEVEL_KEY, currentLevelId); } catch (e) {}
     var sel = document.getElementById('lv-select');
     if (sel && sel.value !== currentLevelId) sel.value = currentLevelId;
+    /* 同頁的背景圖庫依 A／B 等級切換完整／精簡介面；事件可避免外掛載入順序造成漏同步。 */
+    try {
+      window.dispatchEvent(new CustomEvent('bn-level-change', { detail: { levelId: currentLevelId } }));
+    } catch (e) {}
+    if (typeof window._bnBgLibraryApplyLevelMode === 'function') {
+      try { window._bnBgLibraryApplyLevelMode(currentLevelId); } catch (e) {}
+    }
     if (broadcast && window.parent && window.parent !== window) {
       try { window.parent.postMessage({ type: 'wo-level', level: currentLevelId }, '*'); } catch (e) {}
     }
@@ -96,6 +103,14 @@
   }
   window._bnApplyLevel = applyLevel;
   window._bnGetCurrentLevelId = function () { return currentLevelId; };
+  /* 主工具匯入工單或左側下拉變更時，父頁會把權威等級送回曝光資源 iframe；
+     必須在這裡真正套用下拉與版位清單，不能只讓背景圖庫切換外觀。 */
+  window.addEventListener('message', function (event) {
+    var message = event && event.data;
+    if (message && message.type === 'wo-level' && message.level) {
+      applyLevel(String(message.level), false);
+    }
+  });
 
   function paintNote() {
     var note = document.getElementById('lv-note');
@@ -195,7 +210,7 @@
           sheetError = '';
         })
         .catch(function () {
-          sheetError = '找不到「' + SHEET_FILE + '」，先顯示全部排版（把檔案放到跟 jbpbn.html 同一層即可）。';
+          sheetError = '找不到「' + SHEET_FILE + '」，先顯示全部排版（把檔案放到跟 shopee/index.html 同一層即可）。';
         })
         .then(function () { cb(); });
     });

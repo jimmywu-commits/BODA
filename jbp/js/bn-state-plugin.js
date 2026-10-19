@@ -1139,6 +1139,109 @@
   }
 
   /* ══════════════════════════════════════
+     4. 曝光資源上一步／下一步
+     版位 iframe 在商品／人物／Logo 拖曳或縮放時會連續送 layout-update，
+     bn-editor-plugin 會呼叫 markStateDirty；這裡防抖後只記成一個步驟。
+  ══════════════════════════════════════ */
+  var HISTORY_MAX = 30;
+  var historyUndo = [];
+  var historyRedo = [];
+  var historyTimer = null;
+  var historyRestoring = false;
+  var historyReady = false;
+
+  function historySnapshot(){
+    var state = clone(collectState());
+    if(state) state.ts = 0; /* 時間戳不屬於編輯差異 */
+    return state;
+  }
+  function historySignature(state){
+    try{ return JSON.stringify(state || null); }
+    catch(_){ return ''; }
+  }
+  function historyButtons(){
+    var undo = document.getElementById('bn-history-undo');
+    var redo = document.getElementById('bn-history-redo');
+    if(undo) undo.disabled = historyUndo.length <= 1;
+    if(redo) redo.disabled = !historyRedo.length;
+  }
+  function historyPush(){
+    if(!historyReady || historyRestoring || global._bnStateApplying) return;
+    var state = historySnapshot();
+    var last = historyUndo[historyUndo.length - 1];
+    if(last && historySignature(last) === historySignature(state)){ historyButtons(); return; }
+    historyUndo.push(state);
+    if(historyUndo.length > HISTORY_MAX) historyUndo = historyUndo.slice(historyUndo.length - HISTORY_MAX);
+    historyRedo = [];
+    historyButtons();
+  }
+  function historySchedule(){
+    if(!historyReady || historyRestoring) return;
+    clearTimeout(historyTimer);
+    historyTimer = setTimeout(historyPush, 320);
+  }
+  function historyApply(state){
+    if(!state) return;
+    historyRestoring = true;
+    clearTimeout(historyTimer);
+    try{
+      applyState(clone(state), { overrideFrozenColors:true });
+      autoSave();
+    }finally{
+      setTimeout(function(){ historyRestoring = false; historyButtons(); }, 520);
+    }
+  }
+  function historyUndoOne(){
+    if(historyUndo.length <= 1) return;
+    historyRedo.push(historyUndo.pop());
+    historyApply(historyUndo[historyUndo.length - 1]);
+  }
+  function historyRedoOne(){
+    if(!historyRedo.length) return;
+    var next = historyRedo.pop();
+    historyUndo.push(next);
+    historyApply(next);
+  }
+  function insertHistoryButtons(){
+    if(document.getElementById('bn-exposure-history')) return;
+    var host = document.createElement('div');
+    host.id = 'bn-exposure-history';
+    host.style.cssText = 'position:fixed;right:18px;top:18px;z-index:99997;display:flex;gap:7px;pointer-events:auto;';
+    function button(id, text, title, handler){
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.id = id; btn.textContent = text; btn.title = title;
+      btn.style.cssText = 'height:34px;padding:0 12px;border:1px solid #30363d;border-radius:999px;background:rgba(22,27,34,.94);color:#e6edf3;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 5px 16px rgba(0,0,0,.28);';
+      btn.addEventListener('click', handler);
+      return btn;
+    }
+    host.appendChild(button('bn-history-undo', '↶ 上一步', '返回圖片移動／縮放的上一步（Ctrl/Cmd+Z）', historyUndoOne));
+    host.appendChild(button('bn-history-redo', '↷ 下一步', '重做圖片移動／縮放（Ctrl/Cmd+Shift+Z）', historyRedoOne));
+    document.body.appendChild(host);
+    var style = document.createElement('style');
+    style.textContent = '#bn-exposure-history button:disabled{opacity:.38;cursor:not-allowed} body.is-exporting #bn-exposure-history{display:none!important}';
+    document.head.appendChild(style);
+    historyButtons();
+  }
+  function initHistory(){
+    insertHistoryButtons();
+    document.addEventListener('bn-state-dirty', historySchedule);
+    document.addEventListener('keydown', function(e){
+      if(!(e.ctrlKey || e.metaKey)) return;
+      var target = e.target;
+      if(target && target.closest && target.closest('input,textarea,select,[contenteditable="true"]')) return;
+      var key = String(e.key || '').toLowerCase();
+      if(key === 'z' && !e.shiftKey){ e.preventDefault(); historyUndoOne(); }
+      else if((key === 'z' && e.shiftKey) || key === 'y'){ e.preventDefault(); historyRedoOne(); }
+    });
+    historyReady = true;
+    historyUndo = [historySnapshot()];
+    historyRedo = [];
+    historyButtons();
+    global._bnHistoryUndo = historyUndoOne;
+    global._bnHistoryRedo = historyRedoOne;
+  }
+
+  /* ══════════════════════════════════════
      初始化
   ══════════════════════════════════════ */
   ready(function(){
@@ -1153,6 +1256,7 @@
         insertSaveLoadBar();
         setTimeout(autoLoad, 800);
         setTimeout(function(){ if(typeof global._bnReconcilePortableState === 'function') global._bnReconcilePortableState(); }, 1400);
+        setTimeout(initHistory, 1800);
         startAutoSave();
       } else { setTimeout(tryInsert,300); }
     }

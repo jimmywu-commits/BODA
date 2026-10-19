@@ -1689,5 +1689,33 @@ html.embed-standalone .host-step-svg { width: 30px; height: 30px; }
 html.embed-standalone .host-btn-svg { width: 15px; height: 15px; margin-right: 3px; vertical-align: -3px; }
 html.embed-standalone .host-step-text { font-size: 12px; color: #5b6a67; line-height: 1.5; }
 html.embed-standalone .host-step-text b { color: #1f2b29; }
+html.embed-standalone .host-folder-btn {
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: 1.5px dashed #c3cdc9;
+  border-radius: 6px;
+  background: #fff;
+  color: #5b6a67;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+html.embed-standalone .host-folder-btn:hover {
+  border-color: #4d9b95;
+  background: #e6f2f0;
+  color: #356f6a;
+}
 html.embed-standalone .host-step-subhead { font-size: 12px; font-weight: 700; color: #1f2b29; margin: 6px 0 2px; }
+html.embed-standalone .host-snapshot-restore { margin: -2px 0 10px; }
+html.embed-standalone .host-snapshot-btn {
+  border: 2px dashed #c3cdc9;
+  background: #fff;
+  color: #5b6a67;
+}
+html.embed-standalone .host-snapshot-btn:hover {
+  border-color: #4d9b95;
+  background: #e6f2f0;
+  color: #356f6a;
+}
 html.embed-standalone .host-dl-hint { font-size: 10px; color: #93a19d; text-align: center; margin-top: 6px; line-height: 1.5; }
