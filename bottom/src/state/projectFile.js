@@ -29,6 +29,8 @@
           // 用文字代替 icon（9.9 / 10.10）。null = 圖片模式，字串（含空字串）= 文字模式。
           // 舊存檔沒有這個欄位 → 讀回來是 undefined → 正規化成 null，等同舊行為
           iconText: slot.iconText == null ? null : slot.iconText,
+          // 手動大小；100% 不寫，舊版工具讀到也只是當成預設大小
+          iconScale: slot.iconId && slot.iconScale ? slot.iconScale : undefined,
           linked: slot.linked === false ? false : undefined,
         };
       }),
@@ -167,6 +169,8 @@
           iconId: iconId,
           iconText: iconText,
           type: iconId ? findType(iconId) : "icon",
+          // 過同一支正規化：手改成 99 或 "abc" 也只會落在合法範圍或回到 100%
+          iconScale: iconId ? window.normalizeIconScale(s.iconScale) : undefined,
           linked: s.linked === false ? false : undefined,
         });
       });

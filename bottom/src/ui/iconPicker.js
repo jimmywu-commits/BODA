@@ -43,7 +43,7 @@
     open = null;
   }
 
-  function buildTile(icon, isSelected, onPick, isDisabled, disabledReason) {
+  function buildTile(icon, isSelected, onPick, isDisabled, disabledReason, onRemove) {
     var tile = el("button", {
       class: "icon-tile" + (isSelected ? " selected" : "") + (isDisabled ? " is-disabled" : ""),
       title: isDisabled
@@ -63,6 +63,26 @@
 
     tile.appendChild(el("span", { class: "icon-tile-name" }, [icon.displayName]));
     if (icon.type === "logo") tile.appendChild(el("span", { class: "icon-tile-badge" }, ["LOGO"]));
+
+    /*
+     * 只有自訂素材（上傳、編輯、工單對到的圖）有移除鈕。內建素材來自 img/，
+     * 這裡刪了重新整理也會回來，給刪只會讓人以為刪掉了。
+     * 用 span 而不是 button：tile 本身就是 button，按鈕裡不能再放按鈕。
+     */
+    if (icon.custom && typeof onRemove === "function") {
+      var remove = el("span", {
+        class: "icon-tile-remove",
+        role: "button",
+        title: "從素材選單移除「" + icon.displayName + "」",
+      }, ["×"]);
+      remove.addEventListener("click", function (e) {
+        // 不能冒泡到 tile，否則移除的同時也會把它選進這一格
+        e.stopPropagation();
+        e.preventDefault();
+        onRemove(icon);
+      });
+      tile.appendChild(remove);
+    }
     return tile;
   }
 
@@ -136,6 +156,15 @@
       onPick(id);
     }
 
+    // 移除後面板會重繪、選單會重開；把搜尋字與捲動位置帶過去，連續刪好幾張才不會一直跳回頂端
+    function context() {
+      return { keyword: search.value, scrollTop: grid.scrollTop };
+    }
+
+    var onRemove = typeof options.onRemove === "function"
+      ? function (icon) { options.onRemove(icon, context()); }
+      : null;
+
     function renderGrid(keyword) {
       grid.innerHTML = "";
       var kw = (keyword || "").trim().toLowerCase();
@@ -143,16 +172,35 @@
       library.forEach(function (icon) {
         if (kw && icon.displayName.toLowerCase().indexOf(kw) < 0) return;
         var disabled = typeof options.isDisabled === "function" && options.isDisabled(icon);
-        grid.appendChild(buildTile(icon, icon.id === selectedId, pick, disabled, options.disabledReason));
+        grid.appendChild(buildTile(icon, icon.id === selectedId, pick, disabled, options.disabledReason, onRemove));
         shown++;
       });
       empty.hidden = shown > 0;
     }
 
-    renderGrid("");
+    /*
+     * 一鍵清掉「沒有任何格子在用」的上傳圖。每按一次「✏ 編輯」就會多一筆「（編輯）」，
+     * 加上自動暫存會把它們全部留著，選單很快就被舊版本塞滿——這顆就是清那些的。
+     */
+    var unusedIds = typeof options.unusedCustomIds === "function" ? options.unusedCustomIds() : [];
+    if (unusedIds.length && typeof options.onRemoveUnused === "function") {
+      var foot = el("div", { class: "icon-picker-foot" });
+      foot.appendChild(
+        el("button", {
+          class: "mini",
+          title: "移除所有上傳過、但目前沒有任何分頁的任何一格在使用的圖",
+          onClick: function () { options.onRemoveUnused(unusedIds, context()); },
+        }, ["🧹 移除未使用的上傳圖（" + unusedIds.length + "）"])
+      );
+      panel.appendChild(foot);
+    }
+
+    if (options.initialKeyword) search.value = options.initialKeyword;
+    renderGrid(search.value);
     search.addEventListener("input", function (e) { renderGrid(e.target.value); });
 
     place(panel, anchor);
+    if (options.initialScrollTop) grid.scrollTop = options.initialScrollTop;
     search.focus();
 
     // 點面板以外、按 Esc、捲動或改變視窗大小都關閉（位置是算好的，捲動後就不對了）
@@ -221,6 +269,10 @@
     btn.addEventListener("click", function () {
       openPicker(btn, library, selectedId, onPick, options);
     });
+    // 給面板在移除素材、重繪之後把選單重新打開（帶回搜尋字與捲動位置）
+    btn.reopenPicker = function (extra) {
+      openPicker(btn, library, selectedId, onPick, Object.assign({}, options, extra || {}));
+    };
     return btn;
   }
 

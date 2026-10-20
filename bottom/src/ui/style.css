@@ -1719,3 +1719,119 @@ html.embed-standalone .host-snapshot-btn:hover {
   color: #356f6a;
 }
 html.embed-standalone .host-dl-hint { font-size: 10px; color: #93a19d; text-align: center; margin-top: 6px; line-height: 1.5; }
+
+/*
+ * ── 2026-10 新增：重設、移除素材、圖片大小、整頁拖放 ──────────────
+ */
+
+/* 重設是破壞性動作，平常和復原/重做同一個樣子，滑過去才轉紅提醒 */
+#tabbar .reset-btn:hover {
+  border-color: #e5484d;
+  background: rgba(229, 72, 77, .16);
+  color: #ff8a84;
+}
+
+/* 素材選單裡自訂素材的移除鈕。左上角（右上角是 LOGO 標籤），平常半透明不搶縮圖 */
+.icon-tile-remove {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  line-height: 1;
+  color: #fff;
+  background: rgba(0, 0, 0, .45);
+  opacity: .55;
+  cursor: pointer;
+  transition: opacity .12s, background .12s;
+}
+
+.icon-tile:hover .icon-tile-remove { opacity: 1; }
+.icon-tile-remove:hover { background: #e5484d; opacity: 1; }
+
+.icon-picker-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* 每格的圖片大小滑桿 */
+.scale-wrap { margin-top: 6px; }
+
+.scale-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scale-label {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.scale-row input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.scale-value {
+  flex: 0 0 auto;
+  min-width: 3.2em;
+  text-align: right;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text2);
+}
+
+.scale-row.over .scale-value { color: #ff6b63; font-weight: 700; }
+.scale-reset[disabled] { opacity: .45; cursor: default; }
+
+.scale-warn {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #ff8a84;
+}
+
+.scale-warn[hidden] { display: none; }
+
+/*
+ * 整頁拖放的提示層。pointer-events:none 是關鍵：拖放事件要能穿過它落到底下的元素，
+ * 畫布空框（放進那一格）與內容卡（上傳到那一格）才分得出來。
+ */
+#page-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: rgba(238, 77, 45, .08);
+  outline: 3px dashed var(--accent);
+  outline-offset: -10px;
+}
+
+#page-drop-overlay.open { display: flex; }
+
+.page-drop-card {
+  padding: 18px 26px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+  text-align: center;
+}
+
+.page-drop-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.page-drop-hint { margin-top: 4px; font-size: 12px; color: var(--text2); }

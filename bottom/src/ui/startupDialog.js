@@ -118,18 +118,6 @@
       orderInput,
     ]);
 
-    drop.addEventListener("dragover", function (e) {
-      e.preventDefault();
-      drop.classList.add("dragover");
-    });
-    drop.addEventListener("dragleave", function () { drop.classList.remove("dragover"); });
-    drop.addEventListener("drop", function (e) {
-      e.preventDefault();
-      drop.classList.remove("dragover");
-      var files = e.dataTransfer && e.dataTransfer.files;
-      if (!files || !files.length) return;
-      handleStartupFiles(files);
-    });
 
     // ── 下方兩顆：略過 / 載入進度存檔
     var skip = el("button", { type: "button", class: "startup-minor", text: "略過" });
@@ -161,6 +149,27 @@
 
     overlay = el("div", { id: OVERLAY_ID }, [card]);
 
+    /*
+     * 拖放掛在整個遮罩上，不只虛線框：檔案放在卡片外的暗處也收得到。
+     * stopPropagation 是為了不讓面板的「整頁拖放匯入」再處理一次同一批檔案。
+     */
+    overlay.addEventListener("dragover", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      drop.classList.add("dragover");
+    });
+    overlay.addEventListener("dragleave", function (e) {
+      if (!overlay.contains(e.relatedTarget)) drop.classList.remove("dragover");
+    });
+    overlay.addEventListener("drop", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      drop.classList.remove("dragover");
+      var files = e.dataTransfer && e.dataTransfer.files;
+      if (!files || !files.length) return;
+      handleStartupFiles(files);
+    });
+
     // 點卡片外的空白 = 略過。卡片內部的點擊不能冒泡上來把自己關掉
     overlay.addEventListener("click", function (e) {
       if (e.target === overlay) close();
@@ -184,6 +193,19 @@
       if (!shown) open();
     },
     open: function () { shown = false; open(); },
+    /*
+     * 「重設」之後再問一次工單。暫存還原成功時 mount() 不會被呼叫，
+     * 對話框可能根本還沒建，所以這裡要能自己補建。
+     */
+    reopen: function (panelApi) {
+      if (panelApi) api = panelApi;
+      if (!api) return;
+      if (!overlay) build();
+      setError("");
+      shown = false;
+      open();
+    },
+    isOpen: function () { return !!(overlay && overlay.classList.contains("open")); },
     close: close,
   };
 })();

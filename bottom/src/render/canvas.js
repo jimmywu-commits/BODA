@@ -131,38 +131,6 @@
   }
 
   /*
-   * 等比例縮放塞進 107x58 的框內（contain，不拉伸變形），再於框內置中。
-   *
-   * 尺寸與座標一律取整數：置中算出來的是 centerX - w/2 這種小數，落在半個像素上
-   * 就一定會被重新取樣一次（不管有沒有濾鏡）。匯出的輸出倍率是 1，所以取整之後
-   * 場景座標就等於 PNG 的像素座標，整條路徑變成像素對齊。
-   * 取整會讓長寬比最多變 0.5px（107 上是 0.5%），肉眼看不出來，換到像素對齊很划算。
-   */
-  /* BOD／MDD LOGO 的 PNG 自帶上下透明留白；此處存的是完整 PNG 的繪製寬度，
-     換算後畫面中可見的「今日旗艦店」為 186px、「品牌旗艦」為 151px。 */
-  var SPECIAL_LOGO_CANVAS_WIDTHS = {
-    "bod-logo": 191,
-    "mdd-logo": 152,
-  };
-
-  function fitIntoBox(naturalWidth, naturalHeight, slotLayout, iconId) {
-    var natW = naturalWidth || 1;
-    var natH = naturalHeight || 1;
-    var preferredWidth = SPECIAL_LOGO_CANVAS_WIDTHS[iconId];
-    var scale = preferredWidth
-      ? preferredWidth / natW
-      : Math.min(slotLayout.iconBoxWidth / natW, slotLayout.iconBoxHeight / natH);
-    var w = Math.max(1, Math.round(natW * scale));
-    var h = Math.max(1, Math.round(natH * scale));
-    return {
-      x: Math.round(slotLayout.centerX - w / 2),
-      y: Math.round(slotLayout.iconY + (slotLayout.iconBoxHeight - h) / 2),
-      width: w,
-      height: h,
-    };
-  }
-
-  /*
    * 用文字代替 icon（9.9 / 10.10 這類檔期數字），畫在 icon 框的位置。
    *
    * 刻意做成即時的 Konva 文字，而不是先噴成 PNG 再當素材用：
@@ -225,7 +193,7 @@
     applyTextSharpen(node, layer, isPreview, sharpen);
   }
 
-  function drawLibraryIcon(group, slotLayout, libraryIcon, color, isActive, layer, generation, isPreview, sharpen) {
+  function drawLibraryIcon(group, slotLayout, libraryIcon, color, isActive, layer, generation, isPreview, sharpen, iconScale) {
     var dataUri = ColorTheme.getIconSourceUri(libraryIcon, color);
 
     IconImageCache.loadImage(dataUri, function (img) {
@@ -241,7 +209,14 @@
         return;
       }
 
-      var box = fitIntoBox(img.naturalWidth || img.width, img.naturalHeight || img.height, slotLayout, libraryIcon.id);
+      // 位置與大小（含手動倍率 slot.iconScale）跟面板的超框警告共用 LayoutEngine.fitIcon
+      var box = LayoutEngine.fitIcon(
+        img.naturalWidth || img.width,
+        img.naturalHeight || img.height,
+        slotLayout,
+        libraryIcon.id,
+        iconScale
+      );
 
       /*
        * 關鍵一步：先自己把來源圖降到最終要用的像素數，再交給 Konva。
@@ -312,7 +287,7 @@
     if (slotState.iconText) {
       drawTextIcon(group, slotLayout, slotState.iconText, color, layer, isPreview, opts.sharpen);
     } else if (libraryIcon) {
-      drawLibraryIcon(group, slotLayout, libraryIcon, color, isActive, layer, generation, isPreview, opts.sharpen);
+      drawLibraryIcon(group, slotLayout, libraryIcon, color, isActive, layer, generation, isPreview, opts.sharpen, slotState.iconScale);
     } else {
       drawPlaceholderIcon(group, slotLayout, isActive, color, isPreview);
     }
@@ -518,6 +493,19 @@
         var files = event.dataTransfer && event.dataTransfer.files;
         return files && files.length ? files[0] : null;
       }
+      function isImageFile(file) {
+        return !!file && (/^image\//.test(file.type || "") || /\.(svg|png|jpe?g)$/i.test(file.name || ""));
+      }
+      /* dragover 階段拿不到檔名，但 Chromium 會公開 items[].type。拖的明顯不是圖片
+         （例如工單 xlsx）時不亮空框，交給整頁的拖放匯入處理。 */
+      function draggingNonImage(event) {
+        var items = event.dataTransfer && event.dataTransfer.items;
+        if (!items || !items.length) return false;
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].kind === "file" && /^image\//.test(items[i].type || "")) return false;
+        }
+        return true;
+      }
       function hasDraggedFiles(event) {
         var transfer = event.dataTransfer;
         if (!transfer) return false;
@@ -532,7 +520,7 @@
         if (!hasDraggedFiles(event)) return;
         // 即使游標不在空框上也攔住瀏覽器預設的「直接開啟圖片」行為。
         event.preventDefault();
-        if (slotIndexAtClientPoint(event.clientX, event.clientY) < 0) {
+        if (draggingNonImage(event) || slotIndexAtClientPoint(event.clientX, event.clientY) < 0) {
           container.classList.remove("image-drop-target");
           return;
         }
@@ -548,8 +536,11 @@
         var file = draggedImageFile(event);
         var index = slotIndexAtClientPoint(event.clientX, event.clientY);
         container.classList.remove("image-drop-target");
-        if (!file) return;
-        if (index >= 0 && typeof window.BottomImageUpload === "function") window.BottomImageUpload(file, index);
+        /* 只有「一張圖片、放在空框上」由這裡接手，並停止冒泡；
+           其他情況（工單、存檔、放在框外）往上交給面板的整頁拖放匯入。 */
+        if (!isImageFile(file) || index < 0 || typeof window.BottomImageUpload !== "function") return;
+        event.stopPropagation();
+        window.BottomImageUpload(file, index);
       });
       // 畫面上的 stage 才是預覽模式（會畫假字）
       store.subscribe(draw);

@@ -12,9 +12,23 @@
   var DEBOUNCE_MS = 1000;
   var timer = null;
 
+  /*
+   * 空白狀態（剛打開、或按了「重設」）不存，直接把暫存刪掉。
+   * 否則重設之後重新整理，會「還原」出一份空白暫存，開場的工單對話框也因此不出現。
+   */
+  function isPristine(state) {
+    if (window.Selectors.hasContent(state)) return false;
+    return !state.library.some(function (icon) { return icon.custom; });
+  }
+
   function save(store) {
     try {
-      var json = window.ProjectFile.serialize(store.getState());
+      var state = store.getState();
+      if (isPristine(state)) {
+        localStorage.removeItem(KEY);
+        return;
+      }
+      var json = window.ProjectFile.serialize(state);
       localStorage.setItem(KEY, json);
     } catch (e) {
       // localStorage 滿了或被停用，靜默放棄

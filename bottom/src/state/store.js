@@ -50,9 +50,11 @@
       var TYPES = window.Actions.types;
       var now = Date.now();
 
-      // 兩種都是「連續打字」，同一格短時間內的連打合併成一步 undo
+      // 連續打字、拖大小滑桿都是「連續輸入」，同一格短時間內的連續變化合併成一步 undo
       var isTyping =
-        action.type === TYPES.SET_SLOT_TEXT || action.type === TYPES.SET_SLOT_ICON_TEXT;
+        action.type === TYPES.SET_SLOT_TEXT ||
+        action.type === TYPES.SET_SLOT_ICON_TEXT ||
+        action.type === TYPES.SET_SLOT_ICON_SCALE;
 
       var coalesce =
         isTyping &&

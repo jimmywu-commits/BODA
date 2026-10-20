@@ -91,7 +91,8 @@
         // 加素材＋套用算同一件事，合併成一步 undo
         store.beginBatch();
         store.dispatch(Actions.addLibraryIcon(newIcon));
-        store.dispatch(Actions.setSlotIcon(index, newIcon.id));
+        // 編輯完仍是同一張 LOGO，手動調好的大小沿用
+        store.dispatch(Actions.setSlotIcon(index, newIcon.id, { keepScale: true }));
         store.endBatch();
 
         ui.uploadMessage = "";
@@ -106,7 +107,7 @@
 
   /* ---------------- 分頁（多條吸底圖） ---------------- */
 
-  function buildBannerTabs(state, store, Actions, tabbar) {
+  function buildBannerTabs(state, store, Actions, tabbar, onReset) {
     tabbar.innerHTML = "";
 
     state.banners.forEach(function (banner, index) {
@@ -176,6 +177,15 @@
     redoBtn.disabled = !store.canRedo();
     tools.appendChild(undoBtn);
     tools.appendChild(redoBtn);
+    if (onReset) {
+      tools.appendChild(
+        el("button", {
+          class: "mini reset-btn",
+          title: "清除所有分頁、文字、選圖與上傳過的圖，回到剛打開的狀態（可用 Ctrl+Z 復原）",
+          onClick: onReset,
+        }, ["⟲ 重設"])
+      );
+    }
     tabbar.appendChild(tools);
   }
 
@@ -902,11 +912,168 @@
     if (isSvg) reader.readAsText(file);
     else reader.readAsDataURL(file);
   }
+  /* ---------------- 從素材選單移除不要的圖 ---------------- */
+
+  function unusedCustomIconIds(state) {
+    return state.library
+      .filter(function (icon) {
+        return icon.custom && !window.Selectors.iconUsageCount(state, icon.id);
+      })
+      .map(function (icon) { return icon.id; });
+  }
+
+  /*
+   * 移除後面板會整個重繪（素材選單也跟著關閉），所以最後把同一格的選單重新打開，
+   * 帶回搜尋字與捲動位置——要連續清掉好幾張時才不用每刪一張就重新點開、捲回原處。
+   */
+  function reopenPickerFor(index, ctx) {
+    var trigger = document.querySelector('[data-icon-trigger-index="' + index + '"]');
+    if (trigger && trigger.reopenPicker) {
+      trigger.reopenPicker({
+        initialKeyword: ctx && ctx.keyword,
+        initialScrollTop: ctx && ctx.scrollTop,
+      });
+    }
+  }
+
+  function removeOneIcon(store, Actions, ui, icon, index, ctx) {
+    var used = window.Selectors.iconUsageCount(store.getState(), icon.id);
+    if (used) {
+      var ok = window.confirm(
+        "「" + icon.displayName + "」目前有 " + used + " 格在使用（含其他分頁），" +
+        "移除後那些格會變成空白。\n\n確定移除？按錯可以用 Ctrl+Z 復原。"
+      );
+      if (!ok) return;
+    }
+    ui.uploadMessage =
+      "已從素材選單移除「" + icon.displayName + "」" +
+      (used ? "，並清空用到它的 " + used + " 格" : "") + "。按錯可用 Ctrl+Z 復原。";
+    store.dispatch(Actions.removeLibraryIcons([icon.id]));
+    reopenPickerFor(index, ctx);
+  }
+
+  function removeUnusedIcons(store, Actions, ui, ids, index, ctx) {
+    var ok = window.confirm(
+      "將移除 " + ids.length + " 張沒有任何格子在使用的上傳圖（含編輯產生的版本）。\n\n" +
+      "確定移除？按錯可以用 Ctrl+Z 復原。"
+    );
+    if (!ok) return;
+    ui.uploadMessage = "已移除 " + ids.length + " 張未使用的上傳圖。按錯可用 Ctrl+Z 復原。";
+    store.dispatch(Actions.removeLibraryIcons(ids));
+    reopenPickerFor(index, { keyword: ctx && ctx.keyword });
+  }
+
+  /* ---------------- 圖片大小（手動倍率） ---------------- */
+
+  function scalePercent(slot) {
+    return Math.round((slot.iconScale || 1) * 100);
+  }
+
+  /*
+   * 放大之後會不會撞到東西。要知道圖的實際長寬比才算得出來，所以從 IconImageCache 取圖——
+   * 用和畫布同一個 data URI，畫布已經載過的話這裡是同步回呼，不會多載一次。
+   * 位置計算用 LayoutEngine.fitIcon，與畫布是同一支函式，警告與畫面一定一致。
+   */
+  function updateScaleWarning(row, warnBox, state, index) {
+    var banner = window.Selectors.activeBanner(state);
+    var slot = banner.slots[index];
+    var icon = slot && slot.iconId ? findLibraryIcon(state.library, slot.iconId) : null;
+    if (!icon || !row || !warnBox) return;
+    var color = window.ColorTheme.resolveSlotColor(slot, banner.accentColor, index === banner.activeSlotIndex);
+    var uri = window.ColorTheme.getIconSourceUri(icon, color);
+
+    window.IconImageCache.loadImage(uri, function (img) {
+      if (!img) return;
+      var natW = img.naturalWidth || img.width;
+      var natH = img.naturalHeight || img.height;
+      var slotLayout = window.LayoutEngine.getSlotLayout(banner.slots.length, index);
+      if (!slotLayout) return;
+      var box = window.LayoutEngine.fitIcon(natW, natH, slotLayout, icon.id, slot.iconScale);
+      var problems = window.LayoutEngine.iconOverflow(box, banner.slots.length, index);
+
+      // 點陣圖放到比原圖還大一定會糊；SVG 是向量，不受影響。只在使用者有手動放大時才講
+      var isVector = !!icon.svg || /^data:image\/svg/i.test(icon.src || "");
+      if (!isVector && (slot.iconScale || 1) > 1 && box.width > natW) {
+        problems.push("原圖只有 " + natW + "×" + natH + " px，放到 " + box.width + "×" + box.height + " 會糊");
+      }
+
+      row.classList.toggle("over", problems.length > 0);
+      warnBox.hidden = !problems.length;
+      warnBox.textContent = problems.length
+        ? "⚠ " + problems.join("、") + "。不會擋匯出，但請確認畫面。"
+        : "";
+    });
+  }
+
+  function buildScaleRow(state, store, Actions, slot, index) {
+    var limits = window.ICON_SCALE_LIMITS;
+    var pct = scalePercent(slot);
+
+    var wrap = el("div", { class: "scale-wrap" });
+    wrap.setAttribute("data-scale-index", String(index));
+
+    var row = el("div", { class: "scale-row" });
+    row.appendChild(el("span", { class: "scale-label" }, ["大小"]));
+
+    var range = el("input", {
+      type: "range",
+      min: String(Math.round(limits.MIN * 100)),
+      max: String(Math.round(limits.MAX * 100)),
+      step: String(Math.round(limits.STEP * 100)),
+      title: "拖曳調整這一格圖片的大小（以 107×58 框的中心為基準）。雙擊回到 100%。",
+    });
+    range.value = String(pct);
+    range.addEventListener("input", function () {
+      store.dispatch(Actions.setSlotIconScale(index, Number(range.value) / 100));
+    });
+    range.addEventListener("dblclick", function () {
+      store.dispatch(Actions.setSlotIconScale(index, 1));
+    });
+    row.appendChild(range);
+
+    row.appendChild(el("span", { class: "scale-value" }, [pct + "%"]));
+
+    var reset = el("button", {
+      class: "mini scale-reset",
+      title: "回到模板預設大小（100%）",
+      onClick: function () { store.dispatch(Actions.setSlotIconScale(index, 1)); },
+    }, ["預設"]);
+    reset.disabled = pct === 100;
+    row.appendChild(reset);
+    wrap.appendChild(row);
+
+    var warnBox = el("div", { class: "scale-warn" });
+    warnBox.hidden = true;
+    wrap.appendChild(warnBox);
+
+    updateScaleWarning(row, warnBox, state, index);
+    return wrap;
+  }
+
+  /*
+   * 拖滑桿時只更新數字、按鈕與警告，不重建節點——重建會把正在拖的滑桿換掉，
+   * 拖到一半就斷掉。undo/redo 會走整個重繪，所以這裡只需要處理拖曳本身。
+   */
+  function syncScaleRow(wrap, state, index) {
+    var slot = window.Selectors.activeBanner(state).slots[index];
+    if (!slot) return;
+    var pct = scalePercent(slot);
+    var range = wrap.querySelector('input[type="range"]');
+    if (range && Number(range.value) !== pct) range.value = String(pct);
+    var value = wrap.querySelector(".scale-value");
+    if (value) value.textContent = pct + "%";
+    var reset = wrap.querySelector(".scale-reset");
+    if (reset) reset.disabled = pct === 100;
+    updateScaleWarning(wrap.querySelector(".scale-row"), wrap.querySelector(".scale-warn"), state, index);
+  }
+
   /* ---------------- 每一顆的內容卡 ---------------- */
 
   function buildSlotCard(state, banner, store, Actions, ui, rerender, slot, index) {
     var isActive = index === banner.activeSlotIndex;
     var card = el("div", { class: "slot-card" + (isActive ? " active" : "") });
+    // 整頁拖放：把一張圖拖到這張卡上，就當作上傳到這一格
+    card.setAttribute("data-slot-card-index", String(index));
 
     var head = el("div", { class: "slot-head" });
     head.appendChild(el("span", { class: "slot-num" }, ["#" + (index + 1)]));
@@ -1014,17 +1181,24 @@
       );
       card.appendChild(iconRow);
     } else {
-      iconRow.appendChild(
-        window.IconPicker.buildTrigger(state.library, slot.iconId, function (iconId) {
-          store.dispatch(Actions.setSlotIcon(index, iconId || null));
-        }, {
-          isDisabled: function (icon) {
-            return index > 0 && window.BottomSlotRules &&
-              window.BottomSlotRules.isFirstSlotOnlyIcon(icon, state.library);
-          },
-          disabledReason: "僅限第一格使用"
-        })
-      );
+      var trigger = window.IconPicker.buildTrigger(state.library, slot.iconId, function (iconId) {
+        store.dispatch(Actions.setSlotIcon(index, iconId || null));
+      }, {
+        isDisabled: function (icon) {
+          return index > 0 && window.BottomSlotRules &&
+            window.BottomSlotRules.isFirstSlotOnlyIcon(icon, state.library);
+        },
+        disabledReason: "僅限第一格使用",
+        onRemove: function (icon, ctx) {
+          removeOneIcon(store, Actions, ui, icon, index, ctx);
+        },
+        unusedCustomIds: function () { return unusedCustomIconIds(store.getState()); },
+        onRemoveUnused: function (ids, ctx) {
+          removeUnusedIcons(store, Actions, ui, ids, index, ctx);
+        },
+      });
+      trigger.setAttribute("data-icon-trigger-index", String(index));
+      iconRow.appendChild(trigger);
 
     var hiddenFile = el("input", {
       type: "file",
@@ -1083,6 +1257,9 @@
         );
       }
       card.appendChild(iconRow);
+
+      // 選了圖才有大小可調；檔期文字（9.9）的字級由 LAYOUT 固定，不吃這個倍率
+      if (slot.iconId) card.appendChild(buildScaleRow(state, store, Actions, slot, index));
     }
 
     /*
@@ -1313,6 +1490,126 @@
     return node;
   }
 
+  /* ---------------- 整頁拖放匯入 ---------------- */
+
+  /*
+   * 檔案拖到視窗任何地方都能匯入，不必先找到按鈕。
+   *
+   * 解析一律交給 handleMixedFiles（與「匯入工單」按鈕同一條路），匯入明細、錯誤訊息、
+   * 一步 undo 都一樣。這裡只多做三件事：
+   *  1. 拖曳時蓋一層提示，讓人知道放開會發生什麼事；
+   *  2. 畫面上已經有內容時，工單／存檔會取代它，先確認（拖放比點按鈕容易誤觸）；
+   *  3. 一張圖拖到某一格的內容卡上，就當作上傳到那一格。
+   *
+   * 畫布上「拖圖到空框」由 canvas.js 自己處理並停止冒泡，不會走到這裡。
+   * 開場對話框也是自己接住拖放（同樣停止冒泡），所以對話框開著時這裡收不到。
+   */
+  var SHEET_RE = /\.(xlsx|xlsm|csv|json)$/i;
+
+  function isImageFile(file) {
+    return /^image\//i.test(file.type || "") || /\.(png|jpe?g|svg|gif|webp)$/i.test(file.name || "");
+  }
+
+  function hasDraggedFiles(e) {
+    var types = e.dataTransfer && e.dataTransfer.types;
+    return !!types && Array.prototype.indexOf.call(types, "Files") >= 0;
+  }
+
+  function installPageDrop(store, Actions, ui, rerender, scrollArea) {
+    var overlay = el("div", { id: "page-drop-overlay" }, [
+      el("div", { class: "page-drop-card" }, [
+        el("div", { class: "page-drop-title" }, ["放開以匯入"]),
+        el("div", { class: "page-drop-hint" }, [
+          "工單 .xlsx／.csv、進度存檔 .json，也可以連同 LOGO 圖片一起拖進來",
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(overlay);
+
+    // 拖曳中 dragover 至少每半秒一次；超過就視為已經離開（例如在視窗外放掉、按了 Esc）
+    var hideTimer = null;
+    function show() {
+      overlay.classList.add("open");
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(hide, 1200);
+    }
+    function hide() {
+      clearTimeout(hideTimer);
+      overlay.classList.remove("open");
+    }
+
+    function blocked() {
+      return (window.ImageEditor && window.ImageEditor.isOpen()) ||
+        (window.StartupDialog && window.StartupDialog.isOpen && window.StartupDialog.isOpen());
+    }
+
+    document.addEventListener("dragover", function (e) {
+      if (!hasDraggedFiles(e)) return;
+      // 一定要攔：不攔的話放開時瀏覽器會直接打開這個檔案，整個編輯器被換掉
+      e.preventDefault();
+      if (blocked()) {
+        e.dataTransfer.dropEffect = "none";
+        hide();
+        return;
+      }
+      e.dataTransfer.dropEffect = "copy";
+      // 游標在畫布的空框上時，畫布自己會亮虛線框；放開是「放進那一格」，不是整頁匯入
+      var canvasEl = document.getElementById("konva-container");
+      if (canvasEl && canvasEl.classList.contains("image-drop-target")) {
+        hide();
+        return;
+      }
+      show();
+    });
+
+    document.addEventListener("dragleave", function (e) {
+      // relatedTarget 為 null 代表拖出了視窗
+      if (!e.relatedTarget) hide();
+    });
+
+    document.addEventListener("drop", function (e) {
+      if (!hasDraggedFiles(e)) return;
+      e.preventDefault();
+      hide();
+      if (blocked()) return;
+      var files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []);
+      if (!files.length) return;
+
+      var sheets = files.filter(function (f) { return SHEET_RE.test(f.name || ""); });
+      var images = files.filter(function (f) { return !SHEET_RE.test(f.name || "") && isImageFile(f); });
+
+      if (!sheets.length && !images.length) {
+        ui.importMessage =
+          "無法匯入「" + files.map(function (f) { return f.name; }).join("、") +
+          "」。請拖入工單 .xlsx／.csv、進度存檔 .json 或圖片。";
+        ui.importDetail = [];
+        scrollArea.scrollTop = 0;
+        rerender();
+        return;
+      }
+
+      // 單獨一張圖、放在某一格的內容卡上 → 上傳到那一格（和卡片上的「⬆ 上傳」同一條路）
+      var card = e.target && e.target.closest ? e.target.closest("[data-slot-card-index]") : null;
+      if (!sheets.length && images.length === 1 && card) {
+        stageImageUpload(images[0], Number(card.getAttribute("data-slot-card-index")), ui, rerender, true);
+        return;
+      }
+
+      if (sheets.length && window.Selectors.hasContent(store.getState())) {
+        var first = sheets[0];
+        var what = /\.json$/i.test(first.name)
+          ? "載入進度存檔「" + first.name + "」"
+          : "匯入工單「" + first.name + "」";
+        var ok = window.confirm(what + "會取代目前畫面上的內容。\n\n確定繼續？按錯可以用 Ctrl+Z 復原。");
+        if (!ok) return;
+      }
+
+      // 結果訊息寫在面板最上方的「匯入」區，捲回頂端才看得到
+      scrollArea.scrollTop = 0;
+      handleMixedFiles(files, store, Actions, ui, rerender);
+    });
+  }
+
   /* ---------------- 掛載 ---------------- */
 
   function mount(container, store, Actions) {
@@ -1328,6 +1625,40 @@
     };
 
     var tabbar = document.getElementById("tabbar");
+    var api = null; // 下方 return 的入口；重設後重開開場對話框要用
+
+    /*
+     * 嵌入主工具時不給重設：畫面變動會同步回主頁，在這裡清空等於把主工具那邊的吸底也清掉，
+     * 而且主工具有自己的工單流程。單獨開啟時才顯示。
+     */
+    var embedded = !!(window.BottomParentBridge && window.BottomParentBridge.isEmbedded &&
+      window.BottomParentBridge.isEmbedded());
+    var canReset = !embedded;
+
+    /*
+     * 整頁回到剛打開的狀態。state 走一個可 undo 的 RESET_ALL（按錯 Ctrl+Z 整個救回來），
+     * 面板自己的訊息、待確認的上傳、等著對 LOGO 的圖片一併清掉。
+     * 自動暫存不用特別處理：空白狀態 autoSave 會自己把暫存刪掉，重新整理就是乾淨的開場。
+     */
+    function resetAll() {
+      var ok = window.confirm(
+        "確定要清除全部內容，回到剛打開的狀態？\n\n" +
+        "會清掉所有分頁、文字、選圖與上傳過的圖。\n按錯可以用 Ctrl+Z 復原。"
+      );
+      if (!ok) return;
+      ui.importMessage = "";
+      ui.importDetail = [];
+      ui.uploadMessage = "";
+      ui.exportStatus = "";
+      ui.applyMessage = "";
+      ui.pendingUpload = null;
+      pendingHostAssets = [];
+      window.BottomHostAssets = [];
+      store.dispatch(Actions.resetAll());
+      scrollArea.scrollTop = 0;
+      if (window.BottomViewport && window.BottomViewport.fit) window.BottomViewport.fit();
+      if (window.StartupDialog && window.StartupDialog.reopen) window.StartupDialog.reopen(api);
+    }
 
     container.innerHTML = "";
     var scrollArea = el("div", { id: "panel-scroll" });
@@ -1357,7 +1688,7 @@
        */
       window.IconPicker.close();
 
-      buildBannerTabs(state, store, Actions, tabbar);
+      buildBannerTabs(state, store, Actions, tabbar, canReset ? resetAll : null);
 
       scrollArea.innerHTML = "";
       var isGeneratorEmbed = window.BottomParentBridge &&
@@ -1475,6 +1806,12 @@
     }
 
     store.subscribe(function (state, action) {
+      // 重設後會重開工單對話框；這時按 Ctrl+Z 救回內容，對話框就不該再擋在前面
+      if (action && action.type === "@@UNDO" && window.StartupDialog &&
+          window.StartupDialog.isOpen && window.StartupDialog.isOpen()) {
+        window.StartupDialog.close();
+      }
+
       if (action && action.type === Actions.types.SET_SLOT_TEXT) {
         syncTextRow(state, action.index);
         return;
@@ -1486,6 +1823,16 @@
        * 但「文字模式 ↔ 圖片模式」的切換（輸入框 ↔ 素材選單）那一列必須重建。
        * 模式看 text 是不是 null，不是看空不空——空字串仍然是文字模式。
        */
+      // 拖大小滑桿：滑桿節點要活著才拖得下去，只同步數字與警告
+      if (action && action.type === Actions.types.SET_SLOT_ICON_SCALE) {
+        var scaleWrap = scrollArea.querySelector('[data-scale-index="' + action.index + '"]');
+        if (scaleWrap) {
+          syncHistoryButtons();
+          syncScaleRow(scaleWrap, state, action.index);
+          return;
+        }
+      }
+
       if (action && action.type === Actions.types.SET_SLOT_ICON_TEXT) {
         var box = scrollArea.querySelector('input[data-icon-text-index="' + action.index + '"]');
         if (!!box === (action.text != null)) {
@@ -1525,12 +1872,15 @@
 
     renderAll();
 
+    // 嵌入主工具時檔案一律交給主工具（獨立吸底頁有自己的 STEP 1／STEP 2 拖放卡）
+    if (!embedded) installPageDrop(store, Actions, ui, renderAll, scrollArea);
+
     /*
      * 開場對話框要能匯入工單／載入存檔，但那兩件事的後續（更新訊息、展開核對清單、
      * 併成一步 undo）全都綁在這裡的 ui 與 renderAll 上。與其把它們複製一份出去，
      * 不如把入口交出去——對話框只負責選檔與顯示錯誤，做事的仍然是面板自己。
      */
-    return {
+    api = {
       importWorkOrder: function (file, onDone) {
         importWorkOrderFile(store, Actions, ui, renderAll, file, onDone);
       },
@@ -1553,6 +1903,7 @@
         loadImageAssets(files, store, Actions, ui, renderAll, onDone);
       },
     };
+    return api;
   }
 
   window.PanelUI = { mount: mount };

@@ -24119,7 +24119,7 @@ ensureBlocksLoaded(function () {
 </script>
 
 
-<!-- 全站浮動支援按鈕：曝光資源後台可設定外部連結；反饋連結留白時使用 Firebase 浮動表單。 -->
+<!-- 全站浮動支援按鈕：與 SHOPEE 專案共用說明書及回饋表。 -->
 <style>
 #boda-help-feedback,#boda-help-manual{position:fixed;right:18px;z-index:100001;border:1px solid rgba(255,255,255,.28);border-radius:9px;background:rgba(22,27,34,.94);color:#e6edf3;box-shadow:0 4px 14px rgba(0,0,0,.35);padding:10px 14px;font:600 12px/1.2 inherit;cursor:pointer;backdrop-filter:blur(8px);}
 #boda-help-feedback{top:auto;bottom:76px;}#boda-help-manual{bottom:18px;}
@@ -24128,21 +24128,17 @@ ensureBlocksLoaded(function () {
 </style>
 <button id="boda-help-feedback" type="button">📝 使用反饋表</button>
 <button id="boda-help-manual" type="button">📖 使用說明書</button>
-<button id="feedback-btn" type="button" tabindex="-1" aria-hidden="true">使用反饋表</button>
-<script src="jbp/js/help-settings.js"></script>
-<script src="jbp/js/feedback-config.js"></script>
-<script src="jbp/js/feedback-plugin.js"></script>
 <script>
 (function(){
-  var fallbackManualUrl='jbp/JBP編輯器使用說明書.pdf#view=FitH';
+  var feedbackUrl='https://docs.google.com/forms/d/e/1FAIpQLSdUnE4CC48TqjM__ucjOOC-b-D8tgCijuNBRQENf2pBaysCsQ/viewform?usp=dialog';
+  var manualUrl='../shopee/JBP編輯器使用說明書.pdf#view=FitH';
   var feedbackButton=document.getElementById('boda-help-feedback'),manualButton=document.getElementById('boda-help-manual');
-  function settings(){return window.BODAHelpSettings?window.BODAHelpSettings.get():{};}
   function openUrl(url){window.open(url,'_blank','noopener');}
-  feedbackButton.addEventListener('click',function(){var url=settings().feedbackUrl;if(url){openUrl(url);return;}document.getElementById('feedback-btn').click();});
-  manualButton.addEventListener('click',function(){openUrl(settings().manualUrl||fallbackManualUrl);});
-  function refreshTitle(){var cfg=settings();feedbackButton.title=cfg.feedbackUrl?'開啟設定的使用反饋表連結':'開啟使用反饋表';manualButton.title=cfg.manualUrl?'開啟設定的使用說明書連結':'開啟使用說明書';}
+  feedbackButton.addEventListener('click',function(){openUrl(feedbackUrl);});
+  manualButton.addEventListener('click',function(){openUrl(manualUrl);});
+  function refreshTitle(){feedbackButton.title='開啟使用反饋表';manualButton.title='開啟 SHOPEE 共用使用說明書';}
   function isVisibleFixedControl(el){
-    if(!el||el===feedbackButton||el===manualButton||el.id==='feedback-btn')return false;
+    if(!el||el===feedbackButton||el===manualButton)return false;
     var style=window.getComputedStyle(el),rect=el.getBoundingClientRect();
     return style.position==='fixed'&&style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;
   }
@@ -24161,8 +24157,6 @@ ensureBlocksLoaded(function () {
   }
   var avoidRaf=0;
   function scheduleAvoidance(){if(avoidRaf)return;avoidRaf=requestAnimationFrame(function(){avoidRaf=0;avoidRightSideControls();});}
-  window.addEventListener('storage',function(){refreshTitle();scheduleAvoidance();});
-  window.addEventListener('message',function(event){if(event.data&&event.data.type==='BODA_HELP_SETTINGS_UPDATED'){refreshTitle();scheduleAvoidance();}});
   window.addEventListener('resize',scheduleAvoidance);
   window.addEventListener('hashchange',scheduleAvoidance);
   if(window.MutationObserver){new MutationObserver(function(records){if(records.some(function(record){return record.target!==feedbackButton&&record.target!==manualButton;}))scheduleAvoidance();}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['style','class','hidden']});}

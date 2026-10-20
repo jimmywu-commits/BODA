@@ -66,6 +66,21 @@
     return Math.max(min, Math.min(max, n));
   }
 
+  /*
+   * 圖片手動大小的範圍。1 = 模板預設（等比塞進 107x58）。
+   * 上限刻意給得寬：寬扁的 LOGO 放到 2 倍多才會碰到左右，真正的界線交給面板的紅字警告，
+   * 而不是在這裡硬擋——不同顆數、不同長寬比的圖，「放多大會撞到」差很多。
+   */
+  var ICON_SCALE = { MIN: 0.5, MAX: 2.5, STEP: 0.05 };
+
+  // 回傳 undefined 代表 100%：存檔與比較都不必多帶一個預設值
+  function normalizeIconScale(value) {
+    var n = Number(value);
+    if (!isFinite(n) || n <= 0) return undefined;
+    n = Math.round(clamp(n, ICON_SCALE.MIN, ICON_SCALE.MAX) * 100) / 100;
+    return n === 1 ? undefined : n;
+  }
+
   function createSlot(index) {
     return {
       id: "slot-" + index,
@@ -139,12 +154,13 @@
    *
    *  - iconId / type 是圖片模式用的（type 決定配色規則：icon 套橘紅、logo 保留原色）
    *  - iconText 是文字模式用的（9.9 / 10.10）
+   *  - iconScale 是手動調整的大小，跟著圖走（同一張 LOGO 推到別頁應該一樣大）
    *
    * **slot.text（下方那行文案）絕對不在裡面。** 跨分頁套用 icon 的前提就是
    * 文案各自不同（那是工單匯入的結果），碰它等於把匯入的東西洗掉。
    */
   function iconFieldsOf(slot) {
-    return { iconId: slot.iconId, type: slot.type, iconText: slot.iconText };
+    return { iconId: slot.iconId, type: slot.type, iconText: slot.iconText, iconScale: slot.iconScale };
   }
 
   function isSlotLinked(slot) {
@@ -239,10 +255,13 @@
           ? null : action.iconId;
         var iconType = findIconType(state.library, selectedIconId);
         var next = updateActiveSlot(state, action.index, function (slot) {
+          // 換成另一張圖時大小回到 100%：上一張 LOGO 調好的倍率套在新圖上幾乎一定不對
+          var keepScale = action.keepScale || selectedIconId === slot.iconId;
           return Object.assign({}, slot, {
             iconId: selectedIconId,
             type: iconType,
             iconText: selectedIconId ? null : slot.iconText,
+            iconScale: keepScale && selectedIconId ? slot.iconScale : undefined,
           });
         });
         if (state.banners.length > 1) next = propagateLinkedIcon(next, action.index);
@@ -257,7 +276,22 @@
             iconText: iconText,
             iconId: null,
             type: "icon",
+            iconScale: undefined,
           });
+        });
+        if (state.banners.length > 1) next = propagateLinkedIcon(next, action.index);
+        return next;
+      }
+
+      // 只對圖片模式有意義；文字模式（9.9）字級由 LAYOUT 決定，不吃這個倍率
+      case TYPES.SET_SLOT_ICON_SCALE: {
+        var scaleBanner = state.banners[state.activeBannerIndex];
+        var scaleSlot = scaleBanner && scaleBanner.slots[action.index];
+        if (!scaleSlot || !scaleSlot.iconId) return state;
+        var newScale = normalizeIconScale(action.scale);
+        if (newScale === scaleSlot.iconScale) return state;
+        var next = updateActiveSlot(state, action.index, function (slot) {
+          return Object.assign({}, slot, { iconScale: newScale });
         });
         if (state.banners.length > 1) next = propagateLinkedIcon(next, action.index);
         return next;
@@ -365,6 +399,47 @@
         });
       }
 
+      /*
+       * 從素材選單移除不要的圖。
+       *
+       * 只收自訂素材（上傳、編輯、工單對到的 LOGO）：內建素材來自 img/ 的 manifest，
+       * 這裡刪了重新整理也會回來，給刪只會讓人以為刪掉了。
+       *
+       * 用到它的格子（所有分頁）一併清空，不留指向不存在素材的 iconId——
+       * 那種格子畫面上是空框、匯出也是空的，但面板看不出原因。整件事是一步 undo。
+       */
+      case TYPES.REMOVE_LIBRARY_ICONS: {
+        var removeIds = {};
+        state.library.forEach(function (icon) {
+          if (icon.custom && action.ids.indexOf(icon.id) >= 0) removeIds[icon.id] = true;
+        });
+        if (!Object.keys(removeIds).length) return state;
+        return Object.assign({}, state, {
+          library: state.library.filter(function (icon) { return !removeIds[icon.id]; }),
+          banners: state.banners.map(function (banner) {
+            var touched = false;
+            var slots = banner.slots.map(function (slot) {
+              if (!slot.iconId || !removeIds[slot.iconId]) return slot;
+              touched = true;
+              return Object.assign({}, slot, { iconId: null, type: "icon", iconScale: undefined });
+            });
+            return touched ? Object.assign({}, banner, { slots: slots }) : banner;
+          }),
+        });
+      }
+
+      /*
+       * 整頁回到剛打開的狀態：一條 5 格空白分頁、只剩內建素材、補銳化開啟。
+       * 刻意做成一般的可 undo action（而不是重新整理頁面）——按錯還能 Ctrl+Z 整個救回來。
+       */
+      case TYPES.RESET_ALL: {
+        return Object.assign({}, window.INITIAL_STATE, {
+          banners: [createBanner(MAX_SLOTS)],
+          activeBannerIndex: 0,
+          library: state.library.filter(function (icon) { return !icon.custom; }),
+        });
+      }
+
       /* ── 分頁 ── */
 
       case TYPES.ADD_BANNER: {
@@ -460,6 +535,8 @@
   };
 
   window.SLOT_LIMITS = { MIN_SLOTS: MIN_SLOTS, MAX_SLOTS: MAX_SLOTS };
+  window.ICON_SCALE_LIMITS = ICON_SCALE;
+  window.normalizeIconScale = normalizeIconScale;
   window.BottomSlotRules = {
     sanitizeText: sanitizeSlotText,
     isFirstSlotOnlyIcon: function (iconOrId, library) {

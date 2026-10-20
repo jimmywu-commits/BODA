@@ -125,9 +125,79 @@ window.TEMPLATES = {
     return { fontSize: size, width: width, fits: width <= L.iconBoxWidth && size <= L.iconBoxHeight };
   }
 
+  /*
+   * 圖片在畫布上的實際位置與大小。
+   *
+   * 預設是等比例縮放塞進 107x58 的框內（contain，不拉伸變形），再於框內置中；
+   * scale 是使用者手動調的倍率（slot.iconScale，1 = 預設），以框的中心為基準放大縮小。
+   *
+   * 尺寸與座標一律取整數：置中算出來的是 centerX - w/2 這種小數，落在半個像素上
+   * 就一定會被重新取樣一次（不管有沒有濾鏡）。匯出的輸出倍率是 1，所以取整之後
+   * 場景座標就等於 PNG 的像素座標，整條路徑變成像素對齊。
+   *
+   * 放在這裡而不是 canvas.js：面板要用同一支算「放這麼大會不會撞到」，兩邊不能各算各的。
+   */
+  /* BOD／MDD LOGO 的 PNG 自帶上下透明留白；此處存的是完整 PNG 的繪製寬度，
+     換算後畫面中可見的「今日旗艦店」為 186px、「品牌旗艦」為 151px。 */
+  var SPECIAL_LOGO_CANVAS_WIDTHS = {
+    "bod-logo": 191,
+    "mdd-logo": 152,
+  };
+
+  function fitIcon(naturalWidth, naturalHeight, slotLayout, iconId, scale) {
+    var natW = naturalWidth || 1;
+    var natH = naturalHeight || 1;
+    var preferredWidth = SPECIAL_LOGO_CANVAS_WIDTHS[iconId];
+    var base = preferredWidth
+      ? preferredWidth / natW
+      : Math.min(slotLayout.iconBoxWidth / natW, slotLayout.iconBoxHeight / natH);
+    var k = base * (scale > 0 ? scale : 1);
+    var w = Math.max(1, Math.round(natW * k));
+    var h = Math.max(1, Math.round(natH * k));
+    return {
+      x: Math.round(slotLayout.centerX - w / 2),
+      y: Math.round(slotLayout.iconY + (slotLayout.iconBoxHeight - h) / 2),
+      width: w,
+      height: h,
+    };
+  }
+
+  /*
+   * 手動放大之後會撞到什麼。回傳文字陣列，空陣列 = 沒問題。
+   *
+   * 只警告不硬擋（同「文字超過 5 字」那套語彙）：寬扁的 LOGO 放到 2 倍還很安全，
+   * 方正的 icon 放到 1.4 倍就會出白底，用一個固定上限擋不出合理的界線。
+   */
+  var NEIGHBOR_MARGIN = 6;
+
+  function iconOverflow(box, slotCount, index) {
+    var template = window.TEMPLATES[String(slotCount)];
+    if (!template) return [];
+    var centers = template.centers;
+    var problems = [];
+
+    if (box.y < whiteTop()) problems.push("超出白底上緣（會畫進上方透明區）");
+
+    // 文字是在文字帶內垂直置中，字形上緣約在帶子上緣 + (帶高 - 字級) / 2
+    var slot = getSlotLayout(slotCount, index);
+    var textTop = slot.textY + (slot.textHeight - L.fontSize) / 2;
+    if (box.y + box.height > textTop) problems.push("可能壓到下方文字");
+
+    var left = index > 0 ? (centers[index - 1] + centers[index]) / 2 + NEIGHBOR_MARGIN : 0;
+    var right = index < centers.length - 1
+      ? (centers[index] + centers[index + 1]) / 2 - NEIGHBOR_MARGIN
+      : L.canvasWidth;
+    if (box.x < 0 || box.x + box.width > L.canvasWidth) problems.push("超出畫布左右邊界");
+    else if (box.x < left || box.x + box.width > right) problems.push("可能碰到隔壁格");
+
+    return problems;
+  }
+
   window.LayoutEngine = {
     getSlotLayout: getSlotLayout,
     whiteTop: whiteTop,
     measureDateText: measureDateText,
+    fitIcon: fitIcon,
+    iconOverflow: iconOverflow,
   };
 })();

@@ -39,7 +39,33 @@
     return meta;
   }
 
+  /*
+   * 畫面上有沒有「會被覆蓋就可惜」的東西：多開了分頁，或任何一格有文字／圖／檔期字。
+   * 拖曳匯入前要不要先確認、自動暫存要不要留著，都看這個。
+   */
+  function hasContent(state) {
+    if (state.banners.length > 1) return true;
+    return state.banners.some(function (banner) {
+      return banner.slots.some(function (slot) {
+        return !!(slot.text || slot.iconId || slot.iconText != null);
+      });
+    });
+  }
+
+  // 素材在所有分頁裡被幾格用到（移除素材前要講清楚會清空幾格）
+  function iconUsageCount(state, iconId) {
+    var count = 0;
+    state.banners.forEach(function (banner) {
+      banner.slots.forEach(function (slot) {
+        if (slot.iconId === iconId) count++;
+      });
+    });
+    return count;
+  }
+
   window.Selectors = {
+    hasContent: hasContent,
+    iconUsageCount: iconUsageCount,
     activeBanner: activeBanner,
     viewState: viewState,
     bannerLabel: bannerLabel,
