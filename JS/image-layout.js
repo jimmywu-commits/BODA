@@ -803,7 +803,7 @@
 
   window.BNImageLayout = {
     scanAndProcess: scanAndProcess,
-    refreshEditedImage: function (img) {
+    refreshEditedImage: function (img, options) {
       if (!img) return false;
       var group = img;
       while (group && group.nodeType === 1 && !(group.classList && group.classList.contains('bn-imggroup'))) group = group.parentElement;
@@ -811,9 +811,16 @@
       var imgs = getImgs(group);
       var index = imgs.indexOf(img);
       if (index < 0) return false;
-      var groupKey = getGroupKey(group);
-      applyOffset(img, groupKey, index);
-      if (isBoundedWorkOrderGroup(group)) clampImageOffset(img, groupKey, index, imageBoundaryOfGroup(group));
+      /* 商品影子會把 src 換成含留白的輸出圖，並在 img.dataset 寫入
+         商品本體幾何。此時若只重套 transform，flex 佔位仍是換圖前的比例，
+         首次呈現便會比重新整理後小；reflow 會在圖載入後重算同一組圖片。 */
+      if (options && options.reflow) {
+        layoutWhenReady(group);
+      } else {
+        var groupKey = getGroupKey(group);
+        applyOffset(img, groupKey, index);
+        if (isBoundedWorkOrderGroup(group)) clampImageOffset(img, groupKey, index, imageBoundaryOfGroup(group));
+      }
       return true;
     },
     /* 匯出目前所有圖片的滾輪縮放權重（給「下載暫存檔」用） */

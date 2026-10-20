@@ -6979,7 +6979,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <script src="core/core-engine.js"></script>
 <script src="core/schema-renderer.js?v=20261014-badgecenter"></script>
 <script src="shadow-module/shadow-plugin.js?v=20261019-shadow3"></script>
-<script src="JS/image-layout.js?v=20261016-history1"></script>
+<script src="JS/image-layout.js?v=20261020-shadow-reflow1"></script>
 <script src="JS/editor-plugin.js?v=20261019-rotate3"></script>
 <script src="jbp/js/logo-editor-plugin.js"></script>
 
@@ -13222,7 +13222,11 @@ function refreshImportShadowView() {
     applyImportShadowGeometry(mount);
     changed.forEach(function (img) {
       function refreshLayout() {
-        if (window.BNImageLayout && typeof BNImageLayout.refreshEditedImage === 'function') BNImageLayout.refreshEditedImage(img);
+        /* 影子輸出圖多了外圍留白；必須重新用商品本體幾何計算圖片佔位，
+           不能只更新 transform，否則首次匯入會比重新整理後縮小。 */
+        if (window.BNImageLayout && typeof BNImageLayout.refreshEditedImage === 'function') {
+          BNImageLayout.refreshEditedImage(img, { reflow: true });
+        }
       }
       if (!img.complete) img.addEventListener('load', refreshLayout, { once: true });
       refreshLayout();
