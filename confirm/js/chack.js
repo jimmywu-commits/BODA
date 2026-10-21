@@ -258,7 +258,7 @@
 
   async function readSpreadsheet(entry) {
     const { file } = entry;
-    if (!window.XLSX) throw new Error('Excel 讀取模組尚未載入，請確認 js/xlsx.full.min.js 與 chack.html 位於同一資料夾。');
+    if (!window.XLSX) throw new Error('Excel 讀取模組尚未載入，請確認 js/xlsx.full.min.js 與 index.html 位於同一資料夾。');
     if (/\.csv$/i.test(file.name)) {
       const rows = parseCsv(await file.text());
       const worksheet = window.XLSX.utils.aoa_to_sheet(rows);
@@ -334,9 +334,8 @@
     return { s: { r: minRow, c: minColumn }, e: { r: maxRow, c: maxColumn } };
   }
 
-  function buildGeometry(layout) {
+  function buildGeometry(layout, range = logicalRange(layout.worksheet)) {
     const { worksheet } = layout;
-    const range = logicalRange(worksheet);
     const xs = [0];
     const ys = [0];
     for (let column = range.s.c; column <= range.e.c; column += 1) xs.push(xs.at(-1) + pixelColumnWidth(worksheet, column));
@@ -353,6 +352,19 @@
       }
     });
     return { range, xs, ys, width: xs.at(-1), height: ys.at(-1), mergeAnchors, covered };
+  }
+
+  function previewRange(layout, fields) {
+    const range = logicalRange(layout.worksheet);
+    if (!fields.length) return range;
+    const lastFieldColumn = fields.reduce((rightmost, field) => {
+      const merge = mergeForCell(layout.worksheet, field.rowIndex, field.columnIndex);
+      return Math.max(rightmost, merge ? merge.e.c : field.columnIndex);
+    }, range.s.c);
+    return {
+      s: { ...range.s },
+      e: { r: range.e.r, c: Math.min(range.e.c, lastFieldColumn) }
+    };
   }
 
   function mergeForCell(worksheet, rowIndex, columnIndex) {
@@ -468,6 +480,14 @@
     return { x, y, width: xs[endColumn - range.s.c + 1] - x, height: ys[endRow - range.s.r + 1] - y };
   }
 
+  function fieldAnnotationBottom(geometry) {
+    return state.fields.reduce((bottom, field) => {
+      if (field.isFound) return bottom;
+      const rect = fieldRect(field, geometry);
+      return rect ? Math.max(bottom, rect.y + rect.height + 20) : bottom;
+    }, geometry.height);
+  }
+
   function drawFieldFrames(geometry) {
     state.fields.forEach((field) => {
       const rect = fieldRect(field, geometry);
@@ -475,11 +495,28 @@
       const color = field.isFound ? '#16a34a' : '#e3344b';
       ctx.save();
       ctx.strokeStyle = color;
-      ctx.lineWidth = Math.min(5, Math.max(3, Math.min(rect.width, rect.height) / 5));
-      ctx.shadowColor = field.isFound ? 'rgba(22, 163, 74, .35)' : 'rgba(227, 52, 75, .35)';
-      ctx.shadowBlur = 4;
+      ctx.lineWidth = field.isFound ? 1.5 : 3;
+      if (field.isFound) ctx.setLineDash([5, 4]);
+      else {
+        ctx.shadowColor = 'rgba(227, 52, 75, .28)';
+        ctx.shadowBlur = 3;
+      }
       ctx.strokeRect(rect.x + ctx.lineWidth / 2, rect.y + ctx.lineWidth / 2, rect.width - ctx.lineWidth, rect.height - ctx.lineWidth);
       ctx.restore();
+
+      if (!field.isFound) {
+        const label = '檔名與欄位名請一致';
+        const fontSize = 12;
+        const labelY = rect.y + rect.height + 14;
+        ctx.save();
+        ctx.font = `700 ${fontSize}px "Noto Sans TC", "Microsoft JhengHei", sans-serif`;
+        const labelWidth = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(255, 255, 255, .92)';
+        ctx.fillRect(rect.x + 2, labelY - fontSize, labelWidth + 8, fontSize + 5);
+        ctx.fillStyle = '#d7283d';
+        ctx.fillText(label, rect.x + 6, labelY);
+        ctx.restore();
+      }
     });
   }
 
@@ -492,15 +529,20 @@
 
   function renderLayout() {
     if (!state.layout) { renderEmpty(); return; }
-    const geometry = buildGeometry(state.layout);
+    const geometry = buildGeometry(state.layout, previewRange(state.layout, state.fields));
     if (geometry.width > MAX_CANVAS_SIDE || geometry.height > MAX_CANVAS_SIDE || !geometry.width || !geometry.height) {
       renderEmpty('Layout_Output 尺寸過大');
       setStatus('Layout_Output 的範圍過大，無法輸出成單張圖片。請確認試算表是否有不必要的超大空白範圍。', 'error');
       return;
     }
     el.emptyCopy.classList.add('is-hidden');
-    el.resultCanvas.width = Math.ceil(geometry.width); el.resultCanvas.height = Math.ceil(geometry.height);
+    const annotationHeight = Math.max(0, Math.ceil(fieldAnnotationBottom(geometry) - geometry.height + 4));
+    el.resultCanvas.width = Math.ceil(geometry.width); el.resultCanvas.height = Math.ceil(geometry.height + annotationHeight);
     drawSheet(state.layout, geometry);
+    if (annotationHeight) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, geometry.height, geometry.width, annotationHeight);
+    }
     drawFieldFrames(geometry);
   }
 
