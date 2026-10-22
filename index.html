@@ -1093,7 +1093,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
                 </select>
               </div>
               <div class="ishd-row"><span>陰影顏色</span><span class="ishd-auto-color"><i id="import-shadow-color-chip" class="ishd-color-chip"></i><b id="import-shadow-color-val">自動</b></span></div>
-              <div class="ishd-note">依實際畫布背景色自動產生同色相深色；編輯預覽底色不參與計算。</div>
+              <div class="ishd-note">顯示「實際畫布背景色 → 自動陰影色」；保留同色調後加深，編輯預覽底色不參與計算。</div>
               <div class="ishd-row"><span>左右位移 <b id="import-shadow-x-val">0%</b></span><input type="range" id="import-shadow-x" min="-30" max="30" step="1" value="0"></div>
               <div class="ishd-row"><span>上下位移 <b id="import-shadow-y-val">0%</b></span><input type="range" id="import-shadow-y" min="-30" max="30" step="1" value="0"></div>
               <div class="ishd-actions">
@@ -6979,7 +6979,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <script src="core/core-engine.js"></script>
 <script src="core/schema-renderer.js?v=20261014-badgecenter"></script>
 <script src="shadow-module/shadow-plugin.js?v=20261019-shadow3"></script>
-<script src="JS/image-layout.js?v=20261020-shadow-reflow1"></script>
+<script src="JS/image-layout.js?v=20261022-shadow-reflow2"></script>
 <script src="JS/editor-plugin.js?v=20261019-rotate3"></script>
 <script src="jbp/js/logo-editor-plugin.js"></script>
 
@@ -12454,25 +12454,54 @@ var importShadowSeq = 0;
 var importShadowBackgroundHex = '';
 var importShadowBackgroundTimer = null;
 
-/* 影子不再使用固定 #5a5a5a。以「實際輸出畫布背景」為來源，保留少量同色相、
-   壓低亮度並適度去飽和；ShadowPlugin 原本的透明度與模糊漸層仍完整保留。
+/* 影子不再使用固定 #5a5a5a。以「實際輸出畫布背景」為來源，保留原本色相、
+   降低亮度並保留約 45% 飽和度；這樣陰影仍是自然的深色，但粉、黃、藍、綠底
+   都能看出與背景相同的色調。ShadowPlugin 原本的透明度與模糊漸層仍完整保留。
    #e8e4df 等編輯器預覽底色只負責看透明邊，不會傳進這個函式。 */
 function importShadowColorForBackground(backgroundHex) {
   var hex = String(backgroundHex || '').trim();
   if (/^#[0-9a-f]{3}$/i.test(hex)) hex = '#' + hex.slice(1).split('').map(function (c) { return c + c; }).join('');
   if (!/^#[0-9a-f]{6}$/i.test(hex)) hex = '#ffffff';
   var n = parseInt(hex.slice(1), 16);
-  var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  var luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  /* 淺底壓到約 40%，深底保留約 55%；暖底會得到暖灰、藍底會得到深藍灰。 */
-  var factor = 0.38 + 0.18 * (1 - luma);
-  var gray = (0.2126 * r + 0.7152 * g + 0.0722 * b) * factor;
-  var desaturate = 0.28;
-  function channel(value) {
-    return Math.max(0, Math.min(255, Math.round(value * factor * (1 - desaturate) + gray * desaturate)));
+  var r = ((n >> 16) & 255) / 255;
+  var g = ((n >> 8) & 255) / 255;
+  var b = (n & 255) / 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b);
+  var lightness = (max + min) / 2;
+  var hue = 0, saturation = 0;
+  if (max !== min) {
+    var delta = max - min;
+    saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+    if (max === r) hue = ((g - b) / delta + (g < b ? 6 : 0)) / 6;
+    else if (max === g) hue = ((b - r) / delta + 2) / 6;
+    else hue = ((r - g) / delta + 4) / 6;
   }
-  return '#' + [channel(r), channel(g), channel(b)].map(function (value) {
-    return value.toString(16).padStart(2, '0');
+  /* 背景越亮，陰影可維持到約 34% 明度；深底則繼續往下壓，避免反而變亮。
+     彩色底保留色相與適度飽和度；無彩色底（黑白灰）仍產生中性灰陰影。 */
+  var shadowLightness = Math.max(0.08, Math.min(0.34, lightness * 0.4));
+  var shadowSaturation = saturation < 0.07 ? 0 : Math.max(0.14, Math.min(0.48, saturation * 0.45));
+  function hueChannel(a, b, h) {
+    if (h < 0) h += 1;
+    if (h > 1) h -= 1;
+    if (h < 1 / 6) return a + (b - a) * 6 * h;
+    if (h < 1 / 2) return b;
+    if (h < 2 / 3) return a + (b - a) * (2 / 3 - h) * 6;
+    return a;
+  }
+  var red, green, blue;
+  if (!shadowSaturation) {
+    red = green = blue = shadowLightness;
+  } else {
+    var q = shadowLightness < 0.5
+      ? shadowLightness * (1 + shadowSaturation)
+      : shadowLightness + shadowSaturation - shadowLightness * shadowSaturation;
+    var p = 2 * shadowLightness - q;
+    red = hueChannel(p, q, hue + 1 / 3);
+    green = hueChannel(p, q, hue);
+    blue = hueChannel(p, q, hue - 1 / 3);
+  }
+  return '#' + [red, green, blue].map(function (value) {
+    return Math.round(Math.max(0, Math.min(1, value)) * 255).toString(16).padStart(2, '0');
   }).join('');
 }
 
@@ -12485,11 +12514,12 @@ function importShadowActualBackground() {
 }
 
 function updateImportShadowColorLabel() {
-  var color = importShadowColorForBackground(importShadowActualBackground());
+  var background = importShadowActualBackground();
+  var color = importShadowColorForBackground(background);
   var chip = document.getElementById('import-shadow-color-chip');
   var label = document.getElementById('import-shadow-color-val');
   if (chip) chip.style.background = color;
-  if (label) label.textContent = '自動 · ' + color;
+  if (label) label.textContent = '自動 · ' + background.toUpperCase() + ' → ' + color.toUpperCase();
   return color;
 }
 
@@ -12978,6 +13008,256 @@ window.BODAImportShadow.composeProduct = function (baseUrl) {
 };
 window.BODAImportShadow.isReady = isImportShadowEngineReady;
 
+/* ══ 匯入工單畫布的商品 ↻ 把手 ════════════════════════════════
+   JS/image-layout.js 只負責選取框、四角縮放與指標角度；真正的旋轉一定在
+   這裡完成，因為影子引擎只接受「乾淨商品底圖」。流程與 SHOPEE 相同：
+     未含影子的 baseSrc → 任意角度旋轉 → 重新合成目前方向的影子
+   旋轉中的更新做節流且同一張圖一次只跑一個工作，避免滑鼠移動時同時建立
+   多個 Base64 畫布；放開時必定再處理最後一個角度。 */
+var importCanvasTransformJobs = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+var importCanvasTransformFallbackJobs = [];
+var IMPORT_CANVAS_ROTATE_INTERVAL = 120;
+
+function importCanvasTransformJobFor(img) {
+  if (!img) return null;
+  if (importCanvasTransformJobs) {
+    var hit = importCanvasTransformJobs.get(img);
+    if (!hit) { hit = {}; importCanvasTransformJobs.set(img, hit); }
+    return hit;
+  }
+  for (var i = 0; i < importCanvasTransformFallbackJobs.length; i++) {
+    if (importCanvasTransformFallbackJobs[i].img === img) return importCanvasTransformFallbackJobs[i].job;
+  }
+  var job = {};
+  importCanvasTransformFallbackJobs.push({ img: img, job: job });
+  return job;
+}
+
+function importCanvasTransformNormalizeAngle(value) {
+  value = Number(value) || 0;
+  value = ((value % 360) + 360) % 360;
+  return value > 180 ? value - 360 : value;
+}
+
+function importCanvasTransformCleanBase(img) {
+  if (!img) return '';
+  var saved = img.dataset && String(img.dataset.baseSrc || '').trim();
+  /* baseSrc 若是不小心遺留的含影子版本，絕不能再拿去旋轉／疊影子。 */
+  if (saved && !importShadowGeometryOf(saved)) return saved;
+  var current = String(img.getAttribute('src') || img.src || '').trim();
+  var asset = importShadowAssetForCanvasValue(current);
+  if (asset && asset.baseUrl && !importShadowGeometryOf(asset.baseUrl)) return asset.baseUrl;
+  if (current && !importShadowGeometryOf(current)) return current;
+  return '';
+}
+
+function importCanvasTransformReleasePrepared(baseUrl) {
+  if (!baseUrl || !importShadowPrepCache || !importShadowPrepCache[baseUrl]) return;
+  var prep = importShadowPrepCache[baseUrl];
+  delete importShadowPrepCache[baseUrl];
+  Promise.resolve(prep).then(importShadowRelease, function () {});
+}
+
+function importCanvasTransformRotatedBase(baseUrl, degrees) {
+  degrees = importCanvasTransformNormalizeAngle(degrees);
+  if (Math.abs(degrees) < 0.05) return Promise.resolve(baseUrl);
+  return trimImportImageWhiteBorder(baseUrl).then(function (trimmed) {
+    return importLoadImage(trimmed || baseUrl);
+  }).then(function (source) {
+    var sw = source.naturalWidth || source.width;
+    var sh = source.naturalHeight || source.height;
+    if (!(sw > 0 && sh > 0)) throw new Error('商品尺寸無效');
+    var radians = degrees * Math.PI / 180;
+    var rawW = Math.max(1, Math.ceil(Math.abs(sw * Math.cos(radians)) + Math.abs(sh * Math.sin(radians))));
+    var rawH = Math.max(1, Math.ceil(Math.abs(sw * Math.sin(radians)) + Math.abs(sh * Math.cos(radians))));
+    /* 跟影子前處理使用同一個上限，避免拖曳大圖時產生過長字串。 */
+    var scale = importShadowScaleForLimit(rawW, rawH,
+      IMPORT_SHADOW_MAX_PRODUCT_PIXELS, IMPORT_SHADOW_MAX_PRODUCT_EDGE);
+    var out = document.createElement('canvas');
+    out.width = Math.max(1, Math.round(rawW * scale));
+    out.height = Math.max(1, Math.round(rawH * scale));
+    var ctx = out.getContext('2d');
+    if (!ctx) throw new Error('無法建立旋轉畫布');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.translate(out.width / 2, out.height / 2);
+    ctx.rotate(radians);
+    ctx.drawImage(source, -sw * scale / 2, -sh * scale / 2, sw * scale, sh * scale);
+    /* 裁掉旋轉後四個透明角。這一步是避免 image-layout 把透明留白當商品範圍，
+       導致商品看起來每轉一次就縮一點。 */
+    return trimImportImageWhiteBorder(out.toDataURL('image/png'));
+  });
+}
+
+function importCanvasTransformLocation(detail) {
+  var img = detail && detail.img;
+  var group = detail && detail.group;
+  if (!img || !group || !img.closest) return null;
+  var mount = img.closest('[id^="imp-mount-"]');
+  var match = mount && /^imp-mount-(\d+)$/i.exec(mount.id || '');
+  if (!match) return null;
+  var index = Array.prototype.indexOf.call(group.querySelectorAll('img.bn-imggroup-img'), img);
+  var fieldKey = String(detail.fieldKey || group.getAttribute('data-field-key') || '');
+  var colIndex = Number(match[1]);
+  var col = currentImportColumns[colIndex];
+  if (!col || !fieldKey || index < 0) return null;
+  var parts = splitImageList(col.data && col.data[fieldKey] || '');
+  var seen = -1, rawIndex = -1;
+  for (var i = 0; i < parts.length; i++) {
+    if (!isUsableImageValue(parts[i])) continue;
+    seen++;
+    if (seen === index) { rawIndex = i; break; }
+  }
+  if (rawIndex < 0) return null;
+  return { img: img, group: group, col: col, colIndex: colIndex, fieldKey: fieldKey,
+    renderedIndex: index, rawIndex: rawIndex, parts: parts, oldUrl: parts[rawIndex] };
+}
+
+function importCanvasTransformApplyGeometry(img, geometry) {
+  if (!img || !img.dataset) return;
+  var ds = img.dataset;
+  if (!(geometry && geometry.sourceWidth > 0 && geometry.sourceHeight > 0 &&
+        geometry.outputWidth > 0 && geometry.outputHeight > 0)) {
+    ['layoutSourceWidth', 'layoutSourceHeight', 'layoutOutputWidth', 'layoutOutputHeight',
+      'layoutOffsetX', 'layoutOffsetY', 'importShadowGeom'].forEach(function (key) { delete ds[key]; });
+    return;
+  }
+  ds.layoutSourceWidth = String(geometry.sourceWidth);
+  ds.layoutSourceHeight = String(geometry.sourceHeight);
+  ds.layoutOutputWidth = String(geometry.outputWidth);
+  ds.layoutOutputHeight = String(geometry.outputHeight);
+  ds.layoutOffsetX = String(geometry.offsetX || 0);
+  ds.layoutOffsetY = String(geometry.offsetY || 0);
+  ds.importShadowGeom = '1';
+}
+
+function importCanvasTransformPresent(job, location, rotatedBase, rendered, persist) {
+  if (!location || !location.img || !location.img.isConnected || !rendered || !rendered.url) return;
+  var img = location.img;
+  var geometry = rendered.geometry || importShadowGeometryOf(rendered.url);
+  var displayGeometry = geometry;
+  /* 跟既有 applyImportShadowGeometry 相同：會裁切的商品框須整張 contain，
+     不能把影子外擴矩陣套進去，否則邊緣陰影會被切掉。 */
+  var zone = img.closest ? img.closest('[data-img-field]') : null;
+  if (zone && window.getComputedStyle) {
+    var cs = window.getComputedStyle(zone);
+    if ((cs.overflow && cs.overflow !== 'visible') || (cs.clipPath && cs.clipPath !== 'none')) displayGeometry = null;
+  }
+  if (geometry) importShadowGeometry[rendered.url] = geometry;
+  importCanvasTransformApplyGeometry(img, displayGeometry);
+  img.dataset.baseSrc = rotatedBase;
+  img.setAttribute('src', rendered.url);
+  /* 影子輸出圖的外框大小會變，但仍使用原本的 flex slot；這等同 SHOPEE 的
+     keepScale，商品本體不會因外接框變寬高而跳大跳小。 */
+  waitForImportShadowImage(img).then(function () {
+    if (window.BNImageLayout && typeof BNImageLayout.refreshEditedImage === 'function') {
+      BNImageLayout.refreshEditedImage(img);
+      if (typeof BNImageLayout.refreshTransformControls === 'function') BNImageLayout.refreshTransformControls();
+    }
+  });
+  if (!persist) return;
+  var oldUrl = location.oldUrl;
+  location.parts[location.rawIndex] = rendered.url;
+  location.col.data[location.fieldKey] = location.parts.join(',');
+  var assetIndex = importUploadIndexFor(oldUrl);
+  var asset = assetIndex >= 0 ? uploadedImages[assetIndex] : null;
+  if (asset) {
+    asset.baseUrl = rotatedBase;
+    asset.url = rendered.url;
+    if (geometry) asset.shadowGeom = geometry; else delete asset.shadowGeom;
+  }
+  rememberCanvasImageEditorState(location.col, location.fieldKey, location.renderedIndex,
+    canvasImageEditorStateFrom(img, rendered.url, true));
+  /* 存進現有工單暫存；不重畫整個 mount，選取框、位置和目前縮放因此都不會丟失。 */
+  queueImportStateSave();
+  saveImportImageLayout();
+  var log = document.getElementById('import-log');
+  if (log) log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 商品已旋轉並即時重製影子</span>';
+}
+
+function importCanvasTransformRun(job, detail, force) {
+  if (!job || job.running || !job.detail) return;
+  var location = importCanvasTransformLocation(job.detail);
+  if (!location || !job.baseUrl) return;
+  var angle = importCanvasTransformNormalizeAngle(job.angle);
+  if (!force && Math.abs(angle) < 0.15) return;
+  job.running = true;
+  job.lastRunAt = Date.now();
+  var generation = ++job.generation;
+  var rotatedBase = '';
+  importCanvasTransformRotatedBase(job.baseUrl, angle).then(function (base) {
+    rotatedBase = base;
+    return window.BODAImportShadow.composeProduct(base);
+  }).then(function (rendered) {
+    /* 拖曳中若已收到更新角度，舊影子不寫回畫面；只讓最後一筆覆蓋。 */
+    if (job.generation !== generation || Math.abs(importCanvasTransformNormalizeAngle(job.angle - angle)) >= 0.15) return;
+    importCanvasTransformPresent(job, location, rotatedBase, rendered, !!job.ending);
+    if (job.ending) {
+      job.baseUrl = rotatedBase;
+      job.ending = false;
+      job.angle = 0;
+      job.detail = null;
+    }
+  }).catch(function (err) {
+    if (job.generation !== generation) return;
+    console.warn('[BODA] 畫布商品旋轉／影子重製失敗：', err);
+    if (job.ending) {
+      var log = document.getElementById('import-log');
+      if (log) log.innerHTML = '<span class="err">商品旋轉未套用，已保留原圖與原影子。</span>';
+      job.ending = false;
+      job.angle = 0;
+      job.detail = null;
+    }
+  }).then(function () {
+    importCanvasTransformReleasePrepared(rotatedBase);
+    job.running = false;
+    if (!job.detail) return;
+    var needsNext = Math.abs(importCanvasTransformNormalizeAngle(job.angle - angle)) >= 0.15 || job.ending;
+    if (needsNext) importCanvasTransformSchedule(job, job.detail, job.ending);
+  });
+}
+
+function importCanvasTransformSchedule(job, detail, force) {
+  if (!job || !job.detail) return;
+  if (job.timer) { clearTimeout(job.timer); job.timer = null; }
+  if (job.running) return;
+  var elapsed = Date.now() - (job.lastRunAt || 0);
+  var delay = force ? 0 : Math.max(0, IMPORT_CANVAS_ROTATE_INTERVAL - elapsed);
+  job.timer = setTimeout(function () {
+    job.timer = null;
+    importCanvasTransformRun(job, detail, force);
+  }, delay);
+}
+
+window.addEventListener('bn-import-product-transform', function (event) {
+  var detail = event && event.detail || {};
+  var location = importCanvasTransformLocation(detail);
+  if (!location) return;
+  var job = importCanvasTransformJobFor(detail.img);
+  if (!job) return;
+  if (detail.stage === 'rotate-start') {
+    if (job.timer) { clearTimeout(job.timer); job.timer = null; }
+    job.baseUrl = importCanvasTransformCleanBase(detail.img);
+    job.angle = 0;
+    job.ending = false;
+    job.detail = detail;
+    /* 讓上一個尚未完成的非同步影子工作失效，不能覆寫新的拖曳。 */
+    job.generation = (Number(job.generation) || 0) + 1;
+    return;
+  }
+  if (!job.detail) {
+    job.baseUrl = importCanvasTransformCleanBase(detail.img);
+    job.detail = detail;
+  }
+  job.angle = importCanvasTransformNormalizeAngle(detail.angle);
+  if (detail.stage === 'rotate-end') {
+    job.ending = true;
+    importCanvasTransformSchedule(job, detail, true);
+  } else if (detail.stage === 'rotate-change') {
+    importCanvasTransformSchedule(job, detail, false);
+  }
+});
+
 /* 拖完後清掉快取並釋放註冊的商品，避免大量圖片一直佔記憶體。 */
 function importShadowDropCache() {
   var old = importShadowPrepCache;
@@ -13174,6 +13454,54 @@ function recoverImportShadowCanvasAssets(audit, progress) {
   }, Promise.resolve()).then(function () { return audit; });
 }
 
+/* 等含影子的最新 src 真正解碼完成，再進行版位重算。
+   每個群組只保留最後一次排程，避免同一張商品連續重製時，較舊的載入事件把
+   已更新的商品本體比例又覆蓋回去。 */
+function waitForImportShadowImage(img) {
+  return new Promise(function (resolve) {
+    if (!img) { resolve(); return; }
+    function done() {
+      if (typeof img.decode === 'function' && img.complete && img.naturalWidth) {
+        img.decode().catch(function () {}).then(function () { resolve(); });
+      } else {
+        resolve();
+      }
+    }
+    if (img.complete && img.naturalWidth) { done(); return; }
+    var settled = false;
+    function settle() {
+      if (settled) return;
+      settled = true;
+      done();
+    }
+    img.addEventListener('load', settle, { once: true });
+    img.addEventListener('error', settle, { once: true });
+  });
+}
+function scheduleImportShadowGroupReflow(group) {
+  if (!group || !group.querySelectorAll) return;
+  var generation = Number(group.__importShadowReflowGeneration || 0) + 1;
+  group.__importShadowReflowGeneration = generation;
+  var imgs = Array.prototype.slice.call(group.querySelectorAll('img.bn-imggroup-img'));
+  Promise.all(imgs.map(waitForImportShadowImage)).then(function () {
+    if (!group.isConnected || group.__importShadowReflowGeneration !== generation) return;
+    function reflow() {
+      if (!group.isConnected || group.__importShadowReflowGeneration !== generation) return;
+      var representative = group.querySelector('img.bn-imggroup-img');
+      if (representative && window.BNImageLayout && typeof BNImageLayout.refreshEditedImage === 'function') {
+        /* 先清換圖前的 slot 快取，再以影子記錄的商品本體尺寸重新 fit。 */
+        BNImageLayout.refreshEditedImage(representative, { reflow: true, resetSlots: true });
+      }
+    }
+    /* 給瀏覽器兩個繪製週期，確保 CSS 尺寸與最新圖片自然尺寸都已可量測。 */
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function () { requestAnimationFrame(reflow); });
+    } else {
+      setTimeout(reflow, 0);
+    }
+  });
+}
+
 /* 影子重算只換既有 img 的 src／幾何，不呼叫 refreshCanvasAfterChange。
    後者會為每張商品反覆序列化整份工單、重建所有素材縮圖與側欄，既昂貴又會把
    所有 Base64 再串成 HTML；保留 DOM 也能保留使用者已調好的位置與縮放。 */
@@ -13220,17 +13548,12 @@ function refreshImportShadowView() {
     if (!changed.length) return;
     restoreCanvasImageEditorState(mount, col);
     applyImportShadowGeometry(mount);
+    var changedGroups = [];
     changed.forEach(function (img) {
-      function refreshLayout() {
-        /* 影子輸出圖多了外圍留白；必須重新用商品本體幾何計算圖片佔位，
-           不能只更新 transform，否則首次匯入會比重新整理後縮小。 */
-        if (window.BNImageLayout && typeof BNImageLayout.refreshEditedImage === 'function') {
-          BNImageLayout.refreshEditedImage(img, { reflow: true });
-        }
-      }
-      if (!img.complete) img.addEventListener('load', refreshLayout, { once: true });
-      refreshLayout();
+      var group = img.closest ? img.closest('.bn-imggroup') : img.parentElement;
+      if (group && changedGroups.indexOf(group) < 0) changedGroups.push(group);
     });
+    changedGroups.forEach(scheduleImportShadowGroupReflow);
   });
   /* 左側隱藏欄位與右側工具縮圖直接更新，不重建帶 Base64 的整張工具卡。 */
   document.querySelectorAll('#import-fields-scroll .if-row, #import-block-tools .import-image-tool-row').forEach(function (row) {

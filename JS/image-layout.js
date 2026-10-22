@@ -666,6 +666,269 @@
     });
   }
 
+  /* ── 匯入工單商品：畫布內四角縮放／旋轉把手 ───────────────────
+     操作邏輯沿用 SHOPEE 商品框：縮放點只改這張商品的權重，旋轉把手以商品
+     中心計算任意角度。影子本身不在這個檔案重繪，避免 image-layout 和影子
+     模組互相依賴；旋轉事件交給 index.html 的 BODAImportShadow 管線處理：
+       clean base → rotate → rebuild shadow → keep current visual scale
+     因此不會把舊影子一起旋轉，也不會在連續操作後逐次縮小。 */
+  var transformSelection = null;
+  var transformOverlay = null;
+  var transformOverlayParts = null;
+  var transformOverlayRefreshQueued = false;
+
+  function isImportProductImage(group) {
+    if (!group || imageHistoryContext(group) !== 'import') return false;
+    /* 商品與贈品都走商品影子管線；人物／簽名與 LOGO 維持原本操作，不顯示把手。 */
+    return /^(?:productImg|giftImg)\d*$/i.test(String(group.getAttribute('data-field-key') || ''));
+  }
+
+  function installTransformOverlay() {
+    if (transformOverlay || typeof document === 'undefined' || !document.body) return;
+    var style = document.createElement('style');
+    style.setAttribute('data-bn-import-transform-style', '1');
+    style.textContent = '' +
+      '.bn-import-transform-overlay{position:fixed;z-index:40000;display:none;box-sizing:border-box;pointer-events:none;border:1.5px solid #229188;box-shadow:0 0 0 1px rgba(255,255,255,.78),0 1px 6px rgba(0,0,0,.22);}' +
+      '.bn-import-transform-overlay.is-processing{border-style:dashed;opacity:.82;}' +
+      '.bn-import-transform-corner{position:absolute;box-sizing:border-box;width:12px;height:12px;padding:0;border:2px solid #fff;border-radius:50%;background:#229188;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:auto;touch-action:none;}' +
+      '.bn-import-transform-corner[data-bn-corner="nw"]{left:0;top:0;transform:translate(-50%,-50%);cursor:nwse-resize;}' +
+      '.bn-import-transform-corner[data-bn-corner="ne"]{right:0;top:0;transform:translate(50%,-50%);cursor:nesw-resize;}' +
+      '.bn-import-transform-corner[data-bn-corner="sw"]{left:0;bottom:0;transform:translate(-50%,50%);cursor:nesw-resize;}' +
+      '.bn-import-transform-corner[data-bn-corner="se"]{right:0;bottom:0;transform:translate(50%,50%);cursor:nwse-resize;}' +
+      '.bn-import-transform-rotate{position:absolute;left:50%;top:-38px;box-sizing:border-box;width:27px;height:27px;padding:0;border:2px solid #fff;border-radius:50%;background:#229188;color:#fff;font:700 19px/22px Arial,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.3);transform:translateX(-50%);cursor:grab;pointer-events:auto;touch-action:none;}' +
+      '.bn-import-transform-rotate:active{cursor:grabbing;}' +
+      '.bn-import-transform-badge{position:absolute;left:50%;top:-66px;display:none;min-width:36px;padding:2px 5px;border-radius:4px;background:rgba(20,40,35,.9);color:#fff;font:700 10px/1.2 Arial,sans-serif;text-align:center;transform:translateX(-50%);white-space:nowrap;pointer-events:none;}';
+    (document.head || document.documentElement).appendChild(style);
+
+    var overlay = document.createElement('div');
+    overlay.className = 'bn-import-transform-overlay';
+    overlay.setAttribute('data-bn-edit-only', '1');
+    overlay.setAttribute('aria-label', '商品縮放與旋轉控制');
+    ['nw', 'ne', 'sw', 'se'].forEach(function (corner) {
+      var handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = 'bn-import-transform-corner';
+      handle.setAttribute('data-bn-corner', corner);
+      handle.setAttribute('aria-label', '等比例縮放商品');
+      overlay.appendChild(handle);
+    });
+    var rotate = document.createElement('button');
+    rotate.type = 'button';
+    rotate.className = 'bn-import-transform-rotate';
+    rotate.setAttribute('aria-label', '拖曳可任意旋轉商品，雙擊可復原本次旋轉');
+    rotate.title = '拖曳可任意旋轉商品';
+    rotate.textContent = '↻';
+    overlay.appendChild(rotate);
+    var badge = document.createElement('span');
+    badge.className = 'bn-import-transform-badge';
+    overlay.appendChild(badge);
+    document.body.appendChild(overlay);
+    transformOverlay = overlay;
+    transformOverlayParts = { rotate: rotate, badge: badge };
+    bindTransformResizeHandles(overlay);
+    bindTransformRotateHandle(rotate, badge);
+
+    document.addEventListener('pointerdown', function (event) {
+      if (!transformSelection || !transformOverlay) return;
+      var target = event.target;
+      if (target === transformSelection.img || transformOverlay.contains(target)) return;
+      hideTransformOverlay();
+    }, true);
+    window.addEventListener('resize', scheduleTransformOverlayRefresh);
+    window.addEventListener('scroll', scheduleTransformOverlayRefresh, true);
+  }
+
+  function visibleProductRect(img) {
+    if (!img || !img.getBoundingClientRect) return null;
+    var rect = img.getBoundingClientRect();
+    if (!(rect.width > 0 && rect.height > 0)) return null;
+    var geometry = imageEditorGeometry(img);
+    if (!geometry || !(geometry.outputWidth > 0 && geometry.outputHeight > 0)) return rect;
+    return {
+      left: rect.left + rect.width * geometry.offsetX / geometry.outputWidth,
+      top: rect.top + rect.height * geometry.offsetY / geometry.outputHeight,
+      width: rect.width * geometry.sourceWidth / geometry.outputWidth,
+      height: rect.height * geometry.sourceHeight / geometry.outputHeight
+    };
+  }
+
+  function refreshTransformOverlay() {
+    transformOverlayRefreshQueued = false;
+    if (!transformSelection || !transformOverlay) return;
+    var img = transformSelection.img;
+    var group = transformSelection.group;
+    if (!img || !img.isConnected || !group || !group.isConnected || !isImportProductImage(group)) {
+      hideTransformOverlay();
+      return;
+    }
+    var mount = workOrderMountOf(group);
+    if (!mount || (mount.closest && mount.closest('.bn-export-capture'))) {
+      transformOverlay.style.display = 'none';
+      return;
+    }
+    var rect = visibleProductRect(img);
+    if (!rect || rect.width < 2 || rect.height < 2) {
+      transformOverlay.style.display = 'none';
+      return;
+    }
+    transformOverlay.style.left = rect.left + 'px';
+    transformOverlay.style.top = rect.top + 'px';
+    transformOverlay.style.width = rect.width + 'px';
+    transformOverlay.style.height = rect.height + 'px';
+    transformOverlay.style.display = 'block';
+  }
+
+  function scheduleTransformOverlayRefresh() {
+    if (transformOverlayRefreshQueued) return;
+    transformOverlayRefreshQueued = true;
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(refreshTransformOverlay);
+    else setTimeout(refreshTransformOverlay, 0);
+  }
+
+  function hideTransformOverlay() {
+    transformSelection = null;
+    if (transformOverlay) {
+      transformOverlay.style.display = 'none';
+      transformOverlay.classList.remove('is-processing');
+    }
+  }
+
+  function selectTransformImage(img, group, index) {
+    if (!isImportProductImage(group)) return;
+    installTransformOverlay();
+    transformSelection = { img: img, group: group, index: index };
+    scheduleTransformOverlayRefresh();
+  }
+
+  function currentTransformSelection() {
+    if (!transformSelection || !transformSelection.img || !transformSelection.img.isConnected) return null;
+    return transformSelection;
+  }
+
+  function dispatchProductTransform(stage, selection, angle) {
+    if (!selection) return;
+    try {
+      window.dispatchEvent(new CustomEvent('bn-import-product-transform', {
+        detail: {
+          stage: stage,
+          angle: Number(angle) || 0,
+          img: selection.img,
+          group: selection.group,
+          index: selection.index,
+          fieldKey: selection.group.getAttribute('data-field-key') || ''
+        }
+      }));
+    } catch (e) {}
+  }
+
+  function normalizeTransformAngle(value) {
+    value = Number(value) || 0;
+    value = ((value % 360) + 360) % 360;
+    return value > 180 ? value - 360 : value;
+  }
+
+  function formatTransformAngle(value) {
+    var rounded = Math.round((Number(value) || 0) * 10) / 10;
+    return String(rounded).replace(/\.0$/, '') + '°';
+  }
+
+  function bindTransformResizeHandles(overlay) {
+    Array.prototype.forEach.call(overlay.querySelectorAll('[data-bn-corner]'), function (handle) {
+      handle.addEventListener('pointerdown', function (event) {
+        if (event.button !== 0) return;
+        var selection = currentTransformSelection();
+        if (!selection) return;
+        var rect = visibleProductRect(selection.img);
+        if (!rect) return;
+        event.preventDefault();
+        event.stopPropagation();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var startDistance = Math.max(8, Math.hypot(event.clientX - cx, event.clientY - cy));
+        var groupKey = getGroupKey(selection.group);
+        var startWeight = getWeight(groupKey, selection.index, selection.img);
+        var moved = false;
+        emitImageHistory(selection.group, 'begin', 'resize');
+        try { handle.setPointerCapture(event.pointerId); } catch (e) {}
+        function move(moveEvent) {
+          var current = currentTransformSelection();
+          if (!current || current.img !== selection.img) return;
+          var nextDistance = Math.max(4, Math.hypot(moveEvent.clientX - cx, moveEvent.clientY - cy));
+          var nextWeight = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, startWeight * nextDistance / startDistance));
+          if (Math.abs(nextWeight - getWeight(groupKey, selection.index, selection.img)) < 0.001) return;
+          moved = true;
+          setWeight(groupKey, selection.index, nextWeight, selection.img);
+          applyLayout(selection.group);
+          scheduleTransformOverlayRefresh();
+        }
+        function finish() {
+          handle.removeEventListener('pointermove', move);
+          handle.removeEventListener('pointerup', finish);
+          handle.removeEventListener('pointercancel', finish);
+          handle.removeEventListener('lostpointercapture', finish);
+          emitImageHistory(selection.group, 'commit', moved ? 'resize' : 'noop');
+          scheduleTransformOverlayRefresh();
+        }
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', finish);
+        handle.addEventListener('pointercancel', finish);
+        handle.addEventListener('lostpointercapture', finish);
+      });
+    });
+  }
+
+  function bindTransformRotateHandle(handle, badge) {
+    handle.addEventListener('pointerdown', function (event) {
+      if (event.button !== 0) return;
+      var selection = currentTransformSelection();
+      var rect = selection && visibleProductRect(selection.img);
+      if (!selection || !rect) return;
+      event.preventDefault();
+      event.stopPropagation();
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      var startAngle = Math.atan2(event.clientY - cy, event.clientX - cx);
+      var lastAngle = 0;
+      if (transformOverlay) transformOverlay.classList.add('is-processing');
+      badge.textContent = formatTransformAngle(0);
+      badge.style.display = 'block';
+      emitImageHistory(selection.group, 'begin', 'rotate');
+      dispatchProductTransform('rotate-start', selection, 0);
+      try { handle.setPointerCapture(event.pointerId); } catch (e) {}
+      function move(moveEvent) {
+        var current = currentTransformSelection();
+        if (!current || current.img !== selection.img) return;
+        var angle = normalizeTransformAngle((Math.atan2(moveEvent.clientY - cy, moveEvent.clientX - cx) - startAngle) * 180 / Math.PI);
+        if (moveEvent.shiftKey) angle = Math.round(angle / 15) * 15;
+        else {
+          var near = Math.round(angle / 90) * 90;
+          if (Math.abs(angle - near) < 3) angle = near;
+        }
+        angle = normalizeTransformAngle(angle);
+        if (Math.abs(angle - lastAngle) < 0.15) return;
+        lastAngle = angle;
+        badge.textContent = formatTransformAngle(angle);
+        /* index.html 會節流重製，拖曳期間每一個最新角度都會從同一張乾淨底圖處理。 */
+        dispatchProductTransform('rotate-change', selection, angle);
+      }
+      function finish() {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', finish);
+        handle.removeEventListener('pointercancel', finish);
+        handle.removeEventListener('lostpointercapture', finish);
+        badge.style.display = 'none';
+        if (transformOverlay) transformOverlay.classList.remove('is-processing');
+        dispatchProductTransform('rotate-end', selection, lastAngle);
+        emitImageHistory(selection.group, 'commit', Math.abs(lastAngle) >= 0.15 ? 'rotate' : 'noop');
+        scheduleTransformOverlayRefresh();
+      }
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', finish);
+      handle.addEventListener('pointercancel', finish);
+      handle.addEventListener('lostpointercapture', finish);
+    });
+  }
+
   /* 滑鼠滾輪縮放＋按住左鍵拖曳移動：都要綁在「每一張圖片自己身上」，不是綁在整個群組，
      這樣滑鼠停在哪一張上面操作，就只會動到那一張 */
   function enableImageInteractions(group) {
@@ -677,6 +940,7 @@
         if (isBoundedWorkOrderGroup(group)) {
           clampImageOffset(img, getGroupKey(group), i, imageBoundaryOfGroup(group));
         }
+        if (transformSelection && transformSelection.img === img) scheduleTransformOverlayRefresh();
       });
 
       img.addEventListener('wheel', function (e) {
@@ -690,6 +954,7 @@
         w = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, w));
         setWeight(groupKey, i, w, img);
         applyLayout(group);
+        if (transformSelection && transformSelection.img === img) scheduleTransformOverlayRefresh();
         img._bnImageLayoutWheelTimer = setTimeout(function () {
           img._bnImageLayoutWheelTimer = null;
           emitImageHistory(group, 'commit', 'zoom');
@@ -724,12 +989,14 @@
           if (isBoundedWorkOrderGroup(group)) {
             clampImageOffset(img, groupKey, i, imageBoundaryOfGroup(group));
           }
+          if (transformSelection && transformSelection.img === img) scheduleTransformOverlayRefresh();
         }
         function onUp() {
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
           img.style.cursor = prevCursor || 'grab';
           emitImageHistory(group, 'commit', moved ? 'move' : 'noop');
+          if (transformSelection && transformSelection.img === img) scheduleTransformOverlayRefresh();
         }
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -745,15 +1012,25 @@
         setOffset(groupKey, i, 0, 0);
         applyLayout(group);
         emitImageHistory(group, 'commit', 'reset');
+        if (transformSelection && transformSelection.img === img) scheduleTransformOverlayRefresh();
+      });
+
+      /* 只有正式「匯入工單」畫布的商品／贈品顯示四角縮放與 ↻ 把手。
+         點選本身不改資料；原有的按住拖移、滾輪縮放、雙擊復原仍完整保留。 */
+      img.addEventListener('click', function () {
+        if (isImportProductImage(group)) selectTransformImage(img, group, i);
       });
 
       img.style.cursor = 'grab';
-      img.title = '滾輪縮放這張圖、按住左鍵可拖曳移動位置、連按兩下復原（匯入工單與維修畫布時不能超出圖片範圍）';
+      img.title = isImportProductImage(group)
+        ? '點一下顯示四角縮放與 ↻ 旋轉；也可滾輪縮放、按住左鍵拖曳、連按兩下復原'
+        : '滾輪縮放這張圖、按住左鍵可拖曳移動位置、連按兩下復原（匯入工單與維修畫布時不能超出圖片範圍）';
     });
   }
 
   function processGroup(group) {
     layoutWhenReady(group); /* 每次都要重新排版一次(套用之前記住的權重) */
+    if (transformSelection && transformSelection.group === group) scheduleTransformOverlayRefresh();
     if (groupResizeObserver && !group._bnImgResizeObserved) {
       group._bnImgResizeObserved = true;
       groupResizeObserver.observe(group);
@@ -777,6 +1054,7 @@
      只要畫面上新增了 .bn-imggroup（例如使用者編輯欄位後重新渲染），
      這裡都會自動抓到並處理排版，不需要在別的地方手動呼叫任何函式 */
   var observer = new MutationObserver(function (mutations) {
+    if (transformSelection && (!transformSelection.img || !transformSelection.img.isConnected)) hideTransformOverlay();
     mutations.forEach(function (m) {
       m.addedNodes.forEach(function (node) {
         if (node.nodeType !== 1) return;
@@ -815,6 +1093,17 @@
          商品本體幾何。此時若只重套 transform，flex 佔位仍是換圖前的比例，
          首次呈現便會比重新整理後小；reflow 會在圖載入後重算同一組圖片。 */
       if (options && options.reflow) {
+        /* 換成含影子的輸出圖時，舊的 slot 比例是依換圖前的圖算出來的。
+           必須先丟掉它，才能依 data-layout-source-* 的商品本體幾何重新 fit；
+           否則首次匯入會與重新整理後的尺寸不同。只在呼叫端明確要求時重設，
+           不影響使用者一般編輯後保留的多圖排列。 */
+        if (options.resetSlots) {
+          imgs.forEach(function (item) {
+            if (!item || !item.dataset) return;
+            delete item.dataset.layoutSlotRatios;
+            delete item.dataset.layoutGapPx;
+          });
+        }
         layoutWhenReady(group);
       } else {
         var groupKey = getGroupKey(group);
@@ -855,6 +1144,9 @@
       weightStore = state.weights && typeof state.weights === 'object' ? state.weights : {};
       offsetStore = state.offsets && typeof state.offsets === 'object' ? state.offsets : {};
       scanAndProcess(document.body);
-    }
+    },
+    /* 讓影子管線在原地換掉 src 後，立即把選取框重新量到新的商品本體範圍。 */
+    refreshTransformControls: scheduleTransformOverlayRefresh,
+    hideTransformControls: hideTransformOverlay
   };
 })();
