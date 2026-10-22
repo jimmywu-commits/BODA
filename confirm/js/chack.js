@@ -14,9 +14,7 @@
   const el = {
     dropZone: document.getElementById('dropZone'),
     folderInput: document.getElementById('folderInput'),
-    filesInput: document.getElementById('filesInput'),
     chooseFolder: document.getElementById('chooseFolder'),
-    chooseFiles: document.getElementById('chooseFiles'),
     resultCanvas: document.getElementById('resultCanvas'),
     emptyCopy: document.getElementById('emptyCopy'),
     downloadButton: document.getElementById('downloadButton'),
@@ -67,8 +65,10 @@
   }
 
   function splitReferences(value) {
+    // 工單欄位是唯一依據：半形／全形逗號與換行一律代表下一張圖片。
+    // 不因資料夾內剛好有含逗號的檔名，或文字是否被引號包住，而改變欄位判讀。
     return String(value ?? '')
-      .split(/[，,\n\r]+/)
+      .split(/[,，\r\n]+/)
       .map((part) => part.trim().replace(/^['"`]+|['"`]+$/g, ''))
       .filter((part) => part && !EMPTY_VALUE.test(part));
   }
@@ -208,24 +208,31 @@
         const valueCell = worksheet[window.XLSX.utils.encode_cell({ r: rowIndex, c: valueColumn })];
         const rawValue = cellText(valueCell?.w ?? valueCell?.v);
         const references = splitReferences(rawValue);
-        const results = references.map((reference) => ({ reference, match: findMatchingImage(reference) }));
-        const missingReferences = references.length
-          ? results.filter((item) => !item.match).map((item) => item.reference)
-          : ['未填檔名'];
+        const individualReferences = references.length ? references : ['未填檔名'];
+        const groupId = `${name}:${rowIndex}:${valueColumn}`;
 
-        fields.push({
-          rowIndex,
-          columnIndex: valueColumn,
-          labelCell: `${excelColumnName(labelColumn)}${rowIndex + 1}`,
-          cell: `${excelColumnName(valueColumn)}${rowIndex + 1}`,
-          header: label,
-          type: classifyType(label),
-          references,
-          matches: results,
-          isFound: references.length > 0 && missingReferences.length === 0,
-          missingReferences,
-          worksheet,
-          sheetName: name
+        // 逗號分隔的每個檔名都是一張獨立圖片：各自比對、各自畫框，
+        // 不會把同一格中的多張圖片視為一個合併結果。
+        individualReferences.forEach((reference, referenceIndex) => {
+          const isEmpty = reference === '未填檔名';
+          const match = isEmpty ? null : findMatchingImage(reference);
+          fields.push({
+            rowIndex,
+            columnIndex: valueColumn,
+            labelCell: `${excelColumnName(labelColumn)}${rowIndex + 1}`,
+            cell: `${excelColumnName(valueColumn)}${rowIndex + 1}`,
+            header: label,
+            type: classifyType(label),
+            references: isEmpty ? [] : [reference],
+            matches: isEmpty ? [] : [{ reference, match }],
+            isFound: Boolean(match),
+            missingReferences: match ? [] : [reference],
+            groupId,
+            groupIndex: referenceIndex,
+            groupSize: individualReferences.length,
+            worksheet,
+            sheetName: name
+          });
         });
       }
     }
@@ -467,7 +474,7 @@
     }
   }
 
-  function fieldRect(field, geometry) {
+  function sourceFieldRect(field, geometry) {
     const { worksheet } = state.layout;
     const { range, xs, ys } = geometry;
     const merge = mergeForCell(worksheet, field.rowIndex, field.columnIndex);
@@ -480,15 +487,31 @@
     return { x, y, width: xs[endColumn - range.s.c + 1] - x, height: ys[endRow - range.s.r + 1] - y };
   }
 
+  function fieldRect(field, geometry) {
+    const source = sourceFieldRect(field, geometry);
+    if (!source || field.groupSize <= 1) return source;
+    const inset = 3;
+    const gap = 4;
+    const width = (source.width - inset * 2 - gap * (field.groupSize - 1)) / field.groupSize;
+    if (width < 2) return source;
+    return {
+      x: source.x + inset + field.groupIndex * (width + gap),
+      y: source.y + inset,
+      width,
+      height: Math.max(2, source.height - inset * 2)
+    };
+  }
+
   function fieldAnnotationBottom(geometry) {
     return state.fields.reduce((bottom, field) => {
       if (field.isFound) return bottom;
-      const rect = fieldRect(field, geometry);
+      const rect = sourceFieldRect(field, geometry);
       return rect ? Math.max(bottom, rect.y + rect.height + 20) : bottom;
     }, geometry.height);
   }
 
   function drawFieldFrames(geometry) {
+    const missingGroups = new Map();
     state.fields.forEach((field) => {
       const rect = fieldRect(field, geometry);
       if (!rect || rect.width < 2 || rect.height < 2) return;
@@ -503,20 +526,23 @@
       }
       ctx.strokeRect(rect.x + ctx.lineWidth / 2, rect.y + ctx.lineWidth / 2, rect.width - ctx.lineWidth, rect.height - ctx.lineWidth);
       ctx.restore();
+      if (!field.isFound) missingGroups.set(field.groupId, field);
+    });
 
-      if (!field.isFound) {
-        const label = '檔名與欄位名請一致';
-        const fontSize = 12;
-        const labelY = rect.y + rect.height + 14;
-        ctx.save();
-        ctx.font = `700 ${fontSize}px "Noto Sans TC", "Microsoft JhengHei", sans-serif`;
-        const labelWidth = ctx.measureText(label).width;
-        ctx.fillStyle = 'rgba(255, 255, 255, .92)';
-        ctx.fillRect(rect.x + 2, labelY - fontSize, labelWidth + 8, fontSize + 5);
-        ctx.fillStyle = '#d7283d';
-        ctx.fillText(label, rect.x + 6, labelY);
-        ctx.restore();
-      }
+    missingGroups.forEach((field) => {
+      const rect = sourceFieldRect(field, geometry);
+      if (!rect) return;
+      const label = '檔名與欄位名請一致';
+      const fontSize = 12;
+      const labelY = rect.y + rect.height + 14;
+      ctx.save();
+      ctx.font = `700 ${fontSize}px "Noto Sans TC", "Microsoft JhengHei", sans-serif`;
+      const labelWidth = ctx.measureText(label).width;
+      ctx.fillStyle = 'rgba(255, 255, 255, .92)';
+      ctx.fillRect(rect.x + 2, labelY - fontSize, labelWidth + 8, fontSize + 5);
+      ctx.fillStyle = '#d7283d';
+      ctx.fillText(label, rect.x + 6, labelY);
+      ctx.restore();
     });
   }
 
@@ -570,8 +596,8 @@
       if (!fields.length) setStatus('已顯示 Layout_Output，但沒有辨識到商品圖或 LOGO 圖片欄位。', 'error');
       else if (missing) {
         const examples = fields.flatMap((field) => field.missingReferences).slice(0, 3).join('、');
-        setStatus(`Layout_Output 已 1:1 繪製：${found} 個綠框、${missing} 個紅框。未找到：${examples}${missing > 3 ? '…' : ''}`, 'error');
-      } else setStatus(`Layout_Output 已 1:1 繪製：${found} 個圖片欄位皆已找到。`, 'success');
+        setStatus(`Layout_Output 已 1:1 繪製：${found} 張圖已找到、${missing} 張圖未找到。未找到：${examples}${missing > 3 ? '…' : ''}`, 'error');
+      } else setStatus(`Layout_Output 已 1:1 繪製：${found} 張圖皆已找到。`, 'success');
     } catch (error) {
       console.error(error); renderEmpty('讀取失敗');
       setStatus(`讀取失敗：${error.message || '請確認試算表格式。'}`, 'error');
@@ -611,9 +637,7 @@
   }
 
   el.chooseFolder.addEventListener('click', () => { el.folderInput.value = ''; el.folderInput.click(); });
-  el.chooseFiles.addEventListener('click', () => { el.filesInput.value = ''; el.filesInput.click(); });
   el.folderInput.addEventListener('change', (event) => processFiles(Array.from(event.target.files).map((file) => fileRecord(file))));
-  el.filesInput.addEventListener('change', (event) => processFiles(Array.from(event.target.files).map((file) => fileRecord(file))));
   el.downloadButton.addEventListener('click', downloadCanvas);
 
   ['dragenter', 'dragover'].forEach((eventName) => el.dropZone.addEventListener(eventName, (event) => { event.preventDefault(); el.dropZone.classList.add('is-dragging'); }));

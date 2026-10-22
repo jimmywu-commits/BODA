@@ -76,7 +76,7 @@
     .upload-icon { font-size: 28px; line-height: 1; }
     .upload-box h2 { margin: 10px 0 5px; font-size: 16px; }
     .upload-box p { margin: 0 0 15px; color: var(--muted); font-size: 13px; line-height: 1.6; }
-    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .button-row { display: grid; grid-template-columns: 1fr; gap: 8px; }
     .button {
       min-height: 38px;
       border: 1px solid transparent;
@@ -204,20 +204,18 @@
         <p>可拖拉整包資料夾，或選取資料夾。圖片可放在第二、第三層或更深的子資料夾。</p>
         <div class="button-row">
           <button class="button" id="chooseFolder" type="button">選擇資料夾</button>
-          <button class="button secondary" id="chooseFiles" type="button">選擇檔案</button>
         </div>
         <input id="folderInput" type="file" webkitdirectory directory multiple>
-        <input id="filesInput" type="file" multiple accept=".xlsx,.xls,.xlsm,.csv,image/*,.svg">
       </section>
 
       <div class="summary" aria-label="檢查統計">
-        <div class="metric"><strong id="totalCount">—</strong><span>圖片欄位</span></div>
+        <div class="metric"><strong id="totalCount">—</strong><span>圖片檔名</span></div>
         <div class="metric"><strong id="foundCount">—</strong><span>已找到</span></div>
         <div class="metric"><strong id="missingCount">—</strong><span>未找到</span></div>
       </div>
 
       <p id="status" class="status" role="status">請先上傳一包包含試算表與圖片的資料。</p>
-      <p class="note">比對規則：工單欄位可用半形或全形逗號分隔多張圖；系統會遞迴搜尋所有子資料夾，並以檔名主體比對（副檔名可不同）。</p>
+      <p class="note">比對規則：工單欄位為唯一判讀依據；半形／全形逗號與換行皆代表下一張圖片，會獨立檢查並分別框選。系統會遞迴搜尋所有子資料夾，並以檔名主體比對（副檔名可不同）。</p>
       <button id="downloadButton" class="button download" type="button" disabled>下載標記圖片</button>
     </aside>
 
