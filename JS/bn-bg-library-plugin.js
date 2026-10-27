@@ -46,9 +46,13 @@
   var searchQuery = '';
   var cards = [];
   var selected = null;
-  var lastJbpMode = null;
-  /* B／B+ 包套只提供「類別」與圖庫圖片；等級由 BODA 外掛透過
-     wo_level_v1／bn-level-change 同步進來。保留文字判斷作為新等級的備援。 */
+  var lastLibraryMode = null;
+  /* BODA 父頁剛切換等級時，子頁的 level plugin／localStorage 可能尚未同步。
+     這個值以 wo-level／bn-level-change 收到的最新代碼為準，避免圖庫重繪時讀回舊等級。 */
+  var latestBodaLevelId = '';
+  /* 一般 B 等級只提供「類別」與圖庫圖片；A 與 B+ 皆可使用完整圖庫。
+     等級由 BODA 外掛透過 wo_level_v1／bn-level-change 同步進來；#all 也保留
+     為明確的完整圖庫入口。 */
   var B_LEVEL_IDS = {
     bod_a:true,
     bod_a_zj:true,
@@ -57,10 +61,28 @@
     jbp_multi:true,
     gold_mega:true
   };
+  /* BODA 曝光資源會收到下拉選單的「代碼」，不是顯示文字：這四個代碼在
+     BODA 的等級表中都標示為 B+，因此要比照 A 開放完整圖庫。 */
+  var B_PLUS_LEVEL_IDS = {
+    bod_a:true,
+    bod_a_zj:true,
+    bod_b_mega:true,
+    basic:true
+  };
+  /* 日後若新增非文字型 B+ 代碼，可由 BN_BG_LIBRARY_CONFIG.bPlusLevelIds 補入。 */
+  (Array.isArray(CFG.bPlusLevelIds) ? CFG.bPlusLevelIds : []).forEach(function(id){
+    id = String(id || '').trim().toLowerCase();
+    if(id) B_PLUS_LEVEL_IDS[id] = true;
+  });
+  function rememberBodaLevelId(id){
+    id = String(id || '').trim();
+    if(id) latestBodaLevelId = id;
+    return latestBodaLevelId;
+  }
   function currentBodaLevelId(){
-    var id = '';
+    var id = latestBodaLevelId;
     try{
-      if(typeof window._bnGetCurrentLevelId === 'function') id = window._bnGetCurrentLevelId() || '';
+      if(!id && typeof window._bnGetCurrentLevelId === 'function') id = window._bnGetCurrentLevelId() || '';
     }catch(_){ }
     if(!id){
       try{ id = localStorage.getItem('wo_level_v1') || ''; }catch(_){ }
@@ -74,49 +96,75 @@
     var option = select && select.options && select.options[select.selectedIndex];
     return !!(option && /^B(?:\+|\s)/i.test(String(option.textContent || '').trim()));
   }
+  function isBPlusLevel(id){
+    id = String(id || '').trim();
+    if(B_PLUS_LEVEL_IDS[id.toLowerCase()]) return true;
+    /* B+、B +、B Plus 開頭都視為完整圖庫等級；不能用 /B/ 模糊判斷，
+       否則一般 B 也會被誤放寬。 */
+    if(/^B\s*(?:\+|plus(?:\b|[_\s-]))/i.test(id)) return true;
+    var htmlLevel = document.documentElement && (document.documentElement.getAttribute('data-level') ||
+      document.documentElement.getAttribute('data-level-label'));
+    if(/^B\s*(?:\+|plus(?:\b|[_\s-]))/i.test(String(htmlLevel || '').trim())) return true;
+    var select = document.getElementById('lv-select');
+    var option = select && select.options && select.options[select.selectedIndex];
+    return !!(option && /^B\s*(?:\+|plus(?:\b|[_\s-]))/i.test(String(option.textContent || '').trim()));
+  }
+  function isBodaHosted(){
+    return window.IS_BODA === true ||
+      (document.documentElement && document.documentElement.getAttribute('data-host') === 'boda');
+  }
+  function isAllMode(){
+    var s = String(location.hash || '').replace(/^#/,'').trim().toLowerCase();
+    return s === 'all';
+  }
+  function isFullLibraryMode(levelId){
+    if(isAllMode()) return true;
+    var level = levelId || currentBodaLevelId();
+    return isBodaHosted() && (!isBLevel(level) || isBPlusLevel(level));
+  }
   function applyBLevelLibraryMode(levelId){
     /*
-       B／B+ 的限制只適用於真正由 BODA 入口嵌入的頁面。
-       若單獨開啟 index.html，不能因為一般瀏覽器殘留的 wo_level_v1
-       （例如 basic、jbp_multi）就把完整圖庫的風格／素材／顏色／搜尋藏掉；
-       這也是一般模式看起來只有「類別」、無痕模式卻完整的原因。
+       只有一般 B 的限制適用於真正由 BODA 入口嵌入的頁面；B+、A 與 #all
+       皆可看完整圖庫。獨立入口的完整圖庫仍由 #all 控制。
     */
-    var isBodaHosted = window.IS_BODA === true ||
-      (document.documentElement && document.documentElement.getAttribute('data-host') === 'boda');
-    /* #a 是唯一完整圖庫入口，不受 B／B+ 的類別-only 規則限制。 */
-    var bMode = !isFullLibraryMode() && isBodaHosted && isBLevel(levelId || currentBodaLevelId());
+    var level = levelId || currentBodaLevelId();
+    var bMode = isBodaHosted() && !isAllMode() && isBLevel(level) && !isBPlusLevel(level);
     if(modal) modal.classList.toggle('bn-bglib-b-level', bMode);
     return bMode;
   }
   window._bnBgLibraryApplyLevelMode = applyBLevelLibraryMode;
-  /* 只有精確的 #a 才是完整圖庫；無 hash、#jbp／#jpb 與其他 hash 都是類別-only。 */
-  function isFullLibraryMode(){
+  function isJbpMode(){
     var s = String(location.hash || '').replace(/^#/,'').trim().toLowerCase();
-    return s === 'a';
+    if(s !== 'jbp' && s !== 'jpb') return false;
+    /* BODA 內 A／B+ 已取得完整圖庫資格時，舊的 JBP hash 不可再把它限回類別模式。 */
+    return !(isBodaHosted() && isFullLibraryMode());
   }
   function activeFilterDefs(){
-    return isFullLibraryMode()
-      ? FILTER_DEFS
-      : FILTER_DEFS.filter(function(def){ return def.key === 'cat'; });
+    if(isJbpMode() || !isFullLibraryMode()){
+      return FILTER_DEFS.filter(function(def){ return def.key === 'cat'; });
+    }
+    return FILTER_DEFS;
   }
   function syncJbpModeUI(){
-    var categoryOnly = !isFullLibraryMode();
-    if(lastJbpMode !== categoryOnly){
-      if(categoryOnly){
+    var jbp = isJbpMode();
+    var fullMode = !jbp && isFullLibraryMode();
+    var mode = jbp ? 'jbp' : (fullMode ? 'full' : 'category');
+    if(lastLibraryMode !== mode){
+      if(!fullMode){
         filters.style = ALL_CAT;
         filters.material = ALL_CAT;
         filters.color = ALL_CAT;
         searchQuery = '';
         if(searchEl) searchEl.value = '';
       }
-      lastJbpMode = categoryOnly;
+      lastLibraryMode = mode;
     }
     if(modal){
-      /* 沿用既有 class 名稱，實際意義改為「類別-only 模式」。 */
-      modal.classList.toggle('bn-bglib-jbp', categoryOnly);
+      modal.classList.toggle('bn-bglib-jbp', jbp);
+      modal.classList.toggle('bn-bglib-all', !jbp && isAllMode());
       if(searchEl){
-        searchEl.style.display = categoryOnly ? 'none' : '';
-        searchEl.setAttribute('aria-hidden', categoryOnly ? 'true' : 'false');
+        searchEl.style.display = fullMode ? '' : 'none';
+        searchEl.setAttribute('aria-hidden', fullMode ? 'false' : 'true');
       }
     }
   }
@@ -316,7 +364,8 @@
       '.bn-bglib-hint{font-size:12px;color:#8b949e;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.bn-bglib-empty{border:1px dashed #30363d;border-radius:10px;padding:24px;text-align:center;color:#8b949e;line-height:1.7;grid-column:1/-1}',
       '.bn-bglib-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}',
-      /* B／B+：保留類別列、圖片與套用；隱藏搜尋、自訂上傳與延伸篩選。 */
+      /* 一般 B：保留類別列、圖片與套用；隱藏搜尋、自訂上傳與延伸篩選。
+         B+ 會移除 bn-bglib-b-level，因此可使用完整圖庫。 */
       '.bn-bglib-overlay.bn-bglib-b-level .bn-bglib-search{display:none!important}',
       '.bn-bglib-overlay.bn-bglib-b-level .bn-bglib-upload{display:none!important}',
       '.bn-bglib-overlay.bn-bglib-b-level .bn-bglib-filter-style,'+
@@ -465,7 +514,7 @@
     syncJbpModeUI();
     var rules = getRules();
     var defs = activeFilterDefs();
-    /* 只有 #a 顯示四列；其他模式只顯示類別列。 */
+    /* #all／BODA 完整模式顯示四列；其餘模式只顯示類別列。 */
     filtersEl.innerHTML = defs.map(function(def){
       var opts = [ALL_CAT].concat(rules[def.key] || []);
       return '<div class="bn-bglib-frow bn-bglib-filter-'+esc(def.key)+'" data-bg-filter="'+esc(def.key)+'"><span class="bn-bglib-flabel">'+esc(def.label)+'</span>'+
@@ -733,6 +782,15 @@
     renderGrid();
   }
 
+  function refreshLibraryMode(){
+    if(!modal || !modal.classList.contains('open') || !imagesLoaded) return;
+    if(isAllMode()) currentCat = ALL_CAT;
+    renderTabs();
+    buildCards();
+    renderFilters();
+    renderGrid();
+  }
+
   function openModal(nativeTarget){
     pendingNativeTarget = nativeTarget || pendingNativeTarget || findNativeUploadTarget();
     ensureModal();
@@ -748,11 +806,18 @@
   /* 主工具與曝光資源的等級下拉透過 wo-level 同步；圖庫已開啟時立即切換。 */
   window.addEventListener('message', function(event){
     var message = event && event.data;
-    if(message && message.type === 'wo-level' && message.level) applyBLevelLibraryMode(message.level);
+    if(message && message.type === 'wo-level' && message.level){
+      var levelId = rememberBodaLevelId(message.level);
+      applyBLevelLibraryMode(levelId);
+      refreshLibraryMode();
+    }
   });
   window.addEventListener('bn-level-change', function(event){
-    applyBLevelLibraryMode(event && event.detail && event.detail.levelId);
+    var levelId = rememberBodaLevelId(event && event.detail && event.detail.levelId);
+    applyBLevelLibraryMode(levelId);
+    refreshLibraryMode();
   });
+  window.addEventListener('hashchange', refreshLibraryMode);
 
   function findNativeUploadTarget(){
     return document.getElementById('bg-upload-input') ||
