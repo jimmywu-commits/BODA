@@ -3,6 +3,212 @@
 <head>
 <meta charset="UTF-8">
 <title>版位排版工具</title>
+<style id="boda-tour-styles">
+/* BODA 操作導覽。所有樣式皆以 bdt / boda-tour 命名，避免影響版位與匯出。 */
+.boda-tour-launch{order:6;margin-top:auto;width:60px;flex-shrink:0;border:1px solid rgba(255,255,255,.6);border-radius:9px;background:#111111;color:#e1e1e1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 2px;font:inherit;cursor:pointer;transition:background .18s,color .18s;}
+.boda-tour-launch svg{width:22px;height:22px;}
+.boda-tour-launch span{font-size:10px;}
+.boda-tour-launch:hover{background:#242424;color:white;}
+.boda-tour-home{display:inline-flex;align-items:center;gap:7px;margin:16px auto 0;border:1px solid #444444;border-radius:100px;padding:9px 16px;background:#fff;color:#242424;font-family:inherit;font-size:13px;font-weight:600;line-height:1.3;cursor:pointer;}
+.boda-tour-home svg{width:17px;height:17px;}
+.boda-tour-home:hover{background:#eeeeee;}
+#boda-tour-root{--bdt-accent:#ffffff;--bdt-deep:#111111;--bdt-line:rgba(255,255,255,.6);--bdt-dim:rgba(0,0,0,.72);position:fixed;inset:0;z-index:2147480000;isolation:isolate;font-family:"PingFang TC","Microsoft JhengHei","Segoe UI",Arial,sans-serif;font-size:14px;line-height:1.6;color:#ffffff;overscroll-behavior:contain;}
+#boda-tour-root[hidden]{display:none!important;}
+#boda-tour-root [hidden]{display:none!important;}
+#boda-tour-root *{box-sizing:border-box;}
+#boda-tour-root button,#boda-tour-root select{font-family:inherit;}
+#boda-tour-root button{cursor:pointer;}
+#boda-tour-root button:focus-visible,#boda-tour-root select:focus-visible{outline:3px solid var(--bdt-accent);outline-offset:4px;}
+#boda-tour-root button:disabled{opacity:.32;cursor:default;}
+.bdt-dimmer{position:absolute;inset:0;background:var(--bdt-dim);}
+.bdt-focus{position:absolute;pointer-events:none;border:2px solid var(--bdt-accent);border-radius:12px;box-shadow:0 0 0 9999px var(--bdt-dim),0 0 0 5px rgba(255,255,255,.12);transition:left .23s ease,top .23s ease,width .23s ease,height .23s ease;}
+.bdt-focus::after{content:"";position:absolute;inset:-5px;border:1px solid rgba(255,255,255,.7);border-radius:16px;animation:bdt-focus-pulse 2.6s ease-out infinite;}
+.bdt-hud{position:absolute;z-index:2;top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;max-width:calc(100vw - 28px);padding:8px 10px 8px 15px;border:1px solid var(--bdt-line);border-radius:100px;background:rgba(8,8,8,.98);box-shadow:0 8px 30px rgba(0,0,0,.2);}
+.bdt-hud strong{font-size:12px;white-space:nowrap;letter-spacing:.05em;color:var(--bdt-accent);}
+.bdt-hud-note{font-size:11px;color:#b9b9b9;white-space:nowrap;}
+.bdt-icon-button{display:inline-grid;place-items:center;width:28px;height:28px;flex-shrink:0;border:0;border-radius:50%;background:rgba(255,255,255,.06);color:#e9e9e9;font-size:19px;line-height:1;}
+.bdt-icon-button:hover{background:rgba(255,255,255,.14);}
+.bdt-pause{border:0;background:none;color:#d6d6d6;font-size:11px;padding:2px 6px;white-space:nowrap;}
+.bdt-welcome{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(580px,calc(100vw - 32px));max-height:calc(100dvh - 96px);overflow:auto;border:1px solid var(--bdt-line);border-radius:24px;background:#0b0b0b;box-shadow:0 28px 90px rgba(0,0,0,.35);padding:32px;animation:bdt-welcome-in .28s ease-out;}
+.bdt-eyebrow{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.16em;color:var(--bdt-accent);margin-bottom:18px;}
+.bdt-eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--bdt-accent);box-shadow:0 0 0 5px rgba(255,255,255,.08);}
+.bdt-welcome h2{margin:0 0 12px;font-size:31px;line-height:1.4;font-weight:750;letter-spacing:.01em;}
+.bdt-welcome-lead{font-size:14px;color:#cacaca;line-height:1.8;margin:0 0 22px;}
+.bdt-welcome-path{display:flex;align-items:center;justify-content:space-between;padding:16px 4px;border-top:1px solid var(--bdt-line);border-bottom:1px solid var(--bdt-line);margin-bottom:22px;}
+.bdt-welcome-path div{display:flex;flex-direction:column;gap:6px;font-size:12px;text-align:center;color:#d6d6d6;}
+.bdt-welcome-path b{display:grid;place-items:center;width:32px;height:32px;margin:auto;border:1px solid #727272;border-radius:10px;color:var(--bdt-accent);font-size:15px;}
+.bdt-welcome-path>span{color:#848484;}
+.bdt-route-label{display:block;color:#cecece;font-size:12px;margin-bottom:7px;}
+.bdt-route-select,.bdt-jump{width:100%;border:1px solid #888888;border-radius:9px;background:#151515;color:#f4f4f4;padding:10px 12px;font-size:13px;}
+.bdt-welcome-foot{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);align-items:stretch;gap:10px;margin-top:20px;}
+.bdt-welcome-foot .bdt-primary,.bdt-welcome-foot .bdt-secondary{width:100%;min-width:0;}
+.bdt-welcome-foot .bdt-primary{padding:12px 16px;}
+.bdt-route-box{margin-top:16px;}
+.bdt-route-box .bdt-route-select{border-style:dashed;border-color:#a6a6a6;}
+.bdt-primary,.bdt-secondary,.bdt-skip{border-radius:8px;padding:9px 14px;font-size:12px;font-weight:650;line-height:1.4;}
+.bdt-primary{border:1px solid var(--bdt-accent);background:var(--bdt-accent);color:#080808;}
+.bdt-primary:hover{background:#e3e3e3;}
+.bdt-secondary{border:1px solid #ffffff;background:transparent;color:#ffffff;}
+.bdt-secondary:hover:not(:disabled){background:#282828;}
+.bdt-skip{border:0;background:none;color:#bababa;padding:6px 2px;}
+.bdt-skip:hover{color:#fff;}
+.bdt-safe{color:#a2a2a2;font-size:11px;margin-top:16px;line-height:1.7;}
+.bdt-safe b{color:#d6d6d6;font-weight:500;}
+.bdt-card{position:absolute;z-index:3;width:364px;max-width:calc(100vw - 28px);max-height:calc(100dvh - 90px);overflow:auto;padding:20px;border:1px solid var(--bdt-line);border-radius:16px;background:var(--bdt-deep);box-shadow:0 18px 60px rgba(0,0,0,.35);}
+.bdt-card-content{animation:bdt-card-in .22s ease-out;}
+.bdt-step-meta{display:flex;align-items:center;gap:10px;justify-content:space-between;font-size:11px;font-weight:650;color:var(--bdt-accent);margin-bottom:8px;}
+.bdt-group{color:#b4b4b4;font-weight:500;}
+.bdt-card h2{font-size:19px;line-height:1.5;font-weight:700;margin:0 0 9px;letter-spacing:.01em;}
+.bdt-description{font-size:13px;line-height:1.8;color:#dbdbdb;margin:0;}
+.bdt-description b{font-weight:650;color:#ffffff;}
+.bdt-description code{color:#e3e3e3;background:rgba(255,255,255,.08);padding:1px 4px;border-radius:4px;font-size:11px;}
+.bdt-tip{border-left:2px solid #cccccc;padding:0 0 0 9px;margin:12px 0 0;font-size:11px;color:#bebebe;line-height:1.7;}
+.bdt-fallback{font-size:11px;color:#cbcbcb;background:rgba(200,200,200,.06);padding:7px 9px;border-radius:6px;margin-top:9px;}
+.bdt-progress{margin-top:16px;height:3px;overflow:hidden;border-radius:10px;background:#464646;}
+.bdt-progress span{display:block;height:100%;background:var(--bdt-accent);transition:width .22s;}
+.bdt-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:13px;}
+.bdt-controls-right{display:flex;gap:7px;}
+.bdt-jump{font-size:11px;margin-top:14px;padding:7px 8px;color:#bebebe;background:#232323;border-color:#888888;}
+.bdt-demo{position:relative;isolation:isolate;overflow:hidden;height:116px;min-height:116px;margin-top:15px;border:1px solid #666666;border-radius:10px;background:#161616;color:#e5e5e5;}
+.bdt-demo-caption{position:absolute;left:9px;top:6px;font-size:9px;color:#a3a3a3;letter-spacing:.05em;z-index:3;}
+.bdt-demo-cursor{position:absolute;width:20px;height:25px;z-index:4;filter:drop-shadow(0 2px 3px #191919);color:white;}
+.bdt-demo-cursor svg{display:block;width:100%;height:100%;}
+.bdt-demo-zone{position:absolute;inset:30px 16px 16px 110px;border:1px dashed #919191;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:11px;color:#c0c0c0;}
+.bdt-demo-file{position:absolute;left:15px;top:48px;z-index:2;display:flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid #939393;border-radius:6px;background:#ebebeb;color:#353535;padding:6px 8px;font-size:10px;font-weight:700;box-shadow:0 4px 12px #242424;animation:bdt-upload 4.6s ease-in-out infinite;}
+.bdt-demo-folder .bdt-demo-file{font-size:10px;}
+.bdt-demo .bdt-cursor-drag{left:70px;top:68px;animation:bdt-upload 4.6s ease-in-out infinite;}
+.bdt-demo-badge{position:absolute;right:24px;bottom:23px;font-size:10px;color:var(--bdt-accent);opacity:0;animation:bdt-success 4.6s ease-in-out infinite;}
+.bdt-demo-layout .bdt-demo-file{width:70px;left:18px;top:36px;height:57px;background:#cacaca;display:grid;place-items:center;padding:4px;animation-name:bdt-layout;}
+.bdt-demo-layout .bdt-demo-zone{inset:28px 14px 13px 114px;flex-direction:row;gap:5px;}
+.bdt-demo-layout .bdt-demo-zone i{width:40px;height:45px;border-radius:3px;background:#5b5b5b;}
+.bdt-demo-layout .bdt-cursor-drag{animation-name:bdt-layout;}
+.bdt-demo-matching{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding:25px 13px 7px;font:10px/1.4 "Segoe UI",sans-serif;}
+.bdt-match-source{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 9px;border:1px solid #888888;border-radius:5px;background:#222222;}
+.bdt-match-source small{font-size:10px;color:#cccccc;}
+.bdt-match-source strong{font:700 22px/1.1 "Segoe UI",sans-serif;letter-spacing:.04em;color:#ffffff;white-space:nowrap;}
+.bdt-match-source strong b{display:inline-block;margin:0 8px;font-weight:900;text-decoration:underline;text-underline-offset:3px;}
+.bdt-match-rule{text-align:center;color:#dddddd;font-size:10px;}
+.bdt-match-files{display:flex;gap:9px;}
+.bdt-match-files span{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:2px 6px;border:1px solid #ffffff;border-radius:5px;background:#282828;color:#ffffff;}
+.bdt-match-files svg{width:15px;height:18px;}
+.bdt-frame-status{display:flex;align-items:center;gap:8px;}
+.bdt-frame-status[data-state="loading"]::before{content:"";flex-shrink:0;width:12px;height:12px;border:2px solid #666666;border-top-color:#ffffff;border-radius:50%;animation:bdt-wait-spin .8s linear infinite;}
+.bdt-demo-board{position:absolute;left:32px;right:32px;top:27px;height:74px;border-radius:5px;background:#e8e8e8;border:1px solid #777777;}
+.bdt-product{position:absolute;left:calc(50% - 19px);bottom:12px;width:38px;height:47px;border:2px solid #f7f7f7;border-radius:4px 4px 7px 7px;background:linear-gradient(110deg,#c3c3c3,#e4e4e4 45%,#c3c3c3);box-shadow:0 3px 5px rgba(57,57,57,.15);transform-origin:50% 100%;}
+.bdt-product::before{content:"";position:absolute;left:8px;right:8px;top:16px;height:17px;background:#8c8c8c;border-radius:2px;}
+.bdt-product::after{content:"";position:absolute;left:8px;right:8px;top:-7px;height:7px;background:#6a6a6a;border-radius:2px 2px 0 0;}
+.bdt-demo-resize .bdt-product{animation:bdt-resize 4.5s ease-in-out infinite;}
+.bdt-selection{position:absolute;inset:-7px;border:1px solid #333333;}
+.bdt-selection i{position:absolute;width:6px;height:6px;border:1px solid #333333;border-radius:50%;background:#fbfbfb;}
+.bdt-selection i:nth-child(1){top:-3px;left:-3px;}
+.bdt-selection i:nth-child(2){top:-3px;right:-3px;}
+.bdt-selection i:nth-child(3){bottom:-3px;left:-3px;}
+.bdt-selection i:nth-child(4){bottom:-3px;right:-3px;}
+.bdt-demo-rotate .bdt-product{animation:bdt-rotate 5.4s ease-in-out infinite;transform-origin:50% 65%;}
+.bdt-rotate-handle{position:absolute;left:50%;top:-26px;transform:translateX(-50%);font-size:17px;font-style:normal;color:#111111;line-height:1;}
+.bdt-rotate-handle::after{content:"";height:9px;border-left:1px solid #333333;position:absolute;left:50%;top:17px;}
+.bdt-product-shadow{position:absolute;width:76px;height:9px;left:calc(50% - 20px);bottom:8px;background:#7e7e7e;border-radius:50%;filter:blur(4px);opacity:.4;}
+.bdt-demo-rotate .bdt-product-shadow{animation:bdt-shadow 5.4s ease-in-out infinite;}
+.bdt-demo-shadow .bdt-demo-board{top:27px;height:68px;}
+.bdt-demo-shadow .bdt-product-shadow{left:50%;margin-left:-27px;width:54px;height:12px;bottom:6px;background:#555555;filter:blur(3px);opacity:.65;transform:translateX(34px) scaleX(1.2);animation:bdt-shadow-side 6s ease-in-out infinite;}
+.bdt-shadow-directions{position:absolute;left:32px;right:32px;bottom:3px;display:flex;gap:4px;font-size:9px;line-height:1.4;}
+.bdt-shadow-directions span{flex:1;min-width:0;text-align:center;border:1px solid #666666;border-radius:4px;background:#222222;color:#bcbcbc;animation:bdt-shadow-choice 6s step-end infinite;}
+.bdt-shadow-directions span:nth-child(2){animation-delay:-4s;}
+.bdt-shadow-directions span:nth-child(3){animation-delay:-2s;}
+.bdt-bg-thumbs{position:absolute;left:12px;top:28px;width:72px;display:grid;gap:4px;}
+.bdt-bg-option{position:relative;height:23px;overflow:hidden;border:1px solid #777777;border-radius:4px;animation:bdt-bg-choice 9s step-end infinite;}
+.bdt-bg-option small{position:absolute;left:3px;bottom:1px;padding:0 3px;background:rgba(0,0,0,.78);color:#ffffff;font-size:8px;line-height:1.4;}
+.bdt-bg-theme-1{background-color:#e8e8e8;background-image:linear-gradient(#b7b7b7 1px,transparent 1px),linear-gradient(90deg,#b7b7b7 1px,transparent 1px);background-size:var(--bdt-bg-size,8px) var(--bdt-bg-size,8px);}
+.bdt-bg-theme-2{background-color:#c6c6c6;background-image:repeating-linear-gradient(135deg,#eeeeee 0 4px,#aaaaaa 4px 9px);}
+.bdt-bg-theme-3{background-color:#444444;background-image:radial-gradient(circle,#bebebe 1.5px,transparent 2px);background-size:var(--bdt-bg-size,8px) var(--bdt-bg-size,8px);}
+.bdt-bg-preview{--bdt-bg-size:15px;position:absolute;left:99px;right:12px;top:28px;bottom:10px;overflow:hidden;border:1px solid #bcbcbc;border-radius:5px;background:#777777;}
+.bdt-bg-layer{position:absolute;inset:0;opacity:0;animation:bdt-bg-frame 9s linear infinite;}
+.bdt-bg-layer:nth-child(2),.bdt-bg-option:nth-child(2){animation-delay:-6s;}
+.bdt-bg-layer:nth-child(3),.bdt-bg-option:nth-child(3){animation-delay:-3s;}
+.bdt-bg-preview-label{position:absolute;left:5px;top:4px;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.78);color:#ffffff;font-size:9px;line-height:1.4;}
+.bdt-bg-preview .bdt-bg-product{left:calc(50% - 14px);bottom:8px;width:28px;height:34px;box-shadow:5px 3px 4px rgba(0,0,0,.3);}
+.bdt-bg-product::before{top:11px;height:12px;left:5px;right:5px;}
+.bdt-bg-product::after{left:6px;right:6px;}
+.bdt-demo-backgrounds .bdt-demo-cursor{left:69px;top:36px;width:16px;height:20px;animation:bdt-bg-cursor 9s ease-in-out infinite;}
+.bdt-demo-assets{display:flex;gap:10px;padding:28px 12px 9px;}
+.bdt-asset-kinds{flex:1;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;}
+.bdt-asset-kinds>span{display:flex;align-items:center;gap:3px;min-width:0;padding:3px 4px;border:1px solid #666666;border-radius:4px;background:#252525;}
+.bdt-asset-kinds svg{width:15px;height:17px;flex-shrink:0;}
+.bdt-asset-kinds small{font-size:8px;line-height:1.4;color:#eeeeee;}
+.bdt-asset-actions{width:54px;flex-shrink:0;display:grid;grid-template-rows:repeat(4,minmax(0,1fr));gap:3px;}
+.bdt-asset-actions span{display:grid;place-items:center;border:1px solid #777777;border-radius:3px;background:#303030;color:#ffffff;font-size:9px;animation:bdt-asset-choice 8s step-end infinite;}
+.bdt-asset-actions span:nth-child(2){animation-delay:-6s;}
+.bdt-asset-actions span:nth-child(3){animation-delay:-4s;}
+.bdt-asset-actions span:nth-child(4){animation-delay:-2s;}
+.bdt-demo-assets .bdt-demo-cursor{right:35px;top:31px;width:14px;height:18px;animation:bdt-asset-cursor 8s ease-in-out infinite;}
+.bdt-demo-colors{display:flex;align-items:center;justify-content:center;gap:10px;padding-top:15px;}
+.bdt-swatch{width:35px;height:35px;border-radius:50%;border:3px solid rgba(255,255,255,.3);}
+.bdt-swatch:nth-of-type(1){background:#ffffff;}
+.bdt-swatch:nth-of-type(2){background:#bfbfbf;}
+.bdt-swatch:nth-of-type(3){background:#7f7f7f;}
+.bdt-swatch:nth-of-type(4){background:#333333;}
+.bdt-demo-colors .bdt-demo-cursor{top:67px;left:60px;animation:bdt-swatch-move 6s ease-in-out infinite;}
+.bdt-demo-level{display:flex;align-items:center;justify-content:center;gap:9px;padding:26px 14px 9px;}
+.bdt-level-pill{border:1px solid #808080;border-radius:7px;padding:5px 9px;font-size:11px;}
+.bdt-level-pill:first-of-type{animation:bdt-level 4.6s ease-in-out infinite;}
+.bdt-level-pill:nth-of-type(2){color:#dfdfdf;border-color:#b3b3b3;}
+.bdt-demo-text .bdt-demo-board{padding:12px 15px;}
+.bdt-text-line{color:#535353;font-size:16px;line-height:1.8;font-weight:700;width:7em;white-space:nowrap;overflow:hidden;border-right:2px solid #6d6d6d;animation:bdt-typing 5s steps(7,end) infinite;}
+.bdt-demo-text small{font-size:10px;color:#7d7d7d;}
+.bdt-demo-download{display:flex;align-items:center;justify-content:center;gap:8px;padding-top:18px;}
+.bdt-download-file{border:1px solid #848484;background:#414141;border-radius:6px;padding:10px 8px;font:600 11px/1.5 "Segoe UI",sans-serif;animation:bdt-download 4.6s ease-in-out infinite;}
+.bdt-download-file:nth-of-type(2){animation-delay:.3s;}
+.bdt-download-file:nth-of-type(3){animation-delay:.6s;}
+.bdt-demo-restore .bdt-demo-file{left:16px;max-width:130px;}
+.bdt-demo-bottom{display:flex;align-items:center;justify-content:center;gap:5px;padding:20px 16px 5px;}
+.bdt-bottom-slot{height:47px;flex:1;min-width:0;border:1px solid #696969;background:#cbcbcb;border-radius:7px;color:#4b4b4b;display:grid;place-items:center;font-size:10px;animation:bdt-bottom 5s infinite;}
+.bdt-bottom-slot:nth-of-type(2){animation-delay:.8s;}
+.bdt-bottom-slot:nth-of-type(3){animation-delay:1.6s;}
+.bdt-demo-exposure{display:flex;align-items:center;justify-content:center;gap:10px;padding:26px 16px 10px;}
+.bdt-exposure-tile{width:56px;height:56px;border:1px solid #cbcbcb;border-radius:7px;background:#7e7e7e;display:grid;place-items:center;font-size:10px;}
+.bdt-exposure-tile:nth-of-type(2){width:85px;height:43px;background:#c0c0c0;color:#4b4b4b;}
+.bdt-exposure-tile:nth-of-type(3){width:43px;height:66px;background:#d4d4d4;color:#5d5d5d;}
+.bdt-ghost{position:absolute;z-index:2;pointer-events:none;display:flex;align-items:center;gap:6px;background:#ffffff;color:#111111;border:1px solid #ffffff;border-radius:8px;padding:7px 10px;box-shadow:0 4px 20px rgba(0,0,0,.2);font-size:11px;font-weight:650;animation:bdt-ghost 4.6s ease-in-out infinite;transform:translate(-80px,-16px);}
+.bdt-ghost svg{width:17px;height:17px;}
+.bdt-ghost::after{content:"";position:absolute;right:4px;bottom:-9px;width:10px;height:15px;background:#ffffff;clip-path:polygon(0 0,100% 70%,55% 72%,33% 100%);}
+#boda-tour-waiting{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:2147480001;width:min(540px,calc(100vw - 28px));display:flex;align-items:center;gap:13px;padding:15px 17px;box-sizing:border-box;border:1px solid #ffffff;border-radius:14px;background:#101010;color:#ffffff;box-shadow:0 12px 40px #1d1d1d55;font:12px/1.65 "PingFang TC","Microsoft JhengHei",sans-serif;}
+#boda-tour-waiting .bdt-wait-spinner{flex:none;width:19px;height:19px;border:2px solid #6c6c6c;border-top-color:#ffffff;border-radius:50%;animation:bdt-wait-spin .8s linear infinite;}
+#boda-tour-waiting .bdt-wait-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+#boda-tour-waiting b{font-size:13px;color:#ffffff;}
+#boda-tour-waiting span{overflow-wrap:anywhere;}
+#boda-tour-waiting small{font-size:10px;color:#bdbdbd;}
+#boda-tour-waiting button{flex:none;border:1px solid #ffffff;border-radius:7px;padding:7px 10px;background:#111111;color:#f3f3f3;font:inherit;cursor:pointer;}
+#boda-tour-waiting button:focus-visible{outline:2px solid #ffffff;outline-offset:3px;}
+@keyframes bdt-wait-spin{to{transform:rotate(360deg);}}
+#boda-tour-root[data-paused="true"] *,#boda-tour-root[data-paused="true"] *::after{animation-play-state:paused!important;}
+@keyframes bdt-focus-pulse{0%,100%{opacity:.18;transform:scale(1);}55%{opacity:.8;transform:scale(1.007);}}
+@keyframes bdt-welcome-in{from{opacity:0;margin-top:10px;}to{opacity:1;margin-top:0;}}
+@keyframes bdt-card-in{from{opacity:.3;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+@keyframes bdt-upload{0%,12%{transform:translate(0,0);opacity:1;}45%,68%{transform:translate(130px,0);opacity:1;}80%,100%{transform:translate(130px,0);opacity:0;}}
+@keyframes bdt-success{0%,63%,100%{opacity:0;}72%,90%{opacity:1;}}
+@keyframes bdt-layout{0%,12%{transform:translate(0,0);opacity:1;}45%,70%{transform:translate(105px,0);opacity:1;}85%,100%{transform:translate(105px,0);opacity:0;}}
+@keyframes bdt-resize{0%,15%,100%{transform:scale(.78);}50%,75%{transform:scale(1.15);}}
+@keyframes bdt-rotate{0%,12%,100%{transform:rotate(0);}40%{transform:rotate(-24deg);}70%{transform:rotate(20deg);}}
+@keyframes bdt-shadow{0%,12%,100%{transform:translateX(0) scaleX(1);}40%{transform:translateX(-16px) scaleX(1.2);}70%{transform:translateX(14px) scaleX(.9);}}
+@keyframes bdt-shadow-side{0%,24%,100%{transform:translateX(34px) scaleX(1.2);}33%,57%{transform:translateX(0) scaleX(.78);}66%,90%{transform:translateX(-34px) scaleX(1.2);}}
+@keyframes bdt-shadow-choice{0%,32%,100%{background:#ffffff;color:#111111;border-color:#ffffff;}33%,99%{background:#222222;color:#bcbcbc;border-color:#666666;}}
+@keyframes bdt-bg-frame{0%,29%,100%{opacity:1;}33%,96%{opacity:0;}}
+@keyframes bdt-bg-choice{0%,32%,100%{border-color:#ffffff;box-shadow:0 0 0 1px #ffffff;}33%,99%{border-color:#777777;box-shadow:none;}}
+@keyframes bdt-bg-cursor{0%,27%,100%{transform:translateY(0);}33%,60%{transform:translateY(27px);}66%,93%{transform:translateY(54px);}}
+@keyframes bdt-asset-choice{0%,24%,100%{background:#ffffff;color:#111111;border-color:#ffffff;}25%,99%{background:#303030;color:#ffffff;border-color:#777777;}}
+@keyframes bdt-asset-cursor{0%,20%,100%{transform:translateY(0);}25%,45%{transform:translateY(20px);}50%,70%{transform:translateY(40px);}75%,95%{transform:translateY(60px);}}
+@keyframes bdt-swatch-move{0%,10%,100%{transform:translateX(0);}40%{transform:translateX(90px);}65%,80%{transform:translateX(135px);}}
+@keyframes bdt-level{0%,100%{background:#313131;}50%{background:#7b7b7b;color:#fff;}}
+@keyframes bdt-typing{0%,12%,100%{width:0;}55%,85%{width:7em;}}
+@keyframes bdt-download{0%,15%{transform:translateY(-7px);opacity:.2;}45%,80%{transform:translateY(0);opacity:1;}100%{opacity:.2;}}
+@keyframes bdt-bottom{0%,100%{box-shadow:inset 0 0 0 0 #696969;}25%{box-shadow:inset 0 -4px 0 0 #696969;}}
+@keyframes bdt-ghost{0%,12%{transform:translate(-70px,-14px);opacity:0;}22%{opacity:1;}55%,70%{transform:translate(18px,14px);opacity:1;}88%,100%{transform:translate(18px,14px);opacity:0;}}
+@media(max-width:640px){.bdt-hud{gap:6px;}.bdt-hud-note{display:none;}.bdt-welcome{padding:25px 22px;}.bdt-welcome h2{font-size:26px;}.bdt-card{padding:17px;}.bdt-welcome-path{gap:5px;}.bdt-welcome-path div{font-size:10px;}.bdt-welcome-foot .bdt-secondary{padding:10px 8px;font-size:11px;}}
+@media(max-width:360px){.bdt-welcome{padding:24px 16px;}.bdt-welcome-foot{gap:8px;grid-template-columns:minmax(0,5fr) minmax(0,6fr);}.bdt-welcome-foot .bdt-secondary{padding:10px 5px;font-size:10px;}}
+@media(max-height:600px){.bdt-card{max-height:calc(100dvh - 76px);}.bdt-demo{height:85px;min-height:85px;}.bdt-demo-matching,.bdt-demo-shadow,.bdt-demo-backgrounds,.bdt-demo-assets{height:116px;min-height:116px;}.bdt-card h2{font-size:17px;}.bdt-welcome{padding:22px;}.bdt-welcome-path{display:none;}}
+@media(prefers-reduced-motion:reduce){#boda-tour-root *,#boda-tour-root *::after,#boda-tour-waiting .bdt-wait-spinner{animation:none!important;transition:none!important;}.bdt-demo-file,.bdt-ghost{transform:none;}.bdt-demo-badge{opacity:1;}.bdt-text-line{width:7em;}}
+@media(prefers-reduced-motion:reduce){.bdt-bg-layer:first-child{opacity:1;}.bdt-bg-option:first-child{border-color:#ffffff;}.bdt-shadow-directions span:first-child,.bdt-asset-actions span:first-child{background:#ffffff;color:#111111;border-color:#ffffff;}}
+</style>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -7172,7 +7378,7 @@ function appLoadingFinishView(token, message) {
 document.addEventListener('click', function (e) {
   var el = e.target && e.target.closest ? e.target.closest('button, .home-card') : null;
   if (!el || el.disabled || el.hasAttribute('data-skip-app-loading') ||
-      el.closest('#app-loading, .hbn-plugin-modal, .cropper-modal-wrap')) return;
+      el.closest('#app-loading, .hbn-plugin-modal, .cropper-modal-wrap, #boda-tour-root, #boda-tour-waiting, #boda-tour-launch, #boda-tour-home')) return;
   var label = appLoadingLabelOf(el);
   if (APP_LOADING.manualIds[el.id]) appLoadingStart('LOADING · ' + label, 8, '正在處理…');
   else appLoadingPulse(label);
@@ -24446,16 +24652,14 @@ ensureBlocksLoaded(function () {
 </script>
 
 
-<!-- 全站浮動支援按鈕：與 SHOPEE 專案共用說明書及回饋表。 -->
-<style>
-#boda-help-feedback,#boda-help-manual{position:fixed;right:18px;z-index:100001;border:1px solid rgba(255,255,255,.28);border-radius:9px;background:rgba(22,27,34,.94);color:#e6edf3;box-shadow:0 4px 14px rgba(0,0,0,.35);padding:10px 14px;font:600 12px/1.2 inherit;cursor:pointer;backdrop-filter:blur(8px);}
-#boda-help-feedback{top:auto;bottom:76px;}#boda-help-manual{bottom:18px;}
-#boda-help-feedback:hover,#boda-help-manual:hover{border-color:#6ac5bc;color:#fff;transform:translateY(-1px);}
-#feedback-btn{display:none!important;}
+<!-- 支援按鈕：回饋表移至左側使用教學下方；共用說明書暫時隱藏。 -->
+<style id="boda-help-styles">
+#boda-help-feedback{order:7;margin-top:0;}
+#boda-help-manual,#feedback-btn{display:none!important;}
 </style>
-<button id="boda-help-feedback" type="button">📝 使用反饋表</button>
-<button id="boda-help-manual" type="button">📖 使用說明書</button>
-<script>
+<button id="boda-help-feedback" class="boda-tour-launch boda-feedback-launch" type="button" data-skip-app-loading aria-label="開啟使用反饋表（另開視窗）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.9L3.5 20.5l1.4-4.7a9 9 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5h1.2"/><path d="m14.5 6.5 3 3M12 12l1-4 5.7-5.7a2.1 2.1 0 0 1 3 3L16 11z"/></svg><span>使用反饋表</span></button>
+<button id="boda-help-manual" type="button" hidden aria-hidden="true">📖 使用說明書</button>
+<script id="boda-help-script">
 (function(){
   var feedbackUrl='https://docs.google.com/forms/d/e/1FAIpQLSdUnE4CC48TqjM__ucjOOC-b-D8tgCijuNBRQENf2pBaysCsQ/viewform?usp=dialog';
   var manualUrl='../shopee/JBP編輯器使用說明書.pdf#view=FitH';
@@ -24463,33 +24667,521 @@ ensureBlocksLoaded(function () {
   function openUrl(url){window.open(url,'_blank','noopener');}
   feedbackButton.addEventListener('click',function(){openUrl(feedbackUrl);});
   manualButton.addEventListener('click',function(){openUrl(manualUrl);});
-  function refreshTitle(){feedbackButton.title='開啟使用反饋表';manualButton.title='開啟 SHOPEE 共用使用說明書';}
-  function isVisibleFixedControl(el){
-    if(!el||el===feedbackButton||el===manualButton)return false;
-    var style=window.getComputedStyle(el),rect=el.getBoundingClientRect();
-    return style.position==='fixed'&&style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;
+  feedbackButton.title='開啟使用反饋表';manualButton.title='開啟 SHOPEE 共用使用說明書';
+  var rail=document.getElementById('nav-rail');
+  if(rail)rail.appendChild(feedbackButton);
+  window.BODAHelpAvoidCollisions=function(){}; /* 保留舊介面，不再執行浮動位置計算。 */
+})();
+</script>
+<!-- 獨立操作導覽：只展示介面與動畫，不修改工單或觸發上傳／下載。 -->
+<script id="boda-tour-script" data-version="20261028-6">
+/* BODA 互動導覽 v1.5 / 2026-10-28
+ * 無第三方依賴、無追蹤。動畫是隔離的示意，不呼叫上傳／匯出／寫入 API。
+ * 曝光／吸底步驟使用既有載入器開啟工具；已載入的 iframe 不重載。
+ * 導覽暫時切換 DOM 的可見頁籤；不呼叫 showView，不改 URL、本機暫存或工單狀態。
+ */
+(function () {
+  'use strict';
+  if (window.BODATour) return;
+  var VERSION = '20261028-6';
+  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 8.5a2.5 2.5 0 0 1 4.7 1.2c0 1.8-2.5 2-2.5 3.8M12 17h.01"/></svg>';
+  var POINTER = '<svg viewBox="0 0 22 28" fill="currentColor" stroke="#111111" stroke-width="1" aria-hidden="true"><path d="m3 2 16 14-8 1-4 8z"/></svg>';
+  var FILE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6"/></svg>';
+  var IMAGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>';
+  var STEPS = [
+    {id:'import',group:'匯入與編輯',view:'import',target:'#import-drop',title:'STEP 1：匯入填好的工單',
+      text:'將 <b>.xlsx 工單</b>拖到這個區塊，或點擊選檔。工具會依 <code>Layout_Output</code> 的欄位與版位，建立預覽畫布。',
+      tip:'依這包版本的介面，試算表與圖片分成 STEP 1、STEP 2 上傳。',demo:'upload',ghost:'工單.xlsx'},
+    {id:'images',group:'匯入與編輯',view:'import',target:['#import-img-drop','#import-img-section'],title:'STEP 2：整包圖片資料夾放進來',
+      text:'把商品圖與 LOGO 資料夾拖進來，或按<b>選擇圖片資料夾</b>。圖片放在資料夾內的第二、第三層，也會向下讀取。',
+      tip:'這裡的動畫只是示意，不會開啟選檔視窗或上傳檔案。',demo:'folder',ghost:'商品與LOGO資料夾'},
+    {id:'matching',group:'匯入與編輯',view:'import',target:'#import-img-drop',title:'先讀工單，再依檔名找圖片',
+      text:'工具會先判讀工單的圖片欄位，再尋找相符檔名。<b>一格多圖要用逗號分開</b>，每張都會獨立配對；副檔名可不同。',
+      tip:'找不到圖時，先檢查欄位名稱、空白與逗號的分隔方式。',demo:'matching'},
+    {id:'preview',group:'匯入與編輯',view:'import',target:'#import-canvas-area',title:'在中央畫布確認整張成品',
+      text:'這裡會顯示副區、MSBN 與匯入的內容。上下捲動畫布逐一確認；工具列的<b>顯示比例</b>是預覽縮放，不等於商品本身的大小。',
+      tip:'尚未匯入時看到空白提示是正常的，導覽不會灌入測試工單。',demo:'exposure'},
+    {id:'text',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],title:'在畫布中調整文案與欄位',
+      text:'選擇版位後，右側顯示相對應的文字與欄位。修改品名、促標、警語等內容時，留意該欄位的字數與行數規則。',
+      tip:'目前沒有工單時，右側可能尚未列出實際欄位。',demo:'text'},
+    {id:'image-tools',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],title:'商品、LOGO 分別編輯',
+      text:'右側的圖片操作列提供<b>編輯、換圖、刪除與前後順序</b>。先確認選到的是哪一張素材，再進入編輯。',
+      tip:'換圖與刪除都會變更實際內容，導覽不會執行這些操作。',demo:'resize'},
+    {id:'transform',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],title:'拖曳縮放與任意角度旋轉',
+      text:'在畫布點選商品圖，用四角控制點縮放，或拖曳上方 <b>↻</b> 任意旋轉；不是每按一次只能轉 90°。',
+      tip:'動畫使用獨立示意商品，不會移動、縮放或旋轉你現有的圖片。',demo:'rotate'},
+    {id:'asset-tools',group:'匯入與編輯',view:'import',target:['#import-block-tools','#import-canvas-tools'],title:'右側工具列：管理圖片素材',
+      text:'在右側圖片工具列，可以針對 <b>LOGO 圖、商品圖、代言人圖、代言人簽名檔圖</b>，進行<b>編輯、換圖、新增、刪除</b>。操作前先確認選到正確的版位與素材。',
+      tip:'可用操作依素材欄位顯示；導覽不會實際新增、更換或刪除圖片。',demo:'assets'},
+    {id:'shadow',group:'匯入與編輯',view:'import',target:'#import-shadow-panel',title:'調整商品影子的方向與位移',
+      text:'調整光源、左右及上下位移；陰影色依實際畫布背景計算。若預覽未更新，可按<b>套用修改</b>重新處理。',
+      tip:'處理多張圖片可能需要等待 Loading；導覽不會重製任何圖片。',demo:'shadow'},
+    {id:'colors',group:'匯入與編輯',view:'import',target:'#import-color-section',title:'統一顏色，讓整組一致',
+      text:'在這裡調整共用色，讓相關版位一起更新。也可以<b>直接點選中央畫布上可編輯的共用色塊</b>，左側「統一顏色」會定位對應色票，並開啟色盤讓你修改。背景色與<b>曝光資源雙向連動</b>；特定版位專用色則由該版位工具調整。',
+      tip:'動畫只展示配色切換，不會改動目前色票。',demo:'colors'},
+    {id:'exposure',group:'曝光與交付',view:'exposure',frame:'exposure-frame',frameTargets:['#lv-wrap','#sidebar'],target:['#exposure-frame','#view-exposure'],title:'再延伸製作曝光資源',
+      text:'從左側切到<b>曝光資源</b>，依等級選擇 BN、DDCARD、Search 等版位，並確認 LOGO、文案與商品圖。',
+      tip:'導覽會切換到曝光資源；首次開啟時會載入既有工具，不會重置已開啟的內容。',demo:'exposure'},
+    {id:'backgrounds',group:'曝光與交付',view:'exposure',frame:'exposure-frame',frameTargets:['#bn-bg-open-btn','#bg-upload-btn','#section-bg'],target:['#exposure-frame','#view-exposure'],title:'背景圖庫與活動等級連動',
+      text:'曝光資源中可選擇背景。<b>A 與四個 B+ 等級</b>應可使用完整圖庫；一般 B 維持類別模式。請先確認下拉等級，再挑選背景。',
+      tip:'這是使用說明；導覽不會代改等級，也不會變更現有背景篩選規則。',demo:'backgrounds'},
+    {id:'bottom',group:'曝光與交付',view:'bottom',frame:'bottom-standalone-frame',frameTargets:['#app','main'],target:['#bottom-standalone-frame','#view-bottom'],title:'有吸底需求，再編輯吸底工具',
+      text:'工單有吸底內容時，可到<b>吸底工具</b>確認各顆的 LOGO、ICON、文字與狀態。工單原本沒有吸底時，不必額外製作。',
+      tip:'請先由匯入工單載入資料，再確認吸底的預覽結果。',demo:'bottom'},
+    {id:'download',group:'曝光與交付',view:'import',target:'#btn-download-import-package',title:'確認完成，再一次下載交付',
+      text:'按<b>下載工單＋圖片＋暫存檔</b>，輸出目前工單、圖片與可還原的編輯狀態。下載前再確認每個版位的文字、圖片與配色。',
+      tip:'導覽只說明下載位置，不會替你觸發下載。下一步會介紹如何還原暫存檔。',demo:'download'},
+    {id:'restore',group:'曝光與交付',view:'import',target:'#btn-upload-snapshot',title:'暫存檔，讓下次可以接著做',
+      text:'同一台瀏覽器有本機暫存；若要跨電腦或保留一份可還原的版本，請另外保存下載包中的 <b>JSON 暫存檔</b>。',
+      tip:'「上傳暫存檔還原編輯」可載回先前內容；本機暫存不等於永久備份。按「完成教學」會回到剛才的頁面與捲動位置。',demo:'restore'}
+  ];
+  var ROUTES = {
+    full:{label:'完整導覽 · 15 步',ids:STEPS.map(function(s){return s.id;})},
+    import:{label:'只看匯入與編輯 · 12 步',ids:['import','images','matching','preview','text','image-tools','transform','asset-tools','shadow','colors','download','restore']},
+    delivery:{label:'只看曝光與交付 · 5 步',ids:['exposure','backgrounds','bottom','download','restore']}
+  };
+  var root,card,focus,dim,hud,ghost,snapshot,steps=[],route='full',index=-1,active=false,paused=false;
+  var frameRaf=0,restoreRaf=0,targetObserver=null,currentTarget=null;
+  var stepFrameTimer=0,stepFrameCleanup=null;
+  var pendingRoute='',waitingElement=null,waitingFocus=null,waitingTimer=0,waitingIdleTimer=0,waitingObserver=null;
+  function html(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function $$(selector,doc){return Array.prototype.slice.call((doc||document).querySelectorAll(selector));}
+  function visible(el){if(!el||!el.isConnected)return false;var r=el.getBoundingClientRect(),style=el.ownerDocument.defaultView.getComputedStyle(el);return r.width>2&&r.height>2&&style.visibility!=='hidden'&&style.display!=='none';}
+  function safeFocus(el){if(el&&el.focus){try{el.focus({preventScroll:true});}catch(_){el.focus();}}}
+  function isBusy(){
+    if(window.APP_LOADING&&window.APP_LOADING.active===true)return true;
+    var busy=document.getElementById('app-loading');
+    if(!busy||!busy.classList.contains('show')||busy.getAttribute('aria-hidden')==='true')return false;
+    var style=window.getComputedStyle(busy);
+    return style.display!=='none'&&style.visibility!=='hidden';
   }
-  function overlapsHorizontally(a,b){return a.left<b.right&&a.right>b.left;}
-  function avoidRightSideControls(){
-    feedbackButton.style.top='auto';
-    manualButton.style.bottom='18px';
-    var manualRect=manualButton.getBoundingClientRect(),manualBottom=18;
-    document.querySelectorAll('button,a,input,[role="button"]').forEach(function(control){
-      if(!isVisibleFixedControl(control))return;
-      var rect=control.getBoundingClientRect();
-      if(rect.bottom>=window.innerHeight/2&&overlapsHorizontally(manualRect,rect))manualBottom=Math.max(manualBottom,Math.ceil(window.innerHeight-rect.top+12));
+  function markGuideControls(container){
+    $$('button',container).forEach(function(button){button.setAttribute('data-skip-app-loading','');});
+  }
+  function clearPendingStart(){
+    pendingRoute='';
+    clearTimeout(waitingTimer);waitingTimer=0;
+    clearTimeout(waitingIdleTimer);waitingIdleTimer=0;
+    if(waitingObserver){waitingObserver.disconnect();waitingObserver=null;}
+    if(waitingElement){waitingElement.remove();waitingElement=null;}
+    ['boda-tour-launch','boda-tour-home'].forEach(function(id){
+      var button=document.getElementById(id);if(button)button.removeAttribute('aria-busy');
     });
-    manualButton.style.bottom=manualBottom+'px';
-    feedbackButton.style.bottom=(manualBottom+manualButton.offsetHeight+10)+'px';
+    window.removeEventListener('keydown',onWaitingKey,true);
+    window.removeEventListener('hashchange',cancelPendingStart,true);
+    window.removeEventListener('popstate',cancelPendingStart,true);
+    window.removeEventListener('focus',checkPendingStart);
+    document.removeEventListener('visibilitychange',checkPendingStart);
+    waitingFocus=null;
   }
-  var avoidRaf=0;
-  function scheduleAvoidance(){if(avoidRaf)return;avoidRaf=requestAnimationFrame(function(){avoidRaf=0;avoidRightSideControls();});}
-  window.addEventListener('resize',scheduleAvoidance);
-  window.addEventListener('hashchange',scheduleAvoidance);
-  if(window.MutationObserver){new MutationObserver(function(records){if(records.some(function(record){return record.target!==feedbackButton&&record.target!==manualButton;}))scheduleAvoidance();}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['style','class','hidden']});}
-  window.BODAHelpAvoidCollisions=scheduleAvoidance;
-  refreshTitle();
-  scheduleAvoidance();
+  function cancelPendingStart(){
+    var returnFocus=waitingFocus;
+    clearPendingStart();
+    if(visible(returnFocus))safeFocus(returnFocus);
+  }
+  function onWaitingKey(event){
+    if(pendingRoute&&event.key==='Escape'){
+      event.preventDefault();event.stopImmediatePropagation();cancelPendingStart();
+    }
+  }
+  function checkPendingStart(){
+    if(!pendingRoute)return;
+    var busy=isBusy(),hidden=document.visibilityState==='hidden';
+    if(waitingElement){
+      var label=document.getElementById('app-loading-label'),percent=document.getElementById('app-loading-percent');
+      var detail=waitingElement.querySelector('.bdt-wait-detail');
+      var text=busy?'目前：'+(label&&label.textContent||'正在處理資料')+' '+(percent&&percent.textContent||''):'資料處理完成，正在準備導覽…';
+      if(detail&&detail.textContent!==text)detail.textContent=text;
+    }
+    if(busy||hidden){
+      clearTimeout(waitingIdleTimer);waitingIdleTimer=0;
+    }else if(!waitingIdleTimer){
+      /* Loading 消失後再穩定等候 220ms，避免下一個工作緊接著開始。 */
+      waitingIdleTimer=setTimeout(function(){
+        waitingIdleTimer=0;
+        if(!pendingRoute||isBusy()||document.visibilityState==='hidden')return;
+        var key=pendingRoute;
+        var returnFocus=waitingElement&&waitingElement.contains(document.activeElement)?waitingFocus:null;
+        clearPendingStart();
+        beginTour(key,returnFocus);
+      },220);
+    }
+    /* MutationObserver 以外保留低頻輪詢，載入模組不發事件時仍能開啟。 */
+    if(!waitingTimer)waitingTimer=setTimeout(function(){waitingTimer=0;checkPendingStart();},200);
+  }
+  function queueStart(key){
+    pendingRoute=key;
+    if(!waitingElement){
+      waitingFocus=document.activeElement;
+      waitingElement=document.createElement('div');waitingElement.id='boda-tour-waiting';waitingElement.setAttribute('role','status');
+      waitingElement.innerHTML='<span class="bdt-wait-spinner" aria-hidden="true"></span><div class="bdt-wait-copy"><b>已預約開始導覽</b><span>資料處理完成後會自動開啟，不用再按一次。</span><small class="bdt-wait-detail"></small></div><button type="button" data-skip-app-loading>取消等候</button>';
+      document.body.appendChild(waitingElement);
+      waitingElement.querySelector('button').addEventListener('click',cancelPendingStart);
+      ['boda-tour-launch','boda-tour-home'].forEach(function(id){
+        var button=document.getElementById(id);if(button)button.setAttribute('aria-busy','true');
+      });
+      var busy=document.getElementById('app-loading');
+      if(window.MutationObserver&&busy){
+        waitingObserver=new MutationObserver(checkPendingStart);
+        waitingObserver.observe(busy,{attributes:true,childList:true,subtree:true,characterData:true});
+      }
+      window.addEventListener('keydown',onWaitingKey,true);
+      window.addEventListener('hashchange',cancelPendingStart,true);
+      window.addEventListener('popstate',cancelPendingStart,true);
+      window.addEventListener('focus',checkPendingStart);
+      document.addEventListener('visibilitychange',checkPendingStart);
+    }
+    checkPendingStart();
+    return true;
+  }
+  function takeSnapshot(){
+    var nodes=$$('.view,.nav-item'),scrolls=$$('#views [id],#views .view,#nav-rail');
+    return {focus:document.activeElement,x:window.scrollX,y:window.scrollY,
+      nodes:nodes.map(function(el){return {el:el,active:el.classList.contains('active')};}),
+      scrolls:scrolls.map(function(el){return {el:el,x:el.scrollLeft,y:el.scrollTop};}),background:[]};
+  }
+  function isolateBackground(){
+    Array.prototype.slice.call(document.body.children).forEach(function(el){
+      if(el===root||/^(SCRIPT|STYLE|LINK)$/.test(el.tagName))return;
+      snapshot.background.push({el:el,inert:el.getAttribute('inert'),aria:el.getAttribute('aria-hidden')});
+      el.setAttribute('inert','');el.setAttribute('aria-hidden','true');
+    });
+  }
+  function setView(name){
+    if(!document.getElementById('view-'+name))return;
+    $$('.view').forEach(function(el){el.classList.toggle('active',el.id==='view-'+name);});
+    $$('.nav-item[data-view]').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-view')===name);});
+  }
+  function restore(){
+    if(!snapshot)return;
+    var saved=snapshot;snapshot=null;
+    saved.nodes.forEach(function(s){if(s.el.isConnected)s.el.classList.toggle('active',s.active);});
+    saved.background.forEach(function(s){
+      if(s.inert===null)s.el.removeAttribute('inert');else s.el.setAttribute('inert',s.inert);
+      if(s.aria===null)s.el.removeAttribute('aria-hidden');else s.el.setAttribute('aria-hidden',s.aria);
+      if(s.el.id==='app-loading'&&window.APP_LOADING)s.el.setAttribute('aria-hidden',window.APP_LOADING.active?'false':'true');
+    });
+    function scrollBack(){
+      saved.scrolls.forEach(function(s){if(s.el.isConnected){s.el.scrollLeft=s.x;s.el.scrollTop=s.y;}});
+      if(window.scrollX!==saved.x||window.scrollY!==saved.y)window.scrollTo(saved.x,saved.y);
+    }
+    scrollBack();
+    restoreRaf=requestAnimationFrame(function(){restoreRaf=0;if(!active){scrollBack();if(visible(saved.focus))safeFocus(saved.focus);}});
+  }
+  function selection(){return '<span class="bdt-selection"><i></i><i></i><i></i><i></i></span>';}
+  function product(rotate){return '<div class="bdt-product">'+selection()+(rotate?'<i class="bdt-rotate-handle">↻</i>':'')+'</div>';}
+  function demo(type){
+    var caption='<span class="bdt-demo-caption">操作示意 · 不影響目前內容</span>',body='';
+    if(type==='upload'||type==='folder'||type==='restore'){
+      var label=type==='folder'?'素材資料夾':type==='restore'?'編輯暫存.json':'工單.xlsx';
+      body='<div class="bdt-demo-zone">拖曳到對應區域<small>放開即可讀取</small></div><div class="bdt-demo-file">'+label+'</div><div class="bdt-demo-cursor bdt-cursor-drag">'+POINTER+'</div><span class="bdt-demo-badge">✓ 已讀取</span>';
+    }else if(type==='layout'){
+      body='<div class="bdt-demo-zone"><i></i><i></i></div><div class="bdt-demo-file">MSBN</div><div class="bdt-demo-cursor bdt-cursor-drag">'+POINTER+'</div>';
+    }else if(type==='matching'){
+      body='<div class="bdt-match-source"><small>工單圖片欄位</small><strong>A<b>,</b>B<b>,</b>C</strong></div>'+
+        '<div class="bdt-match-rule">↓ 用逗號分開，獨立尋找 3 張圖片</div>'+
+        '<div class="bdt-match-files"><span>'+IMAGE_ICON+'<b>A</b></span><span>'+IMAGE_ICON+'<b>B</b></span><span>'+IMAGE_ICON+'<b>C</b></span></div>';
+    }else if(type==='shadow'){
+      body='<div class="bdt-demo-board"><span class="bdt-product-shadow"></span>'+product(false)+'</div>'+
+        '<div class="bdt-shadow-directions"><span>影子向右</span><span>影子置中</span><span>影子向左</span></div>';
+    }else if(type==='resize'||type==='rotate'){
+      body='<div class="bdt-demo-board"><span class="bdt-product-shadow"></span>'+product(type==='rotate')+'</div>';
+    }else if(type==='assets'){
+      body='<div class="bdt-asset-kinds">'+['LOGO 圖','商品圖','代言人圖','代言人簽名檔'].map(function(label){return '<span>'+IMAGE_ICON+'<small>'+label+'</small></span>';}).join('')+'</div>'+
+        '<div class="bdt-asset-actions"><span>編輯</span><span>換圖</span><span>新增</span><span>刪除</span></div><div class="bdt-demo-cursor">'+POINTER+'</div>';
+    }else if(type==='backgrounds'){
+      body='<div class="bdt-bg-thumbs"><span class="bdt-bg-option bdt-bg-theme-1"><small>背景 1</small></span><span class="bdt-bg-option bdt-bg-theme-2"><small>背景 2</small></span><span class="bdt-bg-option bdt-bg-theme-3"><small>背景 3</small></span></div>'+
+        '<div class="bdt-bg-preview"><i class="bdt-bg-layer bdt-bg-theme-1"></i><i class="bdt-bg-layer bdt-bg-theme-2"></i><i class="bdt-bg-layer bdt-bg-theme-3"></i><small class="bdt-bg-preview-label">背景圖預覽</small><div class="bdt-product bdt-bg-product"></div></div>'+
+        '<div class="bdt-demo-cursor">'+POINTER+'</div>';
+    }else if(type==='colors'){
+      body='<i class="bdt-swatch"></i><i class="bdt-swatch"></i><i class="bdt-swatch"></i><i class="bdt-swatch"></i><div class="bdt-demo-cursor">'+POINTER+'</div>';
+    }else if(type==='level'){
+      body='<span class="bdt-level-pill">A / B+</span><span>→</span><span class="bdt-level-pill">依等級顯示版位</span>';
+    }else if(type==='text'){
+      body='<div class="bdt-demo-board"><div class="bdt-text-line">限時優惠開跑</div><small>在右側欄位編輯文案</small></div>';
+    }else if(type==='bottom'){
+      body='<span class="bdt-bottom-slot">主會場</span><span class="bdt-bottom-slot">品牌優惠</span><span class="bdt-bottom-slot">限時精選</span>';
+    }else if(type==='download'){
+      body='<span class="bdt-download-file">XLSX<br>工單</span><span class="bdt-download-file">PNG<br>成品圖</span><span class="bdt-download-file">JSON<br>暫存檔</span>';
+    }else{
+      body='<span class="bdt-exposure-tile">LOGO</span><span class="bdt-exposure-tile">BN 預覽</span><span class="bdt-exposure-tile">DDCARD</span>';
+      type='exposure';
+    }
+    return '<div class="bdt-demo bdt-demo-'+type+'" aria-hidden="true">'+caption+body+'</div>';
+  }
+  function buildRoot(){
+    root=document.createElement('div');root.id='boda-tour-root';root.hidden=true;root.tabIndex=-1;
+    root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-labelledby','boda-tour-title');
+    root.innerHTML='<div class="bdt-dimmer" aria-hidden="true"></div><div class="bdt-focus" aria-hidden="true"></div>'+
+      '<div class="bdt-hud"><strong>BODA 導覽</strong><span class="bdt-hud-note">教學模式 · 不會變更你的內容</span>'+
+      '<button type="button" class="bdt-pause" data-action="pause" aria-pressed="false">暫停動畫</button>'+
+      '<button type="button" class="bdt-icon-button" data-action="close" aria-label="關閉導覽">×</button></div>'+
+      '<div class="bdt-ghost" hidden aria-hidden="true"></div><div class="bdt-host"></div>';
+    markGuideControls(root);
+    document.body.appendChild(root);focus=root.querySelector('.bdt-focus');dim=root.querySelector('.bdt-dimmer');hud=root.querySelector('.bdt-hud');ghost=root.querySelector('.bdt-ghost');
+    root.addEventListener('click',function(event){
+      var button=event.target.closest('[data-action]');if(!button||button.disabled)return;
+      var action=button.getAttribute('data-action');
+      if(action==='close')stop();
+      else if(action==='start'){route=root.querySelector('.bdt-route-select').value;chooseRoute(route);go(0);}
+      else if(action==='next'){if(index===steps.length-1)stop();else go(index+1);}
+      else if(action==='prev')go(index-1);
+      else if(action==='pause'){paused=!paused;root.dataset.paused=String(paused);button.setAttribute('aria-pressed',String(paused));button.textContent=paused?'播放動畫':'暫停動畫';}
+    });
+    root.addEventListener('change',function(event){if(event.target.classList.contains('bdt-jump'))go(Number(event.target.value));});
+    root.addEventListener('wheel',function(event){if(!event.target.closest('.bdt-card,.bdt-welcome'))event.preventDefault();},{passive:false});
+    root.addEventListener('touchmove',function(event){if(!event.target.closest('.bdt-card,.bdt-welcome'))event.preventDefault();},{passive:false});
+  }
+  function chooseRoute(key){
+    route=ROUTES[key]?key:'full';
+    steps=ROUTES[route].ids.map(function(id){return STEPS.filter(function(s){return s.id===id;})[0];});
+    root.dataset.route=route;root.dataset.total=String(steps.length);
+  }
+  function welcome(){
+    index=-1;currentTarget=null;focus.hidden=true;ghost.hidden=true;dim.hidden=false;
+    root.dataset.screen='welcome';root.dataset.step='welcome';delete root.dataset.frameState;
+    root.querySelector('.bdt-host').innerHTML='<section class="bdt-welcome"><div class="bdt-eyebrow">BODA / 互動操作導覽</div>'+
+      '<h2 id="boda-tour-title">把工單，變成成品。</h2><p class="bdt-welcome-lead">跟著重點框選與動畫，認識從匯入工單到交付的操作。<br>第一次使用，先看一遍就有方向。</p>'+
+      '<div class="bdt-welcome-path" aria-hidden="true"><div><b>1</b>匯入工單</div><span>→</span><div><b>2</b>編輯成品</div><span>→</span><div><b>3</b>下載交付</div></div>'+
+      '<div class="bdt-welcome-foot"><button type="button" class="bdt-secondary" data-action="close">先不用，結束導覽</button><button type="button" class="bdt-primary" data-action="start">開始導覽 →</button></div>'+
+      '<div class="bdt-route-box"><label class="bdt-route-label" for="boda-tour-route">想先了解哪一段？</label><select class="bdt-route-select" id="boda-tour-route">'+
+      Object.keys(ROUTES).map(function(k){return '<option value="'+k+'"'+(route===k?' selected':'')+'>'+ROUTES[k].label+'</option>';}).join('')+'</select></div>'+
+      '<p class="bdt-safe"><b>放心看，不會替你修改作品。</b>不會改動文字或素材、上傳檔案或觸發下載；曝光與吸底步驟會開啟既有工具，結束後回到原本頁面。下次可從左下角「使用教學」重新播放。</p></section>';
+    markGuideControls(root);
+    safeFocus(root.querySelector('[data-action="start"]'));
+  }
+  function resolve(step){
+    var fallback=false,el=null,frame=null,frameElement=null;
+    setView(step.view);
+    if(step.frame){
+      frameElement=document.getElementById(step.frame);
+      if(frameElement&&!frameElement.getAttribute('src')){
+        try{
+          if(step.view==='exposure'&&typeof window.ensureExposureLoaded==='function')window.ensureExposureLoaded();
+          else if(step.view==='bottom'&&typeof window.ensureStandaloneBottomLoaded==='function')window.ensureStandaloneBottomLoaded(false);
+        }catch(_){/* 留在指定頁面顯示狀態，不切回匯入頁、不強制重載。 */}
+      }
+      try{
+        var doc=frameElement&&frameElement.contentDocument;
+        if(doc&&frameElement.getAttribute('src')){
+          (step.frameTargets||[]).some(function(selector){var candidate=doc.querySelector(selector);if(visible(candidate)){el=candidate;return true;}return false;});
+          if(el)frame=frameElement;
+        }
+      }catch(_){el=null;}
+      if(!el)fallback=true;
+    }
+    if(!el){
+      var selectors=Array.isArray(step.target)?step.target:[step.target];
+      selectors.some(function(selector){var candidate=document.querySelector(selector);if(visible(candidate)){el=candidate;return true;}return false;});
+    }
+    return {el:el,frame:frame,fallback:fallback,frameElement:frameElement};
+  }
+  function clearStepFrame(){
+    clearTimeout(stepFrameTimer);stepFrameTimer=0;
+    if(stepFrameCleanup){stepFrameCleanup();stepFrameCleanup=null;}
+  }
+  function observeTarget(){
+    if(targetObserver){targetObserver.disconnect();targetObserver=null;}
+    if(window.ResizeObserver&&currentTarget&&currentTarget.el){
+      targetObserver=new ResizeObserver(scheduleLayout);targetObserver.observe(currentTarget.el);
+    }
+  }
+  function watchStepFrame(step){
+    if(!step.frame)return;
+    var frame=document.getElementById(step.frame),observedDoc=null,observer=null,attempts=0,ended=false,failed=false;
+    var pageName=step.view==='exposure'?'曝光資源':'吸底工具';
+    function update(){
+      if(!active||steps[index]!==step)return;
+      var next=resolve(step),old=currentTarget;
+      currentTarget=next;
+      if(!old||old.el!==next.el||old.frame!==next.frame)observeTarget();
+      var ready=!!next.frame,state=ready?'ready':failed?'unavailable':ended?'page':'loading';
+      var status=root.querySelector('.bdt-frame-status');
+      root.dataset.frameState=state;
+      if(status){
+        status.hidden=ready;status.dataset.state=state;
+        var message=failed?'目前無法載入'+pageName+'，請確認專案檔案；仍可繼續導覽。':
+          ended?'已切到'+pageName+'，目前無法直接框選內部欄位，先標示此頁面。':
+          '正在載入'+pageName+'，完成後會自動定位；也可先繼續下一步。';
+        if(status.textContent!==message)status.textContent=message;
+      }
+      try{
+        var doc=frame&&frame.contentDocument;
+        if(doc&&doc!==observedDoc&&doc.body){
+          if(observedDoc)observedDoc.removeEventListener('scroll',scheduleLayout,true);
+          if(observer)observer.disconnect();
+          observedDoc=doc;doc.addEventListener('scroll',scheduleLayout,true);
+          if(window.MutationObserver){observer=new MutationObserver(update);observer.observe(doc.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});}
+        }
+      }catch(_){}
+      scheduleLayout();
+      return ready;
+    }
+    function onLoad(){ended=true;failed=false;update();}
+    function onError(){ended=true;failed=true;update();}
+    function poll(){
+      stepFrameTimer=0;
+      if(!active||steps[index]!==step)return;
+      if(update()||failed)return;
+      if(++attempts>=60){ended=true;update();return;}
+      stepFrameTimer=setTimeout(poll,200);
+    }
+    if(frame){frame.addEventListener('load',onLoad);frame.addEventListener('error',onError);}
+    stepFrameCleanup=function(){
+      if(frame){frame.removeEventListener('load',onLoad);frame.removeEventListener('error',onError);}
+      if(observedDoc)observedDoc.removeEventListener('scroll',scheduleLayout,true);
+      if(observer)observer.disconnect();
+    };
+    poll();
+  }
+  function go(position){
+    if(!active||position<0||position>=steps.length)return;
+    clearStepFrame();
+    index=position;var step=steps[index];
+    if(targetObserver){targetObserver.disconnect();targetObserver=null;}
+    currentTarget=resolve(step);
+    if(currentTarget.el){
+      try{currentTarget.el.scrollIntoView({behavior:'instant',block:'center',inline:'nearest'});}catch(_){}
+      if(currentTarget.frame){try{currentTarget.frame.scrollIntoView({block:'nearest'});}catch(_){}}
+    }
+    root.dataset.screen='step';root.dataset.step=step.id;root.dataset.index=String(index+1);delete root.dataset.frameState;
+    var fallback=step.frame?'<p class="bdt-fallback bdt-frame-status" role="status" aria-live="polite" hidden></p>':'';
+    if(!step.frame&&!currentTarget.el)fallback='<p class="bdt-fallback">目前頁面未顯示此操作區，先看動畫示意；可繼續下一步。</p>';
+    root.querySelector('.bdt-host').innerHTML='<section class="bdt-card"><div class="bdt-card-content">'+
+      '<div class="bdt-step-meta"><span>'+String(index+1).padStart(2,'0')+' / '+steps.length+'</span><span class="bdt-group">'+html(step.group)+'</span></div>'+
+      '<h2 id="boda-tour-title">'+html(step.title)+'</h2><p class="bdt-description">'+step.text+'</p>'+
+      demo(step.demo)+'<p class="bdt-tip">'+step.tip+'</p>'+fallback+
+      '<div class="bdt-progress" role="progressbar" aria-label="導覽進度" aria-valuemin="0" aria-valuemax="'+steps.length+'" aria-valuenow="'+(index+1)+'"><span style="width:'+((index+1)/steps.length*100)+'%"></span></div>'+
+      '<div class="bdt-controls"><button type="button" class="bdt-skip" data-action="close">跳過導覽</button><div class="bdt-controls-right">'+
+      '<button type="button" class="bdt-secondary" data-action="prev"'+(index===0?' disabled':'')+'>上一步</button>'+
+      '<button type="button" class="bdt-primary" data-action="next">'+(index===steps.length-1?'完成教學 ✓':'下一步 →')+'</button></div></div>'+
+      '<select class="bdt-jump" aria-label="跳至教學步驟">'+steps.map(function(s,i){return '<option value="'+i+'"'+(index===i?' selected':'')+'>'+(i+1)+'. '+html(s.title)+'</option>';}).join('')+'</select></div></section>';
+    markGuideControls(root);
+    card=root.querySelector('.bdt-card');
+    ghost.hidden=!step.ghost;
+    if(step.ghost)ghost.innerHTML=FILE_ICON+'<span>'+html(step.ghost)+'</span>';
+    layout();
+    observeTarget();watchStepFrame(step);
+    safeFocus(card.querySelector('[data-action="next"]'));
+    scheduleLayout();
+  }
+  function rect(){
+    if(!currentTarget||!visible(currentTarget.el))return null;
+    var r=currentTarget.el.getBoundingClientRect();
+    if(currentTarget.frame){
+      var f=currentTarget.frame.getBoundingClientRect(),sx=f.width/(currentTarget.frame.offsetWidth||f.width),sy=f.height/(currentTarget.frame.offsetHeight||f.height);
+      r={left:f.left+r.left*sx,top:f.top+r.top*sy,right:f.left+r.right*sx,bottom:f.top+r.bottom*sy};
+    }
+    var left=Math.max(8,r.left-6),top=Math.max(62,r.top-6),right=Math.min(window.innerWidth-8,r.right+6),bottom=Math.min(window.innerHeight-8,r.bottom+6);
+    return right-left>5&&bottom-top>5?{left:left,top:top,right:right,bottom:bottom,width:right-left,height:bottom-top}:null;
+  }
+  function clamp(v,lo,hi){return Math.max(lo,Math.min(v,hi));}
+  function layout(){
+    if(!active||index<0||!card)return;
+    var r=rect(),w=window.innerWidth,h=window.innerHeight,m=14,g=18,cw=Math.min(364,w-2*m);
+    card.style.width=cw+'px';
+    var ch=card.offsetHeight||420;
+    if(r){
+      dim.hidden=true;focus.hidden=false;
+      focus.style.left=r.left+'px';focus.style.top=r.top+'px';focus.style.width=r.width+'px';focus.style.height=r.height+'px';
+    }else{focus.hidden=true;dim.hidden=false;}
+    var candidates=r?[
+      {x:r.right+g,y:r.top},
+      {x:r.left-cw-g,y:r.top},
+      {x:r.left+(r.width-cw)/2,y:r.bottom+g},
+      {x:r.left+(r.width-cw)/2,y:r.top-ch-g}
+    ]:[{x:(w-cw)/2,y:(h-ch)/2}];
+    var best=null,bestScore=Infinity;
+    candidates.forEach(function(p){
+      var x=clamp(p.x,m,w-cw-m),y=clamp(p.y,66,h-ch-m);
+      var overlap=r?Math.max(0,Math.min(x+cw,r.right)-Math.max(x,r.left))*Math.max(0,Math.min(y+ch,r.bottom)-Math.max(y,r.top)):0;
+      var score=overlap*10+Math.abs(x-p.x)+Math.abs(y-p.y);
+      if(score<bestScore){bestScore=score;best={x:x,y:y};}
+    });
+    card.style.left=best.x+'px';card.style.top=best.y+'px';
+    if(!ghost.hidden&&r){
+      ghost.style.left=clamp(r.left+r.width*.48,90,w-220)+'px';
+      ghost.style.top=clamp(r.top+r.height*.45,90,h-70)+'px';
+    }else if(!r)ghost.hidden=true;
+  }
+  function scheduleLayout(){if(!active||frameRaf)return;frameRaf=requestAnimationFrame(function(){frameRaf=0;layout();});}
+  function onKey(event){
+    if(!active)return;
+    event.stopImmediatePropagation();
+    if(event.key==='Escape'){event.preventDefault();stop();return;}
+    var select=event.target.tagName==='SELECT';
+    if(!select&&index>=0&&!event.ctrlKey&&!event.metaKey&&!event.altKey){
+      if(event.key==='ArrowRight'){event.preventDefault();if(index===steps.length-1)stop();else go(index+1);return;}
+      if(event.key==='ArrowLeft'){event.preventDefault();if(index>0)go(index-1);return;}
+    }
+    if(event.key==='Tab'){
+      var controls=$$('button:not(:disabled),select',root).filter(visible);
+      var first=controls[0],last=controls[controls.length-1];
+      if(event.shiftKey&&(document.activeElement===first||!root.contains(document.activeElement))){event.preventDefault();safeFocus(last);}
+      else if(!event.shiftKey&&(document.activeElement===last||!root.contains(document.activeElement))){event.preventDefault();safeFocus(first);}
+    }
+  }
+  function onFocus(event){if(active&&!root.contains(event.target))safeFocus(root.querySelector('[data-action="next"],[data-action="start"]'));}
+  function onLocation(){if(active)stop();}
+  function start(key){
+    if(active)return false;
+    key=ROUTES[key]?key:'full';
+    if(isBusy())return queueStart(key);
+    clearPendingStart();
+    return beginTour(key);
+  }
+  function beginTour(key,returnFocus){
+    if(active)return false;
+    if(restoreRaf){cancelAnimationFrame(restoreRaf);restoreRaf=0;}
+    if(!root)buildRoot();
+    snapshot=takeSnapshot();active=true;paused=false;root.dataset.paused='false';
+    if(visible(returnFocus))snapshot.focus=returnFocus;
+    root.querySelector('[data-action="pause"]').setAttribute('aria-pressed','false');
+    root.querySelector('[data-action="pause"]').textContent='暫停動畫';
+    chooseRoute(key);root.hidden=false;safeFocus(root);isolateBackground();welcome();
+    window.addEventListener('keydown',onKey,true);
+    window.addEventListener('focusin',onFocus,true);
+    window.addEventListener('resize',scheduleLayout);
+    window.addEventListener('scroll',scheduleLayout,true);
+    window.addEventListener('hashchange',onLocation,true);
+    window.addEventListener('popstate',onLocation,true);
+    return true;
+  }
+  function stop(){
+    if(pendingRoute)cancelPendingStart();
+    if(!active)return;
+    active=false;
+    clearStepFrame();
+    if(frameRaf){cancelAnimationFrame(frameRaf);frameRaf=0;}
+    if(targetObserver){targetObserver.disconnect();targetObserver=null;}
+    window.removeEventListener('keydown',onKey,true);
+    window.removeEventListener('focusin',onFocus,true);
+    window.removeEventListener('resize',scheduleLayout);
+    window.removeEventListener('scroll',scheduleLayout,true);
+    window.removeEventListener('hashchange',onLocation,true);
+    window.removeEventListener('popstate',onLocation,true);
+    root.hidden=true;currentTarget=null;card=null;index=-1;
+    root.querySelector('.bdt-host').innerHTML='';
+    restore();
+  }
+  function mount(){
+    var rail=document.getElementById('nav-rail');
+    if(rail&&!document.getElementById('boda-tour-launch')){
+      var launch=document.createElement('button');launch.id='boda-tour-launch';launch.className='boda-tour-launch';launch.type='button';launch.title='開始 BODA 操作導覽';launch.setAttribute('aria-haspopup','dialog');
+      launch.setAttribute('data-skip-app-loading','');
+      launch.innerHTML=ICON+'<span>使用教學</span>';launch.addEventListener('click',function(){start('full');});rail.appendChild(launch);
+    }
+    var feedback=document.getElementById('boda-help-feedback');
+    if(rail&&feedback)rail.appendChild(feedback);
+    var home=document.getElementById('home-head');
+    if(home&&!document.getElementById('boda-tour-home')){
+      var button=document.createElement('button');button.id='boda-tour-home';button.type='button';button.className='boda-tour-home';button.setAttribute('aria-haspopup','dialog');button.innerHTML=ICON+'<span>開始導覽</span>';
+      button.setAttribute('data-skip-app-loading','');
+      button.addEventListener('click',function(){start('full');});home.appendChild(button);
+    }
+  }
+  window.BODATour={version:VERSION,start:start,stop:stop,isActive:function(){return active;},isPending:function(){return !!pendingRoute;}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
 </script>
 </body>
