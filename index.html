@@ -23,10 +23,12 @@
 #boda-tour-root button:focus-visible,#boda-tour-root select:focus-visible{outline:3px solid var(--bdt-accent);outline-offset:4px;}
 #boda-tour-root button:disabled{opacity:.32;cursor:default;}
 .bdt-dimmer{position:absolute;inset:0;background:var(--bdt-dim);}
-.bdt-focus{position:absolute;pointer-events:none;border:2px solid var(--bdt-accent);border-radius:12px;box-shadow:0 0 0 9999px var(--bdt-dim),0 0 0 5px var(--bdt-glow);transition:left .23s ease,top .23s ease,width .23s ease,height .23s ease;}
+.bdt-focus{position:absolute;pointer-events:none;border:2px solid var(--bdt-accent);border-radius:12px;box-shadow:0 0 0 9999px var(--bdt-dim),0 0 0 5px var(--bdt-glow);}
 .bdt-focus::after{content:"";position:absolute;inset:-5px;border:1px solid var(--bdt-accent-light);border-radius:16px;animation:bdt-focus-pulse 2.6s ease-out infinite;}
 .bdt-dual-dimmer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
-#boda-tour-root[data-dual-focus="true"] .bdt-focus{box-shadow:0 0 0 5px var(--bdt-glow);}
+.bdt-dim-rects{position:absolute;inset:0;pointer-events:none;}
+.bdt-dim-rects i{position:absolute;background:var(--bdt-dim);}
+#boda-tour-root[data-dual-focus="true"] .bdt-focus,#boda-tour-root[data-mask-dim="true"] .bdt-focus{box-shadow:0 0 0 5px var(--bdt-glow);}
 #boda-tour-root[data-dual-focus="true"] .bdt-focus:not(.bdt-color-focus)::after{animation:bdt-palette-pulse 4s ease-in-out infinite;}
 .bdt-color-focus{border-radius:9px;}
 .bdt-color-example{position:absolute;z-index:1;display:grid;place-items:center;border:1px solid var(--bdt-accent-light);border-radius:5px;background:var(--bdt-accent);color:var(--bdt-on-accent);font-size:11px;pointer-events:none;}
@@ -200,6 +202,142 @@
 .bdt-ghost{position:absolute;z-index:2;pointer-events:none;display:flex;align-items:center;gap:6px;background:var(--bdt-deep);color:var(--bdt-text);border:1px solid var(--bdt-accent);border-radius:8px;padding:7px 10px;box-shadow:0 4px 20px rgba(0,0,0,.45);font-size:11px;font-weight:650;animation:bdt-ghost 4.6s ease-in-out infinite;transform:translate(-80px,-16px);}
 .bdt-ghost svg{width:17px;height:17px;}
 .bdt-ghost::after{content:"";position:absolute;right:4px;bottom:-9px;width:10px;height:15px;background:var(--bdt-accent);clip-path:polygon(0 0,100% 70%,55% 72%,33% 100%);}
+/* v1.9：疊在「真實畫面」上的示範（不是只框選）。全部在導覽圖層裡，不改動實際內容。 */
+.bdt-stage{position:absolute;inset:0;z-index:2;pointer-events:none;}
+.bdt-stage>*{position:absolute;}
+.bdt-stage-callout{max-width:250px;padding:6px 10px;border:1px solid var(--bdt-accent);border-radius:8px;background:var(--bdt-deep);color:var(--bdt-text);font-size:11px;line-height:1.6;box-shadow:0 6px 18px rgba(0,0,0,.45);animation:bdt-stage-in .3s ease-out both;}
+.bdt-stage-callout b{color:var(--bdt-accent-light);font-weight:650;}
+.bdt-stage-tag{padding:1px 7px;border-radius:999px;border:1px solid #ef4444;background:#3a2323;color:#fca5a5;font-size:10px;font-weight:700;line-height:1.6;white-space:nowrap;}
+.bdt-stage-badge{width:15px;height:15px;border-radius:50%;display:grid;place-items:center;font:800 9px/1 system-ui,sans-serif;box-shadow:0 0 0 2px #1b2b2a;animation:bdt-badge-pop 5s ease-in-out infinite both;}
+.bdt-stage-badge.is-done{background:#f5b335;color:#3a2a00;}
+.bdt-stage-badge.is-skip{background:#7c8a87;color:#ffffff;}
+.bdt-stage-text-ring{border:2px dashed var(--bdt-accent);border-radius:6px;animation:bdt-ring-pulse 2.4s ease-in-out infinite;}
+/* 超過字數示意：跟實際功能同一個樣子（紅框＋紅色提示＋下載區清單）。 */
+.bdt-stage-limit-frame{border-radius:4px;box-shadow:inset 0 0 0 2px #ef4444;background:rgba(239,68,68,.16);animation:bdt-limit-pulse 2.4s ease-in-out infinite;}
+.bdt-stage-limit-bubble{padding:3px 8px;border-radius:6px;background:#dc2626;color:#ffffff;font-size:12px;font-weight:700;line-height:1.35;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.bdt-stage-limit-notice{padding:8px 10px;border:1px solid #fca5a5;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:11px;line-height:1.55;box-shadow:0 6px 18px rgba(0,0,0,.35);}
+.bdt-stage-limit-notice b{display:block;margin-bottom:2px;}
+.bdt-stage-limit-notice u{display:block;margin-top:3px;text-underline-offset:2px;}
+.bdt-stage-mock{overflow:hidden;border-radius:12px;background:#ffffff;color:#121827;box-shadow:0 8px 24px rgba(0,0,0,.4);font-family:"PingFang TC","Microsoft JhengHei",sans-serif;text-align:center;}
+.bdt-stage-mock .bdt-mock-promo{height:34px;line-height:34px;background:#4f9fa2;color:#ffffff;font-size:17px;font-weight:700;}
+.bdt-stage-mock .bdt-mock-name{margin:16px 12px 6px;padding:2px 0;border-radius:4px;font-size:19px;font-weight:600;white-space:nowrap;box-shadow:inset 0 0 0 2px #ef4444;background:rgba(239,68,68,.16);animation:bdt-limit-pulse 2.4s ease-in-out infinite;}
+.bdt-stage-mock .bdt-mock-warn{font-size:12px;color:#6b7280;}
+@keyframes bdt-stage-in{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+@keyframes bdt-badge-pop{0%,8%{transform:scale(0);opacity:0;}16%,100%{transform:scale(1);opacity:1;}}
+@keyframes bdt-ring-pulse{0%,100%{opacity:.55;}50%{opacity:1;}}
+@keyframes bdt-limit-pulse{0%,100%{box-shadow:inset 0 0 0 2px #ef4444,0 0 0 0 rgba(239,68,68,0);}50%{box-shadow:inset 0 0 0 2px #ef4444,0 0 0 6px rgba(239,68,68,.28);}}
+/* v1.10：示範畫布（BODA 渲染器畫的示範版位＋示意商品圖）。放在聚光燈暗幕「下面」，
+   只框文字時畫布其他部分會一起變暗；紅框、說明框等標記則放在暗幕「上面」。 */
+.bdt-stage-under{position:absolute;inset:0;pointer-events:none;}
+.bdt-stage-under>*{position:absolute;}
+.bdt-stage-canvas{overflow:hidden;border-radius:8px;background:#f4f6f5;box-shadow:inset 0 0 0 1px rgba(31,43,41,.08);}
+.bdt-stage-canvas-inner{position:absolute;left:0;top:0;transform-origin:0 0;}
+.bdt-demo-block{position:absolute;overflow:hidden;}
+.bdt-stage-canvas-tag{position:absolute;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis;padding:2px 10px;border-radius:999px;background:rgba(27,27,31,.86);color:#f2f2f4;font-size:11px;line-height:1.6;white-space:nowrap;}
+.bdt-demo-rotating{animation:bdt-demo-spin 5.4s ease-in-out infinite;transform-origin:50% 60%;}
+@keyframes bdt-demo-spin{0%,12%,100%{transform:rotate(0);}40%{transform:rotate(-14deg);}70%{transform:rotate(11deg);}}
+/* 選取框：四角控制點＋上方旋轉把手（跟畫布上點選商品時一樣） */
+.bdt-stage-select{border:2px solid var(--bdt-accent);border-radius:3px;}
+.bdt-stage-select i{position:absolute;width:10px;height:10px;border:2px solid var(--bdt-accent);border-radius:50%;background:#ffffff;}
+.bdt-stage-select i:nth-child(1){left:-6px;top:-6px;}
+.bdt-stage-select i:nth-child(2){right:-6px;top:-6px;}
+.bdt-stage-select i:nth-child(3){left:-6px;bottom:-6px;}
+.bdt-stage-select i:nth-child(4){right:-6px;bottom:-6px;}
+.bdt-stage-select b{position:absolute;left:50%;top:-32px;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:var(--bdt-accent);color:#ffffff;font:700 13px/22px system-ui,sans-serif;text-align:center;animation:bdt-ring-pulse 1.6s ease-in-out infinite;}
+.bdt-stage-select b::after{content:"";position:absolute;left:50%;top:22px;height:10px;border-left:2px solid var(--bdt-accent);}
+/* 工單試算表示意：圖片欄位用逗號分開 */
+.bdt-stage-sheet{overflow:hidden;border:1px solid #8fb3ad;border-radius:8px;background:#ffffff;color:#1f2933;font-size:12px;line-height:1.5;box-shadow:0 8px 22px rgba(0,0,0,.4);}
+.bdt-sheet-title{padding:6px 9px;background:#2d5f58;color:#ffffff;font-size:11px;font-weight:700;letter-spacing:.02em;}
+.bdt-sheet-head,.bdt-sheet-row{display:flex;}
+.bdt-sheet-head{background:#e8f1ef;border-bottom:1px solid #b9d2cd;font-size:11px;font-weight:700;color:#2d5f58;}
+.bdt-sheet-head span,.bdt-sheet-row span{padding:5px 8px;border-right:1px solid #d5e4e1;white-space:nowrap;}
+.bdt-sheet-head span:last-child,.bdt-sheet-row span:last-child{border-right:0;flex:1;white-space:normal;}
+.bdt-sheet-row b{color:#ee4d2d;font-weight:900;padding:0 2px;animation:bdt-ring-pulse 1.4s ease-in-out infinite;}
+.bdt-sheet-note{padding:6px 8px;border-top:1px dashed #b9d2cd;background:#fff8f1;color:#7a3a12;font-size:11px;}
+.bdt-sheet-note b{color:#ee4d2d;}
+/* 右側工具列示意（已上傳圖片的樣子）：沿用實際工具列的 class，再補上只在工具列裡才有的按鈕樣式 */
+.bdt-stage-tools{display:grid;gap:9px;align-content:start;overflow:hidden;padding:12px 12px 14px;border-radius:10px;background:#ffffff;color:#1f2b29;font-size:14px;line-height:normal;box-shadow:0 10px 30px rgba(0,0,0,.45);}
+.bdt-stage-tools .import-block-tool{margin:0;}
+.bdt-stage-tools .if-btn{display:inline-flex;align-items:center;justify-content:center;gap:2px;height:24px;padding:2px 4px;border:1px solid var(--border,#d6e2df);border-radius:5px;background:#ffffff;color:var(--ink2,#3d4f4b);font-size:10px;font-weight:600;line-height:1.2;white-space:nowrap;}
+.bdt-stage-tools .if-btn.if-icon-btn{width:22px;padding:2px;}
+.bdt-stage-tools .if-btn.danger{color:#b42318;}
+.bdt-stage-tools .import-tool-mini-preview{width:34px;height:34px;flex-basis:34px;}
+.bdt-stage-tools .line-icon{display:inline-block;width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.15em;}
+.bdt-stage-tools .bdt-hot{animation:bdt-tools-hot 6s ease-in-out infinite;}
+.bdt-tools-head{font-size:12px;font-weight:800;color:var(--teal-dark,#1d6f66);}
+.bdt-tools-head span{font-weight:600;color:var(--ink3,#6b7c78);}
+.bdt-tools-tag{display:block;padding:3px 7px;border-radius:6px;background:#fff4dc;color:#8a5300;font-size:10px;font-weight:700;}
+@keyframes bdt-tools-hot{0%,20%,100%{border-color:var(--border,#d6e2df);background:#ffffff;color:var(--ink2,#3d4f4b);box-shadow:none;}5%,15%{border-color:#ee4d2d;background:#fff1ec;color:#ee4d2d;box-shadow:0 0 0 2px rgba(238,77,45,.2);}}
+/* 縮放旋轉示意：示範商品連同選取框一起轉（真實畫布上只畫靜態選取框，不動使用者的圖） */
+.bdt-stage-rotor{animation:bdt-demo-spin 5.4s ease-in-out infinite;transform-origin:50% 55%;}
+.bdt-stage-rotor img{display:block;width:100%;height:100%;object-fit:contain;}
+.bdt-stage-rotor .bdt-stage-select{position:absolute;inset:-6px;}
+.bdt-hide-img{visibility:hidden!important;}
+.bdt-stage-chip{padding:2px 10px;border-radius:999px;background:var(--bdt-accent);color:#ffffff;font-size:11px;font-weight:700;line-height:1.7;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35);}
+/* 曝光資源：依等級自動勾選的版位清單（真實清單在側欄下方看不到時，同步顯示在這裡） */
+.bdt-stage-mirror{width:272px;overflow:hidden;border:1px solid #cfd8d6;border-radius:10px;background:#ffffff;color:#1f2b29;font-size:12px;line-height:1.45;box-shadow:0 10px 28px rgba(0,0,0,.45);}
+.bdt-mirror-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid #e3e9e7;background:#f4f7f6;font-weight:800;color:#1d6f66;}
+.bdt-mirror-head small{font-weight:600;color:#6b7c78;font-size:10px;}
+.bdt-mirror-level{padding:7px 10px;border-bottom:1px dashed #e3e9e7;font-size:11px;color:#3d4f4b;}
+.bdt-mirror-level b{color:#ee4d2d;}
+.bdt-mirror-list{padding:5px 10px 7px;}
+.bdt-mirror-item{display:flex;align-items:center;gap:7px;padding:3px 0;}
+.bdt-mirror-item i{flex:0 0 14px;width:14px;height:14px;border:1.5px solid #9fb0ac;border-radius:3px;background:#ffffff;color:#ffffff;font:900 10px/11px system-ui,sans-serif;font-style:normal;text-align:center;}
+.bdt-mirror-item.is-on i{border-color:#ee4d2d;background:#ee4d2d;animation:bdt-check-pop 5s ease-in-out infinite both;}
+.bdt-mirror-item span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.bdt-mirror-item small{color:#6b7c78;font-size:10px;white-space:nowrap;}
+.bdt-mirror-more{padding:0 10px 8px;font-size:10.5px;color:#6b7c78;}
+@keyframes bdt-check-pop{0%,4%{transform:scale(.3);opacity:0;}12%,100%{transform:scale(1);opacity:1;}}
+/* 卡片動畫：左側製作流程 */
+.bdt-demo-workflow{display:flex;gap:12px;align-items:center;padding:24px 14px 8px;}
+.bdt-flow-rail{width:80px;flex-shrink:0;display:grid;gap:4px;padding:5px;border-radius:7px;background:#1f3a35;}
+.bdt-flow-rail span{position:relative;display:block;padding:3px 5px;border-radius:4px;background:rgba(255,255,255,.08);color:#dfe8e6;font-size:8.5px;line-height:1.3;}
+.bdt-flow-rail span i{position:absolute;right:-4px;top:-4px;width:11px;height:11px;border-radius:50%;font:800 7px/11px system-ui,sans-serif;text-align:center;font-style:normal;animation:bdt-flow-badge 6s ease-in-out infinite both;}
+.bdt-flow-rail span i.is-done{background:#f5b335;color:#3a2a00;}
+.bdt-flow-rail span i.is-skip{background:#7c8a87;color:#ffffff;}
+.bdt-flow-note{flex:1;min-width:0;display:grid;gap:6px;font-size:9.5px;line-height:1.5;color:var(--bdt-muted);}
+.bdt-flow-note b{display:block;padding:4px 6px;border:1px solid var(--bdt-accent);border-radius:5px;background:var(--bdt-accent-soft);color:var(--bdt-text);font-weight:600;animation:bdt-flow-warn 6s ease-in-out infinite both;}
+@keyframes bdt-flow-badge{0%,10%{opacity:0;transform:scale(.4);}18%,92%{opacity:1;transform:scale(1);}100%{opacity:0;}}
+@keyframes bdt-flow-warn{0%,62%{opacity:0;}70%,94%{opacity:1;}100%{opacity:0;}}
+/* 卡片動畫：兩行文字（第二行接回 → 警語往上補位；Enter 斷行 → 回到原位） */
+.bdt-demo-twoline{display:flex;gap:10px;align-items:center;padding:24px 12px 8px;}
+.bdt-two-card{position:relative;flex-shrink:0;width:128px;height:80px;overflow:hidden;border-radius:7px;background:#ffffff;color:#121827;font-family:"PingFang TC","Microsoft JhengHei",sans-serif;text-align:center;}
+.bdt-two-promo{height:16px;line-height:16px;background:#4f9fa2;color:#ffffff;font-size:9px;font-weight:700;}
+.bdt-two-name{margin-top:5px;font-size:13px;font-weight:600;line-height:16px;}
+.bdt-two-line2{display:block;overflow:hidden;max-height:16px;animation:bdt-two-line 6s ease-in-out infinite;}
+.bdt-two-warn{font-size:9px;line-height:13px;color:#6b7280;margin-top:3px;}
+.bdt-two-keys{flex:1;min-width:0;display:grid;gap:5px;font-size:9.5px;line-height:1.45;color:var(--bdt-muted);}
+.bdt-two-keys kbd{display:inline-block;min-width:52px;padding:2px 5px;margin-right:4px;border:1px solid var(--bdt-line-strong);border-bottom-width:2px;border-radius:4px;background:var(--bdt-soft);color:var(--bdt-text);font:600 9px/1.3 "Segoe UI",sans-serif;text-align:center;}
+.bdt-two-keys span:nth-child(1) kbd{animation:bdt-two-key-enter 6s step-end infinite;}
+.bdt-two-keys span:nth-child(2) kbd{animation:bdt-two-key-back 6s step-end infinite;}
+@keyframes bdt-two-line{0%,40%{opacity:1;max-height:16px;}50%,90%{opacity:0;max-height:0;}100%{opacity:1;max-height:16px;}}
+@keyframes bdt-two-key-enter{0%,8%{background:var(--bdt-accent);color:#ffffff;border-color:var(--bdt-accent);}9%,91%{background:var(--bdt-soft);color:var(--bdt-text);border-color:var(--bdt-line-strong);}92%,100%{background:var(--bdt-accent);color:#ffffff;border-color:var(--bdt-accent);}}
+@keyframes bdt-two-key-back{0%,41%{background:var(--bdt-soft);color:var(--bdt-text);border-color:var(--bdt-line-strong);}42%,52%{background:var(--bdt-accent);color:#ffffff;border-color:var(--bdt-accent);}53%,100%{background:var(--bdt-soft);color:var(--bdt-text);border-color:var(--bdt-line-strong);}}
+/* 卡片動畫：超過字數 → 自己刪字 → 符合字數、可以下載 */
+.bdt-demo-text-limit{display:flex;gap:10px;align-items:center;padding:24px 12px 8px;}
+.bdt-limit-card{position:relative;flex-shrink:0;width:150px;height:78px;border-radius:7px;background:#ffffff;color:#121827;font-family:"PingFang TC","Microsoft JhengHei",sans-serif;}
+.bdt-limit-text{position:absolute;left:8px;right:8px;top:12px;padding:3px 2px;border-radius:4px;font-size:12px;font-weight:600;text-align:center;white-space:nowrap;animation:bdt-limit-frame 7s ease-in-out infinite;}
+.bdt-limit-text em{display:inline-block;overflow:hidden;vertical-align:bottom;font-style:normal;color:#dc2626;max-width:2.2em;animation:bdt-limit-extra 7s ease-in-out infinite;}
+.bdt-limit-bubble{position:absolute;left:8px;top:44px;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;color:#ffffff;white-space:nowrap;}
+.bdt-limit-bubble.is-over{background:#dc2626;animation:bdt-limit-show-over 7s ease-in-out infinite;}
+.bdt-limit-bubble.is-ok{background:#16a34a;opacity:0;animation:bdt-limit-show-ok 7s ease-in-out infinite;}
+.bdt-limit-side{flex:1;min-width:0;display:grid;gap:6px;font-size:9.5px;line-height:1.5;color:var(--bdt-muted);}
+.bdt-limit-dls{position:relative;display:block;}
+.bdt-limit-dl{display:block;padding:5px 6px;border-radius:5px;text-align:center;font-size:9.5px;font-weight:700;}
+.bdt-limit-dl.is-blocked{border:1px dashed #ef4444;background:#3a2323;color:#fca5a5;animation:bdt-limit-show-over 7s ease-in-out infinite;}
+.bdt-limit-dl.is-open{position:absolute;inset:0;border:1px solid var(--bdt-accent);background:var(--bdt-accent);color:#ffffff;opacity:0;animation:bdt-limit-show-ok 7s ease-in-out infinite;}
+@keyframes bdt-limit-frame{0%,55%{box-shadow:inset 0 0 0 2px #ef4444;background:rgba(239,68,68,.14);}62%,95%{box-shadow:inset 0 0 0 2px #16a34a;background:rgba(22,163,74,.1);}100%{box-shadow:inset 0 0 0 2px #ef4444;background:rgba(239,68,68,.14);}}
+@keyframes bdt-limit-extra{0%,40%{max-width:2.2em;opacity:1;}55%,95%{max-width:0;opacity:0;}100%{max-width:2.2em;opacity:1;}}
+@keyframes bdt-limit-show-over{0%,55%{opacity:1;}62%,95%{opacity:0;}100%{opacity:1;}}
+@keyframes bdt-limit-show-ok{0%,58%{opacity:0;}65%,95%{opacity:1;}100%{opacity:0;}}
+/* 開場：本次更新 */
+.bdt-whatsnew{margin:0 0 20px;padding:12px 14px;border:1px solid var(--bdt-line);border-radius:12px;background:var(--bdt-soft);}
+.bdt-whatsnew-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.bdt-whatsnew-head b{font-size:12px;color:var(--bdt-accent);letter-spacing:.06em;}
+.bdt-whatsnew ul{margin:0;padding-left:18px;font-size:12px;line-height:1.75;color:var(--bdt-text);}
+.bdt-whatsnew li::marker{color:var(--bdt-accent);}
+.bdt-whatsnew .bdt-secondary{padding:5px 10px;font-size:11px;white-space:nowrap;}
+@media(prefers-reduced-motion:reduce){.bdt-two-line2{max-height:16px;opacity:1;}.bdt-limit-text em{max-width:2.2em;opacity:1;}.bdt-limit-bubble.is-over,.bdt-limit-dl.is-blocked{opacity:1;}.bdt-limit-bubble.is-ok,.bdt-limit-dl.is-open{opacity:0;}.bdt-flow-rail span i,.bdt-flow-note b,.bdt-stage-badge{opacity:1;transform:none;}}
 #boda-tour-waiting{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:2147480001;width:min(540px,calc(100vw - 28px));display:flex;align-items:center;gap:13px;padding:15px 17px;box-sizing:border-box;border:1px solid var(--bdt-line);border-radius:14px;background:var(--bdt-deep);color:var(--bdt-text);box-shadow:0 12px 40px rgba(0,0,0,.5);font:12px/1.65 "PingFang TC","Microsoft JhengHei",sans-serif;}
 #boda-tour-waiting .bdt-wait-spinner{flex:none;width:19px;height:19px;border:2px solid var(--bdt-line-strong);border-top-color:var(--bdt-accent);border-radius:50%;animation:bdt-wait-spin .8s linear infinite;}
 #boda-tour-waiting .bdt-wait-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
@@ -21578,11 +21716,207 @@ function loadDemoImport() {
   });
 }
 
+/* ══════════════════════════════════════════════════
+   大型暫存檔（.json）分段解析
+   ──────────────────────────────────────────────────
+   暫存檔是用 importSnapshotJsonBlob 分段寫出的，圖片多時可以超過 500 MB；
+   但瀏覽器單一字串有長度上限（Chromium 約 5 億字元），readAsText 讀不進來，
+   結果是空字串，JSON.parse 就報「Unexpected end of JSON input」。
+   這裡直接逐段讀位元組、邊讀邊組出物件：每個字串值（例如一張圖片的 dataURL）
+   各自解碼，不會出現一條跟整個檔案一樣長的字串。結果與 JSON.parse 相同。 */
+var IMPORT_JSON_STREAM_THRESHOLD = 64 * 1024 * 1024;
+function parseLargeJsonBlob(blob, onProgress, chunkSize) {
+  var CHUNK = chunkSize || 8 * 1024 * 1024;
+  var size = blob.size, readPos = 0, chunkBase = 0;
+  var oneShot = new TextDecoder('utf-8');
+  var stack = [], root, rootStarted = false, rootDone = false;
+  /* value｜valueOrEnd（[ 之後）｜keyOrEnd（{ 之後）｜key｜colon｜commaOrEnd｜end */
+  var expect = 'value';
+  var str = null; /* 正在讀的字串：{ isKey, segStart, decoder, pieces, hasEscape, carry } */
+  var lit = null; /* 正在讀的數字／true／false／null */
+  function mb(offset) { return (offset / 1048576).toFixed(1) + ' MB'; }
+  function fail(message, offset) {
+    throw new Error(message + '（約在檔案 ' + mb(offset) + ' 處，檔案共 ' + mb(size) + '）');
+  }
+  function setProp(obj, key, value) {
+    if (key === '__proto__') Object.defineProperty(obj, key, { value: value, writable: true, enumerable: true, configurable: true });
+    else obj[key] = value;
+  }
+  function attach(value, offset) {
+    if (!stack.length) {
+      if (rootStarted) fail('暫存檔格式錯誤：結尾有多餘的內容', offset);
+      root = value; rootStarted = true; return;
+    }
+    var top = stack[stack.length - 1];
+    if (top.isArr) top.value.push(value);
+    else { setProp(top.value, top.key, value); top.key = null; }
+  }
+  function emitPrimitive(value, offset) {
+    attach(value, offset);
+    if (stack.length) expect = 'commaOrEnd';
+    else { expect = 'end'; rootDone = true; }
+  }
+  function openContainer(isArr, offset) {
+    var value = isArr ? [] : {};
+    attach(value, offset);
+    stack.push({ value: value, isArr: isArr, key: null });
+    expect = isArr ? 'valueOrEnd' : 'keyOrEnd';
+  }
+  function closeContainer(isArr, offset) {
+    var top = stack[stack.length - 1];
+    if (!top || top.isArr !== isArr) fail('暫存檔格式錯誤：括號沒有對上', offset);
+    stack.pop();
+    if (stack.length) expect = 'commaOrEnd';
+    else { expect = 'end'; rootDone = true; }
+  }
+  function isLitByte(c) {
+    return (c >= 0x30 && c <= 0x39) || c === 0x2D || c === 0x2B || c === 0x2E || c === 0x45 || (c >= 0x61 && c <= 0x7A);
+  }
+  function finishLit(offset) {
+    var text = lit; lit = null;
+    var value;
+    if (text === 'true') value = true;
+    else if (text === 'false') value = false;
+    else if (text === 'null') value = null;
+    else if (/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(text)) value = Number(text);
+    else fail('暫存檔格式錯誤：無法辨識的內容「' + text.slice(0, 20) + '」', offset);
+    emitPrimitive(value, offset);
+  }
+  /* 字串跨到下一段：先把這段解碼起來（串流解碼器會接好被切開的中文字）。 */
+  function keepStringPart(bytes, from, to) {
+    if (to <= from) return;
+    var part = bytes.subarray(from, to);
+    if (!str.hasEscape && part.indexOf(0x5C) !== -1) str.hasEscape = true;
+    var t = to - 1, run = 0;
+    while (t >= from && bytes[t] === 0x5C) { run++; t--; }
+    str.carry = t < from ? str.carry + run : run;
+    if (!str.decoder) { str.decoder = new TextDecoder('utf-8'); str.pieces = []; }
+    str.pieces.push(str.decoder.decode(part, { stream: true }));
+  }
+  function finishString(bytes, from, to, offset) {
+    var part = bytes.subarray(from, to), raw;
+    if (!str.hasEscape && part.indexOf(0x5C) !== -1) str.hasEscape = true;
+    if (str.decoder) {
+      str.pieces.push(str.decoder.decode(part));
+      raw = str.pieces.join('');
+    } else {
+      raw = oneShot.decode(part);
+    }
+    var value = raw;
+    if (str.hasEscape) {
+      try { value = JSON.parse('"' + raw + '"'); }
+      catch (err) { fail('暫存檔格式錯誤：文字內容的跳脫字元不正確', offset); }
+    }
+    var isKey = str.isKey;
+    str = null;
+    if (isKey) { stack[stack.length - 1].key = value; expect = 'colon'; }
+    else emitPrimitive(value, offset);
+  }
+  function processChunk(bytes) {
+    var i = 0, n = bytes.length, c;
+    if (chunkBase === 0 && n >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) i = 3;
+    if (str) str.segStart = 0;
+    while (i < n) {
+      if (str) {
+        var q = bytes.indexOf(0x22, i);
+        if (q === -1) { keepStringPart(bytes, str.segStart, n); i = n; break; }
+        /* 前面有奇數個反斜線＝跳脫的引號，屬於字串內容 */
+        var k = q - 1, slashes = 0;
+        while (k >= str.segStart && bytes[k] === 0x5C) { slashes++; k--; }
+        if (k < str.segStart) slashes += str.carry;
+        if (slashes % 2 === 1) {
+          str.hasEscape = true; i = q + 1;
+          /* 跳脫的引號剛好是這段的最後一個位元組：這段內容也要先收起來。 */
+          if (i >= n) { keepStringPart(bytes, str.segStart, n); break; }
+          continue;
+        }
+        finishString(bytes, str.segStart, q, chunkBase + q);
+        i = q + 1;
+        continue;
+      }
+      c = bytes[i];
+      if (lit !== null) {
+        if (isLitByte(c)) { lit += String.fromCharCode(c); i++; continue; }
+        finishLit(chunkBase + i);
+        continue;
+      }
+      if (c === 0x20 || c === 0x0A || c === 0x0D || c === 0x09) { i++; continue; }
+      var at = chunkBase + i;
+      if (expect === 'value' || expect === 'valueOrEnd') {
+        if (c === 0x22) { str = { isKey: false, segStart: i + 1, decoder: null, pieces: null, hasEscape: false, carry: 0 }; i++; continue; }
+        if (c === 0x7B) { openContainer(false, at); i++; continue; }
+        if (c === 0x5B) { openContainer(true, at); i++; continue; }
+        if (c === 0x5D && expect === 'valueOrEnd') { closeContainer(true, at); i++; continue; }
+        if (c === 0x2D || (c >= 0x30 && c <= 0x39) || c === 0x74 || c === 0x66 || c === 0x6E) { lit = ''; continue; }
+        fail('暫存檔格式錯誤：這裡應該是資料內容', at);
+      } else if (expect === 'keyOrEnd' || expect === 'key') {
+        if (c === 0x22) { str = { isKey: true, segStart: i + 1, decoder: null, pieces: null, hasEscape: false, carry: 0 }; i++; continue; }
+        if (c === 0x7D && expect === 'keyOrEnd') { closeContainer(false, at); i++; continue; }
+        fail('暫存檔格式錯誤：這裡應該是欄位名稱', at);
+      } else if (expect === 'colon') {
+        if (c === 0x3A) { expect = 'value'; i++; continue; }
+        fail('暫存檔格式錯誤：欄位名稱後面少了冒號', at);
+      } else if (expect === 'commaOrEnd') {
+        if (c === 0x2C) { expect = stack[stack.length - 1].isArr ? 'value' : 'key'; i++; continue; }
+        if (c === 0x5D) { closeContainer(true, at); i++; continue; }
+        if (c === 0x7D) { closeContainer(false, at); i++; continue; }
+        fail('暫存檔格式錯誤：資料之間少了逗號或括號', at);
+      } else {
+        fail('暫存檔格式錯誤：結尾有多餘的內容', at);
+      }
+    }
+    chunkBase += n;
+  }
+  function readNext() {
+    if (readPos >= size) {
+      if (lit !== null) finishLit(size);
+      if (str || stack.length || !rootDone) {
+        throw new Error('暫存檔不完整：檔案在 ' + mb(size) + ' 處就結束了，結構還沒收尾。' +
+          '可能是下載或雲端硬碟同步沒有完成，請改用完整的原始檔。');
+      }
+      return Promise.resolve(root);
+    }
+    /* 第一段至少讀 3 個位元組，開頭若有 UTF-8 BOM 才認得出來。 */
+    var end = Math.min(size, readPos + (readPos ? CHUNK : Math.max(CHUNK, 3)));
+    return blob.slice(readPos, end).arrayBuffer().then(function (buffer) {
+      readPos = end;
+      processChunk(new Uint8Array(buffer));
+      if (typeof onProgress === 'function') onProgress(readPos / size, readPos, size);
+      return readNext();
+    });
+  }
+  if (!size) return Promise.reject(new Error('暫存檔是空的（0 位元組）'));
+  return readNext();
+}
+/* 讀進來的 JSON：匯入暫存檔就還原，否則當作本工具的 JSON 工單。 */
+function applyImportedJsonValue(parsed) {
+  currentImportWorkbook = null;
+  currentImportWorkbookName = '';
+  currentImportActivityName = '';
+  if (parsed && parsed.type === 'wo_import_snapshot') restoreImportSnapshot(parsed);
+  else afterImportParsed(parseImportOwnJSON(parsed), { source: 'file', hasBottomWorkOrder: false });
+}
+
 function handleImportFile(file) {
   var importLog = document.getElementById('import-log');
   importLog.innerHTML = '讀取中…';
   appLoadingStart('LOADING · 匯入工單', 5, '正在讀取 ' + (file && file.name ? file.name : '檔案') + '…');
   var name = file.name.toLowerCase();
+  /* 大型暫存檔：分段解析，不經過一條巨型字串。 */
+  if (name.endsWith('.json') && file.size > IMPORT_JSON_STREAM_THRESHOLD) {
+    var totalMb = Math.round(file.size / 1048576);
+    parseLargeJsonBlob(file, function (ratio, loaded) {
+      appLoadingUpdate(5 + ratio * 45, 'LOADING · 匯入工單',
+        '大型暫存檔分段讀取 ' + Math.round(ratio * 100) + '%（' + Math.round(loaded / 1048576) + ' / ' + totalMb + ' MB）', 50);
+    }).then(function (parsed) {
+      appLoadingUpdate(50, 'LOADING · 匯入工單', '檔案讀取完成，正在還原暫存檔…', 55);
+      applyImportedJsonValue(parsed);
+    }).catch(function (err) {
+      importLog.innerHTML = '<span class="err">解析失敗：' + esc(err && err.message ? err.message : String(err)) + '</span>';
+      appLoadingFinish('工單解析失敗');
+    });
+    return;
+  }
   var reader = new FileReader();
   reader.onprogress = function (e) {
     if (!e.lengthComputable) return;
@@ -26399,8 +26733,13 @@ ensureBlocksLoaded(function () {
 })();
 </script>
 <!-- 獨立操作導覽：只展示介面與動畫，不修改工單或觸發上傳／下載。 -->
-<script id="boda-tour-script" data-version="20261028-9">
-/* BODA 互動導覽 v1.8 / 2026-10-28
+<script id="boda-tour-script" data-version="20261106-2">
+/* BODA 互動導覽 v1.10 / 2026-11-06
+ * v1.9：新增「左側製作流程」「超過字數提示」兩步，改寫兩行文字編輯、圖片工具列、配色連動等說明；
+ *       新步驟會在真實畫面上疊出示範（完成勾勾、紅框、下載區清單），不只是框選區域。
+ * v1.10：圖片欄位規則改框 STEP 1 並移到第 2 步；畫布沒有商品圖時疊「示範畫布」（改字只框文字、
+ *       選取框、旋轉示範）；右側工具列示範已上傳圖片；曝光資源同時框等級與排版選擇；
+ *       背景圖庫直接打開實際畫面；下載同時框亮左側「整包下載」。
  * 無第三方依賴、無追蹤。動畫是隔離的示意，不呼叫上傳／匯出／寫入 API。
  * 曝光／吸底步驟使用既有載入器開啟工具；已載入的 iframe 不重載。
  * 導覽暫時切換 DOM 的可見頁籤；不呼叫 showView，不改 URL、本機暫存或工單狀態。
@@ -26408,67 +26747,76 @@ ensureBlocksLoaded(function () {
 (function () {
   'use strict';
   if (window.BODATour) return;
-  var VERSION = '20261028-9';
+  var VERSION = '20261106-2';
   var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 8.5a2.5 2.5 0 0 1 4.7 1.2c0 1.8-2.5 2-2.5 3.8M12 17h.01"/></svg>';
   var POINTER = '<svg viewBox="0 0 22 28" fill="currentColor" stroke="#111111" stroke-width="1" aria-hidden="true"><path d="m3 2 16 14-8 1-4 8z"/></svg>';
   var FILE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6"/></svg>';
   var IMAGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>';
   var STEPS = [
+    {id:'workflow',group:'製作流程',view:'import',target:'#nav-rail',stage:'workflow',cardAt:'right',title:'左側就是製作流程，照順序往下做',
+      text:'<b>活動頁資源 → 曝光資源 → 取色工具 → 吸底工具 → 整包下載</b>。每一步做完按<b>「完成」</b>會打上琥珀色勾；廠商不製作的項目按<b>「略過」</b>。按整包下載時，還沒完成也沒略過的步驟會先提醒你。',
+      tip:'左側選單上的勾勾與提醒是示意，不會改變你目前的完成狀態。',demo:'workflow'},
     {id:'import',group:'匯入與編輯',view:'import',target:'#import-drop',title:'STEP 1：匯入填好的工單',
       text:'將 <b>.xlsx 工單</b>拖到這個區塊，或點擊選檔。工具會依 <code>Layout_Output</code> 的欄位與版位，建立預覽畫布。',
       tip:'依這包版本的介面，試算表與圖片分成 STEP 1、STEP 2 上傳。',demo:'upload',ghost:'工單.xlsx'},
+    {id:'matching',group:'匯入與編輯',view:'import',target:'#import-drop',stage:'matching',title:'工單的圖片欄位：逗號分開，每格最多 5 張',
+      text:'STEP 1 的工單裡，<b>商品圖、LOGO 等圖片欄位</b>填的是圖片檔名。一格要放多張圖時<b>用逗號分開</b>，每個檔名都會獨立配對，副檔名可不同。<b>每格最多 5 張</b>，超過只取前 5 張，匯入完成時會列出被略過的欄位。',
+      tip:'旁邊的工單表格是示意。找不到圖時，先檢查檔名是否一致、有沒有多餘空白，以及逗號的分隔方式。',demo:'matching'},
     {id:'images',group:'匯入與編輯',view:'import',target:['#import-img-drop','#import-img-section'],title:'STEP 2：整包圖片資料夾放進來',
-      text:'把商品圖與 LOGO 資料夾拖進來，或按<b>選擇圖片資料夾</b>。圖片放在資料夾內的第二、第三層，也會向下讀取。',
+      text:'把商品圖與 LOGO 資料夾拖進來，或按<b>選擇圖片資料夾</b>。工具會依工單裡填的檔名自動配對；圖片放在資料夾內的第二、第三層，也會向下讀取。',
       tip:'這裡的動畫只是示意，不會開啟選檔視窗或上傳檔案。',demo:'folder',ghost:'商品與LOGO資料夾'},
-    {id:'matching',group:'匯入與編輯',view:'import',target:'#import-img-drop',title:'先讀工單，再依檔名找圖片',
-      text:'工具會先判讀工單的圖片欄位，再尋找相符檔名。<b>一格多圖要用逗號分開</b>，每張都會獨立配對；副檔名可不同。',
-      tip:'找不到圖時，先檢查欄位名稱、空白與逗號的分隔方式。',demo:'matching'},
-    {id:'preview',group:'匯入與編輯',view:'import',target:'#import-canvas-area',title:'在中央畫布確認整張成品',
+    {id:'preview',group:'匯入與編輯',view:'import',target:['#import-canvas-area','#import-canvas-main'],stage:'preview',demoCanvas:true,title:'在中央畫布確認整張成品',
       text:'這裡會顯示副區、MSBN 與匯入的內容。上下捲動畫布逐一確認；工具列的<b>顯示比例</b>是預覽縮放，不等於商品本身的大小。',
-      tip:'尚未匯入時看到空白提示是正常的，導覽不會灌入測試工單。',demo:'exposure'},
-    {id:'text',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],title:'在畫布中調整文案與欄位',
-      text:'選擇版位後，右側顯示相對應的文字與欄位。修改品名、促標、警語等內容時，留意該欄位的字數與行數規則。',
-      tip:'目前沒有工單時，右側可能尚未列出實際欄位。',demo:'text'},
-    {id:'image-tools',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],title:'商品、LOGO 分別編輯',
-      text:'右側的圖片操作列提供<b>編輯、換圖、刪除與前後順序</b>。先確認選到的是哪一張素材，再進入編輯。',
+      tip:'畫布還沒有商品圖時，導覽會疊上一張<b>示範畫布</b>（商品圖為示意），不會灌入工單或改動你的畫面。想重新開始，可按左側「直接預覽全部版位」下方的<b>清除畫面內容</b>。',demo:'exposure'},
+    {id:'text',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],stage:'text-hint',demoCanvas:true,title:'在畫布直接改字，兩行欄位隨你排',
+      text:'直接點畫布上的文字就能改。品名、促標、代言人小字等<b>兩行欄位</b>：按 <b>Enter</b> 在游標處斷行、在第二行開頭按 <b>Backspace</b> 接回一行；一行打滿會自動流到下一行。副區品名只有一行時，下方<b>警語會自動往上補位</b>，加回第二行又回到原位。',
+      tip:'框起來的是畫布上的文字（沒有匯入時是示範畫布）；導覽不會修改你的文字。',demo:'twoline'},
+    {id:'text-limit',group:'匯入與編輯',view:'import',target:['#import-canvas-area','#import-canvas-main'],stage:'text-limit',demoCanvas:true,title:'超過字數：框出來、不刪字、擋下載',
+      text:'工單裡超過版位字數的文字，會被<b>紅框框出</b>，旁邊標出規則與多幾個字。<b>多出來的字不會被自動刪掉</b>，由你決定要留哪些；左側下載區會列出所有問題，點一下就跳到該欄位。全部修正前，<b>不能下載圖片</b>。',
+      tip:'畫面上的紅框與清單是示意，跟實際功能長得一樣，但不會改動你的文字。英數算半個字，跟 Excel 的算法相同。',demo:'text-limit'},
+    {id:'image-tools',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],stage:'image-select',demoCanvas:true,title:'右側工具列：圖片與前後位置',
+      text:'右側的圖片操作列提供<b>編輯、換圖、刪除</b>。曝品與贈品依<b>左右分組</b>，用<b>「前後位置」</b>箭頭決定誰疊在前面，列表順序也會跟著換。<b>點一下工具列的圖片，畫布會直接框出那張圖</b>，不怕點不到被擋住的商品。',
       tip:'換圖與刪除都會變更實際內容，導覽不會執行這些操作。',demo:'resize'},
-    {id:'transform',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],title:'拖曳縮放與任意角度旋轉',
-      text:'在畫布點選商品圖，用四角控制點縮放，或拖曳上方 <b>↻</b> 任意旋轉；不是每按一次只能轉 90°。',
-      tip:'動畫使用獨立示意商品，不會移動、縮放或旋轉你現有的圖片。',demo:'rotate'},
-    {id:'asset-tools',group:'匯入與編輯',view:'import',target:['#import-block-tools','#import-canvas-tools'],title:'右側工具列：管理圖片素材',
-      text:'在右側圖片工具列，可以針對 <b>LOGO 圖、商品圖、代言人圖、代言人簽名檔圖</b>，進行<b>編輯、換圖、新增、刪除</b>。操作前先確認選到正確的版位與素材。',
-      tip:'可用操作依素材欄位顯示；導覽不會實際新增、更換或刪除圖片。',demo:'assets'},
+    {id:'transform',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],stage:'transform',demoCanvas:true,title:'拖曳縮放與任意角度旋轉',
+      text:'在畫布點選商品圖或<b>代言人圖</b>，用四角控制點縮放，或拖曳上方 <b>↻</b> 任意旋轉；不是每按一次只能轉 90°。調整前後位置也會保留你縮放好的大小。',
+      tip:'旋轉的是示範商品；你畫布上的圖片只會標出選取框，不會被移動、縮放或旋轉。',demo:'rotate'},
+    {id:'asset-tools',group:'匯入與編輯',view:'import',target:['#import-canvas-tools','#import-block-tools'],stage:'asset-tools',title:'右側工具列：管理圖片素材',
+      text:'在右側圖片工具列，可以針對 <b>LOGO 圖、商品圖、代言人圖、代言人簽名檔圖</b>，進行<b>編輯、換圖、新增、刪除</b>；同一欄有多張圖時，用 <b>▲▼</b> 調整前後。操作前先確認選到正確的版位與素材。',
+      tip:'框起來的是已上傳圖片時的工具列示範；導覽不會實際新增、更換或刪除圖片。',demo:'assets'},
     {id:'shadow',group:'匯入與編輯',view:'import',target:'#import-shadow-panel',title:'調整商品影子的方向與位移',
       text:'調整光源、左右及上下位移；陰影色依實際畫布背景計算。若預覽未更新，可按<b>套用修改</b>重新處理。',
       tip:'處理多張圖片可能需要等待 Loading；導覽不會重製任何圖片。',demo:'shadow'},
     {id:'colors',group:'匯入與編輯',view:'import',target:'#import-color-section',title:'統一顏色，讓整組一致',
-      text:'在這裡調整共用色，讓相關版位一起更新。也可以<b>直接點選中央畫布上可編輯的共用色塊</b>，左側「統一顏色」會定位對應色票，並開啟色盤讓你修改。背景色與<b>曝光資源雙向連動</b>；特定版位專用色則由該版位工具調整。',
+      text:'在這裡調整共用色，讓相關版位一起更新；也可以<b>直接點畫布上的共用色塊</b>，左側會定位對應色票並開啟色盤。<b>主標色</b>帶動 CTA 底色與圓標底色、<b>副標色</b>帶動促標底色；背景、主標、副標與曝光資源、取色工具<b>三處雙向同步</b>。',
       tip:'點色塊的空白處可換色；點文字則是編輯文字。導覽中的滑鼠與色盤是操作示意，不會實際修改作品。',demo:'colors'},
-    {id:'exposure',group:'曝光與交付',view:'exposure',frame:'exposure-frame',frameTargets:['#lv-wrap','#sidebar'],target:['#exposure-frame','#view-exposure'],title:'再延伸製作曝光資源',
-      text:'從左側切到<b>曝光資源</b>，依等級選擇 BN、DDCARD、Search 等版位，並確認 LOGO、文案與商品圖。',
-      tip:'導覽會切換到曝光資源；首次開啟時會載入既有工具，不會重置已開啟的內容。',demo:'exposure'},
-    {id:'backgrounds',group:'曝光與交付',view:'exposure',frame:'exposure-frame',frameAnchor:'background-heading',target:['#exposure-frame','#view-exposure'],title:'背景圖庫與活動等級連動',
-      text:'曝光資源中可透過搜尋圖庫選擇合適的背景。',
-      tip:'亮框標示「上傳背景圖」按鈕上方的「背景圖」標題；導覽不會代改等級或背景。',demo:'backgrounds'},
+    {id:'exposure',group:'曝光與交付',view:'exposure',frame:'exposure-frame',frameAnchor:'level-layouts',stage:'exposure-level',target:['#exposure-frame','#view-exposure'],title:'曝光資源：等級決定要做哪些版位',
+      text:'從左側切到<b>曝光資源</b>，先在側欄最上方選<b>活動等級</b>。等級會連動下方的<b>「排版選擇」</b>：自動勾選這個等級要做的版位（BN、DDCARD、Search…），<b>版位數量</b>也跟著變。再確認 LOGO、文案與商品圖；換色時的色票<b>只顯示目前底色能用的顏色</b>。',
+      tip:'右邊清單同步顯示目前等級勾選的版位與名稱；導覽不會代改等級或勾選。首次開啟時會載入既有工具，不會重置已開啟的內容。',demo:'level'},
+    {id:'backgrounds',group:'曝光與交付',view:'exposure',frame:'exposure-frame',frameAnchor:'bg-library',stage:'bg-library',target:['#exposure-frame','#view-exposure'],title:'背景圖庫：搜尋合適的背景',
+      text:'曝光資源側欄的「背景圖」可以開啟<b>背景圖庫</b>，依關鍵字、品牌或色系搜尋，點選背景圖就會套用到版位；也可以上傳自己的背景圖。圖庫內容會依<b>活動等級</b>切換。',
+      tip:'框起來的是實際的背景圖庫畫面；導覽只打開來給你看，不會套用任何背景，換下一步時會自動關閉。',demo:'backgrounds'},
     {id:'bottom',group:'曝光與交付',view:'bottom',frame:'bottom-standalone-frame',frameTargets:['#app','main'],target:['#bottom-standalone-frame','#view-bottom'],title:'有吸底需求，再編輯吸底工具',
       text:'工單有吸底內容時，可到<b>吸底工具</b>確認各顆的 LOGO、ICON、文字與狀態。工單原本沒有吸底時，不必額外製作。',
       tip:'請先由匯入工單載入資料，再確認吸底的預覽結果。',demo:'bottom'},
     {id:'color-tool',group:'曝光與交付',view:'color',frame:'color-frame',frameAnchor:'color-references',target:['#color-frame','#view-color'],title:'取色工具：價格與選單配色參考',
-      text:'從左側「背景色」進入取色工具。在<b>配色參考－價格</b>調整背景、原價與活動價顏色；在<b>配色參考－選單</b>調整一般、滑過、按下等狀態的底色與文字色。這裡選定的顏色，<b>下載素材時會附在 CSV 檔內</b>。',
+      text:'從左側進入<b>取色工具</b>。配出的<b>主標、副標</b>與曝光資源雙向同步，任一邊改色另一邊跟著換。在<b>配色參考－價格／選單</b>調整背景、原價、活動價與按鈕狀態色，這些顏色<b>下載素材時會附在 CSV 檔內</b>。',
       tip:'下載包的「色票」資料夾會附上色票_取色工具.csv；導覽不會實際改色或觸發下載。',demo:'color-reference'},
-    {id:'download',group:'曝光與交付',view:'import',target:'#btn-download-import-package',title:'確認完成，再一次下載交付',
-      text:'按<b>下載工單＋圖片＋暫存檔</b>，輸出目前工單、圖片與可還原的編輯狀態。下載前再確認每個版位的文字、圖片與配色。',
-      tip:'導覽只說明下載位置，不會替你觸發下載。下一步會介紹如何還原暫存檔。',demo:'download'},
+    {id:'download',group:'曝光與交付',view:'import',target:'#btn-download-import-package',stage:'download',extraTarget:'#nav-rail .nav-step[data-step="download"]',title:'確認完成，再一次下載交付',
+      text:'按<b>下載工單＋圖片＋暫存檔</b>，或左側流程最後一步<b>「整包下載」</b>——兩個是同一個功能，都會輸出目前工單、圖片、色票與可還原的編輯狀態。有文字<b>超過字數</b>時會先擋下；流程還有<b>未完成的步驟</b>會先提醒。',
+      tip:'兩個亮框都可以下載；導覽只說明位置，不會替你觸發下載。下一步會介紹如何還原暫存檔。',demo:'download'},
     {id:'restore',group:'曝光與交付',view:'import',target:'#btn-upload-snapshot',title:'暫存檔，讓下次可以接著做',
-      text:'同一台瀏覽器有本機暫存；若要跨電腦或保留一份可還原的版本，請另外保存下載包中的 <b>JSON 暫存檔</b>。',
+      text:'同一台瀏覽器有本機暫存；若要跨電腦或保留一份可還原的版本，請另外保存下載包中的 <b>JSON 暫存檔</b>。上傳暫存檔會<b>完整還原</b>圖片的位置與大小、文字、配色與流程完成狀態。',
       tip:'「上傳暫存檔還原編輯」可載回先前內容；本機暫存不等於永久備份。按「完成教學」會回到剛才的頁面與捲動位置。',demo:'restore'}
   ];
   var ROUTES = {
-    full:{label:'完整導覽 · 16 步',ids:STEPS.map(function(s){return s.id;})},
-    import:{label:'只看匯入與編輯 · 12 步',ids:['import','images','matching','preview','text','image-tools','transform','asset-tools','shadow','colors','download','restore']},
-    delivery:{label:'只看曝光與交付 · 6 步',ids:['exposure','backgrounds','bottom','color-tool','download','restore']}
+    full:{label:'完整導覽',ids:STEPS.map(function(s){return s.id;})},
+    news:{label:'本次更新重點',ids:['workflow','text','text-limit','image-tools','colors','color-tool','download']},
+    import:{label:'只看匯入與編輯',ids:['import','matching','images','preview','text','text-limit','image-tools','transform','asset-tools','shadow','colors','download','restore']},
+    delivery:{label:'只看曝光與交付',ids:['workflow','exposure','backgrounds','bottom','color-tool','download','restore']}
   };
-  var root,card,focus,dim,hud,ghost,snapshot,steps=[],route='full',index=-1,active=false,paused=false;
+  /* 路線標籤的步數依實際步驟自動計算，增減步驟時不用再手改數字。 */
+  Object.keys(ROUTES).forEach(function(key){ROUTES[key].label+=' · '+ROUTES[key].ids.length+' 步';});
+  var root,card,focus,dim,dimRects,hud,ghost,stage,stageSignature='',stageUnder,underSignature='',tourBgLibrary=null,snapshot,steps=[],route='full',index=-1,active=false,paused=false;
   var frameRaf=0,restoreRaf=0,targetObserver=null,currentTarget=null;
   var stepFrameTimer=0,stepFrameCleanup=null;
   var colorSelection=null,colorObserver=null,colorDim,colorFocus,colorExample,colorPointer,colorHint,paletteHint;
@@ -26630,13 +26978,25 @@ ensureBlocksLoaded(function () {
         '<div class="bdt-reference-menu"><small>配色參考－選單</small><div><span>一般</span><span>滑過</span><span>按下</span></div><span class="bdt-reference-swatches"><i></i><i></i><i></i></span></div>'+
         '<div class="bdt-reference-csv">選用色碼 → 色票_取色工具.csv</div>';
     }else if(type==='level'){
-      body='<span class="bdt-level-pill">A / B+</span><span>→</span><span class="bdt-level-pill">依等級顯示版位</span>';
+      body='<span class="bdt-level-pill">活動等級 ▾</span><span>→</span><span class="bdt-level-pill">☑ 版位勾選與數量</span>';
     }else if(type==='text'){
       body='<div class="bdt-demo-board"><div class="bdt-text-line">限時優惠開跑</div><small>在右側欄位編輯文案</small></div>';
     }else if(type==='bottom'){
       body='<span class="bdt-bottom-slot">主會場</span><span class="bdt-bottom-slot">品牌優惠</span><span class="bdt-bottom-slot">限時精選</span>';
     }else if(type==='download'){
       body='<span class="bdt-download-file">XLSX<br>工單</span><span class="bdt-download-file">PNG<br>成品圖</span><span class="bdt-download-file">JSON<br>暫存檔</span>';
+    }else if(type==='workflow'){
+      body='<div class="bdt-flow-rail">'+[['活動頁資源','done','✓',0],['曝光資源','done','✓',.7],['取色工具','skip','略',1.4],['吸底工具','','',0],['整包下載','','',0]].map(function(item){
+          return '<span>'+item[0]+(item[1]?'<i class="is-'+item[1]+'" style="animation-delay:'+item[3]+'s">'+item[2]+'</i>':'')+'</span>';
+        }).join('')+'</div>'+
+        '<div class="bdt-flow-note"><span>做完按「完成」打勾，<br>不製作的按「略過」。</span><b>⚠ 吸底工具未完成：<br>整包下載前先提醒</b></div>';
+    }else if(type==='twoline'){
+      body='<div class="bdt-two-card"><div class="bdt-two-promo">促標文案</div><div class="bdt-two-name">保濕精華<span class="bdt-two-line2">乳液</span></div><div class="bdt-two-warn">警語文字</div></div>'+
+        '<div class="bdt-two-keys"><span><kbd>Enter</kbd>游標處斷行</span><span><kbd>Backspace</kbd>第二行開頭接回</span><span>品名一行時，警語自動往上補位</span></div>';
+    }else if(type==='text-limit'){
+      body='<div class="bdt-limit-card"><div class="bdt-limit-text">妮維雅防曬隔離乳<em>液霜</em></div>'+
+        '<span class="bdt-limit-bubble is-over">品名最多 8 字，多 2 字</span><span class="bdt-limit-bubble is-ok">✓ 符合字數</span></div>'+
+        '<div class="bdt-limit-side"><span>多的字不刪，<br>由你決定留哪些</span><span class="bdt-limit-dls"><span class="bdt-limit-dl is-blocked">⛔ 先修正才能下載</span><span class="bdt-limit-dl is-open">↓ 可以下載</span></span></div>';
     }else{
       body='<span class="bdt-exposure-tile">LOGO</span><span class="bdt-exposure-tile">BN 預覽</span><span class="bdt-exposure-tile">DDCARD</span>';
       type='exposure';
@@ -26646,17 +27006,23 @@ ensureBlocksLoaded(function () {
   function buildRoot(){
     root=document.createElement('div');root.id='boda-tour-root';root.hidden=true;root.tabIndex=-1;
     root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-labelledby','boda-tour-title');
-    root.innerHTML='<div class="bdt-dimmer" aria-hidden="true"></div>'+
-      '<svg class="bdt-dual-dimmer" aria-hidden="true" hidden><defs><mask id="bdt-color-holes" maskUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="white"/><rect class="bdt-mask-primary" rx="12" fill="black"/><rect class="bdt-mask-color" rx="9" fill="black"/></mask><marker id="bdt-color-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="var(--bdt-accent)"/></marker></defs><rect width="100%" height="100%" fill="var(--bdt-dim)" mask="url(#bdt-color-holes)"/><path class="bdt-color-link" fill="none" stroke="var(--bdt-accent)" stroke-width="1.5" stroke-dasharray="5 5" marker-end="url(#bdt-color-arrow)"/></svg>'+
+    /* bdt-stage-under 放在暗幕之前：示範畫布／示範工具列會被聚光燈以外的暗幕一起蓋暗。 */
+    root.innerHTML='<div class="bdt-stage-under" aria-hidden="true"></div><div class="bdt-dimmer" aria-hidden="true"></div>'+
+      /* 暗幕＝亮框四周的幾塊長方形。不用超大 box-shadow／SVG mask／挖洞路徑：
+         這幾種「整個畫面減掉一個洞」的畫法，在顯示卡記憶體吃緊或軟體繪圖時會整片畫不出來，畫面就沒有變暗。 */
+      '<div class="bdt-dim-rects" aria-hidden="true" hidden></div>'+
+      '<svg class="bdt-dual-dimmer" aria-hidden="true" hidden><defs><marker id="bdt-color-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="var(--bdt-accent)"/></marker></defs><path class="bdt-color-link" fill="none" stroke="var(--bdt-accent)" stroke-width="1.5" stroke-dasharray="5 5" marker-end="url(#bdt-color-arrow)"/></svg>'+
       '<div class="bdt-focus" aria-hidden="true"></div><div class="bdt-focus bdt-color-focus" aria-hidden="true" hidden></div>'+
       '<div class="bdt-color-example" aria-label="操作示意用空白色塊" aria-hidden="true" hidden></div><div class="bdt-color-pointer" aria-hidden="true" hidden>'+POINTER+'<i></i></div>'+
       '<div class="bdt-color-hint" aria-hidden="true" hidden></div><div class="bdt-palette-hint" aria-hidden="true" hidden>② 左側自動定位對應色票</div>'+
       '<div class="bdt-hud"><strong>BODA 導覽</strong><span class="bdt-hud-note">教學模式 · 不會變更你的內容</span>'+
       '<button type="button" class="bdt-pause" data-action="pause" aria-pressed="false">暫停動畫</button>'+
       '<button type="button" class="bdt-icon-button" data-action="close" aria-label="關閉導覽">×</button></div>'+
+      '<div class="bdt-stage" aria-hidden="true"></div>'+
       '<div class="bdt-ghost" hidden aria-hidden="true"></div><div class="bdt-host"></div>';
     markGuideControls(root);
     document.body.appendChild(root);focus=root.querySelector('.bdt-focus');dim=root.querySelector('.bdt-dimmer');hud=root.querySelector('.bdt-hud');ghost=root.querySelector('.bdt-ghost');
+    stage=root.querySelector('.bdt-stage');stageUnder=root.querySelector('.bdt-stage-under');dimRects=root.querySelector('.bdt-dim-rects');
     colorDim=root.querySelector('.bdt-dual-dimmer');colorFocus=root.querySelector('.bdt-color-focus');colorExample=root.querySelector('.bdt-color-example');
     colorPointer=root.querySelector('.bdt-color-pointer');colorHint=root.querySelector('.bdt-color-hint');paletteHint=root.querySelector('.bdt-palette-hint');
     root.addEventListener('click',function(event){
@@ -26664,6 +27030,7 @@ ensureBlocksLoaded(function () {
       var action=button.getAttribute('data-action');
       if(action==='close')stop();
       else if(action==='start'){route=root.querySelector('.bdt-route-select').value;chooseRoute(route);go(0);}
+      else if(action==='start-news'){chooseRoute('news');go(0);}
       else if(action==='next'){if(index===steps.length-1)stop();else go(index+1);}
       else if(action==='prev')go(index-1);
       else if(action==='pause'){paused=!paused;root.dataset.paused=String(paused);button.setAttribute('aria-pressed',String(paused));button.textContent=paused?'播放動畫':'暫停動畫';}
@@ -26679,11 +27046,18 @@ ensureBlocksLoaded(function () {
   }
   function welcome(){
     clearColorGuide();
+    clearStage();
+    closeTourBgLibrary();
     index=-1;currentTarget=null;focus.hidden=true;ghost.hidden=true;dim.hidden=false;
     root.dataset.screen='welcome';root.dataset.step='welcome';delete root.dataset.frameState;
     root.querySelector('.bdt-host').innerHTML='<section class="bdt-welcome"><div class="bdt-eyebrow">BODA / 互動操作導覽</div>'+
-      '<h2 id="boda-tour-title">把工單，變成成品。</h2><p class="bdt-welcome-lead">跟著重點框選與動畫，認識從匯入工單到交付的操作。<br>第一次使用，先看一遍就有方向。</p>'+
+      '<h2 id="boda-tour-title">把工單，變成成品。</h2><p class="bdt-welcome-lead">跟著重點框選、動畫與<b>畫面上的示範</b>，認識從匯入工單到交付的操作。<br>第一次使用，先看一遍就有方向。</p>'+
       '<div class="bdt-welcome-path" aria-hidden="true"><div><b>1</b>匯入工單</div><span>→</span><div><b>2</b>編輯成品</div><span>→</span><div><b>3</b>下載交付</div></div>'+
+      '<div class="bdt-whatsnew"><div class="bdt-whatsnew-head"><b>本次更新</b><button type="button" class="bdt-secondary" data-action="start-news">只看更新重點 →</button></div><ul>'+
+      '<li>左側製作流程：每一步可按完成／略過，下載前提醒未完成的步驟</li>'+
+      '<li>超過字數：紅框提示、不刪字，修正前不能下載圖片</li>'+
+      '<li>兩行文字：Enter 斷行、Backspace 接回，警語自動補位</li>'+
+      '<li>主標、副標與曝光資源、取色工具三處雙向同步</li></ul></div>'+
       '<div class="bdt-welcome-foot"><button type="button" class="bdt-secondary" data-action="close">先不用，結束導覽</button><button type="button" class="bdt-primary" data-action="start">開始導覽 →</button></div>'+
       '<div class="bdt-route-box"><label class="bdt-route-label" for="boda-tour-route">想先了解哪一段？</label><select class="bdt-route-select" id="boda-tour-route">'+
       Object.keys(ROUTES).map(function(k){return '<option value="'+k+'"'+(route===k?' selected':'')+'>'+ROUTES[k].label+'</option>';}).join('')+'</select></div>'+
@@ -26692,8 +27066,40 @@ ensureBlocksLoaded(function () {
     safeFocus(root.querySelector('[data-action="start"]'));
   }
   function hideColorVisuals(){
-    [colorDim,colorFocus,colorExample,colorPointer,colorHint,paletteHint].forEach(function(el){if(el)el.setAttribute('hidden','');});
-    if(root)delete root.dataset.dualFocus;
+    [dimRects,colorDim,colorFocus,colorExample,colorPointer,colorHint,paletteHint].forEach(function(el){if(el)el.setAttribute('hidden','');});
+    if(root){delete root.dataset.dualFocus;delete root.dataset.maskDim;}
+  }
+  /* 整個畫面扣掉亮框，切成幾塊互不重疊的長方形（每多一個亮框最多多 4 塊）。 */
+  function dimPieces(holes){
+    var pieces=[{left:0,top:0,right:window.innerWidth,bottom:window.innerHeight}];
+    holes.forEach(function(hole){
+      if(!hole)return;
+      var b={left:Math.round(hole.left),top:Math.round(hole.top),right:Math.round(hole.right),bottom:Math.round(hole.bottom)},next=[];
+      pieces.forEach(function(p){
+        var l=Math.max(p.left,b.left),t=Math.max(p.top,b.top),r=Math.min(p.right,b.right),d=Math.min(p.bottom,b.bottom);
+        if(r<=l||d<=t){next.push(p);return;}
+        if(p.top<t)next.push({left:p.left,top:p.top,right:p.right,bottom:t});
+        if(d<p.bottom)next.push({left:p.left,top:d,right:p.right,bottom:p.bottom});
+        if(p.left<l)next.push({left:p.left,top:t,right:l,bottom:d});
+        if(r<p.right)next.push({left:r,top:t,right:p.right,bottom:d});
+      });
+      pieces=next;
+    });
+    return pieces;
+  }
+  /* 暗幕挖洞：primary（主亮框）與 secondary（第二個亮框，可省略）。箭頭用的 SVG 同步畫面大小。 */
+  function setDimHoles(primary,secondary){
+    var markup=dimPieces([primary,secondary]).map(function(p){
+      return '<i style="left:'+p.left+'px;top:'+p.top+'px;width:'+(p.right-p.left)+'px;height:'+(p.bottom-p.top)+'px"></i>';
+    }).join('');
+    if(dimRects.__bdtSig!==markup){dimRects.__bdtSig=markup;dimRects.innerHTML=markup;}
+    dimRects.removeAttribute('hidden');
+    colorDim.setAttribute('viewBox','0 0 '+window.innerWidth+' '+window.innerHeight);
+  }
+  /* 單一亮框也用長方形暗幕，不靠 9999px 的 box-shadow（理由同上）。 */
+  function placeMaskDim(primary){
+    root.dataset.maskDim='true';
+    setDimHoles(primary,null);
   }
   function clearColorGuide(){
     hideColorVisuals();colorSelection=null;
@@ -26801,10 +27207,7 @@ ensureBlocksLoaded(function () {
     if(!primary||!secondary)return;
     root.dataset.dualFocus='true';
     [colorDim,colorFocus,colorPointer,colorHint,paletteHint].forEach(function(el){el.removeAttribute('hidden');});
-    colorDim.setAttribute('viewBox','0 0 '+window.innerWidth+' '+window.innerHeight);
-    [[root.querySelector('.bdt-mask-primary'),primary],[root.querySelector('.bdt-mask-color'),secondary]].forEach(function(pair){
-      var el=pair[0],r=pair[1];['x','y','width','height'].forEach(function(key){el.setAttribute(key,key==='x'?r.left:key==='y'?r.top:r[key]);});
-    });
+    setDimHoles(primary,secondary);
     colorFocus.style.left=secondary.left+'px';colorFocus.style.top=secondary.top+'px';colorFocus.style.width=secondary.width+'px';colorFocus.style.height=secondary.height+'px';
     var cx=secondary.clickX,cy=secondary.clickY;
     colorPointer.style.left=(cx-3)+'px';colorPointer.style.top=(cy-2)+'px';
@@ -26819,6 +27222,420 @@ ensureBlocksLoaded(function () {
     }
     var fromX=secondary.left,fromY=cy,toX=primary.right,toY=primary.top+primary.height/2,mid=(fromX+toX)/2;
     colorDim.querySelector('.bdt-color-link').setAttribute('d','M'+fromX+' '+fromY+' C'+mid+' '+fromY+' '+mid+' '+toY+' '+toX+' '+toY);
+  }
+  /* 兩個亮框＋虛線箭頭（共用配色步驟的雙聚光燈圖層）；箭頭由 from 指向 to。
+     用在：整包下載（左側流程按鈕 ↔ 下載按鈕）、曝光資源（等級 → 排版選擇）。 */
+  function placeDualFocus(primary,secondary,from,to){
+    root.dataset.dualFocus='true';
+    colorDim.removeAttribute('hidden');colorFocus.removeAttribute('hidden');
+    setDimHoles(primary,secondary);
+    colorFocus.style.left=secondary.left+'px';colorFocus.style.top=secondary.top+'px';colorFocus.style.width=secondary.width+'px';colorFocus.style.height=secondary.height+'px';
+    var a=from||secondary,b=to||primary,ay=Math.round(a.top+a.height/2),by=Math.round(b.top+b.height/2),d,k;
+    if(a.right<=b.left){k=Math.max(36,(b.left-a.right)/2);d='M'+a.right+' '+ay+' C'+(a.right+k)+' '+ay+' '+(b.left-k)+' '+by+' '+b.left+' '+by;}
+    else if(a.left>=b.right){k=Math.max(36,(a.left-b.right)/2);d='M'+a.left+' '+ay+' C'+(a.left-k)+' '+ay+' '+(b.right+k)+' '+by+' '+b.right+' '+by;}
+    else{k=Math.max(a.right,b.right)+70;d='M'+a.right+' '+ay+' C'+k+' '+ay+' '+k+' '+by+' '+(b.right+2)+' '+by;}
+    colorDim.querySelector('.bdt-color-link').setAttribute('d',d);
+  }
+  /* ── 疊在真實畫面上的示範（v1.9／v1.10）──
+     不只是框出區域：在左側選單、畫布文字、下載按鈕旁邊，直接畫出功能實際會長的樣子
+     （完成勾勾、兩行編輯提示、超過字數的紅框與清單）。全部在導覽圖層裡，不碰實際內容。
+     v1.10：畫布還沒有商品圖時，疊一張「示範畫布」（BODA 自己的版位渲染器＋專案內的示意商品圖）；
+     右側工具列、曝光等級 → 排版選擇、背景圖庫也都有實際畫面可看。
+     stage（標記）在暗幕上面；stageUnder（示範畫布、示範工具列）在暗幕下面，聚光燈以外會一起變暗。 */
+  function clearStage(){
+    if(stage)stage.innerHTML='';
+    if(stageUnder)stageUnder.innerHTML='';
+    stageSignature='';underSignature='';
+  }
+  /* avoid=true：導覽卡片會避開這個標記，不蓋住示範。 */
+  function stageEl(cls,left,top,inner,extra,avoid){
+    return '<div class="'+cls+'"'+(avoid?' data-bdt-avoid':'')+' style="left:'+Math.round(left)+'px;top:'+Math.round(top)+'px;'+(extra||'')+'">'+(inner||'')+'</div>';
+  }
+  function stageBox(cls,r,inner){
+    return stageEl(cls,r.left,r.top,inner,'width:'+Math.round(r.width)+'px;height:'+Math.round(r.height)+'px;');
+  }
+  function grow(r,n){return {left:r.left-n,top:r.top-n,right:r.right+n,bottom:r.bottom+n,width:r.width+2*n,height:r.height+2*n};}
+  function unionRect(list){
+    var out=null;
+    list.forEach(function(r){
+      if(!r)return;
+      out=out?{left:Math.min(out.left,r.left),top:Math.min(out.top,r.top),right:Math.max(out.right,r.right),bottom:Math.max(out.bottom,r.bottom)}:{left:r.left,top:r.top,right:r.right,bottom:r.bottom};
+    });
+    if(out){out.width=out.right-out.left;out.height=out.bottom-out.top;}
+    return out;
+  }
+  /* iframe 內的座標換算成畫面座標。 */
+  function frameToView(r,frame){
+    if(!frame)return r;
+    var f=frame.getBoundingClientRect(),sx=f.width/(frame.offsetWidth||f.width),sy=f.height/(frame.offsetHeight||f.height);
+    var out={left:f.left+r.left*sx,top:f.top+r.top*sy,right:f.left+r.right*sx,bottom:f.top+r.bottom*sy};
+    out.width=out.right-out.left;out.height=out.bottom-out.top;
+    return out;
+  }
+  /* 亮框：往外留一點邊，並限制在畫面內（上方保留導覽列）。 */
+  function padFocus(r,n){
+    if(!r)return null;
+    var left=Math.max(8,r.left-n),top=Math.max(62,r.top-n),right=Math.min(window.innerWidth-8,r.right+n),bottom=Math.min(window.innerHeight-8,r.bottom+n);
+    return right-left>5&&bottom-top>5?{left:left,top:top,right:right,bottom:bottom,width:right-left,height:bottom-top}:null;
+  }
+  /* 文字本身的範圍（不是整個文字框），只框字、不框到左右留白。 */
+  function textRect(el){
+    try{
+      var range=document.createRange();range.selectNodeContents(el);
+      var r=range.getBoundingClientRect();
+      if(r.width>4&&r.height>4)return r;
+    }catch(_){}
+    return el.getBoundingClientRect();
+  }
+  function watchStageImages(container){
+    $$('img',container).forEach(function(img){if(!img.complete)img.addEventListener('load',scheduleLayout,{once:true});});
+  }
+  /* 畫布上第一個「整個看得到」的文字欄位（品名／促標…），找不到就回傳 null。 */
+  function firstCanvasText(pattern){
+    var bounds=canvasColorBounds(),found=null;
+    if(!bounds)return null;
+    $$('#import-preview-list [contenteditable="true"][data-field]').some(function(el){
+      if(!pattern.test(el.getAttribute('data-field')||''))return false;
+      var box=el.parentElement||el,r=box.getBoundingClientRect(),shown=intersectRect(r,bounds);
+      if(!shown||r.width<24||r.height<12||shown.width<r.width*.9||shown.height<r.height*.9)return false;
+      found={el:el,box:box,rect:r};return true;
+    });
+    return found;
+  }
+  /* 畫布上第一張「整張看得到、已載入」的商品圖；有的話直接用真實畫布示範。 */
+  function realCanvasProduct(){
+    var bounds=canvasColorBounds(),found=null;
+    if(!bounds)return null;
+    $$('#import-preview-list [data-img-field] img').some(function(img){
+      var zone=img.closest('[data-img-field]'),field=zone&&zone.getAttribute('data-img-field')||'';
+      if(!/^productImg\d*$/i.test(field)||!img.complete||!img.naturalWidth||!visible(img))return false;
+      var r=img.getBoundingClientRect(),shown=intersectRect(r,bounds);
+      if(!shown||r.width<24||r.height<24||shown.width<r.width*.9||shown.height<r.height*.9)return false;
+      found={el:img,rect:r,src:img.currentSrc||img.src};return true;
+    });
+    return found;
+  }
+  /* ── 示範畫布 ──
+     與左側「Demo 匯入」同一個資料夾（測試工單與圖片）的示意商品圖，用 BODA 的版位渲染器畫出來。
+     只存在導覽圖層：不寫入工單、不進暫存檔、不參與匯出。 */
+  var DEMO_DIR='測試工單與圖片';
+  var DEMO_THEME={canvasBg:'#fde8d4',bg:'#fde8d4',cardBg:'#ffffff',promoBg:'#ee4d2d',promoText:'#ffffff',badgeBg:'#ee4d2d',badgeText:'#ffffff',ctaBg:'#ee4d2d',ctaText:'#ffffff',warnText:'#8a5a44',bodyText:'#3b1f12'};
+  var DEMO_BLOCKS={
+    sub1:{id:'subarea_B_1_1',data:{productImg:'2.png',promo:'限時85折',name:'凡士林煥膚乳',warn:'數量有限，售完為止'}},
+    sub2:{id:'subarea_B_1_1',data:{productImg:'3.png',promo:'買一送一',name:'泥膜棒',warn:'數量有限，售完為止'}},
+    sub3:{id:'subarea_B_1_1',data:{productImg:'BDEFEF.png',promo:'新品上市',name:'美顏飲禮盒',warn:'數量有限，售完為止'}},
+    msbn:{id:'msbn_A_2_2',data:{productImg:'2026-05-19 11 49 59-Photoroom.png',giftImg:'2026-05-19 11 50 16-Photoroom.png',promo:'下殺5折',name:'智慧投影機 送耳機',badge:'限量',
+      productImg2:'iphone17.png',giftImg2:'3.png',promo2:'獨家首賣',name2:'iPhone 17 新機',badge2:'贈好禮'}}
+  };
+  /* 寬畫布：一排三格副區＋一張 MSBN；畫布太窄時改成兩格副區直排，字才看得清楚。 */
+  var DEMO_LAYOUTS={
+    wide:{w:1200,h:792,items:[['sub1',0,0],['sub2',400,0],['sub3',800,0],['msbn',0,362]]},
+    narrow:{w:400,h:712,items:[['sub1',0,0],['sub2',0,362]]}
+  };
+  /* 超過字數那一步：示範品名放 9 個字（這個版位最多 8 字），紅框才對得上。 */
+  var DEMO_OVERRIDES={'text-limit':{sub1:{name:'妮維雅防曬隔離乳液'}}};
+  var DEMO_LIMIT_NAME='妮維雅防曬隔離乳液';
+  var demoCache={};
+  function demoImage(name){
+    try{return new URL(encodeURIComponent(DEMO_DIR)+'/'+encodeURIComponent(name),location.href).href;}catch(_){return '';}
+  }
+  function demoBlockHtml(key,x,y,override){
+    var item=DEMO_BLOCKS[key],core=window.BNCore,def=core&&core.getBlock&&core.getBlock(item.id);
+    if(!def||typeof core.renderInstance!=='function')return '';
+    var data={},source=Object.assign({},item.data,override||{}),markup='';
+    Object.keys(source).forEach(function(field){data[field]=/Img\d*$/.test(field)?demoImage(source[field]):source[field];});
+    try{markup=core.renderInstance(item.id,data,{editable:false,theme:DEMO_THEME});}catch(_){return '';}
+    /* 換掉 App 會整頁掃描的 class／屬性（圖片排版、欄位對應、可編輯），示範圖不會被當成真的版位處理。 */
+    markup=String(markup||'').replace(/\bbn-imggroup-img\b/g,'bdt-demo-img').replace(/\bbn-imggroup\b/g,'bdt-demo-imggroup')
+      .replace(/\sdata-img-field=/g,' data-bdt-img=').replace(/\sdata-color-field=/g,' data-bdt-color=')
+      .replace(/\sdata-bn-schema-id=/g,' data-bdt-schema=').replace(/\scontenteditable=("|')true\1/gi,'');
+    return '<div class="bdt-demo-block" data-bdt-block="'+key+'" style="left:'+x+'px;top:'+y+'px;width:'+def.width+'px;height:'+def.height+'px;">'+markup+'</div>';
+  }
+  function demoCanvasInner(layoutKey,stepId){
+    var overrides=DEMO_OVERRIDES[stepId]||null,cacheKey=layoutKey+'|'+(overrides?stepId:'');
+    if(demoCache[cacheKey])return demoCache[cacheKey];
+    var markup='',ok=true;
+    DEMO_LAYOUTS[layoutKey].items.forEach(function(p){
+      var part=demoBlockHtml(p[0],p[1],p[2],overrides&&overrides[p[0]]);
+      if(!part)ok=false;markup+=part;
+    });
+    /* 版位還沒載完時不快取，下一次排版再試。 */
+    if(ok)demoCache[cacheKey]=markup;
+    return ok?markup:'';
+  }
+  /* 示範畫布的位置：中央畫布區（工具列下方）的可視範圍。 */
+  function demoCanvasBounds(){
+    var main=document.getElementById('import-canvas-main'),area=document.getElementById('import-canvas-area');
+    if(!visible(area))return null;
+    var a=area.getBoundingClientRect(),m=visible(main)?main.getBoundingClientRect():null;
+    var box={left:m?m.left:a.left+12,top:m?Math.max(a.top,m.top):a.top,right:m?m.right:a.right-12,bottom:a.bottom};
+    return intersectRect(box,{left:8,top:66,right:window.innerWidth-8,bottom:window.innerHeight-8});
+  }
+  /* 示範畫布蓋住整個畫布可視範圍（看起來就是畫布本身），示範版位靠上置中。 */
+  function placeDemoCanvas(stepId){
+    var b=demoCanvasBounds();
+    if(!b||b.width<150||b.height<140)return null;
+    var pad=12,key=(b.width-2*pad)/1200>=.36?'wide':'narrow',L=DEMO_LAYOUTS[key];
+    var inner=demoCanvasInner(key,stepId);
+    if(!inner)return null;
+    var scale=Math.min((b.width-2*pad)/L.w,(b.height-2*pad-30)/L.h,1),w=Math.round(L.w*scale),h=Math.round(L.h*scale);
+    return {left:Math.round(b.left),top:Math.round(b.top),right:Math.round(b.right),bottom:Math.round(b.bottom),
+      width:Math.round(b.width),height:Math.round(b.height),offX:Math.round((b.width-w)/2),offY:pad,innerH:h,scale:scale,key:key,inner:inner};
+  }
+  function demoCanvasHtml(c){
+    var L=DEMO_LAYOUTS[c.key];
+    return '<div class="bdt-stage-canvas" style="left:'+c.left+'px;top:'+c.top+'px;width:'+c.width+'px;height:'+c.height+'px;">'+
+      '<div class="bdt-stage-canvas-inner" style="left:'+c.offX+'px;top:'+c.offY+'px;width:'+L.w+'px;height:'+L.h+'px;transform:scale('+c.scale.toFixed(4)+');">'+c.inner+'</div>'+
+      '<span class="bdt-stage-canvas-tag" style="top:'+(c.offY+c.innerH+8)+'px;right:'+c.offX+'px;">'+(c.key==='wide'?'示範畫布｜商品圖為示意，不是你的作品':'示範畫布｜商品圖為示意')+'</span></div>';
+  }
+  function demoBlockEl(key){return stageUnder?stageUnder.querySelector('.bdt-demo-block[data-bdt-block="'+key+'"]'):null;}
+  function demoText(key,text){
+    var block=demoBlockEl(key),found=null;
+    if(!block)return null;
+    $$('div,span',block).some(function(el){
+      if(el.children.length||String(el.textContent||'').trim()!==text)return false;
+      found=el;return true;
+    });
+    return found;
+  }
+  function demoProduct(key,field){
+    var block=demoBlockEl(key),zone=block&&block.querySelector('[data-bdt-img="'+field+'"]'),img=zone&&zone.querySelector('img');
+    if(!zone)return null;
+    var loaded=!!(img&&img.complete&&img.naturalWidth&&img.style.display!=='none');
+    var r=(loaded?img:zone).getBoundingClientRect();
+    return r.width>4&&r.height>4?{el:loaded?img:null,rect:r,src:loaded?(img.currentSrc||img.src):''}:null;
+  }
+  /* ── 右側工具列示範（已上傳圖片的樣子）──
+     沿用實際工具列的 class 與圖示，按鈕用 span（不能點、不會被 Tab 選到）。 */
+  var TOOL_ICON={
+    edit:'<svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7a2.1 2.1 0 0 0-3-3L4 16.5Z"/><path d="m14.5 7.5 2 2"/></svg>',
+    swap:'<svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.9 4L21 14"/><path d="M21 19v-5h-5"/></svg>',
+    del:'<svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+    up:'<svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6"/><path d="M12 8v11"/></svg>',
+    down:'<svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6 6 6-6"/><path d="M12 5v11"/></svg>'
+  };
+  function toolButton(kind,text,delay){
+    var hot=delay!=null;
+    return '<span class="if-btn'+(text?'':' if-icon-btn')+(kind==='del'?' danger':'')+(hot?' bdt-hot':'')+'"'+(hot?' style="animation-delay:'+delay+'s"':'')+'>'+
+      TOOL_ICON[kind]+(text?' '+text:'')+'</span>';
+  }
+  function toolRow(file,label,opt){
+    opt=opt||{};
+    return '<div class="import-image-tool-row"><span class="import-tool-mini-preview"><img src="'+html(demoImage(file))+'" alt=""></span>'+
+      '<span class="import-image-tool-label">'+label+'</span><div class="import-image-tool-actions">'+
+      (opt.order?toolButton('up','',opt.up)+toolButton('down','',opt.down):'')+
+      toolButton('edit','編輯',opt.edit)+toolButton('swap','換圖',opt.swap)+toolButton('del','刪除',opt.del)+'</div></div>';
+  }
+  function toolGroup(label,rows,addDelay){
+    var hot=addDelay!=null;
+    return '<div class="import-image-tool-group"><div class="import-image-tool-group-head"><span class="import-image-tool-label">'+label+'</span>'+
+      '<span class="if-btn import-image-tool-add'+(hot?' bdt-hot':'')+'"'+(hot?' style="animation-delay:'+addDelay+'s"':'')+'>＋ 新增</span></div>'+rows+'</div>';
+  }
+  function toolsDemoHtml(r){
+    return '<div class="bdt-stage-tools" style="left:'+Math.round(r.left)+'px;top:'+Math.round(r.top)+'px;width:'+Math.round(r.width)+'px;max-height:'+Math.round(r.height)+'px;">'+
+      '<div class="bdt-tools-head">版位編輯與操作 <span>｜目前：MSBN A-1-2</span></div>'+
+      '<span class="bdt-tools-tag">示範：圖片上傳後的工具列（不影響你的作品）</span>'+
+      '<div class="import-block-tool"><div class="import-block-tool-head">副區 A-1-1｜版位圖片操作</div>'+
+        toolGroup('LOGO',toolRow('Dyson_Logo480x360去背版.png','LOGO',{edit:0}))+
+        toolGroup('商品',toolRow('2.png','圖1',{order:true,down:1.2})+toolRow('iphone17.png','圖2',{order:true,swap:2.4}),3.6)+
+      '</div>'+
+      '<div class="import-block-tool is-active"><div class="import-block-tool-head">MSBN A-1-2｜版位圖片操作</div>'+
+        toolGroup('商品',toolRow('2026-05-19 11 49 59-Photoroom.png','圖1'))+
+        toolGroup('代言人',toolRow('代言人照片.png','圖片'))+
+        toolGroup('代言人簽名檔',toolRow('簽名檔.png','圖片',{del:4.8}))+
+      '</div></div>';
+  }
+  /* ── 曝光資源：側欄最上方的「等級」與下方的「排版選擇」 ── */
+  function exposureLayoutInfo(doc){
+    var items=$$('#layout-checks .layout-check-item',doc).map(function(node){
+      var box=node.querySelector('input[type="checkbox"]'),name=node.querySelector('.lc-name'),size=node.querySelector('.lc-size');
+      return {name:String((name||node).textContent||'').trim(),size:String(size&&size.textContent||'').trim(),on:!!(box&&box.checked)};
+    });
+    var select=doc.getElementById('lv-select'),option=select&&select.selectedIndex>=0?select.options[select.selectedIndex]:null;
+    var heading=$$('#sidebar-scroll .s-section',doc).filter(function(el){return /排版選擇/.test(el.textContent||'');})[0]||null;
+    return {items:items,level:option?String(option.textContent||'').trim():'',heading:heading,
+      checks:doc.getElementById('layout-checks'),scroll:doc.getElementById('sidebar-scroll'),sidebar:doc.getElementById('sidebar')};
+  }
+  /* ── 背景圖庫：直接打開曝光資源裡真正的背景圖庫來框（只開不套用，換步驟或結束導覽時關閉） ── */
+  function openTourBgLibrary(frameElement){
+    var win=null,doc=null;
+    try{win=frameElement.contentWindow;doc=frameElement.contentDocument;}catch(_){return null;}
+    if(!win||!doc)return null;
+    var modal=doc.getElementById('bnBgLibModal');
+    /* 已經開著（導覽剛開的，或使用者自己原本開的）：直接框，不重開。 */
+    if(modal&&modal.classList.contains('open'))return modal.querySelector('.bn-bglib-modal')||modal;
+    if(!win.BNBgLibrary||typeof win.BNBgLibrary.open!=='function')return null;
+    try{
+      win.BNBgLibrary.open();
+      modal=doc.getElementById('bnBgLibModal');
+      if(!modal||!modal.classList.contains('open'))return null;
+      tourBgLibrary={win:win};
+      return modal.querySelector('.bn-bglib-modal')||modal;
+    }catch(_){return null;}
+  }
+  function closeTourBgLibrary(){
+    var opened=tourBgLibrary;tourBgLibrary=null;
+    if(!opened)return;
+    try{if(opened.win.BNBgLibrary&&typeof opened.win.BNBgLibrary.close==='function')opened.win.BNBgLibrary.close();}catch(_){}
+  }
+  /* 畫示範。回傳 focus（亮框改框示範裡的元素）、secondary（第二個亮框）、from/to（箭頭方向）、avoid（卡片要避開的範圍）。 */
+  function placeStage(step){
+    var res={focus:null,secondary:null,from:null,to:null,avoid:[]};
+    if(!stage||!stageUnder||!step)return res;
+    var type=step.stage,out='',under='',w=window.innerWidth,h=window.innerHeight;
+    /* 1. 暗幕下面：示範畫布／示範工具列。畫布上真的有可示範的內容（文字或商品圖）時，直接用真實畫布。 */
+    var real=null,canvas=null;
+    if(step.demoCanvas){
+      real=type==='text-hint'?firstCanvasText(/^(name|promo)\d*$/i):
+        type==='text-limit'?(firstCanvasText(/^name\d*$/i)||firstCanvasText(/^(promo|warn)\d*$/i)):realCanvasProduct();
+      if(!real){canvas=placeDemoCanvas(step.id);if(canvas)under+=demoCanvasHtml(canvas);}
+    }
+    if(type==='asset-tools'){
+      var toolCol=document.getElementById('import-canvas-tools');
+      var tc=visible(toolCol)?intersectRect(toolCol.getBoundingClientRect(),{left:0,top:66,right:w,bottom:h-8}):null;
+      if(tc&&tc.width>220&&tc.height>200)under+=toolsDemoHtml({left:tc.left+8,top:tc.top+6,width:tc.width-16,height:tc.height-12});
+    }
+    if(under!==underSignature){underSignature=under;stageUnder.innerHTML=under;watchStageImages(stageUnder);}
+    /* 2. 暗幕上面：標記與說明 */
+    if(type==='workflow'){
+      var items={};
+      $$('#nav-rail .nav-step[data-step]').forEach(function(el){if(visible(el))items[el.getAttribute('data-step')]=el.getBoundingClientRect();});
+      [['import','done','✓',0],['exposure','done','✓',.6],['color','skip','略',1.2]].forEach(function(b){
+        var r=items[b[0]];if(r)out+=stageEl('bdt-stage-badge is-'+b[1],r.right-22,r.top+3,b[2],'animation-delay:'+b[3]+'s;');
+      });
+      if(items.import)out+=stageEl('bdt-stage-callout',items.import.right+12,items.import.top+4,'每一步做完按<b>「完成 ›」</b>打勾<br>廠商不製作的按<b>「略過 ›」</b>');
+      if(items.download)out+=stageEl('bdt-stage-callout',items.download.right+12,items.download.top-4,'<b>⚠ 吸底工具還沒完成</b><br>按整包下載時會先提醒，確認後才下載');
+    }else if(type==='matching'){
+      /* STEP 1 工單裡的圖片欄位長什麼樣子：一格多張用逗號分開，每格最多 5 張。 */
+      var mr=rect();
+      if(mr){
+        var sw=Math.min(400,w-mr.right-40),sx=mr.right+18,sy=mr.top;
+        if(sw<300){sw=Math.max(260,Math.min(400,mr.width));sx=mr.left;sy=mr.bottom+14;}
+        out+=stageEl('bdt-stage-sheet',sx,sy,
+          '<div class="bdt-sheet-title">STEP 1 工單裡的圖片欄位（示意）</div>'+
+          '<div class="bdt-sheet-head"><span>版位</span><span>商品圖片（填檔名）</span></div>'+
+          '<div class="bdt-sheet-row"><span>副區 B-1-1</span><span>凡士林.png<b>,</b>泥膜棒.png<b>,</b>美顏飲.jpg</span></div>'+
+          '<div class="bdt-sheet-row"><span>MSBN A-2-2</span><span>投影機.png<b>,</b>耳機.png</span></div>'+
+          '<div class="bdt-sheet-note">一格多張用<b>逗號</b>分開，每個檔名各自配對；<b>每格最多 5 張</b>，第 6 張起不會讀取。</div>',
+          'width:'+Math.round(sw)+'px;',true);
+      }
+    }else if(type==='text-hint'){
+      var tx=real?{rect:textRect(real.el)}:null;
+      if(!tx&&canvas){var dt=demoText('sub1',DEMO_BLOCKS.sub1.data.name);if(dt)tx={rect:textRect(dt)};}
+      if(tx){
+        /* 亮框只框這段文字，畫布其他地方一起變暗。 */
+        res.focus=grow(tx.rect,4);
+        out+=stageEl('bdt-stage-callout',clamp(tx.rect.left-20,10,w-262),tx.rect.bottom+14,'直接點字修改<br><b>Enter</b> 在游標處斷行｜第二行開頭按 <b>Backspace</b> 接回一行','',true);
+      }else{
+        var hb=canvasColorBounds();
+        if(hb)out+=stageEl('bdt-stage-callout',hb.left+Math.max(10,(hb.width-250)/2),hb.top+Math.min(120,hb.height/3),'匯入工單後，<b>點畫布上的文字</b>就能直接修改；目前畫布沒有文字，先看卡片裡的動畫。');
+      }
+    }else if(type==='text-limit'){
+      var limitRect=real?real.rect:null;
+      if(!limitRect&&canvas){var dn=demoText('sub1',DEMO_LIMIT_NAME);if(dn)limitRect=grow(textRect(dn),4);}
+      if(limitRect){
+        out+=stageBox('bdt-stage-limit-frame',limitRect);
+        out+=stageEl('bdt-stage-limit-bubble',clamp(limitRect.left,10,w-300),limitRect.bottom+4,(real?'（示意）品名超過字數：最多 8 字，多 2 字':'品名超過字數：最多 8 字，多 1 字'));
+      }else{
+        /* 畫布上沒有文字、也畫不出示範畫布：在畫布中央疊一張示意版位。 */
+        var lb=canvasColorBounds();
+        if(lb&&lb.width>200&&lb.height>180){
+          var mw=Math.min(280,lb.width-40),mh=150,mx=lb.left+(lb.width-mw)/2,my=lb.top+Math.min(90,Math.max(12,(lb.height-mh)/3));
+          out+=stageEl('bdt-stage-mock',mx,my,'<div class="bdt-mock-promo">促標文案</div><div class="bdt-mock-name">妮維雅防曬隔離乳液霜</div><div class="bdt-mock-warn">警語文字</div>','width:'+Math.round(mw)+'px;height:'+mh+'px;');
+          out+=stageEl('bdt-stage-limit-bubble',mx+10,my+mh+6,'（示意）品名超過字數：最多 8 字，多 2 字');
+        }
+      }
+      var dl=document.getElementById('btn-download-import-package');
+      if(visible(dl)){
+        var d=dl.getBoundingClientRect(),nw=Math.max(230,d.width),overText=real?'多 2 字':'多 1 字';
+        out+=stageEl('bdt-stage-limit-notice',d.left,Math.max(70,d.top-112),'<b>有 1 處文字超過版位字數，修正後才能下載圖片</b>多出來的字不會被自動刪掉。<u>第 1 格｜品名超過字數：最多 8 字，'+overText+'</u>','width:'+Math.round(nw)+'px;',true);
+        out+=stageEl('bdt-stage-tag',d.right-82,d.top-10,'⛔ 先修正才能下載');
+      }
+    }else if(type==='image-select'){
+      /* 點右側工具列的圖片 → 畫布直接框出那張圖（示範框在 MSBN 的曝品上，旁邊就是贈品）。 */
+      var ps=real?{rect:real.rect}:(canvas?demoProduct('msbn','productImg'):null);
+      if(ps){
+        var sr=grow(ps.rect,4);
+        out+=stageBox('bdt-stage-select',sr,'<i></i><i></i><i></i><i></i>');
+        out+=stageEl('bdt-stage-callout',sr.right+250<w?sr.right+16:Math.max(10,sr.left-266),sr.top,'① 點右側工具列的圖片<br>② 畫布直接框出這張圖，被擋住也點得到<br><b>▲▼ 前後位置</b>：決定曝品／贈品誰在前','',true);
+      }
+    }else if(type==='transform'){
+      var pt=real?{rect:real.rect,el:real.el}:(canvas?demoProduct('sub1','productImg'):null);
+      if(pt){
+        if(!real&&pt.el&&pt.src){
+          /* 示範商品連同選取框一起轉；原圖先藏起來，避免看到兩張。 */
+          pt.el.classList.add('bdt-hide-img');
+          out+=stageBox('bdt-stage-rotor',pt.rect,'<img src="'+html(pt.src)+'" alt=""><span class="bdt-stage-select"><i></i><i></i><i></i><i></i><b>↻</b></span>');
+        }else out+=stageBox('bdt-stage-select',grow(pt.rect,4),'<i></i><i></i><i></i><i></i><b>↻</b>');
+        out+=stageEl('bdt-stage-callout',pt.rect.right+250<w?pt.rect.right+18:Math.max(10,pt.rect.left-268),pt.rect.top+8,'拖曳<b>四角控制點</b>縮放<br>拖曳上方 <b>↻</b> 任意角度旋轉，不限 90°','',true);
+      }
+    }else if(type==='exposure-level'){
+      var ef=currentTarget&&currentTarget.frame,edoc=null;
+      try{edoc=ef&&ef.contentDocument;}catch(_){edoc=null;}
+      var lr=edoc?rect():null,info=edoc?exposureLayoutInfo(edoc):null;
+      if(lr&&info){
+        var checked=info.items.filter(function(it){return it.on;}),realArea=null;
+        /* 側欄夠高、看得到整個「排版選擇」時，直接框真的清單。 */
+        if(info.heading&&info.scroll&&visible(info.checks)&&info.items.length){
+          var scr=info.scroll.getBoundingClientRect(),hr=info.heading.getBoundingClientRect(),kr=info.checks.getBoundingClientRect();
+          if(hr.top>=scr.top-1&&kr.bottom<=scr.bottom+1)realArea=frameToView(unionRect([hr,kr]),ef);
+        }
+        if(realArea){
+          res.secondary=padFocus(realArea,6);res.from=lr;res.to=res.secondary;
+          out+=stageEl('bdt-stage-callout',lr.right+84,lr.top,'① 選<b>活動等級</b>','',true);
+          if(res.secondary)out+=stageEl('bdt-stage-callout',res.secondary.right+84,res.secondary.top,'② 依等級自動勾選 <b>'+checked.length+'</b> 個版位','',true);
+        }else{
+          /* 「排版選擇」在側欄下方被捲出畫面：把同一份清單（勾選狀態與版位名稱）同步顯示在等級旁邊。 */
+          var list=info.items,sample=false;
+          if(!list.length){
+            list=$$('#layout-list .layout-row',edoc).slice(0,5).map(function(row){
+              var n=row.querySelector('.name'),s=row.querySelector('.size-tag');
+              return {name:String(n&&n.textContent||'').trim(),size:String(s&&s.textContent||'').trim(),on:true};
+            }).filter(function(it){return it.name;});
+            sample=true;
+          }
+          var side=info.sidebar?frameToView(info.sidebar.getBoundingClientRect(),ef):lr;
+          var mx2=clamp(side.right+36,10,w-286),my2=clamp(lr.top,66,Math.max(66,h-260));
+          var rows=list.slice(0,8).map(function(it,i){
+            return '<div class="bdt-mirror-item'+(it.on?' is-on':'')+'"><i style="animation-delay:'+(i*.3).toFixed(1)+'s">'+(it.on?'✓':'')+'</i><span>'+html(it.name)+'</span><small>'+html(it.size)+'</small></div>';
+          }).join('');
+          out+=stageEl('bdt-stage-mirror',mx2,my2,
+            '<div class="bdt-mirror-head">排版選擇<small>'+(sample?'版位名稱示意':'＝側欄下方的清單')+'</small></div>'+
+            '<div class="bdt-mirror-level">① 等級：<b>'+html(info.level||'—')+'</b><br>② 自動勾選 <b>'+(sample?list.length:checked.length)+'</b> 個版位，換等級時勾選與數量跟著變</div>'+
+            '<div class="bdt-mirror-list">'+(rows||'<div class="bdt-mirror-more">這個等級目前沒有勾選版位</div>')+'</div>'+
+            (list.length>8?'<div class="bdt-mirror-more">…還有 '+(list.length-8)+' 個</div>':''),'',true);
+          res.from=lr;
+        }
+      }
+    }else if(type==='bg-library'){
+      var lib=currentTarget&&currentTarget.el;
+      if(lib&&lib.classList&&lib.classList.contains('bn-bglib-modal')){
+        var br=rect();
+        /* 標籤放在框的右上角：卡片通常停在左側，放左邊會被蓋住。 */
+        if(br)out+=stageEl('bdt-stage-chip',br.right-14,Math.max(64,br.top-13),'實際的背景圖庫畫面｜導覽中不會套用','transform:translateX(-100%);',true);
+      }
+    }else if(type==='download'){
+      var nav=step.extraTarget&&document.querySelector(step.extraTarget),btn=rect();
+      if(visible(nav)&&btn){
+        res.secondary=padFocus(nav.getBoundingClientRect(),4);res.from=res.secondary;res.to=btn;
+        out+=stageEl('bdt-stage-chip',btn.left+6,btn.top-30,'＝ 左側「整包下載」，同一個功能','',true);
+      }
+    }
+    /* 位置沒變就不重畫，避免動畫一直重頭播放。 */
+    if(out!==stageSignature){stageSignature=out;stage.innerHTML=out;watchStageImages(stage);}
+    /* 3. 量出示範元素的位置，交給亮框與卡片 */
+    if(type==='asset-tools'){
+      var panel=stageUnder.querySelector('.bdt-stage-tools');
+      if(panel)res.focus=panel.getBoundingClientRect();
+    }
+    if(type==='exposure-level'&&!res.secondary){
+      var mirror=stage.querySelector('.bdt-stage-mirror');
+      if(mirror){res.secondary=padFocus(mirror.getBoundingClientRect(),4);res.to=res.secondary;}
+    }
+    $$('[data-bdt-avoid]',stage).forEach(function(el){res.avoid.push(el.getBoundingClientRect());});
+    if(canvas)res.avoid.push(canvas);
+    else if(step.demoCanvas&&real){var cb=canvasColorBounds();if(cb)res.avoid.push(cb);}
+    return res;
   }
   function backgroundHeading(doc){
     var button=doc.getElementById('bn-bg-open-btn')||doc.getElementById('bg-upload-btn');
@@ -26877,6 +27694,12 @@ ensureBlocksLoaded(function () {
         var doc=frameElement&&frameElement.contentDocument;
         if(doc&&frameElement.getAttribute('src')){
           if(step.frameAnchor==='background-heading')el=backgroundHeading(doc);
+          else if(step.frameAnchor==='bg-library')el=openTourBgLibrary(frameElement)||backgroundHeading(doc);
+          else if(step.frameAnchor==='level-layouts'){
+            /* 側欄最上方的「等級」標題＋下拉；「排版選擇」由 placeStage 另外框。 */
+            var levelWrap=doc.getElementById('lv-wrap');
+            if(visible(levelWrap)){el=levelWrap;frameAreas=[doc.getElementById('lv-section'),levelWrap].filter(visible);}
+          }
           else if(step.frameAnchor==='color-references'){frameAreas=colorReferenceAreas(doc);el=frameAreas[0]||null;}
           else (step.frameTargets||[]).some(function(selector){var candidate=doc.querySelector(selector);if(visible(candidate)){el=candidate;return true;}return false;});
           if(el)frame=frameElement;
@@ -26954,6 +27777,8 @@ ensureBlocksLoaded(function () {
     if(!active||position<0||position>=steps.length)return;
     clearStepFrame();
     clearColorGuide();
+    clearStage();
+    closeTourBgLibrary();
     index=position;var step=steps[index];
     if(targetObserver){targetObserver.disconnect();targetObserver=null;}
     currentTarget=resolve(step);
@@ -26987,33 +27812,46 @@ ensureBlocksLoaded(function () {
     if(!currentTarget||!visible(currentTarget.el))return null;
     var r=currentTarget.el.getBoundingClientRect();
     if(currentTarget.frameAreas&&currentTarget.frameAreas.length>1){
-      currentTarget.frameAreas.forEach(function(el){var other=el.getBoundingClientRect();r={left:Math.min(r.left,other.left),top:Math.min(r.top,other.top),right:Math.max(r.right,other.right),bottom:Math.max(r.bottom,other.bottom)};});
+      r=unionRect([r].concat(currentTarget.frameAreas.map(function(el){return el.getBoundingClientRect();})));
     }
-    if(currentTarget.frame){
-      var f=currentTarget.frame.getBoundingClientRect(),sx=f.width/(currentTarget.frame.offsetWidth||f.width),sy=f.height/(currentTarget.frame.offsetHeight||f.height);
-      r={left:f.left+r.left*sx,top:f.top+r.top*sy,right:f.left+r.right*sx,bottom:f.top+r.bottom*sy};
-    }
-    var left=Math.max(8,r.left-6),top=Math.max(62,r.top-6),right=Math.min(window.innerWidth-8,r.right+6),bottom=Math.min(window.innerHeight-8,r.bottom+6);
-    return right-left>5&&bottom-top>5?{left:left,top:top,right:right,bottom:bottom,width:right-left,height:bottom-top}:null;
+    if(currentTarget.frame)r=frameToView(r,currentTarget.frame);
+    return padFocus(r,6);
   }
   function clamp(v,lo,hi){return Math.max(lo,Math.min(v,hi));}
+  function overlapArea(x,y,cw,ch,a){
+    return Math.max(0,Math.min(x+cw,a.right)-Math.max(x,a.left))*Math.max(0,Math.min(y+ch,a.bottom)-Math.max(y,a.top));
+  }
   function layout(){
     if(!active||index<0||!card)return;
-    var secondary=steps[index].id==='colors'?colorCanvasRect():null;
-    var r=rect(),w=window.innerWidth,h=window.innerHeight,m=14,g=18,cw=Math.min(364,w-2*m);
+    var step=steps[index];
+    var secondary=step.id==='colors'?colorCanvasRect():null;
+    /* 先畫示範：有些步驟的亮框要框示範裡的元素（例如只框畫布上的文字、示範工具列）。 */
+    var staged=placeStage(step);
+    var r=staged.focus?padFocus(staged.focus,6):rect(),w=window.innerWidth,h=window.innerHeight,m=14,g=18,cw=Math.min(364,w-2*m);
     card.style.width=cw+'px';
     var ch=card.offsetHeight||420;
     if(r){
       dim.hidden=true;focus.hidden=false;
       focus.style.left=r.left+'px';focus.style.top=r.top+'px';focus.style.width=r.width+'px';focus.style.height=r.height+'px';
     }else{focus.hidden=true;dim.hidden=false;}
-    if(steps[index].id==='colors')placeColorGuide(r,secondary);
+    if(step.id==='colors'){
+      placeColorGuide(r,secondary);
+      if(r&&!root.dataset.dualFocus)placeMaskDim(r);
+    }else{
+      hideColorVisuals();
+      if(r&&staged.secondary){secondary=staged.secondary;placeDualFocus(r,secondary,staged.from,staged.to);}
+      else if(r)placeMaskDim(r);
+    }
+    var avoid=staged.avoid||[];
     var candidates=r?[
       {x:r.right+g,y:r.top},
       {x:r.left-cw-g,y:r.top},
       {x:r.left+(r.width-cw)/2,y:r.bottom+g},
       {x:r.left+(r.width-cw)/2,y:r.top-ch-g}
     ]:[{x:(w-cw)/2,y:(h-ch)/2}];
+    /* 這一步的示範畫在框選區旁邊（例如左側選單的說明框）：卡片改放畫面右側，不要蓋住示範。 */
+    if(step.cardAt==='right')candidates=[{x:w-cw-m-8,y:(h-ch)/2}];
+    else avoid.forEach(function(a){candidates.push({x:a.right+g,y:a.top},{x:a.left-cw-g,y:a.top});});
     if(secondary)candidates=candidates.concat([
       {x:secondary.right+g,y:secondary.top},{x:secondary.left-cw-g,y:secondary.top},
       {x:secondary.left,y:secondary.bottom+32},{x:secondary.left,y:secondary.top-ch-40}
@@ -27021,9 +27859,10 @@ ensureBlocksLoaded(function () {
     var best=null,bestScore=Infinity;
     candidates.forEach(function(p){
       var x=clamp(p.x,m,w-cw-m),y=clamp(p.y,66,h-ch-m);
-      var overlap=r?Math.max(0,Math.min(x+cw,r.right)-Math.max(x,r.left))*Math.max(0,Math.min(y+ch,r.bottom)-Math.max(y,r.top)):0;
-      var colorOverlap=secondary?Math.max(0,Math.min(x+cw,secondary.right+8)-Math.max(x,secondary.left-8))*Math.max(0,Math.min(y+ch,secondary.bottom+12)-Math.max(y,secondary.top-32)):0;
-      var score=overlap*10+colorOverlap*20+Math.abs(x-p.x)+Math.abs(y-p.y);
+      var overlap=r?overlapArea(x,y,cw,ch,r):0;
+      var colorOverlap=secondary?overlapArea(x,y,cw,ch,{left:secondary.left-8,top:secondary.top-32,right:secondary.right+8,bottom:secondary.bottom+12}):0;
+      var avoidOverlap=avoid.reduce(function(sum,a){return sum+overlapArea(x,y,cw,ch,a);},0);
+      var score=overlap*10+colorOverlap*20+avoidOverlap*6+Math.abs(x-p.x)+Math.abs(y-p.y);
       if(score<bestScore){bestScore=score;best={x:x,y:y};}
     });
     card.style.left=best.x+'px';card.style.top=best.y+'px';
@@ -27081,6 +27920,8 @@ ensureBlocksLoaded(function () {
     active=false;
     clearStepFrame();
     clearColorGuide();
+    clearStage();
+    closeTourBgLibrary();
     if(frameRaf){cancelAnimationFrame(frameRaf);frameRaf=0;}
     if(targetObserver){targetObserver.disconnect();targetObserver=null;}
     window.removeEventListener('keydown',onKey,true);
