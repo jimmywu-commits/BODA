@@ -26753,7 +26753,7 @@ ensureBlocksLoaded(function () {
   var FILE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6"/></svg>';
   var IMAGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>';
   var STEPS = [
-    {id:'workflow',group:'製作流程',view:'import',target:'#nav-rail',stage:'workflow',cardAt:'right',title:'左側就是製作流程，照順序往下做',
+    {id:'workflow',group:'製作流程',view:'import',target:'#nav-rail',stage:'workflow',title:'左側就是製作流程，照順序往下做',
       text:'<b>活動頁資源 → 曝光資源 → 取色工具 → 吸底工具 → 整包下載</b>。每一步做完按<b>「完成」</b>會打上琥珀色勾；廠商不製作的項目按<b>「略過」</b>。按整包下載時，還沒完成也沒略過的步驟會先提醒你。',
       tip:'左側選單上的勾勾與提醒是示意，不會改變你目前的完成狀態。',demo:'workflow'},
     {id:'import',group:'匯入與編輯',view:'import',target:'#import-drop',title:'STEP 1：匯入填好的工單',
@@ -27324,8 +27324,9 @@ ensureBlocksLoaded(function () {
     sub1:{id:'subarea_B_1_1',data:{productImg:'2.png',promo:'限時85折',name:'凡士林煥膚乳',warn:'數量有限，售完為止'}},
     sub2:{id:'subarea_B_1_1',data:{productImg:'3.png',promo:'買一送一',name:'泥膜棒',warn:'數量有限，售完為止'}},
     sub3:{id:'subarea_B_1_1',data:{productImg:'BDEFEF.png',promo:'新品上市',name:'美顏飲禮盒',warn:'數量有限，售完為止'}},
-    msbn:{id:'msbn_A_2_2',data:{productImg:'2026-05-19 11 49 59-Photoroom.png',giftImg:'2026-05-19 11 50 16-Photoroom.png',promo:'下殺5折',name:'智慧投影機 送耳機',badge:'限量',
-      productImg2:'iphone17.png',giftImg2:'3.png',promo2:'獨家首賣',name2:'iPhone 17 新機',badge2:'贈好禮'}}
+    /* MSBN 左右各放一個商品就好（不放贈品），畫面比較乾淨。 */
+    msbn:{id:'msbn_A_2_2',data:{productImg:'2026-05-19 11 49 59-Photoroom.png',promo:'下殺5折',name:'4K 智慧投影機',badge:'限量',
+      productImg2:'iphone17.png',promo2:'獨家首賣',name2:'iPhone 17 新機',badge2:'新品'}}
   };
   /* 寬畫布：一排三格副區＋一張 MSBN；畫布太窄時改成兩格副區直排，字才看得清楚。 */
   var DEMO_LAYOUTS={
@@ -27503,8 +27504,9 @@ ensureBlocksLoaded(function () {
       [['import','done','✓',0],['exposure','done','✓',.6],['color','skip','略',1.2]].forEach(function(b){
         var r=items[b[0]];if(r)out+=stageEl('bdt-stage-badge is-'+b[1],r.right-22,r.top+3,b[2],'animation-delay:'+b[3]+'s;');
       });
-      if(items.import)out+=stageEl('bdt-stage-callout',items.import.right+12,items.import.top+4,'每一步做完按<b>「完成 ›」</b>打勾<br>廠商不製作的按<b>「略過 ›」</b>');
-      if(items.download)out+=stageEl('bdt-stage-callout',items.download.right+12,items.download.top-4,'<b>⚠ 吸底工具還沒完成</b><br>按整包下載時會先提醒，確認後才下載');
+      /* 說明框標成 avoid：導覽卡片會停在說明框右邊（靠近左側選單），不會跑到畫面最右邊。 */
+      if(items.import)out+=stageEl('bdt-stage-callout',items.import.right+12,items.import.top+4,'每一步做完按<b>「完成 ›」</b>打勾<br>廠商不製作的按<b>「略過 ›」</b>','',true);
+      if(items.download)out+=stageEl('bdt-stage-callout',items.download.right+12,items.download.top-4,'<b>⚠ 吸底工具還沒完成</b><br>按整包下載時會先提醒，確認後才下載','',true);
     }else if(type==='matching'){
       /* STEP 1 工單裡的圖片欄位長什麼樣子：一格多張用逗號分開，每格最多 5 張。 */
       var mr=rect();
@@ -27552,12 +27554,16 @@ ensureBlocksLoaded(function () {
         out+=stageEl('bdt-stage-tag',d.right-82,d.top-10,'⛔ 先修正才能下載');
       }
     }else if(type==='image-select'){
-      /* 點右側工具列的圖片 → 畫布直接框出那張圖（示範框在 MSBN 的曝品上，旁邊就是贈品）。 */
+      /* 點右側工具列的圖片 → 畫布直接框出那張圖（示範框在 MSBN 左邊的商品上）。 */
       var ps=real?{rect:real.rect}:(canvas?demoProduct('msbn','productImg'):null);
       if(ps){
         var sr=grow(ps.rect,4);
         out+=stageBox('bdt-stage-select',sr,'<i></i><i></i><i></i><i></i>');
-        out+=stageEl('bdt-stage-callout',sr.right+250<w?sr.right+16:Math.max(10,sr.left-266),sr.top,'① 點右側工具列的圖片<br>② 畫布直接框出這張圖，被擋住也點得到<br><b>▲▼ 前後位置</b>：決定曝品／贈品誰在前','',true);
+        /* 示範畫布：說明放在 MSBN 下方、對齊選取框，不蓋住右邊的商品；畫面不夠高才放右側。 */
+        var below=canvas?canvas.top+canvas.offY+canvas.innerH+36:0;
+        var tipLeft=canvas&&below+80<h?clamp(sr.left-10,10,w-262):(sr.right+250<w?sr.right+16:Math.max(10,sr.left-266));
+        var tipTop=canvas&&below+80<h?below:sr.top;
+        out+=stageEl('bdt-stage-callout',tipLeft,tipTop,'① 點右側工具列的圖片<br>② 畫布直接框出這張圖，被擋住也點得到<br><b>▲▼ 前後位置</b>：有多張圖時決定誰疊在前面','',true);
       }
     }else if(type==='transform'){
       var pt=real?{rect:real.rect,el:real.el}:(canvas?demoProduct('sub1','productImg'):null);
@@ -27849,7 +27855,7 @@ ensureBlocksLoaded(function () {
       {x:r.left+(r.width-cw)/2,y:r.bottom+g},
       {x:r.left+(r.width-cw)/2,y:r.top-ch-g}
     ]:[{x:(w-cw)/2,y:(h-ch)/2}];
-    /* 這一步的示範畫在框選區旁邊（例如左側選單的說明框）：卡片改放畫面右側，不要蓋住示範。 */
+    /* cardAt:'right'＝卡片固定放畫面右側（目前沒有步驟使用；示範說明框改用 avoid，卡片會停在說明框旁邊）。 */
     if(step.cardAt==='right')candidates=[{x:w-cw-m-8,y:(h-ch)/2}];
     else avoid.forEach(function(a){candidates.push({x:a.right+g,y:a.top},{x:a.left-cw-g,y:a.top});});
     if(secondary)candidates=candidates.concat([
