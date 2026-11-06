@@ -147,8 +147,12 @@
         for (var tj = ai + 1; tj < visibleRow.length; tj++) {
           if (/文案|案型/i.test(str(visibleRow[tj]))) { ti = tj + 1; break; }
         }
+        /* 「案型」是合併儲存格時，右邊那格讀出來仍是「案型」；跳過重複的欄位名稱與檢核結果，
+           取真正的文案。 */
+        while (ti >= 0 && ti < visibleRow.length &&
+          (/^(?:案型|文案)$/.test(str(visibleRow[ti])) || /^(?:OK|待填)$/i.test(str(visibleRow[ti])))) ti++;
         var assetValue = cleanTemplateValue(visibleRow[ai]);
-        var textValue = ti >= 0 ? cleanTemplateValue(visibleRow[ti]) : '';
+        var textValue = ti >= 0 && ti < visibleRow.length ? cleanTemplateValue(visibleRow[ti]) : '';
         visibleGroups.push({ index: parseInt(str(visibleRow[titleIndex]).replace(/\D/g, ''), 10) - 1, columns: [], type: /logo/i.test(assetValue) ? 'logo' : 'icon', iconName: /logo/i.test(assetValue) ? '' : assetValue, logoName: /logo/i.test(assetValue) ? assetValue : '', name: assetValue, iconChecked: assetValue ? true : null, logoChecked: /logo/i.test(assetValue) ? true : null, text: textValue, assetPath: '', bothProvided: false });
       });
       if (visibleGroups.length >= MIN_GROUPS) {
@@ -365,6 +369,7 @@
   var LAYOUT_STICKY_COUNT = { "兩": 2, "二": 2, "三": 3, "四": 4, "五": 5 };
   var RE_CHECK_RESULT = /^(?:OK|待填|超過|鎖定)$/i;
   var RE_ASSET_TYPE_HINT = /icon.*logo|logo.*icon/i;
+  var RE_CASE_LABEL = /^(?:案型|文案)$/;
 
   function isLayoutFiller(v) {
     return !v || RE_CHECK_RESULT.test(v) || /^備註/.test(v);
@@ -385,19 +390,23 @@
     }
     var caseCol = -1;
     for (var cc = Math.max(typeCol, titleCol) + 1; cc < row.length; cc++) {
-      if (/^(?:案型|文案)$/.test(str(row[cc]))) { caseCol = cc; break; }
+      if (RE_CASE_LABEL.test(str(row[cc]))) { caseCol = cc; break; }
     }
+    /* 「icon圖或品牌logo圖」「案型」在工單裡是合併儲存格，讀出來每一格都是同樣的欄位名稱
+       （D、E、F 都是 icon圖或品牌logo圖；J、K 都是案型）。要跳過這些重複的欄位名稱，
+       否則素材會讀成「icon圖或品牌logo圖」、文案會讀成「案型」，吸底一匯入就是錯的。 */
     var assetName = "";
     for (var ac = typeCol + 1; ac < (caseCol >= 0 ? caseCol : row.length); ac++) {
       var av = cleanTemplateValue(row[ac]);
-      if (isLayoutFiller(av)) continue;
+      if (isLayoutFiller(av) || av === typeValue || RE_ASSET_TYPE_HINT.test(av) ||
+          RE_ICON_LABEL.test(av) || RE_LOGO_LABEL.test(av)) continue;
       assetName = av; break;
     }
     var text = "";
     if (caseCol >= 0) {
       for (var xc = caseCol + 1; xc < row.length; xc++) {
         var xv = cleanTemplateValue(row[xc]);
-        if (isLayoutFiller(xv)) continue;
+        if (isLayoutFiller(xv) || RE_CASE_LABEL.test(xv)) continue;
         text = xv; break;
       }
     }

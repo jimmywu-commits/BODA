@@ -116,14 +116,34 @@
      dataURL（data:image/png;base64,xxxx）本身固定含有一個逗號，
      不能直接用逗號切，切開後遇到 data: 開頭的片段，
      要把緊接著的下一段（base64 內容）接回來，才是完整的一張圖。 */
+  /* 「1,000」這種千分位逗號（數字,三位數字且後面不再接數字）不是多圖分隔符，跟 index.html 的 splitImageList 同一套規則。 */
+  /* 效能：值常是好幾 MB 的 dataURL，不對整串跑正規表示式，只看切開後片段的頭尾字元。 */
+  function isDigitCode(code) { return code >= 48 && code <= 57; }
+  function startsWithThousandsGroup(s) {
+    return s.length >= 3 && isDigitCode(s.charCodeAt(0)) && isDigitCode(s.charCodeAt(1)) && isDigitCode(s.charCodeAt(2)) &&
+      !(s.length > 3 && isDigitCode(s.charCodeAt(3)));
+  }
   function splitImageList(v) {
-    var raw = String(v == null ? '' : v).split(',');
+    var s = String(v == null ? '' : v);
+    if (s.indexOf(',') === -1) { s = s.trim(); return s ? [s] : []; }
+    var raw = s.split(',');
     var out = [];
     for (var i = 0; i < raw.length; i++) {
-      var t = raw[i].trim();
+      var piece = raw[i];
+      var t = piece.trim();
       if (!t) continue;
-      if (/^data:/i.test(t) && i + 1 < raw.length) { out.push(t + ',' + raw[i + 1].trim()); i++; }
-      else out.push(t);
+      if (/^data:/i.test(t.slice(0, 5))) {
+        if (i + 1 < raw.length) { out.push(t + ',' + raw[i + 1].trim()); i++; }
+        else out.push(t);
+        continue;
+      }
+      while (i + 1 < raw.length && piece.length && isDigitCode(piece.charCodeAt(piece.length - 1)) &&
+             startsWithThousandsGroup(raw[i + 1])) {
+        piece = piece + ',' + raw[i + 1];
+        i++;
+      }
+      t = piece.trim();
+      if (t) out.push(t);
     }
     return out;
   }
@@ -776,6 +796,19 @@
     return fieldPrefix + layer.field;
   }
 
+  /* 圓角文字包邊：外圈 radius 處 16 個方向、內圈 radius/2 處 8 個方向的實心陰影疊起來，
+     等於把字往外均勻擴 radius px；內圈補滿細筆畫與外圈之間可能出現的縫。 */
+  function roundTextOutlineShadow(color, radius) {
+    var parts = [];
+    [[radius, 16], [radius / 2, 8]].forEach(function (ring) {
+      for (var i = 0; i < ring[1]; i++) {
+        var a = i / ring[1] * Math.PI * 2;
+        parts.push((ring[0] * Math.cos(a)).toFixed(2) + 'px ' + (ring[0] * Math.sin(a)).toFixed(2) + 'px 0 ' + color);
+      }
+    });
+    return parts.join(',');
+  }
+
   function badgeBackgroundColorForText(textLayer, opts, data, fieldPrefix) {
     var layers = (opts && opts._schemaLayers) || [];
     var badgeBgs = layers.filter(function (candidate) {
@@ -1113,6 +1146,118 @@
     });
     return overrides;
   }
+  /* 圖片圖層實際使用的 z-index（不含隱形邊界框的額外處理）。renderLayer 與「前後位置」
+     預設順序（defaultImageOrderOf）共用同一套規則，兩邊結果才會一致。 */
+  function imageLayerStackZ(layer, fieldKey, url, opts) {
+    /* 圖片框的空白預覽與實際圖片可以分開指定 z-index。
+       未設定新欄位的舊版位會完整沿用 layer.zIndex，不改變既有結果。 */
+    var stateZIndex = url ? layer.imageZIndex : layer.placeholderZIndex;
+    if (stateZIndex == null) stateZIndex = layer.zIndex;
+    var rangePlaceholderOpacity = rangePlaceholderOpacityOf(layer);
+    if (rangePlaceholderOpacity != null && url && layer.imageZIndex == null && stateZIndex === layer.zIndex) {
+      stateZIndex = Number(layer.zIndex || 0) + 1;
+    }
+    /* imageOrder 是匯入工單每一格自己的圖片欄位順序。
+       這裡把排序後的欄位對應到原 schema 的圖片 z-index 槽位，
+       所以商品圖與人物圖可以互換上下層，而文字／背景仍維持原本層級。 */
+    var isSignatureImage = /^signImg\d*$/i.test(String(layer.field || ''));
+    var isContentImage = isContentImageField(layer.field);
+    /* 簽名圖是設計稿指定的最上層物件，不能被右側工具列的圖片排序覆蓋。
+       一般圖片仍可依 imageOrder 互換前後；簽名圖則永遠使用註冊版位時
+       算出的頂層 z-index。 */
+    /* 副區的商品框本身就是可見的曝品上傳範圍；保留 schema 原始層級，
+       只在 MSBN 套用「曝品／贈品／代言人圖位於資訊下方」的排序，
+       避免副區圖片框被新的統一 z-index 計算壓到看不見。 */
+    var isSubareaSchema = /^subarea_/i.test(String(opts && opts._schemaId || ''));
+    /* 空白上傳框必須保留 schema 原始層級，否則像 A-2-3、D-1-1 這種
+       多商品版位會被卡片背景蓋住，看起來像欄位整個消失。只有真的已載入
+       商品／贈品／代言人圖片後，才把內容圖移到資訊圖層下方。fixedLayerOrder
+       則用於信用卡圖等必須完整覆蓋自己票券範圍的特殊圖片。 */
+    if (layer.fixedLayerOrder) {
+      stateZIndex = url && layer.imageZIndex != null ? layer.imageZIndex
+        : (!url && layer.placeholderZIndex != null ? layer.placeholderZIndex : layer.zIndex);
+    } else if (isContentImage && url && layer.imageZIndex == null && !isSubareaSchema && opts && opts._contentImageZIndex != null) {
+      stateZIndex = opts._contentImageZIndex;
+    } else if (isSignatureImage && opts && opts._signatureImageZByField &&
+        opts._signatureImageZByField[layer.field] != null) {
+      stateZIndex = opts._signatureImageZByField[layer.field];
+    } else if (!isSignatureImage && url && isSharedMovableImageField(fieldKey) &&
+        opts && Array.isArray(opts.imageOrder) &&
+        Array.isArray(opts._imageZSlots) && fieldKey) {
+      var normalImageOrder = opts.imageOrder.filter(function (key) {
+        return !/^signImg\d*$/i.test(String(key || ''));
+      });
+      var orderedImageIndex = normalImageOrder.indexOf(fieldKey);
+      if (orderedImageIndex >= 0 && orderedImageIndex < opts._imageZSlots.length) {
+        stateZIndex = opts._imageZSlots[orderedImageIndex];
+      }
+    }
+    return stateZIndex;
+  }
+  function imageLayerUrlOf(layer, fieldKey, data) {
+    var raw = layer.fixedImage ? null : (fieldKey && data ? data[fieldKey] : null);
+    var urls = splitImageList(raw).filter(isRenderableImageUrl);
+    if (!urls.length && layer.defaultSrc) urls = [layer.defaultSrc];
+    return urls.length ? urls.join(',') : null;
+  }
+  /* buildRender 與 defaultImageOrderOf 共用：圖片槽位、簽名圖頂層、內容圖統一層級。 */
+  function imageStackingContextOf(schema) {
+    var schemaLayers = (schema.layers || []).slice();
+    (schema.repeats || []).forEach(function (repeat) { schemaLayers = schemaLayers.concat(repeat.layers || []); });
+    var imageZSlots = [];
+    var signatureImageZByField = {};
+    var seenImageLayerFields = {};
+    schemaLayers.forEach(function (layer) {
+      if (layer.type !== 'image' || layer.fixedImage || layer.fixedLayerOrder || !layer.field ||
+          !isSharedMovableImageField(layer.field)) return;
+      if (seenImageLayerFields[layer.field]) return;
+      seenImageLayerFields[layer.field] = true;
+      if (/^signImg\d*$/i.test(String(layer.field))) {
+        signatureImageZByField[layer.field] = layer.zIndex != null ? Number(layer.zIndex) : 0;
+        return;
+      }
+      imageZSlots.push(layer.zIndex != null ? Number(layer.zIndex) : 0);
+    });
+    imageZSlots.sort(function (a, b) { return b - a; });
+    return {
+      _schemaId: schema.id,
+      _schemaLayers: schemaLayers,
+      _imageZSlots: imageZSlots,
+      _signatureImageZByField: signatureImageZByField,
+      _contentImageZIndex: contentImageZIndexOf(schema)
+    };
+  }
+  /* 「前後位置」的預設順序（第一個＝最前面）。使用者還沒調整過時，依「目前畫面實際的上下關係」
+     決定：z-index 不同就照 z-index；同一層時 HTML 越後面的越上面。只在同層的那幾個欄位之間
+     調換位置，各欄位分到的 z-index 槽位不變，所以預設畫面跟以前完全一樣。 */
+  function defaultImageOrderOf(schema, data, fieldOrder) {
+    var order = Array.isArray(fieldOrder) ? fieldOrder.slice() : [];
+    if (!schema || order.length < 2) return order;
+    var ctx = imageStackingContextOf(schema);
+    ctx.imageOrder = order.slice();
+    var info = {};
+    (schema.layers || []).forEach(function (layer, position) {
+      if (!layer || layer.type !== 'image' || !layer.field || info[layer.field]) return;
+      if (layer.fixedLayerOrder || !isSharedMovableImageField(layer.field) || /^signImg\d*$/i.test(String(layer.field))) return;
+      if (order.indexOf(layer.field) === -1) return;
+      /* 以「放了圖」的狀態計算：只有實際有圖時，前後關係才看得到。 */
+      info[layer.field] = { z: Number(imageLayerStackZ(layer, layer.field, 'x', ctx)), position: position };
+    });
+    var groups = {};
+    Object.keys(info).forEach(function (field) {
+      var key = String(info[field].z);
+      (groups[key] = groups[key] || []).push(field);
+    });
+    Object.keys(groups).forEach(function (key) {
+      var fields = groups[key];
+      if (fields.length < 2) return;
+      var slots = fields.map(function (field) { return order.indexOf(field); }).sort(function (a, b) { return a - b; });
+      fields.sort(function (a, b) { return info[b].position - info[a].position; });
+      slots.forEach(function (slot, i) { order[slot] = fields[i]; });
+    });
+    return order;
+  }
+
   function renderLayer(layer, left, top, data, fieldPrefix, opts) {
     /* hidden:true ＝這一層完全不畫（也不會出現在欄位面板）。
        用來關掉 PS 稿上的示意圖層，例如 LOGO 框裡那個「LOGO」佔位字：
@@ -1253,7 +1398,12 @@
       if (isFinite(savedLeft)) left = savedLeft;
       if (isFinite(savedTop)) top = savedTop;
     }
-    var style = ['position:absolute', 'left:' + px(left), 'top:' + px(top + warnNudge)];
+    /* 副區品名只有一行時，警語往上移一行（判斷見 subareaWarnLiftOf）；warnLiftTop2＝品名兩行時（原稿）的位置。 */
+    var warnLiftInfo = opts && opts._subareaWarnLift && layer.type === 'text' && layer.field
+      ? opts._subareaWarnLift[layer.field] : null;
+    var warnLiftTop2 = top + warnNudge;
+    var style = ['position:absolute', 'left:' + px(left),
+      'top:' + px(top + warnNudge - (warnLiftInfo ? warnLiftInfo.lift : 0))];
     if (textPadV > 0) {
       style.push('padding-top:' + px(textPadV));
       style.push('padding-bottom:' + px(textPadV));
@@ -1364,49 +1514,9 @@
       if (!urls.length && layer.defaultSrc) urls = [layer.defaultSrc];
       var url = urls.length ? urls.join(',') : null;
 
-      /* 圖片框的空白預覽與實際圖片可以分開指定 z-index。
-         未設定新欄位的舊版位會完整沿用 layer.zIndex，不改變既有結果。 */
-      var stateZIndex = url ? layer.imageZIndex : layer.placeholderZIndex;
-      if (stateZIndex == null) stateZIndex = layer.zIndex;
+      var stateZIndex = imageLayerStackZ(layer, fieldKey, url, opts);
       var rangePlaceholderOpacity = rangePlaceholderOpacityOf(layer);
-      if (rangePlaceholderOpacity != null && url && layer.imageZIndex == null && stateZIndex === layer.zIndex) {
-        stateZIndex = Number(layer.zIndex || 0) + 1;
-      }
-      /* imageOrder 是匯入工單每一格自己的圖片欄位順序。
-         這裡把排序後的欄位對應到原 schema 的圖片 z-index 槽位，
-         所以商品圖與人物圖可以互換上下層，而文字／背景仍維持原本層級。 */
-      var isSignatureImage = /^signImg\d*$/i.test(String(layer.field || ''));
-      var isContentImage = isContentImageField(layer.field);
-      /* 簽名圖是設計稿指定的最上層物件，不能被右側工具列的圖片排序覆蓋。
-         一般圖片仍可依 imageOrder 互換前後；簽名圖則永遠使用註冊版位時
-         算出的頂層 z-index。 */
-      /* 副區的商品框本身就是可見的曝品上傳範圍；保留 schema 原始層級，
-         只在 MSBN 套用「曝品／贈品／代言人圖位於資訊下方」的排序，
-         避免副區圖片框被新的統一 z-index 計算壓到看不見。 */
       var isSubareaSchema = /^subarea_/i.test(String(opts && opts._schemaId || ''));
-      /* 空白上傳框必須保留 schema 原始層級，否則像 A-2-3、D-1-1 這種
-         多商品版位會被卡片背景蓋住，看起來像欄位整個消失。只有真的已載入
-         商品／贈品／代言人圖片後，才把內容圖移到資訊圖層下方。fixedLayerOrder
-         則用於信用卡圖等必須完整覆蓋自己票券範圍的特殊圖片。 */
-      if (layer.fixedLayerOrder) {
-        stateZIndex = url && layer.imageZIndex != null ? layer.imageZIndex
-          : (!url && layer.placeholderZIndex != null ? layer.placeholderZIndex : layer.zIndex);
-      } else if (isContentImage && url && layer.imageZIndex == null && !isSubareaSchema && opts && opts._contentImageZIndex != null) {
-        stateZIndex = opts._contentImageZIndex;
-      } else if (isSignatureImage && opts && opts._signatureImageZByField &&
-          opts._signatureImageZByField[layer.field] != null) {
-        stateZIndex = opts._signatureImageZByField[layer.field];
-      } else if (!isSignatureImage && url && isSharedMovableImageField(fieldKey) &&
-          opts && Array.isArray(opts.imageOrder) &&
-          Array.isArray(opts._imageZSlots) && fieldKey) {
-        var normalImageOrder = opts.imageOrder.filter(function (key) {
-          return !/^signImg\d*$/i.test(String(key || ''));
-        });
-        var orderedImageIndex = normalImageOrder.indexOf(fieldKey);
-        if (orderedImageIndex >= 0 && orderedImageIndex < opts._imageZSlots.length) {
-          stateZIndex = opts._imageZSlots[orderedImageIndex];
-        }
-      }
       if (layer.boundaryOnly) {
         /* 隱形邊界框壓在內容圖之下（但仍在卡片背景之上，拖放才接得到）：
            對方的圖拖進這塊時，滑鼠事件要落在圖片上才能繼續拖曳。 */
@@ -1567,8 +1677,10 @@
       if (textColor) style.push('color:' + textColor);
       if (directColorRole === 'badgeText') {
         var badgeStrokeColor = badgeBackgroundColorForText(layer, opts, data, fieldPrefix) || '#ffffff';
-        style.push('-webkit-text-stroke:8px ' + badgeStrokeColor);
-        style.push('paint-order:stroke fill');
+        /* 圓標字的包邊要圓角。-webkit-text-stroke 的轉角固定是尖角（瀏覽器不吃 stroke-linejoin），
+           改用一圈 text-shadow 往外擴 4px（＝原本 8px 置中描邊露在字外的寬度），轉角自然是圓的。
+           下載是 html-to-image 交給瀏覽器自己畫，成品圖也會一樣是圓角。 */
+        style.push('text-shadow:' + roundTextOutlineShadow(badgeStrokeColor, 4));
       }
       var textWeight = semanticTextWeight(layer);
       if (textWeight) style.push('font-weight:' + textWeight);
@@ -1730,6 +1842,13 @@
     }
     if (renderClassNames.length) attrs += ' class="' + renderClassNames.join(' ') + '"';
     if (isEmptyEditableText) attrs += ' data-bn-empty-text="1"';
+    /* 警語跟著品名行數上下移：畫布直接編輯品名時由 syncSubareaWarnLift 即時調整。 */
+    if (warnLiftInfo) {
+      attrs += ' data-bn-warn-follow="' + esc(warnLiftInfo.nameField) + '"' +
+        ' data-bn-warn-top2="' + warnLiftTop2 + '"' +
+        ' data-bn-warn-step="' + warnLiftInfo.step + '"' +
+        ' data-bn-warn-max="' + warnLiftInfo.maxLines + '"';
+    }
     if (layer.type === 'text' && fieldKey && opts && opts.theme && opts.theme.endorserTextAuto &&
         themeRoleOf(layer, opts && opts._schemaId) === 'endorserText') {
       attrs += ' data-auto-text-role="endorserText"';
@@ -2119,6 +2238,98 @@
     return html;
   }
 
+  /* ── 副區：品名只有一行時，警語往上移 ──
+     有些副區（A／B-4、A／B-5、C-4、D-4 系列）在品名下方預留了第二行的空間，
+     警語排在第二行之後；品名只填一行時中間會空出一整行。
+     判斷條件（依 block.json 的幾何，不寫死版位）：
+       1. 品名是可換行的文字（white-space: pre-line），警語跟它同一欄（左右重疊 ≥ 60%）。
+       2. 警語上緣到品名第一行之間剛好預留一行品名行高（0.8～1.6 倍）。
+          警語緊貼品名的版型（A-1～3 等）或中間隔著商品圖的版型（E、F）都不符合，不會動。
+     品名有兩行（手動換行，或字多自動折行）時警語回到原位。 */
+  var _textMeasureCtx = null;
+  function textWidthMeasurer(layer) {
+    var fontSize = Number(layer && layer.fontSize) || 0;
+    var spacing = layer && layer.letterSpacing != null ? Number(layer.letterSpacing) : Number(CONFIG.letterSpacing[layer && layer.id]);
+    if (!isFinite(spacing)) spacing = 0;
+    try {
+      if (!_textMeasureCtx && typeof document !== 'undefined') _textMeasureCtx = document.createElement('canvas').getContext('2d');
+    } catch (_) { _textMeasureCtx = null; }
+    if (_textMeasureCtx) {
+      var family = layer && layer.fontFamily ? JSON.stringify(String(layer.fontFamily)) + ', sans-serif' : 'sans-serif';
+      var font = (semanticTextWeight(layer) || 400) + ' ' + fontSize + 'px ' + family;
+      return function (line) {
+        _textMeasureCtx.font = font;
+        var s = String(line || '');
+        return _textMeasureCtx.measureText(s).width + spacing * Array.from(s).length;
+      };
+    }
+    /* 沒有 canvas 時的估算：中文 1 個字寬、半形約 0.55 個字寬 */
+    return function (line) {
+      return Array.from(String(line || '')).reduce(function (sum, ch) {
+        return sum + (/^[\x00-\x7f]$/.test(ch) ? 0.55 : 1) * fontSize + spacing;
+      }, 0);
+    };
+  }
+  /* 文字在這個圖層寬度裡會排成幾行（手動換行＋太長自動折行）；空白時畫面顯示預設字，算一行。 */
+  function estimatedTextLines(value, layer) {
+    var text = String(value == null ? '' : value).replace(/\r\n?/g, '\n');
+    if (!text.trim()) return 1;
+    var width = Number(layer && layer.width) || 0;
+    if (!(width > 0)) return text.split('\n').length;
+    var measure = textWidthMeasurer(layer);
+    return text.split('\n').reduce(function (sum, line) {
+      var w = measure(line.trim());
+      return sum + Math.max(1, Math.ceil((w - 0.5) / width));
+    }, 0);
+  }
+  function subareaWarnLiftOf(schema, data) {
+    if (!/^subarea_/i.test(String(schema && schema.id || ''))) return null;
+    var layers = schema.layers || [];
+    var out = null;
+    layers.forEach(function (warn) {
+      if (!warn || warn.type !== 'text' || warn.hidden || !/^warn\d*$/i.test(String(warn.field || ''))) return;
+      var suffix = String(warn.field).replace(/^warn/i, '').toLowerCase();
+      var name = layers.find(function (l) {
+        return l && l.type === 'text' && !l.hidden && String(l.field || '').toLowerCase() === 'name' + suffix;
+      });
+      if (!name || !name.fontSize || !warn.fontSize || String(name.whiteSpace || '') !== 'pre-line') return;
+      /* topExact 是另一套座標（內容區上緣），這類圖層不套用 */
+      if (name.topExact != null || warn.topExact != null) return;
+      var step = Number(name.fontSize) * lineHeightMultiplier(name);
+      if (!(step > 0)) return;
+      var nl = Number(name.left) || 0, nw = Number(name.width) || 0;
+      var wl = Number(warn.left) || 0, ww = Number(warn.width) || 0;
+      if (!(nw > 0 && ww > 0) || Math.min(nl + nw, wl + ww) - Math.max(nl, wl) < Math.min(nw, ww) * 0.6) return;
+      /* PS 座標的文字 top 在第一行基線附近；警語上緣約等於 warn.top − 字級 */
+      var gap = (Number(warn.top) - Number(warn.fontSize)) - Number(name.top);
+      if (!(gap >= step * 0.8 && gap <= step * 1.6)) return;
+      var maxLines = 2;
+      var lines = Math.max(1, Math.min(maxLines, estimatedTextLines(data && data[name.field], name)));
+      out = out || {};
+      out[warn.field] = { nameField: name.field, step: step, maxLines: maxLines, lines: lines, lift: (maxLines - lines) * step };
+    });
+    return out;
+  }
+  /* 畫布上直接編輯品名時（不重畫），依品名實際排成幾行即時調整警語位置。
+     警語圖層帶 data-bn-warn-*（見 renderLayer）；只處理可編輯畫布，下載／預覽由渲染時的估算決定。 */
+  function syncSubareaWarnLift(root) {
+    if (!root || !root.querySelectorAll) return;
+    Array.prototype.forEach.call(root.querySelectorAll('[data-bn-warn-follow]'), function (warnEl) {
+      var block = (warnEl.closest && warnEl.closest('[data-bn-schema-id]')) || root;
+      var key = warnEl.getAttribute('data-bn-warn-follow');
+      var nameEl = block.querySelector('[contenteditable="true"][data-field="' + key + '"]');
+      if (!nameEl) return;
+      var step = Number(warnEl.getAttribute('data-bn-warn-step'));
+      var top2 = Number(warnEl.getAttribute('data-bn-warn-top2'));
+      var max = Number(warnEl.getAttribute('data-bn-warn-max')) || 2;
+      if (!(step > 0) || !isFinite(top2)) return;
+      /* 可編輯的內層沒有 padding：高度＝行數 × 行高（不受畫布縮放影響） */
+      var lines = Math.round(nameEl.offsetHeight / step) || 1;
+      lines = Math.max(1, Math.min(max, lines));
+      warnEl.style.top = (top2 - (max - lines) * step) + 'px';
+    });
+  }
+
   function buildRender(schema) {
     return function (data, opts) {
       /* 每次渲染都把目前 schema id 帶進 opts，讓顏色覆寫能判斷「這是不是 MSBN D」。
@@ -2133,29 +2344,17 @@
       var layerFields = (schema.layers || []).map(function (l) {
         return String(l.field || '');
       });
-      var imageZSlots = [];
-      var signatureImageZByField = {};
-      var seenImageLayerFields = {};
-      renderOpts._schemaLayers.forEach(function (layer) {
-        if (layer.type !== 'image' || layer.fixedImage || layer.fixedLayerOrder || !layer.field ||
-            !isSharedMovableImageField(layer.field)) return;
-        if (seenImageLayerFields[layer.field]) return;
-        seenImageLayerFields[layer.field] = true;
-        if (/^signImg\d*$/i.test(String(layer.field))) {
-          signatureImageZByField[layer.field] = layer.zIndex != null ? Number(layer.zIndex) : 0;
-          return;
-        }
-        imageZSlots.push(layer.zIndex != null ? Number(layer.zIndex) : 0);
-      });
-      imageZSlots.sort(function (a, b) { return b - a; });
-      renderOpts._imageZSlots = imageZSlots;
-      renderOpts._signatureImageZByField = signatureImageZByField;
-      renderOpts._contentImageZIndex = contentImageZIndexOf(schema);
+      var stackingContext = imageStackingContextOf(schema);
+      renderOpts._imageZSlots = stackingContext._imageZSlots;
+      renderOpts._signatureImageZByField = stackingContext._signatureImageZByField;
+      renderOpts._contentImageZIndex = stackingContext._contentImageZIndex;
       var nameValue = data && data.name != null ? String(data.name).trim() : '';
       var warnValue = data && data.warn != null ? String(data.warn).trim() : '';
       renderOpts._subareaWarnNudge = /^subarea_/i.test(String(schema.id || '')) &&
         !!nameValue && !!warnValue &&
         layerFields.indexOf('name') !== -1 && layerFields.indexOf('warn') !== -1;
+      /* 品名只有一行時警語往上移一行（只限品名下方預留第二行空間的副區） */
+      renderOpts._subareaWarnLift = subareaWarnLiftOf(schema, data);
 
       /* 外層容器本身是「整個版位的畫布邊界」，不是卡片，不需要圓角，維持直角矩形；
          真正看起來像卡片的圓角，是靠版位自己的「背景」「促標底」這些圖層各自的border-radius做出來的 */
@@ -2173,6 +2372,23 @@
       /* 沒填的代言人／贈品空間讓給商品圖（範圍變大，被讓出來的圖層不畫） */
       var absorb = computeAbsorb(schema, data, renderOpts);
       var circleLayout = localCircleLayoutOf(schema, data);
+      /* 右側工具列的「前後位置」（imageOrder，第一個＝最前面）。z-index 只能用整數，
+         MSBN 的曝品／贈品／代言人圖常常被排到同一層（例如 A-2-2 的曝品、贈品都是 279），
+         同層時由 HTML 先後決定誰蓋在上面；所以這些圖層先收集起來，最後依 imageOrder
+         「最後面的先輸出、最前面的最後輸出」放回原本的位置，前後位置才真的會生效。 */
+      var orderedImageKeys = Array.isArray(renderOpts.imageOrder)
+        ? renderOpts.imageOrder.filter(function (key) { return !/^signImg\d*$/i.test(String(key || '')); }) : [];
+      var layerChunks = [];
+      function imageOrderRankOf(layer) {
+        if (!layer || layer.type !== 'image' || layer.boundaryOnly || layer.fixedLayerOrder || !layer.field) return -1;
+        if (!isSharedMovableImageField(layer.field) || /^signImg\d*$/i.test(String(layer.field))) return -1;
+        return orderedImageKeys.indexOf(layer.field);
+      }
+      function pushLayerHtml(layer, chunk) {
+        var rank = imageOrderRankOf(layer);
+        var z = rank >= 0 ? String(imageLayerStackZ(layer, layer.field, imageLayerUrlOf(layer, layer.field, data), renderOpts)) : '';
+        layerChunks.push({ html: chunk, rank: rank, z: z });
+      }
       (schema.layers || []).forEach(function (layer) {
         var dynamicLayer = dynamicRowLayerOf(layer, dynamicRows);
         if (!dynamicLayer) return;
@@ -2199,7 +2415,7 @@
             pairBoundary.boundaryOnly = true;
             delete pairBoundary.aspectSource;
             delete pairBoundary.aspectBoxes;
-            html += renderLayer(pairBoundary, pairBoundary.left, pairBoundary.top, data, null, renderOpts);
+            pushLayerHtml(pairBoundary, renderLayer(pairBoundary, pairBoundary.left, pairBoundary.top, data, null, renderOpts));
             return;
           }
           if (partnerLayer && selfFilled && !partnerFilled) {
@@ -2209,7 +2425,7 @@
             /* 放大後的框就是預設空間本身，不能再被方／橫向切換用原本的小框蓋回去 */
             delete grownPair.aspectSource;
             delete grownPair.aspectBoxes;
-            html += renderLayer(grownPair, grownPair.left, grownPair.top, data, null, renderOpts);
+            pushLayerHtml(grownPair, renderLayer(grownPair, grownPair.left, grownPair.top, data, null, renderOpts));
             return;
           }
         }
@@ -2218,21 +2434,37 @@
              但要以隱形邊界框留在畫布上，image-layout 才會把兩框聯集成共同可移動範圍。
              雙向都成立：沒給贈品圖時曝品可移到贈品空間，沒給曝品時贈品也可移到曝品空間。 */
           var boundary = Object.assign({}, layer, { boundaryOnly: true });
-          html += renderLayer(boundary, boundary.left, boundary.top, data, null, renderOpts);
+          pushLayerHtml(boundary, renderLayer(boundary, boundary.left, boundary.top, data, null, renderOpts));
           return;
         }
         var ti = absorb.targets.indexOf(layer);
         if (ti !== -1) {
           var grown = layerWithBox(layer, absorb.boxes[ti]);
-          html += renderLayer(grown, grown.left, grown.top, data, null, renderOpts);
+          pushLayerHtml(grown, renderLayer(grown, grown.left, grown.top, data, null, renderOpts));
           return;
         }
         var circleLeft = circleLayout && circleLayout[dynamicLayer.field];
         if (circleLeft != null) {
           dynamicLayer = Object.assign({}, dynamicLayer, { left: circleLeft });
         }
-        html += renderLayer(dynamicLayer, dynamicLayer.left, dynamicLayer.top, data, null, renderOpts);
+        pushLayerHtml(dynamicLayer, renderLayer(dynamicLayer, dynamicLayer.left, dynamicLayer.top, data, null, renderOpts));
       });
+      /* 只有「同一層 z-index」的排序圖層才需要靠 HTML 先後分上下：保留它們原本佔的位置，
+         在這幾個位置之間依 imageOrder 重排（越後面的越早輸出、最前面的最後輸出）。
+         z-index 不同的圖層與其餘圖層的 HTML 順序完全不動。 */
+      var tieGroups = {};
+      layerChunks.forEach(function (chunk, position) {
+        if (chunk.rank < 0) return;
+        (tieGroups[chunk.z] = tieGroups[chunk.z] || []).push(position);
+      });
+      Object.keys(tieGroups).forEach(function (z) {
+        var positions = tieGroups[z];
+        if (positions.length < 2) return;
+        var chunks = positions.map(function (position) { return layerChunks[position]; })
+          .sort(function (a, b) { return b.rank - a.rank; });
+        positions.forEach(function (position, i) { layerChunks[position] = chunks[i]; });
+      });
+      html += layerChunks.map(function (chunk) { return chunk.html; }).join('');
       html += dynamicRowGridHtml(dynamicRows, data, renderOpts);
 
       (schema.repeats || []).forEach(function (repeat) {
@@ -2348,12 +2580,14 @@
           if (/^content\d*$/i.test(keyText) || /內文/.test(labelText)) setTextRule(6, null);
         }
 
-        /* 副區 A/B-4、A/B-5 的品名是兩排，每排 4 字；單排版本仍限 8 字。 */
-        if (isSubareaAB && /^name\d*$/i.test(keyText) && maxLength == null) {
+        /* 副區 A/B-4、A/B-5 的品名是兩排，每排 4 字；單排版本仍限 8 字。
+           兩排版本不能再以「block.json 沒寫 maxLength」為前提：A/B-5 的 block.json 寫了舊的 maxLength 8，
+           以前這條就被跳過，品名被當成單行——工單／暫存檔裡兩排的品名，在第二排一打字就整排接到第一排後面。 */
+        if (isSubareaAB && /^name\d*$/i.test(keyText)) {
           var abVariant = parseInt(isSubareaAB[2], 10);
           var abCombo = isSubareaAB[3] ? parseInt(isSubareaAB[3], 10) : 0;
           if (abVariant === 5 || (abVariant === 4 && (abCombo === 0 || abCombo === 1))) setTextRule(8, 4);
-          else if (abVariant === 4 && abCombo === 2) setTextRule(8, null);
+          else if (abVariant === 4 && abCombo === 2 && maxLength == null) setTextRule(8, null);
         }
 
         /* 三品比對的品名標示本身已寫明一排 7 字。 */
@@ -2590,8 +2824,10 @@
     setConfig: setConfig,
     themeRoleOf: themeRoleOf,
     roleColorsOf: roleColorsOf,
+    defaultImageOrderOf: defaultImageOrderOf,
     dynamicRowLayoutOf: dynamicRowLayoutOf,
     dynamicRowSignatureOf: dynamicRowSignatureOf,
+    syncSubareaWarnLift: syncSubareaWarnLift,
     hasSecondLineText: hasSecondLineText,
     addLineButtonHtml: addLineButtonHtml
   };

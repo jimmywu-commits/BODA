@@ -21,7 +21,13 @@
  */
 (function () {
   var FONT_FAMILY = "ShopeeNotoSansContent";
-  var BASE_URL = "https://jimmywu-commits.github.io/shopee/fonts/";
+  /* 字體來源依序嘗試：先用專案自己的 ../fonts/（BODA 裡的 fonts/ 資料夾，離線或 CDN 慢時也能載），
+     失敗才改抓 GitHub Pages 的 CDN。之前只有 CDN 一個來源，22MB 抓不下來時 READY 永遠不會送出，
+     主工具的「下載工單＋圖片＋暫存檔」就會拿不到任何吸底圖片。 */
+  var BASE_URLS = [
+    "../fonts/",
+    "https://jimmywu-commits.github.io/shopee/fonts/",
+  ];
 
   var FACES = [
     { file: "ShopeeNotoSans%28content%29-Medium.ttf", weight: "500" },
@@ -51,16 +57,25 @@
 
     setState({ status: "loading", error: null });
 
-    var loads = FACES.map(function (face) {
-      var descriptor = { weight: face.weight };
-      var source = 'url("' + BASE_URL + face.file + '")';
-      return new window.FontFace(FONT_FAMILY, source, descriptor).load().then(function (loaded) {
-        document.fonts.add(loaded);
-        return loaded;
+    function loadFrom(baseUrl) {
+      var loads = FACES.map(function (face) {
+        var descriptor = { weight: face.weight };
+        var source = 'url("' + baseUrl + face.file + '")';
+        return new window.FontFace(FONT_FAMILY, source, descriptor).load();
       });
-    });
+      return Promise.all(loads).then(function (faces) {
+        faces.forEach(function (loaded) { document.fonts.add(loaded); });
+        return faces;
+      });
+    }
+    function loadFromAny(index, lastError) {
+      if (index >= BASE_URLS.length) return Promise.reject(lastError || new Error("字體載入失敗"));
+      return loadFrom(BASE_URLS[index]).catch(function (err) {
+        return loadFromAny(index + 1, err);
+      });
+    }
 
-    return Promise.all(loads)
+    return loadFromAny(0, null)
       .then(function () {
         // 再走一次 document.fonts.load，確保該字級/字重真的可用（而不是只有「檔案下載完」）
         return Promise.all(

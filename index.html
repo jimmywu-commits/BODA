@@ -7,7 +7,7 @@
 /* BODA 操作導覽。所有樣式皆以 bdt / boda-tour 命名，避免影響版位與匯出。 */
 .boda-tour-launch,.boda-tour-home,#boda-tour-root,#boda-tour-waiting{--bdt-accent:#ee4d2d;--bdt-accent-hover:#d83e21;--bdt-accent-light:#ffb19f;--bdt-accent-soft:rgba(238,77,45,.12);--bdt-glow:rgba(238,77,45,.22);--bdt-deep:#1b1b1f;--bdt-soft:#26262c;--bdt-line:#3a3a44;--bdt-line-strong:#555562;--bdt-text:#f2f2f4;--bdt-muted:#9a9aa4;--bdt-on-accent:#ffffff;--bdt-dim:rgba(0,0,0,.62);}
 .boda-tour-launch:focus-visible,.boda-tour-home:focus-visible{outline:3px solid var(--bdt-accent);outline-offset:3px;}
-.boda-tour-launch{order:6;margin-top:auto;width:60px;flex-shrink:0;border:1px solid var(--bdt-line-strong);border-radius:9px;background:var(--bdt-deep);color:var(--bdt-text);display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 2px;font:inherit;cursor:pointer;transition:background .18s,color .18s,border-color .18s;}
+.boda-tour-launch{order:20;margin-top:auto;width:60px;flex-shrink:0;border:1px solid var(--bdt-line-strong);border-radius:9px;background:var(--bdt-deep);color:var(--bdt-text);display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 2px;font:inherit;cursor:pointer;transition:background .18s,color .18s,border-color .18s;}
 .boda-tour-launch svg{width:22px;height:22px;color:var(--bdt-accent);}
 .boda-tour-launch span{font-size:10px;}
 .boda-tour-launch:hover{background:var(--bdt-accent-soft);color:var(--bdt-on-accent);border-color:var(--bdt-accent);}
@@ -321,6 +321,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
   opacity:0;visibility:hidden;pointer-events:none;background:rgba(14,28,33,.12);backdrop-filter:blur(2px);
   transition:opacity .18s ease,visibility .18s ease;}
 #app-loading.show{opacity:1;visibility:visible;}
+/* 下載／打包這類長流程：浮動視窗同時擋住滑鼠，畫布與工具列都不能誤觸。
+   一般按鈕的短暫脈衝不鎖（appLoadingPulse 會拿掉 lock），不影響連點操作。 */
+#app-loading.show.lock{pointer-events:auto;cursor:progress;}
 #app-loading-card{position:relative;box-sizing:border-box;width:min(390px,calc(100vw - 32px));padding:18px 19px 17px;
   border:1px solid rgba(255,255,255,.72);border-radius:15px;background:rgba(255,255,255,.86);
   box-shadow:0 18px 48px rgba(11,34,35,.25),0 2px 7px rgba(11,34,35,.10);backdrop-filter:blur(14px);
@@ -332,8 +335,10 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #app-loading-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 #app-loading-percent{margin-left:auto;flex-shrink:0;color:var(--teal-dark);font:800 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
 #app-loading-track{height:7px;margin-top:12px;border-radius:99px;overflow:hidden;background:rgba(52,87,82,.12);box-shadow:inset 0 1px 2px rgba(30,65,60,.08);}
-#app-loading-fill{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--teal),#79c8bd);
-  transition:width .18s ease;}
+/* 進度條用 translateX 移動（不改 width）：transform 由合成器繪製，主執行緒忙著畫版位時，
+   已經開始的推進動畫也不會停在原地。 */
+#app-loading-fill{width:100%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--teal),#79c8bd);
+  transform:translateX(-100%);will-change:transform;transition:transform .32s ease-out;}
 #app-loading-note{margin-top:8px;font-size:10.5px;line-height:1.35;color:var(--ink3);white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;}
 @keyframes appLoadingSpin{to{transform:rotate(360deg);}}
@@ -521,8 +526,19 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .import-image-tool-group-head{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
 .import-image-tool-group-head .import-image-tool-label{flex:1;min-width:0;margin:0;}
 .import-image-tool-group-head .import-image-tool-add{flex:0 0 auto;padding-left:5px;padding-right:5px;font-size:9px;}
-.import-image-tool-order{display:flex;gap:3px;flex-shrink:0;}
+.import-image-tool-order{display:flex;align-items:center;gap:3px;flex-shrink:0;}
+/* 「前後位置 1/4」小字：說明右邊兩個箭頭是調整畫布上誰蓋誰。 */
+.import-image-tool-order-label{font-size:9px;line-height:1;color:var(--ink3);white-space:nowrap;margin-right:1px;}
+.import-image-tool-order-label b{color:var(--teal-dark);font-weight:800;}
 .import-image-tool-row{display:flex;align-items:center;gap:5px;margin-top:5px;}
+/* 同一組（左邊曝品＋贈品、右邊曝品＋贈品…）包成一個框；兩組互不相干，前後位置也各自計算。 */
+.import-image-tool-set{margin-top:7px;padding:6px 7px 7px;border:1px solid rgba(46,157,145,.32);border-radius:9px;background:rgba(46,157,145,.05);}
+.import-image-tool-set:first-child{margin-top:0;}
+.import-image-tool-set + .import-image-tool-group,.import-image-tool-group + .import-image-tool-set{margin-top:9px;}
+.import-image-tool-set .import-image-tool-group:first-child{border-top:0;padding-top:0;margin-top:0;}
+/* 有圖的列可以點：在畫布框出那張圖。 */
+.import-image-tool-row[title]{cursor:pointer;border-radius:6px;}
+.import-image-tool-row[title]:hover{background:rgba(46,157,145,.10);}
 .import-image-tool-row:first-child{margin-top:0;}
 .import-image-tool-row .import-image-tool-label{flex:1;min-width:0;margin:0;font-weight:600;color:var(--ink3);}
 .import-image-tool-actions{display:flex;gap:3px;flex-shrink:0;}
@@ -567,6 +583,17 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .import-bottom-loading{display:flex;position:absolute;left:0;align-items:center;justify-content:center;box-sizing:border-box;margin:0;padding:0;background:#fff;color:var(--ink3);font-size:11px;}
 #import-strip-wrap{background:#000;border:0;border-radius:0;overflow:hidden;}
 #imp-strip{position:relative;transform-origin:top left;}
+/* 文字超過版位字數：框出來＋旁邊提示（不刪字），修正前不能下載圖片。
+   提示放在畫布最上層，字級用 --impz（畫布縮放比例）反算，縮放後在螢幕上仍是固定大小。 */
+.bn-text-over-limit{box-shadow:inset 0 0 0 2px #ef4444 !important;background-color:rgba(239,68,68,.14) !important;border-radius:4px;}
+#imp-text-limit-layer{position:absolute;left:0;top:0;width:0;height:0;z-index:9000;pointer-events:none;}
+.bn-text-limit-bubble{position:absolute;background:#dc2626;color:#fff;font-weight:700;line-height:1.35;white-space:nowrap;
+  font-size:calc(12px / var(--impz, 1));padding:calc(3px / var(--impz, 1)) calc(8px / var(--impz, 1));
+  border-radius:calc(6px / var(--impz, 1));box-shadow:0 calc(2px / var(--impz, 1)) calc(8px / var(--impz, 1)) rgba(0,0,0,.28);}
+#import-text-limit-notice{border:1px solid #fca5a5;background:#fef2f2;color:#991b1b;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;line-height:1.5;}
+#import-text-limit-notice b{display:block;margin-bottom:4px;}
+#import-text-limit-notice button{display:block;width:100%;text-align:left;background:none;border:0;padding:3px 0;color:#991b1b;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+#import-text-limit-notice button:hover{color:#7f1d1d;}
 .imp-slot{background:#000;}
 .imp-mount{width:100%;height:100%;}
 /* 動態列控制：只在畫布左側欄位滑入時顯示，避免成品預覽出現編輯按鈕。 */
@@ -663,6 +690,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 .imp-slot.is-active::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:9;
   box-shadow:inset 0 0 0 calc(2px / var(--impz,1)) var(--teal),
              inset 0 0 0 calc(4px / var(--impz,1)) var(--teal-tint);}
+/* 截圖期間（.bn-export-capture）不管誰把 is-active 加回來，綠框一律不畫，成品圖才不會帶框線。 */
+.bn-export-capture .imp-slot.is-active::after,
+.imp-slot.bn-export-capture.is-active::after{display:none !important;content:none !important;box-shadow:none !important;}
 /* 空白文字欄位的編輯提示只存在於畫布操作狀態；下載輸出時由 .bn-export-capture 隱藏。 */
 .bn-empty-text-placeholder{border-bottom:1px dashed rgba(90,110,106,.42);box-sizing:border-box;}
 .bn-empty-text-placeholder:hover{border-bottom-color:rgba(34,145,136,.72);}
@@ -691,6 +721,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-demo-bar .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;}
 #import-demo-bar .demo-hint{font-size:10px;color:var(--ink3);line-height:1.5;text-align:center;margin-top:6px;}
 #import-demo-bar .btn:disabled{opacity:.6;cursor:wait;}
+/* 清除畫面內容：會清掉目前編輯結果，用紅色系提醒是不可逆的動作。 */
+#import-demo-bar #btn-clear-import-canvas{margin-top:12px;color:#c2412d;border-color:rgba(194,65,45,.35);}
+#import-demo-bar #btn-clear-import-canvas:hover{background:rgba(194,65,45,.07);border-color:rgba(194,65,45,.6);}
 .ic-color-row{display:flex;align-items:center;gap:6px;}
 .ic-color-row .icc-label{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--ink2);}
 .ic-color-row .icc-label .icc-auto{display:block;font-size:9.5px;font-weight:600;color:var(--teal-dark);margin-top:1px;}
@@ -1088,14 +1121,36 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 .home-flow-arrow,
 #import-generator-load,
 #import-generator-hint{display:none!important;}
-/* 左側工具列精簡：首頁與頂端方塊 icon 隱藏；吸底排在曝光資源之前。 */
+/* 左側工具列精簡：首頁與頂端方塊 icon 隱藏。
+   製作流程順序：活動頁資源 → 曝光資源 → 取色工具 → 吸底工具 → 整包下載。 */
 #nav-rail .nav-logo,
 .nav-item[data-view="home"]{display:none!important;}
-.nav-item[data-view="import"]{order:1;}
-.nav-item[data-view="bottom"]{order:2;}
-.nav-item[data-view="exposure"]{order:3;}
-.nav-item[data-view="color"]{order:4;}
-.nav-item[data-view="maint"]{order:5;}
+.nav-item[data-step="import"]{order:1;}
+.nav-item[data-step="exposure"]{order:2;}
+.nav-item[data-step="color"]{order:4;}
+.nav-item[data-step="bottom"]{order:5;}
+.nav-item[data-step="download"]{order:6;}
+.nav-item[data-view="maint"]{order:7;}
+/* 步驟之間的虛線，表示依序進行。 */
+.nav-step{position:relative;}
+.nav-step:not([data-step="import"]){margin-top:12px;}
+.nav-step:not([data-step="import"])::before{content:"";position:absolute;left:50%;top:-15px;height:12px;
+  border-left:1.5px dashed rgba(255,255,255,.3);pointer-events:none;}
+/* 步驟狀態：已完成打勾、已略過灰色「略」。 */
+.nav-step .step-badge{position:absolute;top:3px;right:7px;width:15px;height:15px;border-radius:50%;
+  display:none;place-items:center;font:800 9px/1 system-ui,sans-serif;color:#fff;box-shadow:0 0 0 2px var(--ink);}
+/* 完成用琥珀色（深色勾），跟使用中工具的青綠底明顯區分。 */
+.nav-step[data-status="done"] .step-badge{display:grid;background:#f5b335;color:#3a2a00;}
+.nav-step[data-status="skipped"] .step-badge{display:grid;background:#7c8a87;}
+.nav-step.active .step-badge{box-shadow:0 0 0 2px var(--teal);}
+/* 目前步驟下方的「完成／略過」按鈕。 */
+#step-actions{width:62px;display:flex;flex-direction:column;gap:4px;margin-top:2px;}
+#step-actions[hidden]{display:none;}
+.step-act{width:100%;padding:4px 0;border-radius:6px;font-size:9.5px;font-weight:700;line-height:1.2;cursor:pointer;
+  border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#dfe8e6;}
+.step-act:hover{background:rgba(255,255,255,.14);color:#fff;}
+.step-act-done{background:#f5b335;border-color:#f5b335;color:#3a2a00;}
+.step-act-done:hover{background:#e9a521;border-color:#e9a521;color:#2a1e00;}
 /* 維修頁按鈕先隱藏（功能保留，之後要用再打開） */
 .nav-item[data-view="maint"]{display:none!important;}
 /* 直接預覽全部版位：畫布目前對到的版位項目，用跟匯入畫布一樣的綠框標示 */
@@ -1116,18 +1171,28 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     <button class="nav-item" data-view="generator" title="工單生成器">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg></span><span class="lbl">工單生成器</span>
     </button>
-    <button class="nav-item" data-view="import" title="匯入工單">
-      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></span><span class="lbl">匯入工單</span>
+    <!-- 製作流程（依序）：活動頁資源 → 曝光資源 → 取色工具 → 吸底工具 → 整包下載。
+         「活動頁資源」就是原本的匯入工單頁（上傳曝光資源＋活動頁的 Excel 與圖片，並編輯 MSBN／副區畫布）。 -->
+    <button class="nav-item nav-step" data-view="import" data-step="import" title="步驟 1：活動頁資源（上傳工單 Excel 與圖片、編輯 MSBN／副區）">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></span><span class="lbl">活動頁資源</span>
     </button>
-    <button class="nav-item" data-view="exposure" title="曝光資源">
+    <button class="nav-item nav-step" data-view="exposure" data-step="exposure" title="步驟 2：曝光資源">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></span><span class="lbl">曝光資源</span>
     </button>
-    <button class="nav-item" data-view="color" title="取色工具">
+    <button class="nav-item nav-step" data-view="color" data-step="color" title="步驟 3：取色工具（色票）">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 3.87 7 13 7 13s7-9.13 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="3" fill="var(--bg,#fff)" stroke="none"/></svg></span><span class="lbl">取色工具</span>
     </button>
-    <button class="nav-item" data-view="bottom" title="吸底工具">
+    <button class="nav-item nav-step" data-view="bottom" data-step="bottom" title="步驟 4：吸底工具">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12v5H6z"/><path d="M4 12h16v8H4z"/><path d="M8 12V9M16 12V9"/><path d="M8 16h8"/></svg></span><span class="lbl">吸底工具</span>
     </button>
+    <button class="nav-item nav-step" data-step="download" data-action="package-download" data-skip-app-loading title="步驟 5：整包下載（工單＋圖片＋色票＋暫存檔）">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></span><span class="lbl">整包下載</span>
+    </button>
+    <!-- 目前步驟下方的「完成／略過」：由 renderWorkflowNav 移到使用中的步驟後面。 -->
+    <div id="step-actions" hidden>
+      <button type="button" class="step-act step-act-done" data-step-act="done" data-skip-app-loading>完成 ›</button>
+      <button type="button" class="step-act step-act-skip" data-step-act="skipped" data-skip-app-loading>略過 ›</button>
+    </div>
     <button class="nav-item" data-view="maint" title="維修">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.1a4.4 4.4 0 0 0-5.8 5.8L3.6 17.2a2.2 2.2 0 0 0 3.2 3.2l5.3-5.3a4.4 4.4 0 0 0 5.8-5.8l-3 3-3.2-.8-.8-3.2Z"/></svg></span><span class="lbl">維修</span>
     </button>
@@ -1364,6 +1429,11 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
               直接預覽全部版位（不用匯入檔案）
             </button>
             <div class="demo-hint">每個版位只顯示一次；右側工具列可直接編輯，但不會寫進匯入工單暫存</div>
+            <button class="btn ghost" id="btn-clear-import-canvas" type="button" title="版位保留，文字回到預設示範文字、圖片清空，並清掉畫面的編輯暫存">
+              <svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 12.5h9l1-12.5"/><path d="M10 11v5.5M14 11v5.5"/></svg>
+              清除畫面內容
+            </button>
+            <div class="demo-hint">版位保留；促標、品名、圓標等文字回到預設示範文字，圖片清空。統一顏色與已上傳的圖片素材不會刪除</div>
           </div>
 
           <div id="import-dl-bar">
@@ -7218,9 +7288,9 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 <script src="JS/fonts-embed.js"></script>
 <script src="JS/render-config.js"></script>
 <script src="core/core-engine.js"></script>
-<script src="core/schema-renderer.js?v=20261014-badgecenter"></script>
+<script src="core/schema-renderer.js?v=20261106-twoline-edit"></script>
 <script src="shadow-module/shadow-plugin.js?v=20261019-shadow3"></script>
-<script src="JS/image-layout.js?v=20261022-shadow-reflow2"></script>
+<script src="JS/image-layout.js?v=20261106-display-clamp2"></script>
 <script src="JS/editor-plugin.js?v=20261019-rotate3"></script>
 <script src="jbp/js/logo-editor-plugin.js"></script>
 
@@ -7308,6 +7378,12 @@ var APP_LOADING = {
   token: 0,
   hideTimer: null,
   pulseTimer: null,
+  tickTimer: null,
+  pulsing: false,
+  percent: 0,   /* 實際進度 */
+  shown: 0,     /* 畫面上的進度（含等待中的緩慢推進），只增不減 */
+  ceiling: 0,   /* 等待中最多推進到這裡 */
+  span: null,   /* appLoadingHandoff 交棒後，子流程對應到的區間 */
   viewToken: 0,
   manualIds: {
     'btn-preview-all': true,
@@ -7318,7 +7394,8 @@ var APP_LOADING = {
     'maint-download-all-xlsx': true,
     'btn-download-import-package': true,
     'btn-import-demo': true,
-    'btn-upload-generator-snapshot': true
+    'btn-upload-generator-snapshot': true,
+    'btn-clear-import-canvas': true
   }
 };
 function appLoadingRefs() {
@@ -7337,34 +7414,127 @@ function appLoadingLabelOf(el) {
     .replace(/\s+/g, ' ').trim();
   return text ? text.replace(/^[⬇⬆⏳🧪🔄✕↺]+/, '').trim() : '處理中…';
 }
-function appLoadingStart(label, percent, note) {
+/* 進度顯示規則：
+   1. 同一次作業只會往前，不會倒退（子流程從 3% 重新開始時也不會把畫面拉回去）。
+   2. 等待中的步驟會以很慢的速度往「下一個里程碑」爬，但不會超過它，讓使用者知道還在動。
+   3. 一個流程結束後若緊接著要做另一個流程（例如匯入工單後烘商品影子），用 appLoadingHandoff
+      把後面的流程對應到同一條進度的剩餘區間，不先顯示 100% 再掉回 3%。 */
+function appLoadingSpan() {
+  var span = APP_LOADING.span;
+  return span && APP_LOADING.active && span.token === APP_LOADING.token ? span : null;
+}
+function appLoadingHandoff(from, finishNote) {
+  if (!APP_LOADING.active) return;
+  var refs = appLoadingRefs();
+  APP_LOADING.span = {
+    token: APP_LOADING.token,
+    from: Math.max(0, Math.min(99, Number(from) || 0)),
+    to: 100,
+    label: refs.label ? refs.label.textContent : '',
+    finishNote: finishNote || ''
+  };
+  appLoadingUpdate(APP_LOADING.span.from, APP_LOADING.span.label, null, APP_LOADING.span.from + 3, true);
+}
+function appLoadingRender(value) {
+  var refs = appLoadingRefs();
+  var shown = Math.max(0, Math.min(100, value));
+  if (refs.percent) refs.percent.textContent = Math.floor(shown) + '%';
+  if (refs.fill) refs.fill.style.transform = 'translateX(' + (shown - 100).toFixed(2) + '%)';
+  if (refs.track) refs.track.setAttribute('aria-valuenow', String(Math.floor(shown)));
+}
+function appLoadingTick() {
+  if (!APP_LOADING.active) { clearInterval(APP_LOADING.tickTimer); APP_LOADING.tickTimer = null; return; }
+  var ceiling = APP_LOADING.ceiling;
+  if (!(ceiling > APP_LOADING.shown)) return;
+  /* 每次只走剩餘距離的一小段：越接近里程碑越慢，永遠不會自己走到 100%。 */
+  var next = APP_LOADING.shown + Math.max(0.35, (ceiling - APP_LOADING.shown) * 0.07);
+  APP_LOADING.shown = Math.min(next, ceiling - 0.01);
+  appLoadingRender(APP_LOADING.shown);
+}
+function appLoadingStart(label, percent, note, opts) {
   var refs = appLoadingRefs();
   if (!refs.root) return;
   clearTimeout(APP_LOADING.hideTimer);
   clearTimeout(APP_LOADING.pulseTimer);
+  APP_LOADING.pulsing = false;
+  if (appLoadingSpan()) {
+    /* 前一個流程已交棒：沿用同一條進度，不重新從頭開始。 */
+    appLoadingUpdate(percent == null ? 5 : percent, label, note);
+    return;
+  }
   APP_LOADING.token++;
+  APP_LOADING.span = null;
   APP_LOADING.active = true;
+  APP_LOADING.shown = 0;
+  APP_LOADING.percent = 0;
+  if (refs.fill) {
+    /* 新的一輪直接從 0 開始，不要從上一輪的 100% 動畫倒退回來。 */
+    refs.fill.style.transition = 'none';
+    refs.fill.style.transform = 'translateX(-100%)';
+    void refs.fill.offsetWidth;
+    refs.fill.style.transition = '';
+  }
   refs.root.classList.add('show');
+  /* opts.lock：下載、打包這類長流程要把畫布與工具列整個鎖住，避免中途誤觸改到內容。 */
+  refs.root.classList.toggle('lock', !!(opts && opts.lock));
   refs.root.setAttribute('aria-hidden', 'false');
   appLoadingUpdate(percent == null ? 5 : percent, label || '處理中…', note || '請稍候…');
 }
-function appLoadingUpdate(percent, label, note) {
+/* 已經在跑的 Loading 也可以中途改成鎖定（例如按鈕自動脈衝後接著進入下載流程）。 */
+function appLoadingLock(lock) {
+  var refs = appLoadingRefs();
+  if (!refs.root) return;
+  refs.root.classList.toggle('lock', !!lock && APP_LOADING.active);
+}
+/* percent：目前實際進度；ceiling：這一步做完前最多爬到哪裡（下一個里程碑），省略時只會小幅往前爬。 */
+function appLoadingUpdate(percent, label, note, ceiling, raw) {
   var refs = appLoadingRefs();
   if (!refs.root) return;
   if (!APP_LOADING.active) {
     APP_LOADING.active = true;
+    APP_LOADING.shown = 0;
+    APP_LOADING.percent = 0;
     refs.root.classList.add('show');
     refs.root.setAttribute('aria-hidden', 'false');
   }
   var value = Math.max(0, Math.min(100, Number(percent) || 0));
+  var cap = ceiling == null ? null : Math.max(0, Math.min(100, Number(ceiling) || 0));
+  var span = raw ? null : appLoadingSpan();
+  if (span) {
+    value = span.from + (span.to - span.from) * value / 100;
+    if (cap != null) cap = span.from + (span.to - span.from) * cap / 100;
+    if (span.label) label = span.label;
+  }
+  value = Math.max(value, APP_LOADING.percent || 0);
+  APP_LOADING.percent = value;
+  if (cap == null || cap <= value) cap = value + Math.min(6, (97 - value) * 0.2);
+  APP_LOADING.ceiling = value >= 100 ? 100 : Math.min(cap, 99);
+  if (value > APP_LOADING.shown) APP_LOADING.shown = value;
   if (refs.label && label) refs.label.textContent = label;
-  if (refs.percent) refs.percent.textContent = Math.round(value) + '%';
-  if (refs.fill) refs.fill.style.width = value + '%';
-  if (refs.track) refs.track.setAttribute('aria-valuenow', String(Math.round(value)));
   if (refs.note && note) refs.note.textContent = note;
+  appLoadingRender(APP_LOADING.shown);
+  if (!APP_LOADING.tickTimer) APP_LOADING.tickTimer = setInterval(appLoadingTick, 120);
+}
+/* 讓瀏覽器先把目前進度畫出來，再開始下一段會佔住主執行緒的工作。 */
+/* 只等一個繪製週期，但最多等 50ms：視窗在背景或被遮住時瀏覽器會把 requestAnimationFrame
+   壓到約 1 秒一次（分頁隱藏時甚至完全不跑），不能讓匯入／影子流程卡在這裡等畫面。 */
+function appLoadingYield() {
+  return new Promise(function (resolve) {
+    var settled = false;
+    function go() {
+      if (settled) return;
+      settled = true;
+      setTimeout(resolve, 0);
+    }
+    if (document.visibilityState !== 'hidden' && typeof requestAnimationFrame === 'function') requestAnimationFrame(go);
+    setTimeout(go, 50);
+  });
 }
 function appLoadingFinish(note) {
   if (!APP_LOADING.active) return;
+  var span = appLoadingSpan();
+  if (span && span.finishNote) note = span.finishNote;
+  APP_LOADING.span = null;
   appLoadingUpdate(100, '完成', note || '處理完成');
   var token = APP_LOADING.token;
   clearTimeout(APP_LOADING.hideTimer);
@@ -7372,18 +7542,26 @@ function appLoadingFinish(note) {
     if (APP_LOADING.token !== token) return;
     var refs = appLoadingRefs();
     APP_LOADING.active = false;
+    APP_LOADING.pulsing = false;
+    clearInterval(APP_LOADING.tickTimer);
+    APP_LOADING.tickTimer = null;
     if (refs.root) {
       refs.root.classList.remove('show');
+      refs.root.classList.remove('lock');
       refs.root.setAttribute('aria-hidden', 'true');
     }
   }, 260);
 }
 function appLoadingFail(message) {
+  APP_LOADING.span = null;
   appLoadingUpdate(100, '處理失敗', message || '請稍後再試');
   appLoadingFinish(message || '請稍後再試');
 }
 function appLoadingPulse(label) {
-  appLoadingStart('LOADING · ' + (label || '處理中…'), 8, '正在處理…');
+  /* 匯入、上傳這類真正的流程還在跑時，點其他按鈕不能把它的進度蓋掉、更不能提早收掉。 */
+  if (APP_LOADING.active && !APP_LOADING.pulsing) return;
+  appLoadingStart('LOADING · ' + (label || '處理中…'), 8, '正在處理…', { lock: false });
+  APP_LOADING.pulsing = true;
   var token = APP_LOADING.token;
   APP_LOADING.pulseTimer = setTimeout(function () {
     if (APP_LOADING.active && APP_LOADING.token === token) appLoadingFinish();
@@ -10741,9 +10919,9 @@ function isMsbnC14Block(blockDef) {
 function normalizeMsbnC14FixedRowValue(value, fieldKey) {
   var text = String(value == null ? '' : value).replace(/\r\n?/g, '\n');
   if (!/^(?:promo|copy)\d*$/i.test(String(fieldKey || ''))) return text;
-  var perLine = /^promo/i.test(String(fieldKey || '')) ? 6 : 4;
-  /* 與畫布同一套字數規則：中文 1、英數 0.5，每排上限依單位計算，不以字元數硬截。 */
-  return truncateImportCanvasText(text.split('\n').slice(0, 2).join('\n'), null, perLine);
+  /* 固定兩排：超過兩排的接回第二排。每排超過字數的部分保留（不再在匯入時默默截掉），
+     由畫布的字數檢查框紅提示，修正前不能下載圖片。 */
+  return capCanvasTextLines(text, 2);
 }
 function normalizeMsbnC14FixedRowEntry(entry, blockDef, fieldKey) {
   if (!isMsbnC14Block(blockDef)) return entry;
@@ -10934,11 +11112,17 @@ function repairImportPromoMapping(entries, blockDef, mapped) {
 
 var blocksLoadedForImport = false;
 var blocksLoadingCallbacks = null; /* null=目前沒有在載入；陣列=正在載入中，後續呼叫排隊等這次載完 */
-function ensureBlocksLoaded(cb) {
+/* range：外層流程已經有 Loading 時，版位模板的載入進度要放在它指定的區間內（例如匯入工單的 42–46%），
+   不能用自己的 8–92% 把外層進度一口氣推到 92%。 */
+function ensureBlocksLoaded(cb, range) {
   if (blocksLoadedForImport) { cb(); return; }
   if (blocksLoadingCallbacks) { blocksLoadingCallbacks.push(cb); return; } /* 已經有一次載入在進行中，排隊等它，不要再開一次 */
   blocksLoadingCallbacks = [cb];
-  if (!APP_LOADING.active) appLoadingStart('LOADING · 載入版位模板', 6, '正在讀取版位清單…');
+  var ownOverlay = !APP_LOADING.active;
+  if (ownOverlay) appLoadingStart('LOADING · 載入版位模板', 6, '正在讀取版位清單…');
+  var from = ownOverlay || !range ? 8 : range.from;
+  var to = ownOverlay || !range ? 92 : range.to;
+  if (!ownOverlay && !range) { from = APP_LOADING.percent || 0; to = Math.min(95, from + 8); }
   var importLog = document.getElementById('import-log');
   if (importLog) importLog.innerHTML = '<span class="ok">讀取成功，載入版位模板中…</span>';
   bnLoadAllBlocks(function (result) {
@@ -10954,8 +11138,9 @@ function ensureBlocksLoaded(cb) {
     queued.forEach(function (fn) { fn(); });
   }, 'blocks/', function (p) {
     if (!p || !p.total) return;
-    var pct = 8 + Math.round((p.loaded / p.total) * 84);
-    appLoadingUpdate(pct, 'LOADING · 載入版位模板', '已載入 ' + p.loaded + '/' + p.total + ' 個版位');
+    var pct = from + (p.loaded / p.total) * (to - from);
+    appLoadingUpdate(pct, ownOverlay ? 'LOADING · 載入版位模板' : null, '已載入 ' + p.loaded + '/' + p.total + ' 個版位',
+      from + Math.min(p.total, p.loaded + 1) / p.total * (to - from));
   });
 }
 
@@ -11758,6 +11943,39 @@ function workbookLevelIdFromValue(value) {
   });
   return bestScore >= 0.62 ? bestId : '';
 }
+/* 工單總覽裡的活動名稱：找「工作項目名稱／活動名稱／活動頁名稱／專案名稱」標籤，取右邊第一個有字的格子。
+   範例母版裡這格是 B7 的「XXXXXXXXX」，位置不寫死，照標籤找。 */
+function parseWorkbookActivityName(wb) {
+  var ws = workOrderWorksheet(wb, '工單總覽');
+  if (!ws) return '';
+  var maxRow = Math.min(Number(ws.rowCount) || 0, 60);
+  var maxCol = Math.min(Number(ws.columnCount) || 0, 20);
+  function text(r, c) {
+    try { return workbookCellPlainString(ws.getCell(r, c)); } catch (_) { return ''; }
+  }
+  function norm(s) { return String(s || '').replace(/[\s　]+/g, '').replace(/：/g, ':'); }
+  for (var r = 1; r <= maxRow; r++) {
+    for (var c = 1; c <= maxCol; c++) {
+      var label = norm(text(r, c));
+      if (!label) continue;
+      if (!/^(?:工作項目名稱|活動名稱|活動頁名稱|專案名稱|案名)/.test(label)) continue;
+      for (var cc = c + 1; cc <= maxCol; cc++) {
+        var v = String(text(r, cc) || '').trim();
+        if (v) return v;
+      }
+      return '';
+    }
+  }
+  return '';
+}
+/* ZIP 最外層的名字：活動名稱 > 工單檔名（去副檔名）> 固定字「活動頁」；不帶時間戳或亂碼。 */
+function importPackageActivityName() {
+  var fromWorkbook = String(currentImportActivityName || '').trim();
+  /* 範例母版的「XXXXXXXXX」只是佔位文字，不當成名字 */
+  if (/^x+$/i.test(fromWorkbook)) fromWorkbook = '';
+  var fromFile = String(currentImportWorkbookName || '').replace(/\.[^.]+$/, '').trim();
+  return importPackageSafeName(fromWorkbook || fromFile || '活動頁', '活動頁');
+}
 function parseWorkbookOverviewLevel(wb) {
   var ws = workOrderWorksheet(wb, '工單總覽');
   if (!ws) return null;
@@ -12033,10 +12251,11 @@ function applyWorkbookOverviewBackground(wb) {
   }
   if (typeof writeSharedCanvasBg === 'function') writeSharedCanvasBg(workbookBg);
   if (typeof saveImportTheme === 'function') saveImportTheme();
-  if (typeof pushImportBgToExposure === 'function') pushImportBgToExposure(workbookBg);
   /* 工單匯入不要求使用者先切到「取色工具」；主標配色在背景匯入時即建立，
-     曝光資源稍後載入也會從共用色回放。 */
-  if (typeof scheduleMainTextPaletteFromBackground === 'function') scheduleMainTextPaletteFromBackground(workbookBg);
+     曝光資源稍後載入也會從共用色回放。pushImportBgToExposure() 裡已經排程
+     scheduleMainTextPaletteFromBackground()，這裡不再排第二輪（以前會變成 8 次整片重畫）。 */
+  if (typeof pushImportBgToExposure === 'function') pushImportBgToExposure(workbookBg);
+  else if (typeof scheduleMainTextPaletteFromBackground === 'function') scheduleMainTextPaletteFromBackground(workbookBg);
   return workbookBg;
 }
 function workbookOverviewAssetRow(ws, label, fallbackRow) {
@@ -12397,8 +12616,12 @@ function parseVisibleWorkOrderLayout(wb) {
 function parseImportXlsx(arrayBuffer, options) {
   options = options || {};
   return new ExcelJS.Workbook().xlsx.load(arrayBuffer).then(function (wb) {
+    if (APP_LOADING.active) appLoadingUpdate(32, null, '正在讀取工單總覽與版位內容…', 40);
+    /* 新工單進來就是新的配色情境：上一份暫存檔的文字配色鎖不再適用，回到依背景推薦。 */
+    writeSnapshotTextPaletteLock('', null);
     currentImportWorkbook = wb;
     currentImportWorkbookName = options.filename || currentImportWorkbookName || '';
+    try { currentImportActivityName = parseWorkbookActivityName(wb); } catch (_) { currentImportActivityName = ''; }
     var hasBottomWorkOrder = workbookHasLayoutOutputBottom(wb);
     function finishImportColumns(columns) {
       return markImportColumnsBottomSource(columns, hasBottomWorkOrder);
@@ -12619,19 +12842,46 @@ function importShadowWorkImage(img) {
    dataURL（data:image/png;base64,xxxx）本身固定含有一個逗號，
    不能直接用逗號切，切開後遇到 data: 開頭的片段，
    要把緊接著的下一段（base64 內容）接回來，才是完整的一張圖。 */
+/* 「1,000」「12,345,678」這種千分位逗號（數字,三位數字、後面不再接數字）不是多圖分隔符，
+   例如檔名「活動價1,299.png」要當成一張圖；切之前先把這種逗號換成佔位字元，切完再還原。 */
+/* 效能：圖片欄位的值常是好幾 MB 的 base64 dataURL，而且每次重畫每一格都會呼叫。
+   不能對整串跑正規表示式或多次複製字串（之前這樣做，匯入工單後主執行緒會卡好幾秒），
+   只在切開後的片段「頭尾幾個字元」判斷千分位，dataURL 的 base64 本體完全不掃描。 */
+function isImageListDigitCode(code) { return code >= 48 && code <= 57; }
+function imageListStartsWithThousandsGroup(s) {
+  return s.length >= 3 &&
+    isImageListDigitCode(s.charCodeAt(0)) && isImageListDigitCode(s.charCodeAt(1)) && isImageListDigitCode(s.charCodeAt(2)) &&
+    !(s.length > 3 && isImageListDigitCode(s.charCodeAt(3)));
+}
 function splitImageList(v) {
-  var raw = String(v == null ? '' : v).split(',');
+  var s = String(v == null ? '' : v);
+  if (s.indexOf(',') === -1) { s = s.trim(); return s ? [s] : []; }
+  var raw = s.split(',');
   var out = [];
   for (var i = 0; i < raw.length; i++) {
-    var t = raw[i].trim();
+    var piece = raw[i];
+    var t = piece.trim();
     if (!t) continue;
-    if (/^data:/i.test(t) && i + 1 < raw.length) { out.push(t + ',' + raw[i + 1].trim()); i++; }
-    else out.push(t);
+    if (/^data:/i.test(t.slice(0, 5))) {
+      if (i + 1 < raw.length) { out.push(t + ',' + raw[i + 1].trim()); i++; }
+      else out.push(t);
+      continue;
+    }
+    /* 千分位：前一段以數字結尾（逗號前不能有空白），下一段開頭剛好三位數字、後面不再接數字。 */
+    while (i + 1 < raw.length && piece.length && isImageListDigitCode(piece.charCodeAt(piece.length - 1)) &&
+           imageListStartsWithThousandsGroup(raw[i + 1])) {
+      piece = piece + ',' + raw[i + 1];
+      i++;
+    }
+    t = piece.trim();
+    if (t) out.push(t);
   }
   return out;
 }
 /* 匯入工單圖片自動裁白邊：商品／人物／LOGO 的可見內容都算有效範圍，四邊圓點等非白色內容也會被納入。 */
-function trimImportImageWhiteBorder(dataUrl) {
+/* opts.alphaOnly：只裁透明外框、不裁白邊（代言人照片的白底是畫面的一部分，不能被裁掉）。 */
+function trimImportImageWhiteBorder(dataUrl, opts) {
+  var alphaOnly = !!(opts && opts.alphaOnly);
   return new Promise(function (resolve) {
     if (!dataUrl || !/^data:image\/(png|jpe?g|webp|bmp|gif);/i.test(String(dataUrl))) { resolve(dataUrl); return; }
     /* 烘過影子的商品圖（PNG 內帶 bodaShadowGeom）本體早就裁好了，外圍那圈淡淡的影子是故意留的：
@@ -12654,6 +12904,7 @@ function trimImportImageWhiteBorder(dataUrl) {
         var blankCorners = corners.every(function (p) { return p.a <= 12 || (p.a >= 235 && p.r >= 238 && p.g >= 238 && p.b >= 238); });
         if (!blankCorners) { resolve(dataUrl); return; }
         var transparentCorner = corners.some(function (p) { return p.a <= 12; });
+        if (alphaOnly && !transparentCorner) { resolve(dataUrl); return; }
         var x0 = w, y0 = h, x1 = -1, y1 = -1;
         for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
           var p = (y * w + x) * 4, alpha = pixels[p + 3];
@@ -12773,9 +13024,14 @@ function syncImportShadowBackgroundSoon() {
   importShadowBackgroundHex = next;
   clearTimeout(importShadowBackgroundTimer);
   importShadowBackgroundTimer = setTimeout(function () {
+    /* 匯入工單時背景色會先變、接著匯入本身就會跑一輪影子；那一輪若已經用新背景色開始，
+       就不用再排一輪（否則匯入完成後 Loading 又會從頭再跑一次）。 */
+    if (importShadowPassBackground && importShadowPassBackground === importShadowActualBackground()) return;
     scheduleImportShadowReapply(true);
   }, 280);
 }
+/* 最近一輪商品影子開始時使用的背景色。 */
+var importShadowPassBackground = '';
 
 function recolorImportShadowCanvas(ctx, width, height, color) {
   var m = /^#([0-9a-f]{6})$/i.exec(String(color || ''));
@@ -13048,12 +13304,32 @@ function importShadowGeometryFromState(img) {
    image-layout 會依此把商品本體擺回原本的位置／大小，影子溢出到框外。
    框本身會裁切（clipImage：白底商品框、LOGO 框等）時不掛，整張圖（含影子）改用 contain 完整縮進框內，
    影子才不會被框切掉。使用者用編輯器改過的圖（已有自己的幾何）不覆蓋。 */
+/* 商品本體在含影子輸出圖裡的位置，只給選取框（image-layout 的四角縮放／旋轉框）使用。
+   跟 layout* 分開存：會裁切的圖片框（MSBN B-1-1～B-1-4、B-3-4、C-1-5，以及只裁底部的
+   A-3-1、B-2-2、B-2-3）排版時刻意不用 layout*（整張 contain，避免影子被切掉），但選取框
+   仍要只框商品本體、不含影子，所以這組資料不論圖片框是否裁切都保留。 */
+var IMPORT_PRODUCT_BODY_KEYS = ['productBodyWidth', 'productBodyHeight', 'productOutputWidth', 'productOutputHeight', 'productBodyOffsetX', 'productBodyOffsetY'];
+function setImportProductBodyGeometry(img, geom) {
+  var ds = img && img.dataset;
+  if (!ds) return;
+  if (!(geom && geom.sourceWidth > 0 && geom.sourceHeight > 0 && geom.outputWidth > 0 && geom.outputHeight > 0)) {
+    IMPORT_PRODUCT_BODY_KEYS.forEach(function (k) { delete ds[k]; });
+    return;
+  }
+  ds.productBodyWidth = String(geom.sourceWidth);
+  ds.productBodyHeight = String(geom.sourceHeight);
+  ds.productOutputWidth = String(geom.outputWidth);
+  ds.productOutputHeight = String(geom.outputHeight);
+  ds.productBodyOffsetX = String(geom.offsetX || 0);
+  ds.productBodyOffsetY = String(geom.offsetY || 0);
+}
 function applyImportShadowGeometry(mountEl) {
   if (!mountEl || !mountEl.querySelectorAll) return;
   Array.prototype.forEach.call(mountEl.querySelectorAll('img.bn-imggroup-img'), function (img) {
     var geom = importShadowGeometryOf(img.getAttribute('src') || img.src);
     var ds = img.dataset;
     if (!ds) return;
+    setImportProductBodyGeometry(img, geom);
     if (!geom) {
       if (ds.importShadowGeom === '1') {
         ['layoutSourceWidth', 'layoutSourceHeight', 'layoutOutputWidth', 'layoutOutputHeight', 'layoutOffsetX', 'layoutOffsetY', 'importShadowGeom']
@@ -13080,6 +13356,53 @@ function applyImportShadowGeometry(mountEl) {
     ds.layoutOffsetX = String(geom.offsetX);
     ds.layoutOffsetY = String(geom.offsetY);
     ds.importShadowGeom = '1';
+  });
+}
+
+/* 副區：商品影子只能落在「預設白底卡片」（bg 色塊，卡片背景色）的範圍內，不可溢出到畫布背景色上。
+   白卡片跟商品圖在渲染器裡是同層的兄弟節點，不能靠 overflow 裁；
+   這裡把白卡片的圓角矩形換算成商品圖群組（.bn-imggroup）自己座標系的 clip-path。
+   用 path() 而不用 inset()，因為卡片通常比圖片框大，裁切範圍要能超出群組本身的盒子。
+   clip 放在 .bn-imggroup 而不是外層 [data-img-field]，applyImportShadowGeometry 才不會
+   因為「圖片框有 clip-path」而把商品本體幾何拿掉（那會改變拖曳邊界與縮放行為）。 */
+function roundedRectClipPath(x, y, w, h, r) {
+  r = Math.max(0, Math.min(Number(r) || 0, w / 2, h / 2));
+  function n(v) { return String(Math.round(v * 100) / 100); }
+  return 'path("M' + n(x + r) + ' ' + n(y) +
+    'H' + n(x + w - r) + 'A' + n(r) + ' ' + n(r) + ' 0 0 1 ' + n(x + w) + ' ' + n(y + r) +
+    'V' + n(y + h - r) + 'A' + n(r) + ' ' + n(r) + ' 0 0 1 ' + n(x + w - r) + ' ' + n(y + h) +
+    'H' + n(x + r) + 'A' + n(r) + ' ' + n(r) + ' 0 0 1 ' + n(x) + ' ' + n(y + h - r) +
+    'V' + n(y + r) + 'A' + n(r) + ' ' + n(r) + ' 0 0 1 ' + n(x + r) + ' ' + n(y) + 'Z")';
+}
+function applySubareaCardShadowClip(mountEl, col) {
+  if (!mountEl || !col || !/^subarea_/i.test(String(col.blockId || ''))) return;
+  var groups = mountEl.querySelectorAll('[data-img-field] .bn-imggroup');
+  if (!groups.length) return;
+  var card = mountEl.querySelector('[data-color-field="bgColor"]');
+  if (!card || !window.getComputedStyle) {
+    groups.forEach(function (group) { group.style.clipPath = ''; });
+    return;
+  }
+  var root = mountEl.querySelector('[data-bn-schema-id]') || mountEl;
+  var rootRect = root.getBoundingClientRect();
+  var scale = root.offsetWidth ? rootRect.width / root.offsetWidth : 1;
+  if (!isFinite(scale) || scale <= 0) scale = 1;
+  var cardRect = card.getBoundingClientRect();
+  if (!cardRect.width || !cardRect.height) return;
+  var radius = (parseFloat(window.getComputedStyle(card).borderTopLeftRadius) || 0);
+  groups.forEach(function (group) {
+    var zone = group.closest ? group.closest('[data-img-field]') : null;
+    var key = zone ? zone.getAttribute('data-img-field') : '';
+    /* 只管會烘影子、可拖曳的那幾類圖；LOGO 底板等自己會裁切的框不動。 */
+    if (!/^(?:productImg|giftImg|endorserImg|signImg)\d*$/i.test(String(key || ''))) return;
+    var rect = group.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    group.style.clipPath = roundedRectClipPath(
+      (cardRect.left - rect.left) / scale,
+      (cardRect.top - rect.top) / scale,
+      cardRect.width / scale,
+      cardRect.height / scale,
+      radius);
   });
 }
 
@@ -13214,6 +13537,34 @@ function importShadowRender(prep, st) {
   return url;
 }
 
+/* 「這張商品圖已經用目前設定烘過」的標記。匯入工單後會重跑一次影子（commit），
+   以前每張商品圖都整張重做（去白邊＋合成＋toDataURL），商品一多就讓 Loading 停很久。
+   標記包含：影子方向／位移／影子色（跟背景色走）、原圖指紋、烘好那張圖的指紋；
+   任何一項不同（換設定、換背景、旋轉／編輯換了原圖或成品）都會照舊重烘。 */
+function importShadowFingerprint(value) {
+  var s = String(value || '');
+  if (!s) return '';
+  var sample = s.length > 8192 ? s.slice(0, 4096) + s.slice(-4096) : s;
+  return s.length + ':' + importShadowCrc32(sample);
+}
+function importShadowBakeKey(img) {
+  if (!img || !img.baseUrl) return '';
+  var engine = importShadowSettings.angle === 'off' ? 'off' : (isImportShadowEngineReady() ? 'on' : '');
+  if (!engine) return '';
+  return ['v1', engine, importShadowSettings.angle, importShadowSettings.offsetX, importShadowSettings.offsetY,
+    importShadowColorForBackground(importShadowActualBackground()), importShadowFingerprint(img.baseUrl)].join('|');
+}
+/* 標記結尾 #g＝烘出有影子幾何的成品（沿用時幾何必須還找得到，否則重烘補回）；
+   #n＝這張圖本來就合不出影子（例如沒有透明背景的 JPG，回傳裁白邊後的原圖），沿用即可。 */
+function importShadowBakedKey(bakeKey, url, geom) {
+  return bakeKey ? bakeKey + '#' + importShadowFingerprint(url) + '#' + (geom ? 'g' : 'n') : '';
+}
+function importShadowBakeIsCurrent(img, bakeKey) {
+  if (!bakeKey || !img || !img.url || !img.shadowKey) return false;
+  var prefix = bakeKey + '#' + importShadowFingerprint(img.url) + '#';
+  if (img.shadowKey === prefix + 'n') return true;
+  return img.shadowKey === prefix + 'g' && !!importShadowGeometryOf(img.url);
+}
 /* 原圖的前處理結果快取（以原圖網址為 key），拖動連續重烘時不用每次重做。 */
 function importShadowPrepared(originalDataUrl) {
   var hit = importShadowPrepCache[originalDataUrl];
@@ -13299,10 +13650,11 @@ function importCanvasTransformReleasePrepared(baseUrl) {
   Promise.resolve(prep).then(importShadowRelease, function () {});
 }
 
-function importCanvasTransformRotatedBase(baseUrl, degrees) {
+/* opts.alphaOnly：代言人圖只裁旋轉後多出來的透明角，不裁照片本身的白底。 */
+function importCanvasTransformRotatedBase(baseUrl, degrees, opts) {
   degrees = importCanvasTransformNormalizeAngle(degrees);
   if (Math.abs(degrees) < 0.05) return Promise.resolve(baseUrl);
-  return trimImportImageWhiteBorder(baseUrl).then(function (trimmed) {
+  return trimImportImageWhiteBorder(baseUrl, opts).then(function (trimmed) {
     return importLoadImage(trimmed || baseUrl);
   }).then(function (source) {
     var sw = source.naturalWidth || source.width;
@@ -13326,7 +13678,7 @@ function importCanvasTransformRotatedBase(baseUrl, degrees) {
     ctx.drawImage(source, -sw * scale / 2, -sh * scale / 2, sw * scale, sh * scale);
     /* 裁掉旋轉後四個透明角。這一步是避免 image-layout 把透明留白當商品範圍，
        導致商品看起來每轉一次就縮一點。 */
-    return trimImportImageWhiteBorder(out.toDataURL('image/png'));
+    return trimImportImageWhiteBorder(out.toDataURL('image/png'), opts);
   });
 }
 
@@ -13386,6 +13738,8 @@ function importCanvasTransformPresent(job, location, rotatedBase, rendered, pers
   }
   if (geometry) importShadowGeometry[rendered.url] = geometry;
   importCanvasTransformApplyGeometry(img, displayGeometry);
+  /* 排版可能不用影子幾何（會裁切的框），但選取框一律只框商品本體。 */
+  setImportProductBodyGeometry(img, geometry);
   img.dataset.baseSrc = rotatedBase;
   img.setAttribute('src', rendered.url);
   /* 影子輸出圖的外框大小會變，但仍使用原本的 flex slot；這等同 SHOPEE 的
@@ -13413,7 +13767,8 @@ function importCanvasTransformPresent(job, location, rotatedBase, rendered, pers
   queueImportStateSave();
   saveImportImageLayout();
   var log = document.getElementById('import-log');
-  if (log) log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 商品已旋轉並即時重製影子</span>';
+  if (log) log.innerHTML = '<span class="ok">' + lineIcon('done') + ' ' +
+    (isImportNoShadowFieldKey(location.fieldKey) ? '代言人圖已旋轉' : '商品已旋轉並即時重製影子') + '</span>';
 }
 
 function importCanvasTransformRun(job, detail, force) {
@@ -13426,8 +13781,11 @@ function importCanvasTransformRun(job, detail, force) {
   job.lastRunAt = Date.now();
   var generation = ++job.generation;
   var rotatedBase = '';
-  importCanvasTransformRotatedBase(job.baseUrl, angle).then(function (base) {
+  /* 代言人圖（與簽名圖同屬不烘影子的欄位）：旋轉後直接使用，不合成影子、不裁白底。 */
+  var noShadow = isImportNoShadowFieldKey(location.fieldKey);
+  importCanvasTransformRotatedBase(job.baseUrl, angle, noShadow ? { alphaOnly: true } : null).then(function (base) {
     rotatedBase = base;
+    if (noShadow) return { url: base, geometry: null };
     return window.BODAImportShadow.composeProduct(base);
   }).then(function (rendered) {
     /* 拖曳中若已收到更新角度，舊影子不寫回畫面；只讓最後一筆覆蓋。 */
@@ -13441,10 +13799,10 @@ function importCanvasTransformRun(job, detail, force) {
     }
   }).catch(function (err) {
     if (job.generation !== generation) return;
-    console.warn('[BODA] 畫布商品旋轉／影子重製失敗：', err);
+    console.warn('[BODA] 畫布圖片旋轉／影子重製失敗：', err);
     if (job.ending) {
       var log = document.getElementById('import-log');
-      if (log) log.innerHTML = '<span class="err">商品旋轉未套用，已保留原圖與原影子。</span>';
+      if (log) log.innerHTML = '<span class="err">' + (noShadow ? '代言人圖旋轉未套用，已保留原圖。' : '商品旋轉未套用，已保留原圖與原影子。') + '</span>';
       job.ending = false;
       job.angle = 0;
       job.detail = null;
@@ -13551,7 +13909,7 @@ function auditImportShadowCanvasAssets() {
     var def = BNCore.getBlock(col && col.blockId);
     if (!def || !col.data) return;
     (def.fields || []).forEach(function (field) {
-      if (field.type !== 'image' || isImportLogoFieldKey(field.key)) return;
+      if (field.type !== 'image' || !isImportShadowFieldKey(field.key)) return;
       var parts = splitImageList(col.data[field.key] || '');
       var changed = false;
       parts = parts.map(function (part) {
@@ -13659,7 +14017,7 @@ function recoverImportShadowCanvasAssets(audit, progress) {
     var base = asset && (asset.baseUrl || (!importShadowGeometryOf(asset.url) ? asset.url : ''));
     if (base && isImportShadowImageUrl(base) && !bases.some(function (item) { return item.base === base; })) bases.push({ base: base, name: asset.name });
   });
-  if (progress) progress(5, 'LOADING · 檢查商品原圖', '正在重新連結暫存中的商品與原圖…');
+  if (progress) progress(6, 'LOADING · 檢查商品原圖', '正在重新連結暫存中的商品與原圖…', 6 + Math.max(1, Math.round(22 / candidates.length)));
   return candidates.reduce(function (chain, entry, index) {
     return chain.then(function () {
       var asset = entry.asset;
@@ -13689,7 +14047,8 @@ function recoverImportShadowCanvasAssets(audit, progress) {
       }).catch(function (err) { console.warn('[BODA] 舊影子原圖對照無法恢復：', entry.locations, err); });
     }).then(function () {
       if (!entry.asset.baseUrl) audit.needsOriginal.push(entry.locations.join('、'));
-      if (progress) progress(5 + Math.round((index + 1) / candidates.length * 40), 'LOADING · 檢查商品原圖', '已檢查 ' + (index + 1) + '/' + candidates.length + ' 種商品');
+      if (progress) progress(6 + (index + 1) / candidates.length * 22, 'LOADING · 檢查商品原圖', '已檢查 ' + (index + 1) + '/' + candidates.length + ' 種商品',
+        6 + Math.min(candidates.length, index + 2) / candidates.length * 22);
       return new Promise(function (resolve) { setTimeout(resolve, 0); });
     });
   }, Promise.resolve()).then(function () { return audit; });
@@ -13703,7 +14062,11 @@ function waitForImportShadowImage(img) {
     if (!img) { resolve(); return; }
     function done() {
       if (typeof img.decode === 'function' && img.complete && img.naturalWidth) {
-        img.decode().catch(function () {}).then(function () { resolve(); });
+        /* 視窗在背景時 decode() 可能一直等不到完成；圖片其實已載入、尺寸可量，最多等 250ms。 */
+        var finished = false;
+        var finish = function () { if (!finished) { finished = true; resolve(); } };
+        img.decode().catch(function () {}).then(finish);
+        setTimeout(finish, 250);
       } else {
         resolve();
       }
@@ -13734,12 +14097,19 @@ function scheduleImportShadowGroupReflow(group) {
         BNImageLayout.refreshEditedImage(representative, { reflow: true, resetSlots: true });
       }
     }
-    /* 給瀏覽器兩個繪製週期，確保 CSS 尺寸與最新圖片自然尺寸都已可量測。 */
-    if (typeof requestAnimationFrame === 'function') {
-      requestAnimationFrame(function () { requestAnimationFrame(reflow); });
-    } else {
-      setTimeout(reflow, 0);
+    /* 給瀏覽器兩個繪製週期，確保 CSS 尺寸與最新圖片自然尺寸都已可量測；但最多等 80ms。
+       視窗在背景時 rAF 會被壓到約 1 秒一次甚至暫停，若只等 rAF，影子做完後商品會停在
+       換圖前的舊大小，之後存暫存檔／重新整理時又重算成另一個大小，看起來就像沒還原。 */
+    var reflowed = false;
+    function reflowOnce() {
+      if (reflowed) return;
+      reflowed = true;
+      reflow();
     }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function () { requestAnimationFrame(reflowOnce); });
+    }
+    setTimeout(reflowOnce, 80);
   });
 }
 
@@ -13773,7 +14143,7 @@ function refreshImportShadowView() {
       imgs.forEach(function (img, imageIndex) {
         var next = urls[imageIndex];
         if (img.getAttribute('src') === next) return;
-        if (!isImportLogoFieldKey(key)) {
+        if (isImportShadowFieldKey(key)) {
           var geom = importShadowGeometryOf(next);
           if (geom) img.dataset.importShadowGeom = '1';
           else {
@@ -13846,6 +14216,12 @@ function reapplyImportShadowToUploads(commit) {
     overlay = true;
     appLoadingStart('LOADING · 套用影子', 3, note || '正在檢查目前畫布的商品圖…');
   }
+  /* 影子流程的進度分段（交棒時會再對應到外層流程剩下的區間）：
+     3–6 巡檢畫布 → 6–28 找回舊暫存的原圖 → 30–34 比對素材 → 34–88 逐張處理
+     → 89–91 LOGO → 92–99 寫回素材清單、同步吸底／曝光、存檔 → 100 */
+  function importShadowReapplyProgress(percent, note, ceiling) {
+    if (overlay) appLoadingUpdate(percent, 'LOADING · 套用影子', note, ceiling);
+  }
   if (commit) showShadowLoading();
   else overlayTimer = setTimeout(function () {
     if (!importShadowReapplyRunning) return;
@@ -13863,27 +14239,38 @@ function reapplyImportShadowToUploads(commit) {
     audit.failed = true;
     console.warn('[BODA] 商品影子畫布巡檢略過，改用既有素材繼續處理。', err);
   }
-  return recoverImportShadowCanvasAssets(audit, function (percent, title, note) {
-    if (overlay) appLoadingUpdate(percent, title, note);
+  importShadowReapplyProgress(6, '已檢查畫布 ' + audit.checked + ' 個商品圖片位置', 10);
+  return recoverImportShadowCanvasAssets(audit, function (percent, title, note, ceiling) {
+    if (overlay) appLoadingUpdate(percent, title, note, ceiling);
   }).then(function () {
+  importShadowReapplyProgress(30, '正在比對要處理的商品素材…', 34);
   var productUsed = {};
   importShadowActiveColumns().forEach(function (col) {
     var def = BNCore.getBlock(col.blockId);
     if (!def || !col.data) return;
     (def.fields || []).forEach(function (field) {
-      if (field.type !== 'image' || isImportLogoFieldKey(field.key)) return;
+      if (field.type !== 'image' || !isImportShadowFieldKey(field.key)) return;
       splitImageList(col.data[field.key] || '').forEach(function (part) { productUsed[String(part || '').trim()] = true; });
     });
   });
-  var productUsedUrls = Object.keys(productUsed);
+  /* 編輯過的素材可能已換成新的 dataURL；用同一素材名稱再比一次，不能因此漏掉重烘。
+     等同對每張素材逐一 sameImageAsset(用到的網址, 素材網址)，但先把「用到的素材名稱」
+     對應的全部網址收成一組，只掃一次素材清單（原本是 素材數 × 用到數 × 素材數）。 */
+  var usedNames = {};
+  Object.keys(productUsed).forEach(function (url) {
+    imageAssetNamesForUrl(url).forEach(function (name) { usedNames[name] = true; });
+  });
+  var usedNameUrls = new Set();
+  (uploadedImages || []).forEach(function (asset) {
+    if (!asset || !usedNames[String(asset.name || '').trim().toLowerCase()]) return;
+    if (asset.url) usedNameUrls.add(asset.url);
+    if (asset.baseUrl) usedNameUrls.add(asset.baseUrl);
+  });
   var seenBases = new Set();
   var list = (uploadedImages || []).filter(function (img) {
     if (!(img && img.url && img.baseUrl)) return false;
     if (productUsed[img.url] || productUsed[img.baseUrl] || (img.logoUrl && productUsed[img.logoUrl])) return true;
-    /* 編輯過的素材可能已換成新的 dataURL；用同一素材名稱再比一次，不能因此漏掉重烘。 */
-    return productUsedUrls.some(function (url) {
-      return sameImageAsset(url, img.url) || sameImageAsset(url, img.baseUrl);
-    });
+    return usedNameUrls.has(img.url) || usedNameUrls.has(img.baseUrl);
   }).filter(function (img) {
     if (seenBases.has(img.baseUrl)) return false;
     seenBases.add(img.baseUrl);
@@ -13910,7 +14297,7 @@ function reapplyImportShadowToUploads(commit) {
       var def = BNCore.getBlock(col.blockId);
       if (!def || !col.data) return;
       (def.fields || []).forEach(function (field) {
-        if (field.type !== 'image' || isImportLogoFieldKey(field.key)) return;
+        if (field.type !== 'image' || !isImportShadowFieldKey(field.key)) return;
         var parts = splitImageList(col.data[field.key] || '');
         var fieldChanged = false;
         parts = parts.map(function (part) {
@@ -13923,7 +14310,7 @@ function reapplyImportShadowToUploads(commit) {
       /* 商品編輯器保留的幾何也要跟著新影子更新，避免還原時拿舊影子覆蓋新結果。 */
       var states = col.data.__canvasImageEditorState || {};
       Object.keys(states).forEach(function (key) {
-        if (isImportLogoFieldKey(key.slice(0, key.lastIndexOf('::')))) return;
+        if (!isImportShadowFieldKey(key.slice(0, key.lastIndexOf('::')))) return;
         var state = states[key];
         if (!state || !map[state.outputSrc]) return;
         state.outputSrc = map[state.outputSrc];
@@ -13948,14 +14335,45 @@ function reapplyImportShadowToUploads(commit) {
     importShadowReapplyStage = '更新畫布圖片與縮圖';
     refreshImportShadowView();
   }
+  function reportImageProgress(detail) {
+    var total = Math.max(list.length, 1);
+    importShadowReapplyProgress(34 + processed / total * 54,
+      '已處理 ' + processed + '/' + list.length + ' 張' + (detail ? '・' + detail : ''),
+      34 + Math.min(total, processed + 1) / total * 54);
+  }
+  importShadowReapplyProgress(34, list.length ? '共 ' + list.length + ' 種商品圖要處理…' : '沒有需要處理的商品圖', 34 + 54 / Math.max(list.length, 1));
   return list.reduce(function (chain, img) {
     return chain.then(function () {
       importShadowReapplyStage = '合成商品影子';
       var oldUrl = img.url;
+      var bakeKey = importShadowBakeKey(img);
+      /* 已經用目前設定烘過：直接沿用現有成品，只把欄位裡的原圖／舊網址換成它。 */
+      if (importShadowBakeIsCurrent(img, bakeKey)) {
+        var kept = img.url;
+        var keptGeom = importShadowGeometryOf(kept);
+        (uploadedImages || []).forEach(function (related) {
+          if (!related || related.baseUrl !== img.baseUrl) return;
+          if (related.url && related.url !== kept) swap[related.url] = kept;
+          swap[related.baseUrl] = kept;
+          if (related.logoUrl) swap[related.logoUrl] = kept;
+          related.url = kept;
+          related.shadowKey = img.shadowKey;
+          if (keptGeom) related.shadowGeom = keptGeom;
+        });
+        /* 沿用的不用每張都換一次畫布：swap 會累積，迴圈結束後統一寫回、只重畫一次
+           （原本每張都整份工單比對＋重畫，新上傳一批同名圖時光這裡就要 0.5 秒）。 */
+        /* 跟重烘時一樣回報：合不出影子的圖（#n）列入「略過」，不算已套用。 */
+        if (keptGeom || importShadowSettings.angle === 'off') { done++; appliedUrls.add(kept); }
+        else skipped.push(img.name || ('商品圖 ' + (done + 1)));
+        processed++;
+        reportImageProgress('沿用已做好的影子');
+        return;
+      }
       return importShadowPrepared(img.baseUrl).then(function (prep) {
         var baked = importShadowRender(prep, importShadowSettings);
         /* 商品本體在烘好圖裡的位置要跟著素材存起來，重新載入後版位才知道怎麼擺 */
         var geom = importShadowGeometryOf(baked);
+        var bakedKey = importShadowBakedKey(bakeKey, baked, geom);
         (uploadedImages || []).forEach(function (related) {
           if (!related || related.baseUrl !== img.baseUrl) return;
           if (related.url) swap[related.url] = baked;
@@ -13963,6 +14381,7 @@ function reapplyImportShadowToUploads(commit) {
           if (related.logoUrl) swap[related.logoUrl] = baked;
           related.url = baked;
           if (geom) related.shadowGeom = geom; else delete related.shadowGeom;
+          if (bakedKey) related.shadowKey = bakedKey; else delete related.shadowKey;
         });
         swap[oldUrl] = baked;
         if (!geom) {
@@ -13971,19 +14390,20 @@ function reapplyImportShadowToUploads(commit) {
         if (applyShadowSwapToColumns(swap)) refreshShadowCanvasNow();
         if (geom || importShadowSettings.angle === 'off') { done++; appliedUrls.add(baked); }
         processed++;
-        if (overlay) appLoadingUpdate(8 + Math.round((processed / list.length) * 84), 'LOADING · 套用影子', '已處理 ' + processed + '/' + list.length + ' 張');
+        reportImageProgress('去背＋影子');
       }).catch(function (err) {
         /* 單一圖片壞檔、過大、或瀏覽器無法讀取時，保留它原本的畫面，不可讓整批商品影子失敗。 */
         failed.push({ name: img.name || ('商品圖 ' + (processed + 1)), message: String(err && err.message || err || '圖片無法處理') });
         processed++;
         console.warn('[BODA] 商品影子略過單張圖片：' + (img.name || '(未命名)'), err);
-        if (overlay) appLoadingUpdate(8 + Math.round((processed / list.length) * 84), 'LOADING · 套用影子', '已處理 ' + processed + '/' + list.length + ' 張（' + failed.length + ' 張保留原圖）');
+        reportImageProgress('（' + failed.length + ' 張保留原圖）');
       }).then(function () {
         /* 即使前處理快取命中，也交還一個繪製週期，讓 Loading 進度有機會顯示。 */
         return new Promise(function (resolve) { setTimeout(resolve, 0); });
       });
     });
   }, Promise.resolve()).then(function () {
+    importShadowReapplyProgress(89, '正在更新 LOGO 底板…', 91);
     /* LOGO 的裁白邊／底板色是獨立功能；它讀取失敗也不應回頭讓商品影子被判定為失敗。 */
     return importLogoRefresh().catch(function (err) {
       console.warn('[BODA] LOGO 重算略過，不影響商品影子。', err);
@@ -14011,7 +14431,13 @@ function reapplyImportShadowToUploads(commit) {
       normalizeLogoImageFields(col, def);
     });
     /* LOGO 重算過（吸色／換色）時，同步更新底板色號；匯入與預覽都只更新既有 DOM。 */
+    importShadowReapplyProgress(91, '正在把影子寫回畫布…', 93);
     refreshShadowCanvasNow();
+    if (commit && overlay) {
+      importShadowReapplyProgress(94, '正在同步素材清單、吸底與曝光資源並存檔…', 99);
+      return appLoadingYield();
+    }
+  }).then(function () {
     if (commit) {
       /* 影子已寫回畫布，後續同步／儲存是獨立階段。不能把暫存或 iframe 錯誤誤報為
          商品合成失敗，更不能顯示不實的「已保留原圖」。每項分別執行且記錄失敗原因。 */
@@ -14084,13 +14510,11 @@ function runImportShadowReapply() {
   var commit = importShadowReapplyCommit;
   importShadowReapplyCommit = false;
   importShadowReapplyRunning = true;
+  importShadowPassBackground = importShadowActualBackground();
   setImportShadowApplyBusy(true);
   if (commit) appLoadingStart('LOADING · 套用影子', 3, '正在準備商品影子…');
   /* 手動套用先顯示 Loading，再進巡檢；不能先做大量同步工作，最後才亮 Loading。 */
-  var ready = commit ? new Promise(function (resolve) {
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function () { setTimeout(resolve, 0); });
-    else setTimeout(resolve, 0);
-  }) : Promise.resolve();
+  var ready = commit ? appLoadingYield() : Promise.resolve();
   return ready.then(function () { return reapplyImportShadowToUploads(commit); }).then(function (result) {
     if (!commit || !result) return;
     if (isImportShadowEngineReady() || result.angle === 'off') {
@@ -14171,8 +14595,10 @@ function initImportShadowPanel() {
       noteImportShadowEngineMissing();
       return;
     }
-    /* 手動套用時清掉前一輪前處理快取，確保會從目前原圖完整重製。 */
+    /* 手動套用時清掉前一輪前處理快取，確保會從目前原圖完整重製；
+       「已用目前設定烘過」的標記也一併清掉，手動套用永遠整批重做（保留自救能力）。 */
     if (!importShadowReapplyRunning) importShadowDropCache();
+    (uploadedImages || []).forEach(function (img) { if (img) delete img.shadowKey; });
     setImportShadowStatus('正在套用目前的光源與位移設定…');
     scheduleImportShadowReapply(true);
   });
@@ -14283,30 +14709,33 @@ function handleImageFiles(fileList) {
   var startIndex = uploadedImages.length;
   var remaining = files.length;
   var completed = 0;
+  /* 上傳圖片整體進度：讀檔 5–35 → 放進版位並重畫 36–52 → 商品影子 55–100（全部完成才 100%）。 */
   appLoadingStart('LOADING · 上傳圖片', 5, '正在讀取圖片素材…');
   function doneOne() {
     completed++;
-    appLoadingUpdate(8 + Math.round((completed / files.length) * 84),
-      'LOADING · 上傳圖片', '已讀取 ' + completed + '/' + files.length + ' 張');
+    appLoadingUpdate(5 + (completed / files.length) * 30,
+      'LOADING · 上傳圖片', '已讀取 ' + completed + '/' + files.length + ' 張',
+      5 + Math.min(files.length, completed + 1) / files.length * 30);
     if (--remaining > 0) return;
     /* 讀失敗的空項目剔除掉，再一次性重畫 */
     uploadedImages = uploadedImages.filter(function (x) { return x && x.url; });
-    try {
+    appLoadingUpdate(36, 'LOADING · 上傳圖片', '正在把 ' + files.length + ' 張圖片放進對應的版位…', 52);
+    appLoadingYield().then(function () {
       renderImageGallery();
       autoMatchImagesToColumns();
       renderImportFieldsForCurrentColumns();
       if (currentImportWorkbook) syncWorkbookOverviewTextToExposure(currentImportWorkbook);
       broadcastBottomImageAssets();
       queueBottomPersist();
-    } catch (err) {
+      /* 自動比對到的商品圖，這時才去背＋加影子；影子接在同一條進度後段。 */
+      appLoadingHandoff(55, '圖片素材已上傳');
+      scheduleImportShadowReapply(true);
+      if (!importShadowReapplyRunning) appLoadingFinish('圖片素材已上傳');
+    }).catch(function (err) {
       /* 重畫途中出錯也要把 LOADING 收掉，不然畫面會卡住 */
       console.error('圖片上傳後重畫失敗', err);
       appLoadingFail('圖片已上傳，但畫面更新失敗');
-      return;
-    }
-    /* 自動比對到的商品圖，這時才去背＋加影子 */
-    appLoadingFinish('圖片素材已上傳');
-    scheduleImportShadowReapply(true);
+    });
   }
   files.forEach(function (f, i) {
     uploadedImages[startIndex + i] = { name: f.name, url: '' }; /* 先佔位，保持上傳順序 */
@@ -14374,6 +14803,10 @@ function autoMatchImagesToColumns() {
 
 /* LOGO 圖欄位不去背、不加影子；只做白邊裁切（白底／透明底）或底色統一（有顏色的底）。商品圖等其他圖片欄位仍用烘好影子的版本。 */
 function isImportLogoFieldKey(key) { return /^logoImg\d*$/i.test(String(key || '')); }
+/* 簽名圖（signImg）與代言人／人物圖（endorserImg）：保留原圖，不去背、不烘影子，也不走 LOGO 的白邊裁切。 */
+function isImportNoShadowFieldKey(key) { return /^(?:signImg|endorserImg)\d*$/i.test(String(key || '')); }
+/* 真正要烘影子的圖片欄位：商品、贈品、情境等；LOGO 與簽名／人物圖都排除。 */
+function isImportShadowFieldKey(key) { return !isImportLogoFieldKey(key) && !isImportNoShadowFieldKey(key); }
 
 /* 找出網址屬於哪一張素材（原圖、烘過的版本或 LOGO 處理後的版本都算）；找不到回傳 -1。 */
 function importUploadIndexFor(url) {
@@ -14535,7 +14968,7 @@ function importLogoRefresh() {
 /* 存檔要帶著的 LOGO 狀態（底色設定＋處理後的 LOGO 網址），還原時才能認得出欄位裡的 LOGO 是哪一張。 */
 function importUploadStateFields(img) {
   var out = {};
-  ['logoBg', 'logoUrl', 'logoMode', 'logoAuto', 'logoKey', 'shadowGeom'].forEach(function (k) { if (img[k]) out[k] = img[k]; });
+  ['logoBg', 'logoUrl', 'logoMode', 'logoAuto', 'logoKey', 'shadowGeom', 'shadowKey'].forEach(function (k) { if (img[k]) out[k] = img[k]; });
   return out;
 }
 function importUploadFromState(img) {
@@ -14691,6 +15124,8 @@ var previewAllColumns = [];
 var activeImportCanvasContext = 'import';
 /* 使用者匯入的原始活頁簿留在記憶體：下載回填工單時直接改寫這份，而非重新產生範本。 */
 var currentImportWorkbook = null;
+/* 工單總覽的「工作項目名稱／活動名稱」：下載 ZIP 時當作最外層的名字，沒有就退回工單檔名。 */
+var currentImportActivityName = '';
 var currentImportWorkbookName = '';
 var currentImportHasBottomWorkOrder = false;
 var currentImportSource = 'saved';
@@ -14753,6 +15188,10 @@ function importImageFieldKeys(col) {
   }).map(function (field) { return field.key; }) : [];
 }
 
+/* 圖片「前後位置」（第一個＝最前面）。
+   使用者按過右側工具列的前後位置箭頭（_imageOrderCustom）就照他排的順序；
+   還沒調整過時，依目前畫面實際的上下關係產生（BNSchemaRenderer.defaultImageOrderOf），
+   預設畫面維持原樣。舊暫存沒有旗標：存的順序跟欄位原始順序不同，就當成使用者調整過。 */
 function normalizedImportImageOrder(col) {
   var keys = importImageFieldKeys(col);
   var saved = Array.isArray(col && col._imageOrder) ? col._imageOrder : [];
@@ -14763,8 +15202,91 @@ function normalizedImportImageOrder(col) {
   keys.forEach(function (key) {
     if (order.indexOf(key) === -1) order.push(key);
   });
-  if (col && order.length) col._imageOrder = order.slice();
-  return order;
+  var customized = !!(col && (col._imageOrderCustom || (saved.length && order.join('|') !== keys.join('|'))));
+  if (col && customized) {
+    col._imageOrderCustom = true;
+    col._imageOrder = order.slice();
+    return order;
+  }
+  if (col) col._imageOrder = keys.slice();
+  var def = col && BNCore.getBlock(col.blockId);
+  if (def && def.schema && window.BNSchemaRenderer && typeof BNSchemaRenderer.defaultImageOrderOf === 'function') {
+    try { return BNSchemaRenderer.defaultImageOrderOf(def.schema, col.data || {}, keys); } catch (e) {}
+  }
+  return keys.slice();
+}
+/* 右側工具列點某一張圖片：在畫布上框出它（能縮放旋轉的圖同時顯示把手），
+   並讓它暫時優先接收滑鼠；工具列的 imageIndex 是資料裡的第幾張，要換算成畫布上第幾個 img。 */
+function selectCanvasImageFromTool(ctxName, idx, key, imageIndex) {
+  var ctx = canvasCtx(ctxName || 'import');
+  var col = ctx.columns()[idx];
+  var mount = document.getElementById(ctx.mountId(idx));
+  if (!col || !mount || !key) return false;
+  var parts = splitImageList(col.data[key] || '');
+  if (!isUsableImageValue(parts[imageIndex])) return false;
+  var renderedIndex = -1;
+  for (var i = 0; i <= imageIndex; i++) if (isUsableImageValue(parts[i])) renderedIndex++;
+  var group = Array.prototype.find.call(mount.querySelectorAll('.bn-imggroup[data-field-key]'), function (el) {
+    return el.getAttribute('data-field-key') === key;
+  });
+  var img = group && group.querySelectorAll('img.bn-imggroup-img')[renderedIndex];
+  if (!img) return false;
+  scrollCanvasAreaToElement(img);
+  return !!(window.BNImageLayout && typeof BNImageLayout.selectImage === 'function' && BNImageLayout.selectImage(img));
+}
+/* 只捲動畫布外層（overflow:auto／scroll 的容器），讓圖片出現在畫面內。
+   不能對圖片呼叫 scrollIntoView：它會連 overflow:hidden 的圖片框（MSBN B-1-x、B-3-4、C-1-5）
+   內部也一起捲動，商品就被偷偷位移，直到重畫才跑回來。 */
+function scrollCanvasAreaToElement(el) {
+  if (!el || !el.getBoundingClientRect) return;
+  var scroller = el.parentElement;
+  while (scroller && scroller !== document.body) {
+    var cs = window.getComputedStyle(scroller);
+    if (/(auto|scroll)/.test(cs.overflowY + ' ' + cs.overflowX) &&
+        (scroller.scrollHeight > scroller.clientHeight || scroller.scrollWidth > scroller.clientWidth)) break;
+    scroller = scroller.parentElement;
+  }
+  if (!scroller || scroller === document.body) return;
+  var sr = scroller.getBoundingClientRect(), er = el.getBoundingClientRect(), pad = 24;
+  if (er.top < sr.top + pad) scroller.scrollTop -= (sr.top + pad - er.top);
+  else if (er.bottom > sr.bottom - pad) scroller.scrollTop += Math.min(er.bottom - (sr.bottom - pad), er.top - (sr.top + pad));
+  if (er.left < sr.left + pad) scroller.scrollLeft -= (sr.left + pad - er.left);
+  else if (er.right > sr.right - pad) scroller.scrollLeft += Math.min(er.right - (sr.right - pad), er.left - (sr.left + pad));
+}
+/* 右側工具卡每組圖片標題旁的「前後位置」：↑ 往前一層（蓋到其他圖片上面）、↓ 往後一層。
+   顯示目前排第幾層（1＝最前面），最前／最後時對應的箭頭停用。只有一張內容圖的版位不顯示。 */
+function importImageLayerOrderControlsHtml(col, toolDef) {
+  var key = toolDef && toolDef.key;
+  var info = importImageLayerRank(col, key);
+  if (info.rank < 0 || info.total < 2) return '';
+  var label = toolDef.label || key;
+  return '<span class="import-image-tool-order" title="調整這組圖片在畫布上的前後：在前面的會蓋住後面的">' +
+    '<span class="import-image-tool-order-label">前後位置 <b>' + (info.rank + 1) + '</b>/' + info.total + '</span>' +
+    '<button type="button" class="if-btn" data-key="' + esc(key) + '" data-act="field-up"' + (info.rank === 0 ? ' disabled' : '') +
+      ' title="往前一層：蓋到其他圖片上面" aria-label="' + esc(label + ' 往前一層') + '">' + lineIcon('up') + '</button>' +
+    '<button type="button" class="if-btn" data-key="' + esc(key) + '" data-act="field-down"' + (info.rank === info.total - 1 ? ' disabled' : '') +
+      ' title="往後一層：被其他圖片蓋住" aria-label="' + esc(label + ' 往後一層') + '">' + lineIcon('down') + '</button>' +
+  '</span>';
+}
+/* 會參與「前後位置」的圖片欄位：曝品／商品、贈品、代言人圖。LOGO 與簽名圖有固定層級，不參與。 */
+function isImportLayerOrderFieldKey(key) { return /^(?:productImg|giftImg|endorserImg)\d*$/i.test(String(key || '')); }
+/* 前後位置以「同一組」為單位：同編號的曝品／贈品／代言人是一組（productImg＋giftImg＝左、
+   productImg2＋giftImg2＝右…）。不同組的圖各有各的可移動範圍、不會重疊，前後互不相干。 */
+function importImageLayerGroupOf(key) {
+  var m = /^(?:productImg|giftImg|endorserImg)(\d*)$/i.exec(String(key || ''));
+  return m ? (m[1] || '1') : '';
+}
+/* 同組欄位依前後位置排好（第一個＝最前面）。 */
+function importImageLayerGroupFields(col, key) {
+  var group = importImageLayerGroupOf(key);
+  if (!group) return [];
+  return normalizedImportImageOrder(col).filter(function (k) { return importImageLayerGroupOf(k) === group; });
+}
+/* 這個欄位在自己那一組排第幾（0＝最前面）；不參與時回傳 -1。 */
+function importImageLayerRank(col, key) {
+  if (!isImportLayerOrderFieldKey(key)) return { rank: -1, total: 0 };
+  var fields = importImageLayerGroupFields(col, key);
+  return { rank: fields.indexOf(key), total: fields.length };
 }
 
 /* 同一欄位可放多張圖時，資料陣列順序永遠代表「圖片本人」與其既有座標。
@@ -14810,17 +15332,26 @@ function moveImportImageField(idx, key, direction, ctxName) {
   if (!col) return;
   var order = normalizedImportImageOrder(col);
   var from = order.indexOf(key);
-  var to = from + Number(direction || 0);
-  if (from < 0 || to < 0 || to >= order.length) return;
+  if (from < 0) return;
+  /* 只跟同一組裡相鄰的圖片互換（左組只跟左組、跳過 LOGO／簽名圖），往前＝往清單開頭。 */
+  var step = Number(direction || 0) < 0 ? -1 : 1;
+  var group = importImageLayerGroupOf(key);
+  if (!group) return;
+  var to = from + step;
+  while (to >= 0 && to < order.length && importImageLayerGroupOf(order[to]) !== group) to += step;
+  if (to < 0 || to >= order.length) return;
   var moved = order[from];
   order[from] = order[to];
   order[to] = moved;
   col._imageOrder = order;
+  col._imageOrderCustom = true;
   refreshCanvasAfterChange(ctxName, idx, true);
   var log = document.getElementById('import-log');
   if (log && ctxName !== 'maint') {
-    log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已調整「' +
-      esc(key) + '」圖片層順序</span>';
+    var def = BNCore.getBlock(col.blockId);
+    var field = def && (def.fields || []).filter(function (f) { return f.key === key; })[0];
+    log.innerHTML = '<span class="ok">' + lineIcon('done') + ' 「' + esc(field && field.label || key) + '」已' +
+      (step < 0 ? '往前（蓋在其他圖片上面）' : '往後（被其他圖片蓋住）') + '一層</span>';
   }
 }
 
@@ -14976,6 +15507,7 @@ function buildImportStateSavePayload() {
         }) : [],
         dynamicRowRows: Array.isArray(c._dynamicRowRows) ? c._dynamicRowRows.slice() : null,
         imageOrder: Array.isArray(c._imageOrder) ? c._imageOrder.slice() : [],
+        imageOrderCustom: !!c._imageOrderCustom,
         imagePartLayerOrder: cloneImportImagePartLayerOrder(c._imagePartLayerOrder)
       };
     })
@@ -15050,6 +15582,7 @@ function applyImportState(state) {
       }) : [],
       _dynamicRowRows: Array.isArray(c.dynamicRowRows) ? c.dynamicRowRows.slice() : undefined,
       _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
+      _imageOrderCustom: !!c.imageOrderCustom,
       _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder)
     };
   });
@@ -15406,7 +15939,12 @@ function canvasImageLayoutStateFrom(img) {
     }
     gapPx = gap;
   }
-  return { layoutSlotRatios: JSON.stringify(ratios), layoutGapPx: String(isFinite(gapPx) && gapPx >= 0 ? gapPx : 5) };
+  /* 比例是在這個容器大小下量的；一起存，還原後容器大小不同（例如範圍直／橫切換）時 image-layout 會重算。 */
+  var slotBox = (img.dataset && img.dataset.layoutSlotBox) ||
+    ((group.clientWidth && group.clientHeight) ? group.clientWidth + 'x' + group.clientHeight : '');
+  var layoutState = { layoutSlotRatios: JSON.stringify(ratios), layoutGapPx: String(isFinite(gapPx) && gapPx >= 0 ? gapPx : 5) };
+  if (slotBox) layoutState.layoutSlotBox = slotBox;
+  return layoutState;
 }
 
 function canvasImageEditorStateFrom(img, outputSrc, includeProductEditorState) {
@@ -15596,11 +16134,14 @@ function openImportFieldImageEditor(idx, fieldKey, imageIndex, ctxName) {
 function imageAssetNamesForUrl(url) {
   var names = [];
   if (!url) return names;
-  var key = String(url).trim().toLowerCase();
+  var raw = String(url);
+  /* 素材名稱只會是檔名。圖片 dataURL 動輒數 MB，不能為了跟檔名比對就整串 trim／轉小寫：
+     素材一多，套用影子前的比對會在這裡反覆複製上百 MB 字串，Loading 就卡在 3% 不動。 */
+  var key = raw.length <= 1024 && !/^\s*data:/i.test(raw.slice(0, 16)) ? raw.trim().toLowerCase() : '';
   (uploadedImages || []).forEach(function (img) {
     if (!img) return;
     var name = String(img.name || '').trim().toLowerCase();
-    if (img.url !== url && img.baseUrl !== url && name !== key) return;
+    if (img.url !== url && img.baseUrl !== url && (!key || name !== key)) return;
     if (name && names.indexOf(name) === -1) names.push(name);
   });
   return names;
@@ -15796,9 +16337,12 @@ function readImageFilesAsUrls(fileList, done) {
   appLoadingStart('LOADING · 讀取圖片', 5, '正在讀取圖片素材…');
   function completeOne() {
     completed++;
-    appLoadingUpdate(8 + Math.round((completed / files.length) * 84),
-      'LOADING · 讀取圖片', '已讀取 ' + completed + '/' + files.length + ' 張');
+    appLoadingUpdate(5 + (completed / files.length) * 40,
+      'LOADING · 讀取圖片', '已讀取 ' + completed + '/' + files.length + ' 張',
+      5 + Math.min(files.length, completed + 1) / files.length * 40);
     if (--remaining === 0) {
+      /* 放進欄位後通常會接著烘商品影子：影子接在同一條進度的 50–100%，做完才顯示完成。 */
+      appLoadingHandoff(50, '圖片讀取完成');
       try {
         done(urls.filter(Boolean));
       } catch (err) {
@@ -15807,7 +16351,7 @@ function readImageFilesAsUrls(fileList, done) {
         appLoadingFail('圖片已讀取，但放入欄位失敗');
         return;
       }
-      appLoadingFinish('圖片讀取完成');
+      if (!importShadowReapplyRunning) appLoadingFinish('圖片讀取完成');
     }
   }
   files.forEach(function (f, i) {
@@ -15919,6 +16463,8 @@ function showImportToolbar(show) {
    可視範圍。右側工具列可以獨立捲動與操作，絕不反向捲動中間畫布。
 ════════════════════════════════════════ */
 var IMPORT_SYNC = { canvasTimer: null, activeIndex: -1 };
+/* 截圖輸出期間為 true：滑過／捲動同步不得再把綠色框加回畫布格子，否則框線會被截進成品。 */
+var importExportCapturing = false;
 
 /* 找出畫布可視範圍的主版位：先取包含畫面中心的格子，再比較實際可見面積。
    副區一排 2／3 時不能只看垂直位置，否則同高度的格子會永遠誤選最右邊。 */
@@ -15979,9 +16525,10 @@ function markActiveImportCol(idx) {
     col.classList.toggle('is-active', isActive);
     col.classList.toggle('is-dimmed', idx >= 0 && !isActive);
   });
-  /* 右邊畫布上對應的那一格也框起來，一眼看得出現在對到哪一格 */
+  /* 右邊畫布上對應的那一格也框起來，一眼看得出現在對到哪一格；
+     截圖輸出中則一律拿掉，綠框不能進成品圖。 */
   document.querySelectorAll('#imp-strip .imp-slot').forEach(function (slot) {
-    slot.classList.toggle('is-active', Number(slot.getAttribute('data-col')) === idx);
+    slot.classList.toggle('is-active', !importExportCapturing && Number(slot.getAttribute('data-col')) === idx);
   });
   /* 直接預覽的每個版位項目（含一排多格的展開索引）也一樣框起來 */
   document.querySelectorAll('#import-preview-list .preview-all-item[data-col]').forEach(function (item) {
@@ -16018,6 +16565,7 @@ function bindImportScrollSync() {
   if (!area.__importHoverBound) {
     area.__importHoverBound = true;
     area.addEventListener('pointerover', function (e) {
+      if (importExportCapturing) return;
       var slot = e.target && e.target.closest ? e.target.closest('.imp-slot, .preview-all-item') : null;
       if (!slot || !area.contains(slot)) return;
       var idx = Number(slot.getAttribute('data-col'));
@@ -16032,6 +16580,7 @@ function bindImportScrollSync() {
   area.addEventListener('scroll', function () {
     clearTimeout(IMPORT_SYNC.canvasTimer);
     IMPORT_SYNC.canvasTimer = setTimeout(function () {
+      if (importExportCapturing) return;
       var idx = activeIndexAt(area, area.querySelectorAll('.imp-slot, .preview-all-item'), area.clientHeight / 2);
       if (idx < 0) return;
       markActiveImportCol(idx);
@@ -16186,7 +16735,8 @@ function syncImportedExposureOverviewText(data) {
 
 function normalizeExposureAssetFileNames(value) {
   var seen = {};
-  return String(value || '').split(',').map(function (name) {
+  /* 跟畫布圖片欄位同一套切法：千分位逗號（1,299）不當分隔符。 */
+  return splitImageList(value || '').map(function (name) {
     return String(name || '').trim().split(/[\\/]/).pop();
   }).filter(function (name) {
     var uniqueKey = String(name || '').toLowerCase();
@@ -16257,8 +16807,11 @@ function pushExposureOverviewAssets(payload) {
       replaceProducts: productNames.length > 0 && exposureAssetsForNames(productNames.join(',')).length === productNames.length
     }
   };
-  [0, 250, 800, 1600].forEach(function (delay) {
-    setTimeout(function () {
+  /* 曝光資源 iframe 可能還沒準備好，所以會隔幾次再補送；但新的一包進來時，上一包還沒送出的補送
+     要取消。每包都含商品／LOGO 圖片，一次上傳會連續推好幾包，不取消就會把同樣的大圖複製十幾次。 */
+  exposureOverviewAssetTimers.forEach(clearTimeout);
+  exposureOverviewAssetTimers = [0, 250, 800, 1600].map(function (delay) {
+    return setTimeout(function () {
       try {
         var frame = document.getElementById('exposure-frame');
         if (frame && frame.contentWindow) frame.contentWindow.postMessage(message, '*');
@@ -16267,6 +16820,7 @@ function pushExposureOverviewAssets(payload) {
   });
   return true;
 }
+var exposureOverviewAssetTimers = [];
 function syncExposureOverviewAssets(data) {
   return pushExposureOverviewAssets(data || readSharedExposureOverviewText());
 }
@@ -16486,6 +17040,51 @@ function writeSharedExposureSubTextColor(hex) {
   writeSharedExposureTextPalette({ subText: hex });
   return true;
 }
+/* 暫存檔還原的文字配色鎖：暫存檔存的是使用者當時實際用的主標／副標／日期／品牌色。
+   還原後只要背景色仍是暫存檔那個色，就以這組顏色為準，不讓「依背景色推薦」的自動規則
+   （取色工具主標規則、曝光資源換底重算）把它換掉；之後在曝光資源手動改色會同步更新這組鎖。
+   使用者一換背景色，鎖就不再符合、自動失效，回到原本的自動配色。 */
+var SNAPSHOT_TEXT_PALETTE_LOCK_KEY = 'wo_snapshot_text_palette_lock_v1';
+function readSnapshotTextPaletteLock() {
+  try {
+    var lock = JSON.parse(localStorage.getItem(SNAPSHOT_TEXT_PALETTE_LOCK_KEY) || 'null');
+    if (!lock || !normalizeSharedHexColor(lock.bg) || !lock.palette || typeof lock.palette !== 'object') return null;
+    return lock;
+  } catch (e) { return null; }
+}
+function writeSnapshotTextPaletteLock(bg, palette) {
+  var hex = normalizeSharedHexColor(bg);
+  var clean = {};
+  EXPOSURE_TEXT_COLOR_KEYS.forEach(function (key) {
+    var color = normalizeSharedHexColor(palette && palette[key]);
+    if (color) clean[key] = color;
+  });
+  try {
+    if (!hex || !Object.keys(clean).length) localStorage.removeItem(SNAPSHOT_TEXT_PALETTE_LOCK_KEY);
+    else localStorage.setItem(SNAPSHOT_TEXT_PALETTE_LOCK_KEY, JSON.stringify({ bg: hex, palette: clean }));
+  } catch (e) {}
+}
+/* 目前（或指定的）背景色仍是暫存檔背景色時才回傳鎖。 */
+function activeSnapshotTextPaletteLock(bg) {
+  var lock = readSnapshotTextPaletteLock();
+  if (!lock) return null;
+  var current = normalizeSharedHexColor(bg || readSharedCanvasBg() || importTheme.bg);
+  return current && current === normalizeSharedHexColor(lock.bg) ? lock : null;
+}
+/* 曝光資源手動改色後，鎖也跟著記住新的顏色。
+   曝光資源剛載入、主頁還沒把配色推過去之前，它廣播的是自己的初始色，不能拿來覆蓋鎖。 */
+var exposurePaletteMergeReadyAt = 0;
+function mergeSnapshotTextPaletteLock(palette) {
+  if (Date.now() < exposurePaletteMergeReadyAt) return;
+  var lock = activeSnapshotTextPaletteLock();
+  if (!lock || !palette) return;
+  var next = Object.assign({}, lock.palette);
+  EXPOSURE_TEXT_COLOR_KEYS.forEach(function (key) {
+    var color = normalizeSharedHexColor(palette[key]);
+    if (color) next[key] = color;
+  });
+  writeSnapshotTextPaletteLock(lock.bg, next);
+}
 /* 取得曝光資源目前主／副／日期色；目前 iframe 優先，避免舊暫存覆蓋最新吸色結果。 */
 function getExposureTextPalette() {
   var live = {};
@@ -16524,6 +17123,15 @@ function colorValueFromTool(value) {
   var direct = normalizeSharedHexColor(value);
   if (direct) return direct;
   if (!value || typeof value !== 'object') return '';
+  /* 取色工具 _colorToolGetResult() 的顏色是 [R, G, B] 陣列（可能帶小數，例如 [247.2, 232.4, 68.9]）。 */
+  if (Array.isArray(value)) {
+    if (value.length >= 3 && value.slice(0, 3).every(function (part) { return typeof part === 'number' && isFinite(part); })) {
+      return '#' + value.slice(0, 3).map(function (part) {
+        return Math.max(0, Math.min(255, Math.round(part))).toString(16).padStart(2, '0');
+      }).join('');
+    }
+    return '';
+  }
   var nestedKeys = ['hex', 'color', 'value', 'result', 'text', 'fg', 'foreground'];
   for (var i = 0; i < nestedKeys.length; i++) {
     var nested = normalizeSharedHexColor(value[nestedKeys[i]]);
@@ -16539,6 +17147,8 @@ function colorValueFromTool(value) {
 function mainTextToolKeyScore(path) {
   var key = String(path || '').replace(/[\s_\-.()[\]：:／/]+/g, '').toLowerCase();
   var score = 0;
+  /* 取色工具的結果直接用 main 代表主標字色（{ bg, main, sub, ctabg, … }）。 */
+  if (/^main$/i.test(String(path || ''))) return 230;
   if (/maintext|maintitle|headline|主標/.test(key)) score += 220;
   else if (/pagetitletext|titletext|titlecolor|標題文字/.test(key)) score += 150;
   else return 0;
@@ -16604,6 +17214,39 @@ function readColorToolMainTextColor(seed) {
   } catch (_) {}
   return '';
 }
+/* 曝光資源的禁色規則：主標／副標／日期／品牌字不可純黑、純白（它的選色器標著「禁用黑／白」），
+   遇到時會依目前底色換成替代色。這裡回傳「曝光資源實際會用的顏色」；曝光資源沒載入時原樣回傳。 */
+function exposureSafeTextColor(key, hex) {
+  hex = normalizeSharedHexColor(hex);
+  if (!hex) return '';
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var win = frame && frame.contentWindow;
+    if (win && typeof win.bnSafeRestrictedColor === 'function') {
+      return normalizeSharedHexColor(win.bnSafeRestrictedColor(key, hex)) || hex;
+    }
+  } catch (_) {}
+  return hex;
+}
+/* 每個文字色欄位最後一次推送的序號：分段補送（0／180／650ms）時，較早的推送不能把較新的顏色蓋回去。 */
+var _exposurePaletteSeq = 0;
+var _exposurePaletteKeySeq = {};
+/* 曝光資源目前實際的主／副／日期／品牌色（不寫回共用值，純讀取）；沒載入時用共用值。 */
+function exposureLiveTextPalette() {
+  try {
+    var frame = document.getElementById('exposure-frame');
+    var cs = frame && frame.contentWindow && frame.contentWindow.colorState;
+    if (cs) {
+      var out = {};
+      EXPOSURE_TEXT_COLOR_KEYS.forEach(function (key) {
+        var color = normalizeSharedHexColor(cs[key]);
+        if (color) out[key] = color;
+      });
+      if (Object.keys(out).length) return out;
+    }
+  } catch (_) {}
+  return readSharedExposureTextPalette() || {};
+}
 function pushExposureTextPalette(palette) {
   if (!palette || typeof palette !== 'object') return false;
   var normalized = {};
@@ -16612,28 +17255,122 @@ function pushExposureTextPalette(palette) {
     if (color) normalized[key] = color;
   });
   if (!Object.keys(normalized).length) return false;
-  writeSharedExposureTextPalette(normalized);
+  /* 共用色記曝光資源實際採用的顏色，匯入工單畫布才會跟曝光資源同色。 */
+  var sharedNow = {};
+  Object.keys(normalized).forEach(function (key) { sharedNow[key] = exposureSafeTextColor(key, normalized[key]); });
+  writeSharedExposureTextPalette(sharedNow);
+  var seq = ++_exposurePaletteSeq;
+  Object.keys(normalized).forEach(function (key) { _exposurePaletteKeySeq[key] = seq; });
   [0, 180, 650].forEach(function (delay) {
     setTimeout(function () {
       try {
         var frame = document.getElementById('exposure-frame');
         var win = frame && frame.contentWindow;
         if (!win) return;
-        win.postMessage({ type: 'wo-shared-text-palette', palette: normalized, source: 'BODA_PARENT' }, '*');
-        /* 同源時直接補套，讓尚未載入新版 plugin 的部署也能即時連動。 */
+        /* 只送這次推送之後沒有再被改過的欄位 */
+        var current = {};
+        Object.keys(normalized).forEach(function (key) {
+          if (_exposurePaletteKeySeq[key] === seq) current[key] = normalized[key];
+        });
+        if (!Object.keys(current).length) return;
+        /* 新版曝光資源有正式入口（跟 _bnApplySharedCanvasBg 同一個模式）：套用、防護、存檔、廣播都在裡面。 */
+        if (typeof win._bnApplySharedTextPalette === 'function') {
+          win._bnApplySharedTextPalette(current);
+          return;
+        }
+        win.postMessage({ type: 'wo-shared-text-palette', palette: current, source: 'BODA_PARENT' }, '*');
+        /* 舊版曝光資源沒有入口也不收訊息：同源時直接改 colorState 補套。 */
         if (win.colorState) {
-          Object.keys(normalized).forEach(function (key) { win.colorState[key] = normalized[key]; });
-          if (typeof win.renderColorPickers === 'function') win.renderColorPickers();
-          if (typeof win.broadcastColors === 'function') win.broadcastColors();
+          var changed = false;
+          Object.keys(current).forEach(function (key) {
+            /* 先套曝光資源的禁色規則再比較，否則每次推禁色都會被改回去、再廣播一輪。 */
+            var value = exposureSafeTextColor(key, current[key]);
+            if (String(win.colorState[key] || '').toLowerCase() !== value) changed = true;
+            win.colorState[key] = value;
+            /* 曝光資源換底後 30 秒內，廣播時會改用它記住的「上一次使用者配色」；那份也要一起更新。 */
+            if (win._bnLastUserColorState) win._bnLastUserColorState[key] = value;
+            if (win._bnFrozenColorData) win._bnFrozenColorData[key] = value;
+          });
+          if (changed) {
+            if (typeof win.renderColorPickers === 'function') win.renderColorPickers();
+            if (typeof win.broadcastColors === 'function') win.broadcastColors();
+          }
         }
       } catch (_) {}
     }, delay);
   });
   return true;
 }
-function pushMainTextColorToColorTool(hex) {
+/* 取色工具主標卡片上的提示：工具選的主標色，曝光資源因吃色防護（例如淺底配白字）換成別的顏色時，
+   標出曝光資源實際用色（不把替代色寫回工具，免得工具上選的色被默默改掉）。
+   顏色同步需要一小段時間，延遲一下再比，避免同步中途閃出錯的提示。 */
+var _expMainNoteTimer = 0;
+function syncColorToolExposureMainNote() {
+  if (!colorToolLoaded) return;
+  clearTimeout(_expMainNoteTimer);
+  _expMainNoteTimer = setTimeout(function () {
+    try {
+      var frame = document.getElementById('color-frame');
+      var win = frame && frame.contentWindow;
+      if (!win) return;
+      var live = exposureLiveTextPalette();
+      var toolMain = readColorToolMainTextColor();
+      var toolSub = readColorToolSubTextColor();
+      var notes = {
+        main: toolMain && live.mainText && toolMain !== live.mainText ? live.mainText : '',
+        sub: toolSub && live.subText && toolSub !== live.subText ? live.subText : ''
+      };
+      if (typeof win._colorToolSetExposureActual === 'function') win._colorToolSetExposureActual(notes);
+      else if (typeof win._colorToolSetExposureMain === 'function') win._colorToolSetExposureMain(notes.main);
+    } catch (_) {}
+  }, 300);
+}
+/* 取色工具目前的副標色（建議候選、點選的候選或手動覆寫）。 */
+function readColorToolSubTextColor() {
+  try {
+    var frame = document.getElementById('color-frame');
+    var win = frame && frame.contentWindow;
+    var result = win && typeof win._colorToolGetResult === 'function' ? win._colorToolGetResult() : null;
+    return result ? colorValueFromTool(result.sub) : '';
+  } catch (_) { return ''; }
+}
+var _subTextColorSyncing = false;
+function pushSubTextColorToColorTool(hex, options) {
   hex = normalizeSharedHexColor(hex);
   if (!hex || !colorToolLoaded) return false;
+  /* 曝光資源只是依禁色／吃色規則換掉工具選的副標：工具保留原色、只顯示提示；曝光資源使用者明確改色（force）時一律寫進工具。 */
+  if (!(options && options.force)) {
+    var toolSub = readColorToolSubTextColor();
+    if (toolSub && toolSub !== hex && exposureSafeTextColor('subText', toolSub) === hex) {
+      syncColorToolExposureMainNote();
+      return false;
+    }
+  }
+  _subTextColorSyncing = true;
+  var changed = false;
+  try {
+    var frame = document.getElementById('color-frame');
+    var win = frame && frame.contentWindow;
+    if (win) {
+      if (typeof win._colorToolSetSubText === 'function') { win._colorToolSetSubText(hex); changed = true; }
+      else win.postMessage({ type: 'wo-color-tool-set-sub-text', hex: hex }, '*');
+    }
+  } catch (_) {}
+  setTimeout(function () { _subTextColorSyncing = false; }, 320);
+  return changed;
+}
+function pushMainTextColorToColorTool(hex, options) {
+  hex = normalizeSharedHexColor(hex);
+  if (!hex || !colorToolLoaded) return false;
+  /* 曝光資源只是把工具選的純黑／純白換成替代色：工具保留原本的顏色，只顯示提示。
+     曝光資源使用者明確改色（force）時一律寫進工具。 */
+  if (!(options && options.force)) {
+    var toolMain = readColorToolMainTextColor();
+    if (toolMain && toolMain !== hex && exposureSafeTextColor('mainText', toolMain) === hex) {
+      syncColorToolExposureMainNote();
+      return false;
+    }
+  }
   _mainTextColorSyncing = true;
   var changed = false;
   try {
@@ -16641,11 +17378,13 @@ function pushMainTextColorToColorTool(hex) {
     var win = frame && frame.contentWindow;
     var doc = frame && (frame.contentDocument || (win && win.document));
     if (win) {
+      /* 新版取色工具有 _colorToolSetMainText：與建議色相同就回到自動，不同就記成手動覆寫，
+         而且不會再回傳給主頁。跨網域時改用 postMessage。 */
       ['_colorToolSetMainText', '_colorToolSetMainTextColor', '_colorToolSetTitleText'].some(function (name) {
         if (typeof win[name] !== 'function') return false;
         win[name](hex); changed = true; return true;
       });
-      win.postMessage({ type: 'wo-color-tool-set-main-text', hex: hex }, '*');
+      if (!changed) win.postMessage({ type: 'wo-color-tool-set-main-text', hex: hex }, '*');
     }
     if (!changed && doc && doc.querySelectorAll) {
       var rows = doc.querySelectorAll('label,tr,[class*="row"],[class*="item"],[class*="field"]');
@@ -16667,17 +17406,99 @@ function pushMainTextColorToColorTool(hex) {
 function applySharedMainTextColor(hex, source) {
   hex = normalizeSharedHexColor(hex);
   if (!hex) return false;
-  _lastSharedMainTextColor = hex;
-  writeSharedExposureTextPalette({ mainText: hex });
-  pushExposureTextPalette({ mainText: hex });
-  if (source !== 'color-tool') pushMainTextColorToColorTool(hex);
-  if (typeof refreshImportAndMaintColorLinks === 'function') refreshImportAndMaintColorLinks();
+  /* 品牌名跟主標同一組：曝光資源的品牌色原本就等於主標（沒有另外指定）時，一起換。
+     要在任何寫入共用值之前讀「改之前」的主標（曝光資源手動改色時，它自己的主標已經是新色）。 */
+  var prevShared = readSharedExposureTextPalette() || {};
+  var liveBefore = exposureLiveTextPalette();
+  var prevMain = normalizeSharedHexColor(prevShared.mainText) || normalizeSharedHexColor(liveBefore.mainText);
+  var brandFollows = !!prevMain && normalizeSharedHexColor(liveBefore.brandText || prevShared.brandText) === prevMain;
+  /* 背景色仍是暫存檔那個色：取色工具規則算出的主標色不能蓋掉暫存檔的主標色；
+     使用者手動改的主標色則要記進鎖。 */
+  var paletteLock = activeSnapshotTextPaletteLock();
+  var lockedMainText = false;
+  if (paletteLock && paletteLock.palette.mainText) {
+    if (source === 'color-tool') {
+      lockedMainText = hex !== paletteLock.palette.mainText;
+      hex = paletteLock.palette.mainText;
+    } else {
+      mergeSnapshotTextPaletteLock(brandFollows ? { mainText: hex, brandText: hex } : { mainText: hex });
+    }
+  }
+  /* 背景色匯入時會分 0／120／420／900ms 補送好幾次（給還沒載入的 iframe 用）。
+     主標色沒變時仍照常推給曝光資源／取色工具，但不要每次都整片重畫匯入與維修畫布：
+     一次重畫約半秒，連續 8 次會讓匯入完成後的 Loading 停在 100% 像當機。 */
+  /* 共用色記曝光資源實際採用的顏色（防吃色換掉時），匯入工單畫布才會跟曝光資源同色。 */
+  var exposureHex = exposureSafeTextColor('mainText', hex) || hex;
+  var unchanged = exposureHex === _lastSharedMainTextColor &&
+    normalizeSharedHexColor(getExposureTextPalette().mainText) === exposureHex;
+  _lastSharedMainTextColor = exposureHex;
+  var sharedMain = { mainText: exposureHex };
+  var pushMain = { mainText: hex };
+  if (brandFollows) {
+    sharedMain.brandText = exposureSafeTextColor('brandText', hex) || hex;
+    pushMain.brandText = hex;
+  }
+  writeSharedExposureTextPalette(sharedMain);
+  pushExposureTextPalette(pushMain);
+  /* 背景色工具算出的主標被暫存檔配色擋下時，也要把實際採用的主標推回去，三處才會同色。
+     顏色本來就是從取色工具來的（含手動改）就不用再推回去；在曝光資源手動改的一律寫進工具。 */
+  var fromColorTool = source === 'color-tool' || source === 'color-tool-manual';
+  if (!fromColorTool || lockedMainText) pushMainTextColorToColorTool(hex, { force: source === 'exposure' });
+  /* 工具選了純黑／純白時，曝光資源的顏色可能根本沒變（不會再廣播），提示要在這裡更新。 */
+  if (fromColorTool) syncColorToolExposureMainNote();
+  if (!unchanged && typeof refreshImportAndMaintColorLinks === 'function') refreshImportAndMaintColorLinks();
   return true;
 }
+/* 副標：跟主標同一套同步（取色工具 ⇄ BODA ⇄ 曝光資源），曝光資源的日期與匯入工單的促標底色／圓標底色跟著副標。
+   以前副標完全沒有同步：取色工具點別的副標候選，曝光資源、促標、圓標都不會變；曝光資源改副標，取色工具也不知道。 */
+function applySharedSubTextColor(hex, source) {
+  hex = normalizeSharedHexColor(hex);
+  if (!hex) return false;
+  /* 日期跟副標同一組：曝光資源的日期原本就等於副標（沒有另外指定）時，一起換。 */
+  var prevShared = readSharedExposureTextPalette() || {};
+  var liveBefore = exposureLiveTextPalette();
+  var prevSub = normalizeSharedHexColor(prevShared.subText) || normalizeSharedHexColor(liveBefore.subText);
+  var dateFollows = !!prevSub && normalizeSharedHexColor(liveBefore.dateText || prevShared.dateText) === prevSub;
+  var paletteLock = activeSnapshotTextPaletteLock();
+  var lockedSubText = false;
+  if (paletteLock && paletteLock.palette.subText) {
+    if (source === 'color-tool') {
+      lockedSubText = hex !== paletteLock.palette.subText;
+      hex = paletteLock.palette.subText;
+    } else {
+      mergeSnapshotTextPaletteLock(dateFollows ? { subText: hex, dateText: hex } : { subText: hex });
+    }
+  }
+  var exposureHex = exposureSafeTextColor('subText', hex) || hex;
+  var unchanged = exposureHex === normalizeSharedHexColor(prevShared.subText) &&
+    exposureHex === normalizeSharedHexColor(liveBefore.subText);
+  var sharedSub = { subText: exposureHex };
+  var pushSub = { subText: hex };
+  if (dateFollows) {
+    sharedSub.dateText = exposureSafeTextColor('dateText', hex) || hex;
+    pushSub.dateText = hex;
+  }
+  writeSharedExposureTextPalette(sharedSub);
+  pushExposureTextPalette(pushSub);
+  var fromColorTool = source === 'color-tool' || source === 'color-tool-manual';
+  if (!fromColorTool || lockedSubText) pushSubTextColorToColorTool(hex, { force: source === 'exposure' });
+  if (fromColorTool) syncColorToolExposureMainNote();
+  /* 促標底色預設跟副標：重畫匯入工單／維修畫布。 */
+  if (!unchanged && typeof refreshImportAndMaintColorLinks === 'function') refreshImportAndMaintColorLinks();
+  return true;
+}
+function syncSubTextFromColorTool() {
+  if (_subTextColorSyncing) return false;
+  var hex = readColorToolSubTextColor();
+  return hex ? applySharedSubTextColor(hex, 'color-tool') : false;
+}
+/* 換底色後從取色工具讀回它算出的主標與副標（取色工具是配色的唯一建議來源）。 */
 function syncMainTextFromColorTool(seed) {
   if (_mainTextColorSyncing) return false;
   var hex = readColorToolMainTextColor(seed);
-  return hex ? applySharedMainTextColor(hex, 'color-tool') : false;
+  var applied = hex ? applySharedMainTextColor(hex, 'color-tool') : false;
+  syncSubTextFromColorTool();
+  return applied;
 }
 
 /* 取色工具的「主標」規則在取色 iframe 尚未開啟時也要生效。
@@ -16710,7 +17531,9 @@ function colorToolMainTextForBackground(bg) {
     else hue = (channels[0] / 255 - channels[1] / 255) / delta + 4;
     hue *= 60;
   }
-  saturation = Math.max(saturation * 100, 35);
+  /* 與 color-tool.html suggest() 一樣：飽和度至少 35、最多 85（以前漏了上限，高彩度淺底會算出不同的主標，
+     例如 #ffe4cc 算成 #d66500，取色工具是 #cb6810；之後打開取色工具，主標就變成「手動」）。 */
+  saturation = Math.min(Math.max(saturation * 100, 35), 85);
   var hslToHex = function (h, s, l) {
     h = ((h % 360) + 360) % 360; s = Math.max(0, Math.min(100, s)) / 100; l = Math.max(0, Math.min(100, l)) / 100;
     var c = (1 - Math.abs(2 * l - 1)) * s;
@@ -16748,11 +17571,26 @@ function syncMainTextPaletteFromBackground(bg) {
     var frame = document.getElementById('color-frame');
     var win = frame && frame.contentWindow;
     if (win && typeof win._colorToolGetResult === 'function') {
-      main = mainTextColorFromObject(win._colorToolGetResult());
+      /* 只採用「同一個底色」算出來的結果（取色工具解除連動或還沒收到新底色時，結果是舊底色的）。 */
+      var toolResult = win._colorToolGetResult();
+      if (toolResult && colorValueFromTool(toolResult.bg) === hex) main = mainTextColorFromObject(toolResult);
     }
   } catch (_) {}
+  /* 取色工具沒開時，用曝光資源的引擎（與取色工具同一套、已驗證結果相同）；兩個都沒載入才用本頁的移植版。 */
+  if (!main) {
+    try {
+      var exFrame = document.getElementById('exposure-frame');
+      var exWin = exFrame && exFrame.contentWindow;
+      if (exWin && typeof exWin.bnBuildAutoTextPalette === 'function') {
+        main = normalizeSharedHexColor(exWin.bnBuildAutoTextPalette(hex, hex).mainText);
+      }
+    } catch (_) {}
+  }
   main = main || colorToolMainTextForBackground(hex);
-  return main ? applySharedMainTextColor(main, 'color-tool') : false;
+  var applied = main ? applySharedMainTextColor(main, 'color-tool') : false;
+  /* 取色工具已載入時，副標也以它算出的為準（曝光資源的引擎與它同一套，正常情況下兩者相同）。 */
+  if (colorToolLoaded) syncSubTextFromColorTool();
+  return applied;
 }
 
 function scheduleMainTextPaletteFromBackground(bg) {
@@ -16768,6 +17606,10 @@ function scheduleMainTextPaletteFromBackground(bg) {
 function getExposureSubTextColor() {
   return getExposureTextPalette().subText || EXPOSURE_DEFAULT_SUB_TEXT;
 }
+/* 取得曝光資源目前主標色，供匯入工單／維修的圓標底色作為預設連動來源。 */
+function getExposureMainTextColor() {
+  return getExposureTextPalette().mainText || EXPOSURE_DEFAULT_TEXT_PALETTE.mainText;
+}
 /* 把背景色推回「曝光資源」那個 iframe，兩邊連動。
    shopee/index.html 的 applyColor() 是吃全域的 cpActiveKey 決定要改哪個顏色，
    所以先暫時把它設成 canvasBg、改完再還原，避免影響它自己的取色面板狀態。 */
@@ -16777,12 +17619,26 @@ function pushImportBgToExposure(hex) {
   if (typeof pushImportBgToColorTool === 'function') pushImportBgToColorTool(hex);
   /* 先排程取色工具規則的主標色；即使 iframe 尚未存在，也會先寫入共用狀態。 */
   if (typeof scheduleMainTextPaletteFromBackground === 'function') scheduleMainTextPaletteFromBackground(hex);
+  /* 背景是暫存檔還原的那個色：曝光資源換底時不要自動重算文字色，改推暫存檔的配色。 */
+  var paletteLock = activeSnapshotTextPaletteLock(hex);
+  if (paletteLock) pushExposureTextPalette(paletteLock.palette);
   try {
     var frame = document.getElementById('exposure-frame');
     var win = frame && frame.contentWindow;
     if (!win) return false;
     if (typeof win._bnApplySharedCanvasBg === 'function') {
-      win._bnApplySharedCanvasBg(hex, true);
+      var previousSkip = win._bnSkipAutoTextPalette;
+      if (paletteLock) {
+        win._bnSkipAutoTextPalette = true;
+        /* 先把暫存檔配色寫進曝光資源，換底後它廣播回來的就是這組顏色，而不是舊色。 */
+        Object.keys(paletteLock.palette).forEach(function (key) {
+          if (win.colorState) win.colorState[key] = paletteLock.palette[key];
+          if (win._bnLastUserColorState) win._bnLastUserColorState[key] = paletteLock.palette[key];
+          if (win._bnFrozenColorData) win._bnFrozenColorData[key] = paletteLock.palette[key];
+        });
+      }
+      try { win._bnApplySharedCanvasBg(hex, true); }
+      finally { if (paletteLock) win._bnSkipAutoTextPalette = previousSkip; }
       return true;
     }
     if (typeof win.applyColor !== 'function') return false;
@@ -16794,9 +17650,17 @@ function pushImportBgToExposure(hex) {
   } catch (e) { return false; } /* file:// 或跨網域被擋，安靜略過 */
 }
 
+/* CTA 底色禁用黑、近黑、灰；白、近白（各通道 ≥ 245）可用。與曝光資源的 bnIsRestrictedColorForKey('ctaBg') 同一套。 */
+function isCtaBgBlockedColor(hex) {
+  hex = normalizeSharedHexColor(hex);
+  if (!hex) return false;
+  var ch = [1, 3, 5].map(function (offset) { return parseInt(hex.slice(offset, offset + 2), 16); });
+  var max = Math.max.apply(null, ch), min = Math.min.apply(null, ch);
+  return min < 245 && (max <= 32 || max - min <= 24);
+}
 /* 曝光資源目前的「自動 CTA 底色」：iframe 已載入就直接讀它算好的值；
-   還沒載入時用同一套規則在本頁算（品牌橘對背景 CR ≥ 3 → 品牌橘；
-   不足用副標色；再不足用主標色），兩邊結果一致。 */
+   還沒載入時用同一套規則在本頁算：CTA 底色跟主標色（2026-11 起；之前跟副標色），
+   保底順序（每步對背景 CR ≥ 3）：主標色 → 副標色 → 品牌橘 → 主標色。兩邊結果一致。 */
 function getExposureAutoCtaBg(sharedBg) {
   try {
     var frame = document.getElementById('exposure-frame');
@@ -16808,13 +17672,23 @@ function getExposureAutoCtaBg(sharedBg) {
   } catch (e) { /* 跨網域被擋，改用本頁規則 */ }
   var bg = sharedBg || resolvedImportBg();
   var palette = getExposureTextPalette();
-  var brandCr = contrastRatioForDefaultColor(EXPOSURE_CTA_BRAND_COLOR, bg);
-  if (brandCr == null || brandCr >= 3) return EXPOSURE_CTA_BRAND_COLOR;
+  /* 跟 shopee/index.html 的 bnAutoCtaBackground、color-tool.html 的 finish() 同一套：
+     CTA 預設跟主標同色；主標是黑／灰（CTA 底禁用）時深底改純白；對背景 CR 不足 3 再依序退回副標色、品牌橘。 */
+  var main = normalizeSharedHexColor(palette.mainText);
+  if (main) {
+    var mainCr = contrastRatioForDefaultColor(main, bg);
+    if (mainCr == null || mainCr >= 3) {
+      if (!isCtaBgBlockedColor(main)) return main;
+      var whiteCr = contrastRatioForDefaultColor('#ffffff', bg);
+      if (whiteCr == null || whiteCr >= 3) return '#ffffff';
+    }
+  }
   var sub = palette.subText;
   var subCr = sub ? contrastRatioForDefaultColor(sub, bg) : null;
-  if (subCr != null && subCr >= 3) return String(sub).toLowerCase();
-  var main = palette.mainText;
-  if (main) return String(main).toLowerCase();
+  if (sub && (subCr == null || subCr >= 3)) return String(sub).toLowerCase();
+  var brandCr = contrastRatioForDefaultColor(EXPOSURE_CTA_BRAND_COLOR, bg);
+  if (brandCr == null || brandCr >= 3) return EXPOSURE_CTA_BRAND_COLOR;
+  if (main) return isCtaBgBlockedColor(main) ? '#ffffff' : main;
   return sub ? String(sub).toLowerCase() : EXPOSURE_CTA_BRAND_COLOR;
 }
 
@@ -17002,6 +17876,8 @@ function importLinkedDefaultColors(colorState, sampled, sharedBg) {
   var linkedCtaBg = getExposureAutoCtaBg(sharedBg);
   return {
     promoBg: getExposureSubTextColor(),
+    /* 圓標底色預設跟曝光資源的主標色（2026-11-06 起；短暫跟過副標色）；圓標字色由 renderer 依底色明暗自動調整可讀性。 */
+    badgeBg: getExposureMainTextColor(),
     promoText: linkedPromoText,
     /* CTA 底色未手動指定時，跟曝光資源目前的自動 CTA 底色（品牌橘／副標色規則）。 */
     ctaBg: linkedCtaBg,
@@ -17036,8 +17912,15 @@ function dynamicRowRowsForColumn(col) {
 /* 手動換背景色代表配色情境已改變：促標不保留先前的手動覆寫，
    重新以副標色為底；深色底用白字，淡色底用新的畫布背景色。 */
 function relinkImportPromoColorsToBackground() {
+  /* 使用者換了背景色：暫存檔配色鎖就此失效並清掉。以前鎖會留在 localStorage 直到下一份工單，
+     換回同一個底色時又突然生效（而且內容早已被自動色洗掉），還會把取色工具的「還原建議色」擋回去。 */
+  writeSnapshotTextPaletteLock('', null);
+  /* 換底前排程中的文字色補送不要再送（會把新底色的自動配色蓋回舊色）。 */
+  _exposurePaletteKeySeq = {};
   importTheme.promoBg = '';
   importTheme.promoText = '';
+  /* 圓標底色（跟主標色）也一樣，換背景時回到自動。 */
+  importTheme.badgeBg = '';
   /* CTA 底色同樣回到自動：曝光資源換背景時會重算 CTA、背景色工具換底色時會清除手動覆寫，
      三處才會一致。 */
   if (importTheme.ctaBg) setImportCtaBg('');
@@ -17070,6 +17953,7 @@ function importRenderOpts(editable, mode, col) {
     cardBgA23Left: a23LeftCardBg, cardBgA23Right: a23RightCardBg,
     promoBg: colorState.promoBg || linkedDefaults.promoBg,
     promoText: colorState.promoText || linkedDefaults.promoText,
+    badgeBg: colorState.badgeBg || linkedDefaults.badgeBg,
     ctaBg: colorState.ctaBg || linkedDefaults.ctaBg,
     /* CTA 字色與曝光資源／背景色工具同色：renderer 直接採用，不再各自判斷。 */
     ctaText: colorState.ctaText || linkedDefaults.ctaText,
@@ -17192,7 +18076,8 @@ function renderImportColorPanel() {
     if (it.key === 'endorserText') note = overridden ? '' : '自動：預設黑字；圖片偏深時切換白字';
     if (it.key === 'warnText') note = overridden ? '' : '自動：淺色底深灰；深色底淡灰';
     if (it.key === 'itemText') note = overridden ? '' : '項目文字與內文共用此字色';
-    if (it.key === 'ctaBg') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源／背景色的 CTA 底色';
+    if (it.key === 'badgeBg') note = overridden ? '' : '預設跟曝光資源主標文字色；字色自動調整對比';
+    if (it.key === 'ctaBg') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源／背景色的 CTA 底色（主標色）';
     if (it.key === 'ctaText') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源的 CTA 字色：白字；CTA 底偏淺時改深色字';
     return '<div class="ic-color-row' + (overridden ? '' : ' is-off') + '" data-key="' + it.key + '">' +
       '<span class="icc-label">' + esc(it.label) +
@@ -17489,7 +18374,8 @@ function renderMaintColorPanel() {
     if (it.key === 'endorserText') note = overridden ? '' : '自動：預設黑字；圖片偏深時切換白字';
     if (it.key === 'warnText') note = overridden ? '' : '自動：淺色底深灰；深色底淡灰';
     if (it.key === 'itemText') note = overridden ? '' : '項目文字與內文共用此字色';
-    if (it.key === 'ctaBg') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源／背景色的 CTA 底色';
+    if (it.key === 'badgeBg') note = overridden ? '' : '預設跟曝光資源主標文字色；字色自動調整對比';
+    if (it.key === 'ctaBg') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源／背景色的 CTA 底色（主標色）';
     if (it.key === 'ctaText') note = overridden ? '與曝光資源、背景色連動' : '預設跟曝光資源的 CTA 字色：白字；CTA 底偏淺時改深色字';
     return '<div class="ic-color-row' + (overridden ? '' : ' is-off') + '" data-key="' + it.key + '">' +
       '<span class="icc-label">' + esc(it.label) +
@@ -17622,17 +18508,32 @@ window.addEventListener('message', function (e) {
   }
 });
 
+/* 上一包已處理的曝光資源配色（見下方 wo-exposure-palette）。 */
+var lastExposurePaletteSignature = '';
 /* 曝光資源吸色／手動改色 → 匯入工單與維修立即同步，不回推造成循環。 */
 window.addEventListener('message', function (e) {
   var d = e.data || {};
   if (d.type === 'wo-exposure-palette' && d.palette && typeof d.palette === 'object') {
+    var restoringPaletteLock = Date.now() < exposurePaletteMergeReadyAt ? activeSnapshotTextPaletteLock() : null;
+    /* 暫存檔剛還原／曝光資源剛載入：它廣播的可能是換底前的舊色，文字色以暫存檔配色為準（CTA 欄位照收）。 */
+    if (restoringPaletteLock) d = { type: d.type, palette: Object.assign({}, d.palette, restoringPaletteLock.palette) };
     writeSharedExposureTextPalette(d.palette);
-    /* 曝光資源手動改主標色時，這一側才是最新來源：推進背景色工具，
-       不能反過來讀背景色工具的舊值把剛選的顏色蓋掉。 */
+    /* 這裡不再把廣播併進暫存檔配色鎖：廣播也可能只是換底後的自動重算（實測會把鎖洗成自動色）。
+       使用者在曝光資源手動改色另外有 wo-exposure-color，由那邊記進鎖。 */
+    /* 曝光資源每次收到主頁推的顏色都會廣播一次；匯入一份工單時一連會來三、四十包，
+       而且大多跟上一包一模一樣。顏色沒變就不要整片重畫匯入／維修畫布
+       （每次約 0.3–0.6 秒，曝光資源開著時匯入會因此卡上十幾秒）。 */
+    var exposurePaletteSignature = ['mainText', 'subText', 'dateText', 'brandText', 'ctaBg', 'ctaText', 'ctaTextAuto']
+      .map(function (key) { return String(d.palette[key] == null ? '' : d.palette[key]).toLowerCase(); }).join('|');
+    if (exposurePaletteSignature === lastExposurePaletteSignature) return;
+    lastExposurePaletteSignature = exposurePaletteSignature;
+    /* 這包廣播也可能只是曝光資源換底後自動重算、或把禁色換成替代色，不一定是使用者改的；
+       使用者在曝光資源手動改主標會另外送 wo-exposure-color，由那邊寫進取色工具。
+       這裡只更新取色工具上「曝光資源實際用色」的提示，不把自動色寫成工具的手動覆寫。 */
     var exposureMainText = normalizeSharedHexColor(d.palette.mainText);
     if (exposureMainText) {
       _lastSharedMainTextColor = exposureMainText;
-      if (colorToolLoaded) setTimeout(function () { pushMainTextColorToColorTool(exposureMainText); }, 0);
+      if (colorToolLoaded) syncColorToolExposureMainNote();
     }
     refreshImportAndMaintColorLinks();
     /* 曝光資源的自動 CTA 字色可能跟著主標／CTA 底色變了：把目前實際字色再推給背景色工具。 */
@@ -17650,14 +18551,20 @@ window.addEventListener('message', function (e) {
     syncCtaTextToColorTool();
     return;
   }
+  /* 曝光資源手動改主標／副標／日期／品牌字色（applyColor 另外送的明確通知）。 */
   if (d.type === 'wo-exposure-color' && EXPOSURE_TEXT_COLOR_KEYS.indexOf(d.key) >= 0 && /^#[0-9a-fA-F]{6}$/.test(d.color || '')) {
     if (d.key === 'mainText') {
       applySharedMainTextColor(d.color, 'exposure');
       return;
     }
+    if (d.key === 'subText') {
+      applySharedSubTextColor(d.color, 'exposure');
+      return;
+    }
     var nextPalette = {};
-    nextPalette[d.key] = d.color;
+    nextPalette[d.key] = String(d.color).toLowerCase();
     writeSharedExposureTextPalette(nextPalette);
+    mergeSnapshotTextPaletteLock(nextPalette);
     refreshImportAndMaintColorLinks();
     return;
   }
@@ -17720,6 +18627,7 @@ window.addEventListener('storage', function (e) {
 });
 
 document.getElementById('btn-color-reset-all').addEventListener('click', function () {
+  writeSnapshotTextPaletteLock('', null); /* 全部重設＝回到自動配色，不再沿用暫存檔的文字色 */
   IMPORT_COLOR_ITEMS.forEach(function (it) { importTheme[it.key] = ''; });
   importTheme.bg = EXPOSURE_DEFAULT_BG;
   importTheme.bgAuto = false;
@@ -17803,17 +18711,22 @@ function bindImportImageFieldTools(box, idx, ctxName) {
   var ctx = canvasCtx(ctxName);
   var col = ctx.columns()[idx];
   if (!col) return;
-  var order = normalizedImportImageOrder(col);
   box.querySelectorAll('.img-field').forEach(function (fieldEl) {
     var key = fieldEl.getAttribute('data-key');
     if (!key) return;
-    var orderIndex = order.indexOf(key);
     var head = fieldEl.querySelector('.img-field-head');
-    if (head) {
+    /* 與右側工具卡相同的「前後位置」：只有曝品／贈品／代言人圖、且版位內有兩組以上才顯示。 */
+    var layerInfo = importImageLayerRank(col, key);
+    if (head && layerInfo.rank >= 0 && layerInfo.total >= 2) {
       var orderWrap = document.createElement('span');
       orderWrap.className = 'import-image-tool-order';
-      orderWrap.appendChild(importImageActionButton('上移', '圖片層上移', key, 'field-up', NaN, orderIndex <= 0, 'up', true, false, idx, ctxName));
-      orderWrap.appendChild(importImageActionButton('下移', '圖片層下移', key, 'field-down', NaN, orderIndex < 0 || orderIndex >= order.length - 1, 'down', true, false, idx, ctxName));
+      orderWrap.title = '調整這組圖片在畫布上的前後：在前面的會蓋住後面的';
+      var orderLabel = document.createElement('span');
+      orderLabel.className = 'import-image-tool-order-label';
+      orderLabel.innerHTML = '前後位置 <b>' + (layerInfo.rank + 1) + '</b>/' + layerInfo.total;
+      orderWrap.appendChild(orderLabel);
+      orderWrap.appendChild(importImageActionButton('往前', '往前一層：蓋到其他圖片上面', key, 'field-up', NaN, layerInfo.rank === 0, 'up', true, false, idx, ctxName));
+      orderWrap.appendChild(importImageActionButton('往後', '往後一層：被其他圖片蓋住', key, 'field-down', NaN, layerInfo.rank === layerInfo.total - 1, 'down', true, false, idx, ctxName));
       head.appendChild(orderWrap);
     }
     var parts = splitImageList(col.data[key] || '');
@@ -17824,8 +18737,11 @@ function bindImportImageFieldTools(box, idx, ctxName) {
       var usable = /^(data:|https?:|blob:)/i.test(String(part).trim());
       var actions = document.createElement('div');
       actions.className = 'if-actions';
-      actions.appendChild(importImageActionButton('上移', '這張圖片圖層上移', key, 'part-layer-up', imageIndex, layerIndex <= 0, 'up', true, false, idx, ctxName));
-      actions.appendChild(importImageActionButton('下移', '這張圖片圖層下移', key, 'part-layer-down', imageIndex, layerIndex >= parts.length - 1, 'down', true, false, idx, ctxName));
+      /* 同一欄裡有兩張以上的圖時，才顯示「同欄圖片之間」的前後箭頭。 */
+      if (parts.length > 1) {
+        actions.appendChild(importImageActionButton('往前', '同一欄的多張圖之間往前一層：蓋到這一欄其他圖片上面', key, 'part-layer-up', imageIndex, layerIndex <= 0, 'up', true, false, idx, ctxName));
+        actions.appendChild(importImageActionButton('往後', '同一欄的多張圖之間往後一層：被這一欄其他圖片蓋住', key, 'part-layer-down', imageIndex, layerIndex >= parts.length - 1, 'down', true, false, idx, ctxName));
+      }
       actions.appendChild(importImageActionButton('編輯', '裁切／去背／擦除／影子', key, 'edit', imageIndex, !usable, 'edit', false, false, idx, ctxName));
       actions.appendChild(importImageActionButton(usable ? '換圖' : '新增', usable ? '更換這張圖片' : '新增這張圖片', key, 'swap', imageIndex, false, usable ? 'refresh' : 'upload', false, false, idx, ctxName));
       actions.appendChild(importImageActionButton('刪除', '刪除這張圖片', key, 'del', imageIndex, !part, 'close', false, true, idx, ctxName));
@@ -17944,6 +18860,55 @@ function swapMsbnCSeriesPositions(col, labelA, labelB) {
       Object.keys(entriesB).forEach(function (k) { store[k.replace(pair[1] + '::', pair[0] + '::')] = entriesB[k]; });
     });
   }
+  return true;
+}
+/* 吸底輸出圖的上方 20px 是透明留白。容器從最後一張 MSBN 的實際底部開始，
+   並以白色實底承接，避免透明區透出上一張 MSBN 而看起來像兩者重疊。 */
+function createImportBottomFinalFrame(top, width, height, dataUrl) {
+  var bottomFrame = document.createElement('div');
+  bottomFrame.className = 'import-bottom-final-wrap';
+  bottomFrame.style.cssText = 'left:0;top:' + top + 'px;width:' + width + 'px;height:' + height + 'px;background:#fff;';
+  var bottomImg = document.createElement('img');
+  bottomImg.className = 'import-bottom-final';
+  bottomImg.src = dataUrl;
+  bottomImg.alt = '吸底最終成品（含上方空白區）';
+  bottomImg.draggable = false;
+  bottomImg.style.cssText = 'width:' + width + 'px;height:' + height + 'px;';
+  bottomFrame.appendChild(bottomImg);
+  var bottomHint = document.createElement('span');
+  bottomHint.className = 'import-bottom-edit-hint';
+  bottomHint.textContent = '點一下編輯吸底';
+  bottomFrame.appendChild(bottomHint);
+  bindImportBottomOpenEditor(bottomFrame);
+  return bottomFrame;
+}
+/* 吸底預覽 iframe 回傳成品時，只換掉畫布最下面那一塊（「產生中」佔位或舊成品），
+   不整片重畫全部版位：整片重畫連同排版約 1 秒，匯入後會被觸發好幾次，Loading 就像當機。
+   高度跟目前不同（輸出尺寸變了）才回傳 false，讓呼叫端改走完整重畫。 */
+function updateImportBottomFinalInPlace() {
+  var strip = document.getElementById('imp-strip');
+  var wrap = document.getElementById('imp-strip-wrap');
+  var result = importBottomPreviewResult;
+  if (!strip || !wrap || !result || !result.dataUrl) return false;
+  var current = null;
+  for (var i = strip.children.length - 1; i >= 0; i--) {
+    var child = strip.children[i];
+    if (child.classList.contains('import-bottom-final-wrap') || child.classList.contains('import-bottom-loading')) { current = child; break; }
+  }
+  if (!current) return false;
+  var totalWidth = Number(wrap.getAttribute('data-total-width')) || 0;
+  var top = parseFloat(current.style.top);
+  var height = parseFloat(current.style.height);
+  if (!totalWidth || !isFinite(top) || !isFinite(height)) return false;
+  var outW = Number(result.width) > 0 ? Number(result.width) : 1200;
+  var outH = Number(result.height) > 0 ? Number(result.height) : 150;
+  if (Math.round(totalWidth * outH / outW) !== Math.round(height)) return false;
+  var existingImg = current.classList.contains('import-bottom-final-wrap') ? current.querySelector('.import-bottom-final') : null;
+  if (existingImg) {
+    if (existingImg.getAttribute('src') !== result.dataUrl) existingImg.src = result.dataUrl;
+    return true;
+  }
+  strip.replaceChild(createImportBottomFinalFrame(top, totalWidth, Math.round(height), result.dataUrl), current);
   return true;
 }
 function renderImportColumns(columns, skipPreviewRerender) {
@@ -18111,25 +19076,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
        !latestBottomWorkOrder || importBottomPreviewResult.workOrderVersion === latestBottomWorkOrder.version) &&
       importBottomPreviewResult.dataUrl;
     if (resultMatchesCurrent) {
-      /* 吸底輸出圖的上方 20px 是透明留白。容器從最後一張 MSBN 的實際底部開始，
-         並以白色實底承接，避免透明區透出上一張 MSBN 而看起來像兩者重疊。 */
-      var bottomFrame = document.createElement('div');
-      bottomFrame.className = 'import-bottom-final-wrap';
-      bottomFrame.style.cssText = 'left:0;top:' + bottomSyncTop + 'px;width:' +
-        totalWidth + 'px;height:' + bottomSyncH + 'px;background:#fff;';
-      var bottomImg = document.createElement('img');
-      bottomImg.className = 'import-bottom-final';
-      bottomImg.src = importBottomPreviewResult.dataUrl;
-      bottomImg.alt = '吸底最終成品（含上方空白區）';
-      bottomImg.draggable = false;
-      bottomImg.style.cssText = 'width:' + totalWidth + 'px;height:' + bottomSyncH + 'px;';
-      bottomFrame.appendChild(bottomImg);
-      var bottomHint = document.createElement('span');
-      bottomHint.className = 'import-bottom-edit-hint';
-      bottomHint.textContent = '點一下編輯吸底';
-      bottomFrame.appendChild(bottomHint);
-      bindImportBottomOpenEditor(bottomFrame);
-      strip.appendChild(bottomFrame);
+      strip.appendChild(createImportBottomFinalFrame(bottomSyncTop, totalWidth, bottomSyncH, importBottomPreviewResult.dataUrl));
     } else {
       var bottomLoading = document.createElement('div');
       bottomLoading.className = 'import-bottom-loading';
@@ -18318,21 +19265,36 @@ function buildImportColumnTools(col, idx, ctxName, env) {
     }).join('');
     var toolDefsByKey = {};
     imageToolDefs.forEach(function (toolDef) { toolDefsByKey[toolDef.key] = toolDef; });
-    imageToolDefs = normalizedImportImageOrder(col).map(function (key) {
+    /* 工具列閱讀順序固定照版位欄位順序（曝品左 → 贈品左 → 曝品右 → 贈品右…，每個曝品下面
+       就是它搭配的贈品），不跟著前後位置變動；前後位置只改畫布上誰蓋誰，由每組的箭頭調整。 */
+    imageToolDefs = importImageFieldKeys(col).map(function (key) {
       return toolDefsByKey[key];
     }).filter(Boolean);
-    /* 右側工具列同一個版位內固定先顯示 LOGO、再顯示商品圖；
-       只調整工具列閱讀順序，不更動 col._imageOrder 或畫布圖層順序。 */
+    /* 同一個版位內先顯示 LOGO，再顯示曝品／贈品／代言人等內容圖，最後是其他圖（例如簽名）。 */
     imageToolDefs = imageToolDefs.map(function (toolDef, originalIndex) {
       var toolText = String((toolDef && toolDef.key) || '') + ' ' + String((toolDef && toolDef.label) || '');
       var priority = /logo/i.test(toolText) ? 0
-        : (/productImg|商品|情境圖|信用卡圖|贈品圖/i.test(toolText) ? 1 : 2);
+        : (isImportLayerOrderFieldKey(toolDef && toolDef.key) || /productImg|商品|情境圖|信用卡圖|贈品/i.test(toolText) ? 1 : 2);
       return { toolDef: toolDef, originalIndex: originalIndex, priority: priority };
     }).sort(function (a, b) {
       return a.priority - b.priority || a.originalIndex - b.originalIndex;
     }).map(function (item) {
       return item.toolDef;
     });
+    /* 同一組（左／右…）的曝品、贈品、代言人排在一起；組內依前後位置由前到後，
+       所以調整前後位置時，工具列裡的上下順序也會跟著對調。各組之間維持欄位原本順序。 */
+    var layerGroupSeen = {};
+    var arrangedToolDefs = [];
+    imageToolDefs.forEach(function (toolDef) {
+      var layerGroup = importImageLayerGroupOf(toolDef && toolDef.key);
+      if (!layerGroup) { arrangedToolDefs.push(toolDef); return; }
+      if (layerGroupSeen[layerGroup]) return;
+      layerGroupSeen[layerGroup] = true;
+      importImageLayerGroupFields(col, toolDef.key).forEach(function (key) {
+        if (toolDefsByKey[key]) arrangedToolDefs.push(toolDefsByKey[key]);
+      });
+    });
+    imageToolDefs = arrangedToolDefs;
     var couponSwapHtml = '';
     var couponPosMap = msbnCSeriesPositionKeys(col.blockId);
     if (couponPosMap) {
@@ -18458,16 +19420,22 @@ function buildImportColumnTools(col, idx, ctxName, env) {
               '<button type="button" class="if-btn import-logo-bg-reset" title="改回自動（' + esc(logoAutoHint) + '）"' + (logoUp.logoBg ? '' : ' disabled') + '>還原</button>' +
             '</div>';
           }
-          return '<div class="import-image-tool-row">' +
+          /* 點這一列（按鈕以外的地方）會在畫布框出這張圖，見下方 import-image-tool-row 的 click。 */
+          return '<div class="import-image-tool-row" data-key="' + esc(toolDef.key) + '" data-image-index="' + imageIndex + '"' +
+            (usable ? ' title="點一下：在畫布上框出這張圖"' : '') + '>' +
             miniPreview +
             '<span class="import-image-tool-label">' + esc(partLabel) + '</span>' +
             '<div class="import-image-tool-actions">' +
-              '<button type="button" class="if-btn if-icon-btn" data-key="' + esc(toolDef.key) + '" data-act="part-layer-up" data-image-index="' + imageIndex + '"' +
-                (layerIndex === 0 ? ' disabled' : '') +
-                ' title="這張圖片圖層上移" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 上移') + '">' + lineIcon('up') + '</button>' +
-              '<button type="button" class="if-btn if-icon-btn" data-key="' + esc(toolDef.key) + '" data-act="part-layer-down" data-image-index="' + imageIndex + '"' +
-                (layerIndex === toolDef.parts.length - 1 ? ' disabled' : '') +
-                ' title="這張圖片圖層下移" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 下移') + '">' + lineIcon('down') + '</button>' +
+              /* 這組箭頭只調整「同一欄裡的多張圖」誰蓋誰（例如曝品範圍按＋新增後的圖1、圖2）；
+                 只有一張圖時沒有作用，不顯示，免得跟標題列的「前後位置」混淆。 */
+              (toolDef.parts.length > 1
+                ? '<button type="button" class="if-btn if-icon-btn" data-key="' + esc(toolDef.key) + '" data-act="part-layer-up" data-image-index="' + imageIndex + '"' +
+                    (layerIndex === 0 ? ' disabled' : '') +
+                    ' title="同一欄的多張圖之間往前一層：蓋到這一欄其他圖片上面" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 在同一欄往前一層') + '">' + lineIcon('up') + '</button>' +
+                  '<button type="button" class="if-btn if-icon-btn" data-key="' + esc(toolDef.key) + '" data-act="part-layer-down" data-image-index="' + imageIndex + '"' +
+                    (layerIndex === toolDef.parts.length - 1 ? ' disabled' : '') +
+                    ' title="同一欄的多張圖之間往後一層：被這一欄其他圖片蓋住" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 在同一欄往後一層') + '">' + lineIcon('down') + '</button>'
+                : '') +
               '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="edit" data-image-index="' + imageIndex + '"' + (usable ? '' : ' disabled') +
                 ' title="裁切／去背／擦除／影子" aria-label="' + esc(toolDef.label + ' ' + partLabel + ' 編輯') + '">' + lineIcon('edit') + ' 編輯</button>' +
               '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="swap" data-image-index="' + imageIndex + '"' +
@@ -18483,18 +19451,22 @@ function buildImportColumnTools(col, idx, ctxName, env) {
             (/^(?:logoImg|productImg)/i.test(String(toolDef.key || '')) || /LOGO|商品|情境圖|信用卡圖/i.test(String(toolDef.label || ''))
               ? '<button type="button" class="if-btn import-image-tool-add" data-key="' + esc(toolDef.key) + '" data-act="add" title="新增一張' + esc(toolDef.label) + '" aria-label="新增一張' + esc(toolDef.label) + '">＋ 新增</button>'
               : '') +
-            '<span class="import-image-tool-order">' +
-              '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="field-up"' +
-                (imageToolDefs.indexOf(toolDef) === 0 ? ' disabled' : '') +
-                ' title="圖片層上移" aria-label="' + esc(toolDef.label + ' 上移') + '">' + lineIcon('up') + '</button>' +
-              '<button type="button" class="if-btn" data-key="' + esc(toolDef.key) + '" data-act="field-down"' +
-                (imageToolDefs.indexOf(toolDef) === imageToolDefs.length - 1 ? ' disabled' : '') +
-                ' title="圖片層下移" aria-label="' + esc(toolDef.label + ' 下移') + '">' + lineIcon('down') + '</button>' +
-            '</span>' +
+            importImageLayerOrderControlsHtml(col, toolDef) +
           '</div>' +
           toolRowsHtml +
         '</div>';
-      }).join('');
+      }).reduce(function (html, groupHtml, defIndex) {
+        /* 同一組（例如左邊的曝品＋贈品）包成一個框，跟另一組明顯分開。 */
+        var key = imageToolDefs[defIndex] && imageToolDefs[defIndex].key;
+        var layerGroup = importImageLayerGroupOf(key);
+        var groupSize = layerGroup ? importImageLayerGroupFields(col, key).length : 0;
+        var prevGroup = defIndex > 0 ? importImageLayerGroupOf(imageToolDefs[defIndex - 1].key) : '';
+        var nextGroup = defIndex < imageToolDefs.length - 1 ? importImageLayerGroupOf(imageToolDefs[defIndex + 1].key) : '';
+        if (groupSize < 2) return html + groupHtml;
+        var open = prevGroup !== layerGroup ? '<div class="import-image-tool-set" data-layer-group="' + esc(layerGroup) + '">' : '';
+        var close = nextGroup !== layerGroup ? '</div>' : '';
+        return html + open + groupHtml + close;
+      }, '');
       var toolBandKey = toolBand.key;
       var toolBox = actionRail.querySelector('.import-band-tool[data-tool-band="' + toolBandKey + '"]');
       if (!toolBox) {
@@ -18587,6 +19559,13 @@ function buildImportColumnTools(col, idx, ctxName, env) {
           var act = btn.getAttribute('data-act');
           var imageIndex = Number(btn.getAttribute('data-image-index'));
           handleImportImageAction(idx, key, act, imageIndex, ctxName);
+        });
+      });
+      /* 點圖片列（按鈕以外）→ 畫布框出這張圖，並讓它優先接收滑鼠，被蓋住也拖得到。 */
+      toolCol.querySelectorAll('.import-image-tool-row[data-key]').forEach(function (row) {
+        row.addEventListener('click', function (e) {
+          if (e.target && e.target.closest && e.target.closest('button, input, select, label')) return;
+          selectCanvasImageFromTool(ctxName, idx, row.getAttribute('data-key'), Number(row.getAttribute('data-image-index')));
         });
       });
       toolCol.querySelectorAll('.import-logo-bg-row').forEach(function (bgRow) {
@@ -19018,6 +19997,11 @@ function bindEndorserTextDrag(mountEl, col, idx, ctxName) {
         document.body.style.userSelect = 'none';
         var left = startLeft + dx / scaleX;
         var top = startTop + dy / scaleY;
+        /* 跟商品圖一樣不能拖出版位外：整塊文字必須留在版位畫布（mount）範圍內。 */
+        var maxLeft = Math.max(0, (mountEl.offsetWidth || 0) - (textLayer.offsetWidth || 0));
+        var maxTop = Math.max(0, (mountEl.offsetHeight || 0) - (textLayer.offsetHeight || 0));
+        left = Math.min(maxLeft, Math.max(0, left));
+        top = Math.min(maxTop, Math.max(0, top));
         textLayer.style.left = left + 'px';
         textLayer.style.top = top + 'px';
         var positions = col.data.__canvasTextPositions || (col.data.__canvasTextPositions = {});
@@ -19199,8 +20183,11 @@ function alignMsbnA21Text(mountEl, col) {
 function bindCanvasInteractions(mountEl, col, idx, ctxName) {
   restoreCanvasImageEditorState(mountEl, col);
   applyImportShadowGeometry(mountEl);
+  applySubareaCardShadowClip(mountEl, col);
   alignMsbnA21Text(mountEl, col);
   bindCanvasEditable(mountEl, col, idx, ctxName);
+  /* 匯入工單畫布畫好後檢查字數：超過的框紅提示（不刪字），修正前擋下載。 */
+  if (ctxName === 'import' && typeof scheduleImportTextLimitMarks === 'function') scheduleImportTextLimitMarks();
   bindCanvasAddLineButtons(mountEl, col, idx, ctxName);
   bindEndorserTextDrag(mountEl, col, idx, ctxName);
   bindDynamicRowControls(mountEl, col, idx, ctxName);
@@ -19234,30 +20221,92 @@ function updateCanvasLocalColorPreview(col, idx, ctxName, key, value) {
 }
 
 var canvasLocalColorPicker = null;
-function openFallbackCanvasLocalColorPicker(col, idx, ctxName, key) {
+/* 原生色盤會貼著 <input type="color"> 本身的位置彈出；隱藏的 input 若放在畫面外（之前是 -40px），
+   色盤就會被瀏覽器推到視窗左上角。改成每次先把隱藏 input 搬到滑鼠點的位置，色盤才會出現在色塊旁邊。 */
+function placeHiddenColorPickerAt(input, anchor) {
+  if (!input) return;
+  var x = anchor && isFinite(Number(anchor.x)) ? Number(anchor.x) : window.innerWidth / 2;
+  var y = anchor && isFinite(Number(anchor.y)) ? Number(anchor.y) : window.innerHeight / 2;
+  x = Math.max(0, Math.min(Math.max(0, window.innerWidth - 2), x));
+  y = Math.max(0, Math.min(Math.max(0, window.innerHeight - 2), y));
+  input.style.left = Math.round(x) + 'px';
+  input.style.top = Math.round(y) + 'px';
+}
+function isElementRendered(el) {
+  return !!(el && (el.offsetWidth || el.offsetHeight || (el.getClientRects && el.getClientRects().length)));
+}
+/* opts.mirror：左側隱藏欄位卡裡對應的 .local-color-picker。
+   它雖然看不到，但欄位的 input／change 事件都綁在上面（更新色碼框、隱藏狀態、重畫）；
+   這裡選好顏色後直接轉送事件給它，行為就跟從欄位卡選色完全一樣。 */
+/* 隱藏色盤要在頁面載入時就先建好：如果第一次點色塊時才建立，元素剛插入、還沒排版就被 click()，
+   瀏覽器拿不到它的位置，原生色盤會跳到別的地方，要第二次點才會出現在滑鼠下面。 */
+function ensureCanvasLocalColorPicker() {
+  if (canvasLocalColorPicker && canvasLocalColorPicker.isConnected) return canvasLocalColorPicker;
+  if (!document.body) return null;
+  canvasLocalColorPicker = document.createElement('input');
+  canvasLocalColorPicker.type = 'color';
+  canvasLocalColorPicker.setAttribute('aria-label', '版位局部顏色');
+  canvasLocalColorPicker.setAttribute('tabindex', '-1');
+  canvasLocalColorPicker.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+  document.body.appendChild(canvasLocalColorPicker);
+  return canvasLocalColorPicker;
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureCanvasLocalColorPicker);
+else ensureCanvasLocalColorPicker();
+function openFallbackCanvasLocalColorPicker(col, idx, ctxName, key, anchor, opts) {
   if (!col || !key) return false;
-  if (!canvasLocalColorPicker) {
-    canvasLocalColorPicker = document.createElement('input');
-    canvasLocalColorPicker.type = 'color';
-    canvasLocalColorPicker.setAttribute('aria-label', '版位局部顏色');
-    canvasLocalColorPicker.style.cssText = 'position:fixed;left:-40px;top:-40px;width:1px;height:1px;opacity:0;';
-    document.body.appendChild(canvasLocalColorPicker);
-  }
+  opts = opts || {};
+  if (!ensureCanvasLocalColorPicker()) return false;
+  placeHiddenColorPickerAt(canvasLocalColorPicker, anchor);
+  /* 先強制排版一次，讓瀏覽器拿到「搬到滑鼠位置之後」的座標，再打開原生色盤。 */
+  canvasLocalColorPicker.getBoundingClientRect();
+  var mirror = opts.mirror && opts.mirror.tagName === 'INPUT' ? opts.mirror : null;
   canvasLocalColorPicker.value = colorToHex(col.data[key] || '#ffffff');
+  function forwardToMirror(type) {
+    if (!mirror) return false;
+    mirror.value = canvasLocalColorPicker.value;
+    try { mirror.dispatchEvent(new Event(type, { bubbles: true })); } catch (e) { return false; }
+    return true;
+  }
   canvasLocalColorPicker.oninput = function () {
+    if (forwardToMirror('input')) return;
     updateCanvasLocalColorPreview(col, idx, ctxName, key, canvasLocalColorPicker.value);
   };
   canvasLocalColorPicker.onchange = function () {
+    /* 先補一個 input，讓欄位卡的 pendingPickerColor 拿到最新值，再送 change 正式套用。 */
+    if (forwardToMirror('input') && forwardToMirror('change')) return;
     updateCanvasLocalColorPreview(col, idx, ctxName, key, canvasLocalColorPicker.value);
     refreshCanvasAfterChange(ctxName, idx, ctxName === 'import');
   };
-  canvasLocalColorPicker.click();
+  /* 等新位置真的畫到畫面上（一個繪製週期，最多 60ms，仍在這次點擊的使用者操作時效內）再打開，
+     原生色盤才會以滑鼠位置為錨點，而不是上一次的位置或視窗角落。 */
+  var picker = canvasLocalColorPicker;
+  var opened = false;
+  function openNow() {
+    if (opened) return;
+    opened = true;
+    picker.getBoundingClientRect();
+    picker.click();
+  }
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(openNow);
+  setTimeout(openNow, 60);
   return true;
+}
+/* 右側工具列裡看得到的色票：先捲到可視範圍（立即、不用平滑），等排版完成再點開色盤，
+   色盤才會貼在色票旁邊；平滑捲動還沒到位就 click，色盤會定位在舊位置甚至視窗外。 */
+function openVisibleColorPicker(rowEl, pickerEl) {
+  if (!rowEl || !pickerEl) return;
+  try { rowEl.scrollIntoView({ block: 'center', behavior: 'auto' }); } catch (e) { rowEl.scrollIntoView(); }
+  rowEl.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
+  setTimeout(function () { rowEl.style.boxShadow = ''; }, 900);
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { pickerEl.click(); });
+  });
 }
 
 /* 匯入工單畫布上的可換色色塊：點一下就定位到左側同一欄，並直接打開
    瀏覽器色盤。MSBN D-1-1-2 / D-2-1-2 的圓形色塊因此不必先在長工具列裡找。 */
-function openCanvasColorPicker(col, idx, ctxName, key) {
+function openCanvasColorPicker(col, idx, ctxName, key, anchor) {
   var isMaint = ctxName === 'maint';
   var def = BNCore.getBlock(col.blockId);
   var fieldDef = def && def.fields && def.fields.filter(function (f) { return f.key === key; })[0];
@@ -19282,25 +20331,26 @@ function openCanvasColorPicker(col, idx, ctxName, key) {
     }
     var localPicker = fieldEl && fieldEl.querySelector('.local-color-picker');
     if (localPicker) {
-      fieldEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      fieldEl.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
-      setTimeout(function () { fieldEl.style.boxShadow = ''; }, 900);
-      localPicker.click();
+      /* 左側欄位卡是 display:none 的隱藏卡（副區底色等局部色都在這裡）：
+         直接 click 一個沒有尺寸的 input，色盤會跑到視窗左上角。
+         改用貼著滑鼠位置的隱藏色盤，選好後把事件轉給這個 input。 */
+      if (!isElementRendered(localPicker)) {
+        openFallbackCanvasLocalColorPicker(col, idx, ctxName, key, anchor, { mirror: localPicker });
+        return;
+      }
+      openVisibleColorPicker(fieldEl, localPicker);
       return;
     }
   }
 
   if (!role) {
-    openFallbackCanvasLocalColorPicker(col, idx, ctxName, key);
+    openFallbackCanvasLocalColorPicker(col, idx, ctxName, key, anchor);
     return;
   }
   var row = document.querySelector(listSelector + ' .ic-color-row[data-key="' + role + '"]');
   var picker = row && row.querySelector('.icc-picker');
   if (!picker) return;
-  row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  row.style.boxShadow = '0 0 0 2px rgba(238,77,45,.55)';
-  setTimeout(function () { row.style.boxShadow = ''; }, 900);
-  picker.click();
+  openVisibleColorPicker(row, picker);
 }
 
 function bindCanvasColorPick(mountEl, col, idx, ctxName) {
@@ -19310,7 +20360,8 @@ function bindCanvasColorPick(mountEl, col, idx, ctxName) {
       e.preventDefault();
       e.stopPropagation();
       var key = shape.getAttribute('data-color-field');
-      if (key) openCanvasColorPicker(col, idx, ctxName, key);
+      /* 把點擊位置帶過去，隱藏色盤才能貼著點的地方彈出 */
+      if (key) openCanvasColorPicker(col, idx, ctxName, key, { x: e.clientX, y: e.clientY });
     });
   });
 }
@@ -19538,6 +20589,155 @@ function reflowCanvasTextLines(text, lineLimit, maxLines) {
   return out.join('\n');
 }
 
+/* 畫布一畫出來就套用的行數排版（不丟字）：有每排字數的欄位先依每排字數重新排版，
+   超過最多排數的部分接回最後一排；其他欄位只把超過的排數接回最後一排。
+   字數超過上限的部分保留（交給字數檢查標示），不在這裡默默刪掉。
+   以前這些整理要等使用者第一次打字才發生：工單或暫存檔裡超過行數的文字，
+   在第二排打一個字就整排接到第一排後面，看起來像字亂跳。 */
+function layoutCanvasTextNoLoss(el, text, col, key) {
+  var source = String(text == null ? '' : text).replace(/\r\n?/g, '\n');
+  var lineLimit = importCanvasTextLineLimit(col, key);
+  if (lineLimit != null && lineLimit > 0) source = reflowCanvasTextLines(source, lineLimit, null);
+  return capCanvasTextLines(source, canvasTextMaxLines(el, col, key));
+}
+
+/* ── 文字超過版位字數：框出來、旁邊提示、擋下載圖片，但不刪字 ──
+   以前匯入時不檢查，等使用者點進欄位或打字才把多出來的字直接刪掉，使用者沒機會決定要留哪些字。
+   現在畫面一出來就檢查：超過的欄位框紅、旁邊顯示規則與多幾個字；左側下載區列出所有問題，
+   點一下跳到該欄位。全部修正前「下載工單＋圖片＋暫存檔」會被擋下。 */
+function importTextLimitIssueOf(col, key, text, el) {
+  var source = String(text == null ? '' : text).replace(/\r\n?/g, '\n').replace(/\n+$/, '');
+  if (!source.trim()) return null;
+  if (isCanvasCtaTextField(col, key)) {
+    var ctaCount = Array.from(source.replace(/\n/g, '')).length;
+    return ctaCount > 3 ? { over: ctaCount - 3, rule: 'CTA 最多 3 字' } : null;
+  }
+  var maxLines = canvasTextMaxLines(el, col, key);
+  var lineLimit = importCanvasTextLineLimit(col, key);
+  if (lineLimit != null && lineLimit > 0) {
+    /* 依每排字數重新排版後，超過最多排數的字就是多出來的 */
+    var flowed = reflowCanvasTextLines(source, lineLimit, null).split('\n');
+    var overUnits = importCanvasTextUnits(flowed.slice(maxLines).join(''));
+    return overUnits > 0
+      ? { over: overUnits, rule: (maxLines > 1 ? maxLines + ' 排、' : '') + '每排最多 ' + lineLimit + ' 字' }
+      : null;
+  }
+  var total = importCanvasTextLimit(col, key);
+  var overTotal = total != null ? Math.max(0, importCanvasTextUnits(source) - total) : 0;
+  var overLines = Math.max(0, source.split('\n').length - maxLines);
+  if (!overTotal && !overLines) return null;
+  var rules = [];
+  if (total != null) rules.push('最多 ' + total + ' 字');
+  if (overLines) rules.push('最多 ' + maxLines + ' 排');
+  return { over: overTotal, overLines: overLines, rule: rules.join('、') };
+}
+function importTextLimitMessage(issue) {
+  var amount = issue.over > 0
+    ? '多 ' + issue.over + ' 字' + (issue.over % 1 ? '（英數算半字）' : '')
+    : '多 ' + issue.overLines + ' 排';
+  return (issue.label || '文字') + '超過字數：' + issue.rule + '，' + amount;
+}
+/* 目前匯入工單畫布上所有超過字數的文字欄位（只看畫面上真的有畫出來的欄位）。 */
+function collectImportTextLimitIssues() {
+  var issues = [];
+  (currentImportColumns || []).forEach(function (col, idx) {
+    var mount = document.getElementById('imp-mount-' + idx);
+    if (!mount || !col) return;
+    var def = BNCore.getBlock(col.blockId);
+    Array.prototype.forEach.call(mount.querySelectorAll('[contenteditable="true"][data-field]'), function (el) {
+      var key = el.getAttribute('data-field');
+      var issue = importTextLimitIssueOf(col, key, col.data && col.data[key], el);
+      if (!issue) return;
+      var field = importCanvasTextField(col, key);
+      issue.idx = idx;
+      issue.key = key;
+      issue.el = el;
+      issue.label = (field && field.label) || key;
+      issue.blockName = (def && def.name) || col.blockId;
+      issue.message = importTextLimitMessage(issue);
+      issues.push(issue);
+    });
+  });
+  return issues;
+}
+function importTextOffsetWithin(el, ancestor) {
+  var x = 0, y = 0, node = el;
+  while (node && node !== ancestor) { x += node.offsetLeft || 0; y += node.offsetTop || 0; node = node.offsetParent; }
+  return node === ancestor ? { x: x, y: y } : null;
+}
+function focusImportTextLimitIssue(issue) {
+  if (!issue || !issue.el || !issue.el.isConnected) return;
+  if (typeof scrollCanvasAreaToElement === 'function') scrollCanvasAreaToElement(issue.el);
+  try { issue.el.focus(); } catch (e) {}
+}
+function updateImportTextLimitNotice(issues) {
+  var bar = document.getElementById('import-dl-bar');
+  var notice = document.getElementById('import-text-limit-notice');
+  if (!issues.length) { if (notice) notice.remove(); return; }
+  if (!bar) return;
+  if (!notice) {
+    notice = document.createElement('div');
+    notice.id = 'import-text-limit-notice';
+    bar.insertBefore(notice, bar.firstChild);
+  }
+  notice.innerHTML = '<b>有 ' + issues.length + ' 處文字超過版位字數，修正後才能下載圖片</b>' +
+    '多出來的字不會被自動刪掉，請自己決定要留哪些字。';
+  issues.slice(0, 12).forEach(function (issue, i) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '第 ' + (issue.idx + 1) + ' 格 ' + issue.blockName + '｜' + issue.message;
+    btn.addEventListener('click', function () { focusImportTextLimitIssue(issues[i]); });
+    notice.appendChild(btn);
+  });
+  if (issues.length > 12) {
+    var more = document.createElement('div');
+    more.textContent = '…還有 ' + (issues.length - 12) + ' 處';
+    notice.appendChild(more);
+  }
+}
+/* 重新檢查並更新畫布上的紅框與提示；回傳問題清單（下載前也用這個判斷）。 */
+function refreshImportTextLimitMarks() {
+  Array.prototype.forEach.call(document.querySelectorAll('.bn-text-over-limit'), function (el) {
+    el.classList.remove('bn-text-over-limit');
+  });
+  var strip = document.getElementById('imp-strip');
+  var layer = document.getElementById('imp-text-limit-layer');
+  var issues = collectImportTextLimitIssues();
+  if (!issues.length || !strip) {
+    if (layer) layer.remove();
+    updateImportTextLimitNotice(issues);
+    return issues;
+  }
+  if (!layer || layer.parentNode !== strip) {
+    if (layer) layer.remove();
+    layer = document.createElement('div');
+    layer.id = 'imp-text-limit-layer';
+    strip.appendChild(layer);
+  }
+  layer.innerHTML = '';
+  issues.forEach(function (issue) {
+    /* 框住整個文字圖層（可編輯內層的外框） */
+    var box = issue.el.parentElement && issue.el.parentElement !== issue.el.closest('[data-bn-schema-id]')
+      ? issue.el.parentElement : issue.el;
+    box.classList.add('bn-text-over-limit');
+    var pos = importTextOffsetWithin(box, strip);
+    if (!pos) return;
+    var bubble = document.createElement('div');
+    bubble.className = 'bn-text-limit-bubble';
+    bubble.textContent = issue.message;
+    bubble.style.left = pos.x + 'px';
+    bubble.style.top = (pos.y + box.offsetHeight) + 'px';
+    layer.appendChild(bubble);
+  });
+  updateImportTextLimitNotice(issues);
+  return issues;
+}
+var _importTextLimitTimer = 0;
+function scheduleImportTextLimitMarks() {
+  clearTimeout(_importTextLimitTimer);
+  _importTextLimitTimer = setTimeout(refreshImportTextLimitMarks, 120);
+}
+
 /* 畫布文字套用字數規則的唯一入口：有每排字數的欄位先重新排版再截掉超過排數的部分；
    沒有每排字數的欄位只看總字數。 */
 function fitCanvasText(el, text, col, key) {
@@ -19671,7 +20871,8 @@ function applyImportCanvasTextRules(el, col, idx, ctxName, key) {
   var originalRaw = readEditableText(el);
   /* 失焦時沿用編輯模式：使用者分好的排不重新自動斷行。 */
   var raw = normalizeCanvasTextBreaks(originalRaw, col, key, 'edit');
-  var limited = canvasTextRulesEnabled(ctxName) ? fitCanvasText(el, raw, col, key) : raw;
+  /* 失焦時同樣只整理排版、不刪字（以前點進去再點出來，多出來的字就被刪掉了）。 */
+  var limited = canvasTextRulesEnabled(ctxName) ? layoutCanvasTextNoLoss(el, raw, col, key) : raw;
   var textChanged = limited !== originalRaw;
   if (textChanged) {
     raw = limited;
@@ -19717,6 +20918,12 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
     /* 使用者在畫布親手改過排法的欄位，重畫時不再自動斷行（否則接回一行的圓標會被重新拆開）。 */
     var manualBreaks = col._manualText && col._manualText[key];
     var initialNormalizedText = normalizeCanvasTextBreaks(initialRawText, col, key, manualBreaks ? 'edit' : undefined);
+    /* 行數／每排字數的排版在畫面一出來就套用，打字時才不會突然整排重排。
+       欄位是空的（畫面上是淡色示意字）時不處理，示意字不能被寫進資料。 */
+    var hasRealText = String(col.data && col.data[key] != null ? col.data[key] : '').trim() !== '';
+    if (hasRealText && canvasTextRulesEnabled(ctxName) && !isCanvasCtaTextField(col, key)) {
+      initialNormalizedText = layoutCanvasTextNoLoss(el, initialNormalizedText, col, key);
+    }
     if (initialNormalizedText !== initialRawText) {
       el.textContent = initialNormalizedText;
       col.data[key] = initialNormalizedText;
@@ -19829,9 +21036,12 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       var rawText = readEditableText(el);
       var text = normalizeCanvasTextBreaks(rawText, col, key, 'edit');
       if (canvasTextRulesEnabled(ctxName)) {
+        /* 只整理排版（每排字數往下流、超過的排接回最後一排），不刪字：
+           超過字數的部分留著，由字數檢查框紅提示，讓使用者自己決定要留哪些字。
+           新打的字超過上限時由上面的 beforeinput 擋下。 */
         var limited = isCanvasCtaTextField(col, key)
-          ? Array.from(text).slice(0, 3).join('')
-          : fitCanvasText(el, text, col, key);
+          ? text
+          : layoutCanvasTextNoLoss(el, text, col, key);
         limited = limitCanvasTextLineCount(limited, col, key, 'edit');
         if (limited !== rawText) {
           text = limited;
@@ -19846,6 +21056,10 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       col.data[key] = text;
       (col._manualText = col._manualText || {})[key] = true;
       syncCanvasAddLineButton(el, col, idx, ctxName, key);
+      /* 副區品名從一行變兩行（或反過來）時，警語即時回到原位／往上移，不必重畫畫布。 */
+      if (window.BNSchemaRenderer && BNSchemaRenderer.syncSubareaWarnLift) BNSchemaRenderer.syncSubareaWarnLift(mountEl);
+      /* 字數修正到符合規則時，紅框與提示即時消失（下載也跟著解鎖）。 */
+      if (ctxName === 'import') scheduleImportTextLimitMarks();
       var afterRows = dynamicSchema && window.BNSchemaRenderer && BNSchemaRenderer.dynamicRowSignatureOf
         ? BNSchemaRenderer.dynamicRowSignatureOf(dynamicSchema, col.data) : null;
       var rowsChanged = beforeRows !== afterRows;
@@ -19868,6 +21082,8 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       var hadBtn = twolineContainer && !!twolineContainer.querySelector('[data-add-line-field="' + key + '"]');
       setTimeout(function () {
         applyImportCanvasTextRules(el, col, idx, ctxName, key);
+        if (window.BNSchemaRenderer && BNSchemaRenderer.syncSubareaWarnLift) BNSchemaRenderer.syncSubareaWarnLift(mountEl);
+        if (ctxName === 'import') scheduleImportTextLimitMarks();
         if (twolineContainer) {
           if (isSingleLinePromoField(col, key)) {
             var singleLineButton = twolineContainer.querySelector('[data-add-line-field="' + key + '"]');
@@ -19881,6 +21097,8 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
       }, 0);
     });
   });
+  /* 渲染時是用估算的行數放警語；畫到畫面上後用實際排版再校正一次（字型差異、自動折行）。 */
+  if (window.BNSchemaRenderer && BNSchemaRenderer.syncSubareaWarnLift) BNSchemaRenderer.syncSubareaWarnLift(mountEl);
 }
 
 /* ════════════════════════════════════════
@@ -20135,6 +21353,17 @@ function resolveImportBindingTargetKeys(entries, blockDef) {
   });
   return result;
 }
+/* 工單圖片欄以逗號分隔多張圖；副區與 MSBN 每一格圖片欄最多吃 5 張，超過的只取前 5 張。 */
+var IMPORT_MAX_IMAGES_PER_FIELD = 5;
+function limitImportFieldImageCount(mapped, def, location, overflow) {
+  (def.fields || []).forEach(function (field) {
+    if (field.type !== 'image' || mapped[field.key] == null) return;
+    var parts = splitImageList(mapped[field.key]);
+    if (parts.length <= IMPORT_MAX_IMAGES_PER_FIELD) return;
+    mapped[field.key] = parts.slice(0, IMPORT_MAX_IMAGES_PER_FIELD).join(',');
+    if (overflow) overflow.push(String(location || def.name || def.id) + '／' + String(field.label || field.key) + '（' + parts.length + ' 張）');
+  });
+}
 function afterImportParsed(rawColumns, options) {
   options = options || {};
   var importLog = document.getElementById('import-log');
@@ -20144,6 +21373,8 @@ function afterImportParsed(rawColumns, options) {
     return;
   }
   importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 讀到 ' + rawColumns.length + ' 格，載入可編輯版位中…</span>';
+  /* 匯入整體進度：讀檔 5–22 → 解析 22–40 → 版位模板 42–46 → 畫版位 48–64 → 商品影子 64–100。 */
+  appLoadingUpdate(42, null, '讀到 ' + rawColumns.length + ' 格，正在準備版位模板…', 46);
   ensureBlocksLoaded(function () {
     var oldBySourceKey = {};
     if (options.preserveExisting) {
@@ -20152,11 +21383,13 @@ function afterImportParsed(rawColumns, options) {
       });
     }
 
+    var imageOverflow = [];
     var columns = rawColumns.map(function (c) {
       var blockId = rawColumnBlockId(c);
       var def = BNCore.getBlock(blockId);
       var defaults = def ? BNCore.defaultData(blockId) : {};
       var mapped = def ? repairImportPromoMapping(c.entries || [], def, smartMapEntriesToFields(c.entries || [], def)) : {};
+      if (def) limitImportFieldImageCount(mapped, def, c.header || def.name || blockId, imageOverflow);
       var resolvedBindingKeys = def ? resolveImportBindingTargetKeys(c.entries || [], def) : [];
       var oldCol = c.sourceKey ? oldBySourceKey[c.sourceKey] : null;
       var data = (oldCol && oldCol.blockId === blockId)
@@ -20177,6 +21410,7 @@ function afterImportParsed(rawColumns, options) {
         }) : [],
         _dynamicRowRows: oldCol && Array.isArray(oldCol._dynamicRowRows) ? oldCol._dynamicRowRows.slice() : undefined,
         _imageOrder: oldCol && Array.isArray(oldCol._imageOrder) ? oldCol._imageOrder.slice() : [],
+        _imageOrderCustom: !!(oldCol && oldCol._imageOrderCustom),
         _imagePartLayerOrder: oldCol ? cloneImportImagePartLayerOrder(oldCol._imagePartLayerOrder) : {}
       };
     });
@@ -20188,20 +21422,35 @@ function afterImportParsed(rawColumns, options) {
     currentImportColumns = columns;
     if (!options.preserveExisting) beginImportImageLayoutDocument(false);
     autoMatchImagesToColumns();
-    renderImportColumns(columns);
-    saveImportImageLayout();
-    scheduleImportShadowReapply(true);
-    var importDoneMessage = currentImportSource === 'generator'
-      ? '已從工單生成器載入 ' + columns.length + ' 格，可直接編輯'
-      : currentImportSource === 'demo'
-        ? '已匯入 demo 工單：' + columns.length + ' 格，圖片素材 ' + (options.demoImageCount || 0) + ' 張'
-        : '已畫出 ' + columns.length + ' 格';
-    importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' ' + importDoneMessage + '</span>';
-    appLoadingFinish('工單已完成匯入');
+    /* 畫版位要佔住主執行緒約半秒：先讓「正在畫出版位」顯示出來再開始畫。 */
+    appLoadingUpdate(48, null, '正在畫出 ' + columns.length + ' 格版位…', 62);
+    appLoadingYield().then(function () {
+      if (currentImportColumns !== columns) return; /* 等待期間又匯入了新工單，交給新的那次處理 */
+      renderImportColumns(columns);
+      saveImportImageLayout();
+      var importDoneMessage = currentImportSource === 'generator'
+        ? '已從工單生成器載入 ' + columns.length + ' 格，可直接編輯'
+        : currentImportSource === 'demo'
+          ? '已匯入 demo 工單：' + columns.length + ' 格，圖片素材 ' + (options.demoImageCount || 0) + ' 張'
+          : '已畫出 ' + columns.length + ' 格';
+      importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' ' + importDoneMessage + '</span>' +
+        (imageOverflow.length
+          ? '<br><span class="err">' + lineIcon('warning') + ' 有 ' + imageOverflow.length + ' 個圖片欄超過 ' + IMPORT_MAX_IMAGES_PER_FIELD +
+            ' 張，只取前 ' + IMPORT_MAX_IMAGES_PER_FIELD + ' 張：' + esc(imageOverflow.slice(0, 3).join('、')) + (imageOverflow.length > 3 ? ' 等' : '') + '</span>'
+          : '');
+      /* 商品影子接在同一條進度後段（64–100%），全部做完才顯示 100%，不會先跳完成再掉回 3%。 */
+      appLoadingHandoff(64, '工單已完成匯入');
+      scheduleImportShadowReapply(true);
+      if (!importShadowReapplyRunning) appLoadingFinish('工單已完成匯入');
+    }).catch(function (err) {
+      console.error('匯入後畫版位失敗', err);
+      importLog.innerHTML = '<span class="err">畫出版位失敗：' + esc(err && err.message || err) + '</span>';
+      appLoadingFail('工單已讀取，但畫面更新失敗');
+    });
 
     /* 吸底成品由隱藏的 preview iframe 渲染完成後回傳，renderImportColumns() 會將它接在最後一排 MSBN 下方。 */
 
-  });
+  }, { from: 42, to: 46 });
 }
 
 function encodeDemoAssetPath(fileName) {
@@ -20337,15 +21586,16 @@ function handleImportFile(file) {
   var reader = new FileReader();
   reader.onprogress = function (e) {
     if (!e.lengthComputable) return;
-    var pct = 8 + Math.round((e.loaded / e.total) * 34);
-    appLoadingUpdate(pct, 'LOADING · 匯入工單', '檔案讀取 ' + Math.round((e.loaded / e.total) * 100) + '%');
+    var pct = 5 + (e.loaded / e.total) * 15;
+    appLoadingUpdate(pct, 'LOADING · 匯入工單', '檔案讀取 ' + Math.round((e.loaded / e.total) * 100) + '%', 22);
   };
   reader.onload = function () {
-    appLoadingUpdate(48, 'LOADING · 匯入工單', '檔案讀取完成，正在解析…');
+    appLoadingUpdate(22, 'LOADING · 匯入工單', '檔案讀取完成，正在解析工單…', 32);
     try {
       if (name.endsWith('.json')) {
         currentImportWorkbook = null;
         currentImportWorkbookName = '';
+        currentImportActivityName = '';
         var parsed = JSON.parse(reader.result);
         if (parsed && parsed.type === 'wo_import_snapshot') {
           restoreImportSnapshot(parsed);
@@ -20356,9 +21606,11 @@ function handleImportFile(file) {
         /* 同一份工單也交給吸底工具原本的 WorkOrderImporter；如果使用者尚未開啟
            「吸底」頁簽，先暫存在記憶體，第一次開啟時再自動帶入。 */
         parseImportXlsx(reader.result, { filename: file.name }).then(function (raw) {
+          /* 新工單＝新的一輪製作流程：左側各步驟的完成／略過狀態重設。 */
+          if (typeof resetWorkflowStatus === 'function') resetWorkflowStatus();
           /* 先由工單總覽完成等級同步，再送入吸底，確保吸底／曝光資源同時吃到
              「包套」右側欄位，而不是沿用 localStorage 的上一個等級。 */
-          rememberBottomWorkOrder(file.name, reader.result, raw.hasBottomWorkOrder === true);
+          rememberBottomWorkOrder(file.name, reader.result, raw.hasBottomWorkOrder === true, currentImportWorkbook);
           afterImportParsed(raw, { source: 'file', hasBottomWorkOrder: raw.hasBottomWorkOrder === true });
           syncBottomAfterImportAction('import-sync');
         }).catch(function (err) {
@@ -20425,6 +21677,7 @@ function buildImportSnapshot() {
         xlsxBindings: Array.isArray(col._xlsxBindings) ? col._xlsxBindings.map(function (binding) { return { address: binding.address, targetKey: binding.targetKey, label: binding.label }; }) : [],
         dynamicRowRows: Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows.slice() : null,
         imageOrder: Array.isArray(col._imageOrder) ? col._imageOrder.slice() : [],
+        imageOrderCustom: !!col._imageOrderCustom,
         imagePartLayerOrder: cloneImportImagePartLayerOrder(col._imagePartLayerOrder),
         data: dataCopy
       };
@@ -20442,13 +21695,30 @@ function buildImportSnapshot() {
       savedAt: new Date().toISOString(),
       source: currentImportSource,
       generatorSignature: currentGeneratorSignature,
+      /* 活動名稱與工單檔名一起存，從暫存檔還原後下載 ZIP 仍能用活動名稱命名 */
+      activityName: currentImportActivityName || '',
+      workOrderName: currentImportWorkbookName || '',
       columns: res[0],
       uploadedImages: res[1],
       theme: JSON.parse(JSON.stringify(importTheme)), /* 統一顏色也一起存，還原後顏色一模一樣 */
+      /* 背景色與曝光資源的主標／副標／日期／品牌色也要存：促標底色、CTA 預設都連動副標色，
+         只存 theme 的話，還原時會被「依背景推薦」的規則重算成別的顏色。 */
+      canvasBg: normalizeSharedHexColor(resolvedImportBg()),
+      exposurePalette: (function () {
+        var palette = getExposureTextPalette();
+        var out = {};
+        EXPOSURE_TEXT_COLOR_KEYS.forEach(function (key) {
+          var color = normalizeSharedHexColor(palette && palette[key]);
+          if (color) out[key] = color;
+        });
+        return out;
+      })(),
       imageZoomWeights: (window.BNImageLayout && BNImageLayout.getWeights) ? BNImageLayout.getWeights() : {},
       imageOffsets: (window.BNImageLayout && BNImageLayout.getOffsets) ? BNImageLayout.getOffsets() : {}, /* 每張圖被拖曳過的位置 */
       /* 吸底編輯現況（含自訂 LOGO）也一起存，上傳暫存檔時吸底一起還原 */
-      bottomState: importHasBottomSource() ? (getBottomStateForSync() || '') : ''
+      bottomState: importHasBottomSource() ? (getBottomStateForSync() || '') : '',
+      /* 左側製作流程各步驟的完成／略過狀態 */
+      workflowStatus: readWorkflowStatus()
     };
   });
 }
@@ -20625,34 +21895,64 @@ function triggerImportImageDownload(dataUrl, filename, delay) {
 }
 
 /* 吸底的獨立圖跟副區／MSBN 不同：吸底本來就是「每一顆反白各一張」的多狀態圖。
-   向吸底預覽 iframe（內容與吸底工具同步）要全部分頁的多狀態圖；拿不到時退回單張吸底。 */
+   向吸底預覽 iframe（內容與吸底工具同步）要全部分頁的多狀態圖；拿不到時退回單張吸底。
+   回傳 { files, note }：note 是寫進「輸出提醒.txt」的說明，讓使用者知道為什麼吸底圖少了或沒有。
+   之前有三個會讓 ZIP 裡「完全沒有吸底圖」卻不說原因的情況，這裡一併處理：
+   1. 畫布上沒有 MSBN 就直接回空陣列（吸底跟 MSBN 其實沒有依賴關係）；
+   2. 吸底預覽 iframe 還沒載入／字體還沒好（READY 未送出）就直接放棄；
+   3. 預覽 iframe 還沒吃到目前工單就要圖，30 秒內沒回就放棄。 */
 var bottomVariantWaiters = {};
 var bottomVariantSeq = 0;
-function requestBottomVariantFiles() {
-  var hasMsbn = (currentImportColumns || []).some(function (col) { return /^msbn_/i.test(String(col.blockId || '')); });
-  if (!(importHasBottomSource() && hasMsbn)) return Promise.resolve([]);
-  function fallback(err) {
-    if (err) console.warn('[BODA] 吸底多狀態圖輸出失敗，改下載畫布上的單張吸底：', err);
-    return importBottomPreviewResult && importBottomPreviewResult.dataUrl
-      ? [{ filename: '吸底.png', dataUrl: importBottomPreviewResult.dataUrl }] : [];
-  }
-  if (!bottomPreviewBridgeReady) return Promise.resolve(fallback(new Error('吸底預覽尚未就緒')));
-  var requestId = 'bottom-variants-' + Date.now() + '-' + (++bottomVariantSeq);
+function bottomVariantFallback(err) {
+  var reason = err && err.message ? err.message : String(err || '未知原因');
+  console.warn('[BODA] 吸底多狀態圖輸出失敗，改用畫布上的單張吸底：', err);
+  var single = importBottomPreviewResult && importBottomPreviewResult.dataUrl
+    ? [{ filename: '吸底.png', dataUrl: importBottomPreviewResult.dataUrl, kind: 'bottom' }] : [];
+  return {
+    files: single,
+    note: single.length
+      ? '吸底多狀態圖未輸出（' + reason + '）；MSBN 資料夾只放入目前預覽的單張吸底圖。'
+      : '吸底圖片未輸出：' + reason + '。請切到「吸底工具」頁簽確認內容已出現後，再下載一次。'
+  };
+}
+function waitForBottomPreviewBridge(timeoutMs) {
+  if (bottomPreviewBridgeReady) return Promise.resolve(true);
+  ensureBottomPreviewLoaded(false);
   return new Promise(function (resolve) {
-    bottomVariantWaiters[requestId] = {
-      resolve: resolve,
-      timer: setTimeout(function () {
-        delete bottomVariantWaiters[requestId];
-        resolve(fallback(new Error('吸底多狀態圖輸出逾時')));
-      }, 30000)
-    };
-    if (!postToBottomPreview({ source: 'BODA_PARENT', type: 'EXPORT_VARIANTS', requestId: requestId })) {
-      clearTimeout(bottomVariantWaiters[requestId].timer);
-      delete bottomVariantWaiters[requestId];
-      resolve(fallback(new Error('無法連線到吸底預覽')));
-    }
-  }).then(function (files) {
-    return files;
+    var started = Date.now();
+    (function poll() {
+      if (bottomPreviewBridgeReady) return resolve(true);
+      if (Date.now() - started > timeoutMs) return resolve(false);
+      setTimeout(poll, 150);
+    })();
+  });
+}
+function requestBottomVariantFiles() {
+  if (!importHasBottomSource()) return Promise.resolve({ files: [], note: '' });
+  return waitForBottomPreviewBridge(25000).then(function (ready) {
+    if (!ready) return bottomVariantFallback(new Error('吸底預覽尚未就緒（吸底工具或字體尚未載入完成）'));
+    /* 先確定預覽 iframe 已經吃到目前的工單／編輯狀態（等它回一張 PREVIEW_IMAGE），再要多狀態圖，
+       否則可能拿到上一份工單或預設畫面的吸底。 */
+    return requestBottomPreviewForWorkOrderExport().catch(function (err) {
+      console.warn('[BODA] 吸底預覽同步未完成，仍嘗試輸出多狀態圖：', err);
+      return null;
+    }).then(function () {
+      var requestId = 'bottom-variants-' + Date.now() + '-' + (++bottomVariantSeq);
+      return new Promise(function (resolve) {
+        bottomVariantWaiters[requestId] = {
+          resolve: resolve,
+          timer: setTimeout(function () {
+            delete bottomVariantWaiters[requestId];
+            resolve(bottomVariantFallback(new Error('吸底多狀態圖輸出逾時（60 秒）')));
+          }, 60000)
+        };
+        if (!postToBottomPreview({ source: 'BODA_PARENT', type: 'EXPORT_VARIANTS', requestId: requestId })) {
+          clearTimeout(bottomVariantWaiters[requestId].timer);
+          delete bottomVariantWaiters[requestId];
+          resolve(bottomVariantFallback(new Error('無法連線到吸底預覽')));
+        }
+      });
+    });
   });
 }
 function settleBottomVariantRequest(msg) {
@@ -20661,21 +21961,23 @@ function settleBottomVariantRequest(msg) {
   delete bottomVariantWaiters[msg.requestId];
   clearTimeout(waiter.timer);
   if (msg.ok && Array.isArray(msg.files) && msg.files.length) {
-    waiter.resolve(msg.files.map(function (file) {
-      return { filename: String(file.filename || '吸底.png'), dataUrl: String(file.dataUrl || '') };
-    }).filter(function (file) { return file.dataUrl; }));
+    waiter.resolve({
+      files: msg.files.map(function (file) {
+        return { filename: String(file.filename || '吸底.png'), dataUrl: String(file.dataUrl || ''), kind: 'bottom' };
+      }).filter(function (file) { return file.dataUrl; }),
+      note: ''
+    });
   } else {
-    console.warn('[BODA] 吸底多狀態圖輸出失敗：', msg.message);
-    waiter.resolve(importBottomPreviewResult && importBottomPreviewResult.dataUrl
-      ? [{ filename: '吸底.png', dataUrl: importBottomPreviewResult.dataUrl }] : []);
+    waiter.resolve(bottomVariantFallback(new Error(msg.ok ? '吸底工具沒有任何分頁可輸出' : (msg.message || '吸底工具回報失敗'))));
   }
 }
 
 /* 合成圖要包含畫布最下面的吸底：輸出前先確認吸底預覽是「目前吸底工具的最新狀態」，
-   還沒產生或已過期就先向吸底預覽要一張新的，放回畫布後再截圖。 */
+   還沒產生或已過期就先向吸底預覽要一張新的，放回畫布後再截圖。
+   （沒有 MSBN 的畫布不接吸底成品，但仍要先同步預覽，後面的多狀態圖輸出才拿得到正確內容。） */
 function ensureImportBottomReadyForExport() {
+  if (!importHasBottomSource()) return Promise.resolve();
   var hasMsbn = (currentImportColumns || []).some(function (col) { return /^msbn_/i.test(String(col.blockId || '')); });
-  if (!(importHasBottomSource() && hasMsbn)) return Promise.resolve();
   var strip = document.getElementById('imp-strip');
   var finalImg = strip && strip.querySelector('.import-bottom-final');
   var upToDate = finalImg && importBottomPreviewResult && importBottomPreviewResult.dataUrl &&
@@ -20684,6 +21986,7 @@ function ensureImportBottomReadyForExport() {
   appLoadingUpdate(20, 'LOADING · 輸出圖片', '正在同步吸底成品…');
   return requestBottomPreviewForWorkOrderExport()
     .then(function () {
+      if (!hasMsbn) return;
       renderImportColumns(currentImportColumns);
       var img = document.querySelector('#imp-strip .import-bottom-final');
       if (!img || img.complete) return;
@@ -20697,6 +22000,10 @@ function ensureImportBottomReadyForExport() {
     });
 }
 function downloadImportImage(options) {
+  /* 保險：任何呼叫端都不能在文字超過字數時輸出圖片。 */
+  if (refreshImportTextLimitMarks().length) {
+    return Promise.reject(new Error('有文字超過版位字數，修正後才能輸出圖片'));
+  }
   return ensureImportBottomReadyForExport().then(function () { return downloadImportImageNow(options); });
 }
 function downloadImportImageNow(options) {
@@ -20717,6 +22024,8 @@ function downloadImportImageNow(options) {
      截圖前先拿掉，截完再放回去 */
   var activeSlots = Array.prototype.slice.call(strip.querySelectorAll('.imp-slot.is-active'));
   activeSlots.forEach(function (s) { s.classList.remove('is-active'); });
+  /* 輸出期間滑過／捲動同步不得再把綠框加回來（之前滑鼠一動就會選到某顆 MSBN，框線跟著截進成品）。 */
+  importExportCapturing = true;
   strip.classList.add('bn-export-capture');
 
   var prevTransform = strip.style.transform;
@@ -20733,6 +22042,7 @@ function downloadImportImageNow(options) {
     strip.style.transform = prevTransform;
     wrap.style.width = prevW;
     wrap.style.height = prevH;
+    importExportCapturing = false;
     activeSlots.forEach(function (s) { s.classList.add('is-active'); });
     strip.classList.remove('bn-export-capture');
   }
@@ -20751,11 +22061,13 @@ function downloadImportImageNow(options) {
       return exportImportPlacementImages(strip, opts).then(function (result) {
         restore();
         appLoadingUpdate(84, 'LOADING · 輸出圖片', '正在輸出吸底多狀態圖…');
-        return requestBottomVariantFiles().then(function (bottomFiles) {
-          return { files: (result.files || []).concat(bottomFiles || []), failures: result.failures };
+        return requestBottomVariantFiles().then(function (bottom) {
+          var bottomFiles = bottom && bottom.files ? bottom.files : [];
+          return { files: (result.files || []).concat(bottomFiles), failures: result.failures,
+            notes: bottom && bottom.note ? [bottom.note] : [] };
         });
       }).then(function (result) {
-        var files = [{ filename: '版位成品_' + Date.now() + '.png', dataUrl: dataUrl }]
+        var files = [{ filename: '版位成品.png', dataUrl: dataUrl, kind: 'canvas' }]
           .concat(result.files || []);
         appLoadingUpdate(86, 'LOADING · 輸出圖片', '合成圖與獨立版位圖片已產生…');
         if (!options.collectOnly) {
@@ -20767,7 +22079,7 @@ function downloadImportImageNow(options) {
           var failedNames = result.failures.map(function (item) { return item.filename; }).join('、');
           console.warn('BODA 獨立版位圖片輸出失敗：', failedNames, result.failures);
         }
-        return { files: files, failures: result.failures || [] };
+        return { files: files, failures: result.failures || [], notes: result.notes || [] };
       });
     })
     .catch(function (err) {
@@ -20776,13 +22088,43 @@ function downloadImportImageNow(options) {
     });
 }
 
+/* 還原暫存檔的背景色與曝光資源文字配色，並以暫存檔為準：
+   背景色寫回共用值（畫布、曝光資源、背景色工具三處一致），主標／副標／日期／品牌色寫回並上鎖，
+   換底時不再被「依背景推薦」的規則重算。舊版暫存檔沒有存文字配色時，只還原背景色。 */
+function restoreSnapshotSharedColors(snap) {
+  var theme = (snap && snap.theme) || {};
+  var bg = normalizeSharedHexColor(snap && snap.canvasBg) ||
+    (theme.bgAuto === false ? normalizeSharedHexColor(theme.bg) : '');
+  var palette = {};
+  EXPOSURE_TEXT_COLOR_KEYS.forEach(function (key) {
+    var color = normalizeSharedHexColor(snap && snap.exposurePalette && snap.exposurePalette[key]);
+    if (color) palette[key] = color;
+  });
+  var hasPalette = Object.keys(palette).length > 0;
+  if (!bg && !hasPalette) return '';
+  if (!bg) bg = normalizeSharedHexColor(resolvedImportBg());
+  /* 還原前曝光資源可能已經送出一包換底前的舊配色，這段時間收到的廣播一律以鎖為準。 */
+  exposurePaletteMergeReadyAt = Math.max(exposurePaletteMergeReadyAt, Date.now() + 2000);
+  /* 先上鎖再換底：換底途中排程的主標規則、曝光資源重算都會改用這組顏色。
+     沒有文字配色的舊暫存檔要清掉上一份暫存檔留下的鎖。 */
+  writeSnapshotTextPaletteLock(bg, hasPalette ? palette : null);
+  if (hasPalette) {
+    writeSharedExposureTextPalette(palette);
+    if (palette.mainText) _lastSharedMainTextColor = palette.mainText;
+  }
+  importTheme.bg = bg;
+  writeSharedCanvasBg(bg);
+  pushImportBgToExposure(bg);
+  return bg;
+}
 function restoreImportSnapshot(snap) {
   /* v3 暫存檔會把重複的大型 dataURL 收進共用素材表；還原前先展開，
      舊版 v1/v2 沒有素材表時此函式會原樣回傳。 */
   snap = expandImportSnapshotFromStorage(snap);
   /* 暫存 JSON 不包含原始 XLSX 二進位資料，不能誤用上一次開過的工單回填。 */
   currentImportWorkbook = null;
-  currentImportWorkbookName = '';
+  currentImportWorkbookName = String(snap.workOrderName || '');
+  currentImportActivityName = String(snap.activityName || '');
   appLoadingUpdate(55, 'LOADING · 還原暫存檔', '正在整理圖片與版位資料…');
   hideImportBottomPreview();
   currentImportHasBottomWorkOrder = false;
@@ -20810,16 +22152,24 @@ function restoreImportSnapshot(snap) {
     var d = c.data || {};
     return Object.keys(d).some(function (k) { return typeof d[k] === 'string' && d[k].indexOf('blob:') !== -1; });
   });
+  /* 背景色與曝光資源文字配色先還原：之後推 CTA 給曝光資源時，它回傳的就是暫存檔的顏色。 */
+  var restoredSnapshotBg = restoreSnapshotSharedColors(snap);
+  /* 製作流程的完成／略過狀態跟著暫存檔還原（舊暫存檔沒有這段就維持目前狀態）。 */
+  if (snap.workflowStatus && typeof snap.workflowStatus === 'object') writeWorkflowStatus(snap.workflowStatus);
   /* 統一顏色一起還原（舊版暫存檔沒有這段就維持目前設定） */
   if (snap.theme && typeof snap.theme === 'object') {
     IMPORT_COLOR_ITEMS.forEach(function (it) {
       if (typeof snap.theme[it.key] === 'string') importTheme[it.key] = snap.theme[it.key];
     });
+    if (restoredSnapshotBg) importTheme.bg = restoredSnapshotBg;
     sanitizeProductNameThemeColors(importTheme);
     importTheme.bgAuto = snap.theme.bgAuto !== false;
     /* 暫存檔帶的 CTA 底色／字色也要發佈給曝光資源／背景色，三處保持一致。 */
     if (typeof snap.theme.ctaBg === 'string') setImportCtaBg(snap.theme.ctaBg);
     if (typeof snap.theme.ctaText === 'string') setImportCtaText(snap.theme.ctaText);
+    saveImportTheme();
+    renderImportColorPanel();
+  } else if (restoredSnapshotBg) {
     saveImportTheme();
     renderImportColorPanel();
   }
@@ -20843,21 +22193,27 @@ function restoreImportSnapshot(snap) {
         }) : [],
         _dynamicRowRows: Array.isArray(c.dynamicRowRows) ? c.dynamicRowRows.slice() : undefined,
         _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
+        _imageOrderCustom: !!c.imageOrderCustom,
         _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder),
         data: c.data || {}
       };
     });
-    return trimImportColumnImages(restoredColumns).then(function () {
+    /* 暫存檔要完全還原：圖片照存檔時的原樣使用，不再自動裁白邊。
+       以前還原時會把所有圖片（包含不該裁的代言人、簽名圖）都裁一次，原圖尺寸一變，
+       圖片大小、位置與商品編輯狀態（依圖片網址對應）就都對不回存檔時的樣子。 */
+    return Promise.resolve(restoredColumns).then(function () {
       currentImportColumns = restoredColumns;
       beginImportImageLayoutDocument(true);
       saveImportImageLayout();
       renderImportColumns(currentImportColumns);
       importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已從暫存檔還原 ' + currentImportColumns.length + ' 格（含編輯結果）</span>' +
         (hasDeadBlob ? '<br><span class="err">' + lineIcon('warning') + ' 這個暫存檔是舊版本存的，部分圖片連結已失效，請重新上傳那些圖片素材後再存一次新的暫存檔。</span>' : '');
-      appLoadingFinish('暫存檔已還原');
       /* 舊暫存檔可能把裁白邊後的圖片直接留在欄位裡，沒有對回 uploadedImages。
-         還原完成後立刻跑一次巡檢／重烘，確保畫布上的商品影子不會只靠舊網址碰運氣。 */
+         還原完成後立刻跑一次巡檢／重烘，確保畫布上的商品影子不會只靠舊網址碰運氣。
+         影子接在同一條進度的後段，做完才顯示完成。 */
+      appLoadingHandoff(70, '暫存檔已還原');
       scheduleImportShadowReapply(true);
+      if (!importShadowReapplyRunning) appLoadingFinish('暫存檔已還原');
     });
     currentImportColumns = (snap.columns || []).map(function (c) {
       return {
@@ -20874,6 +22230,7 @@ function restoreImportSnapshot(snap) {
         }) : [],
         _dynamicRowRows: Array.isArray(c.dynamicRowRows) ? c.dynamicRowRows.slice() : undefined,
         _imageOrder: Array.isArray(c.imageOrder) ? c.imageOrder.slice() : [],
+        _imageOrderCustom: !!c.imageOrderCustom,
         _imagePartLayerOrder: cloneImportImagePartLayerOrder(c.imagePartLayerOrder || c._imagePartLayerOrder),
         data: c.data || {}
       };
@@ -21319,19 +22676,34 @@ function downloadImportPackageZip(bundle) {
     return path;
   }
 
+  /* ZIP 檔名就是活動名稱，不再帶時間戳。
+     圖片歸檔規則（原本的「圖片」資料夾改名為活動名稱）：
+       <活動名稱>/MSBN/   → 匯入工單畫布的成品（合成圖、副區整排、MSBN 逐顆）＋吸底工具輸出的多狀態圖
+       <活動名稱>/活動頁/ → 曝光資源（shopee 編輯器）下載的各版位圖
+     工單／色票／暫存檔維持各自的資料夾。 */
+  var activity = importPackageActivityName();
   if (bundle.workOrder && bundle.workOrder.blob) {
     zip.file(uniquePath('工單', bundle.workOrder.filename), bundle.workOrder.blob, { compression: 'STORE' });
   }
-  var imageCount = (bundle.images || []).length;
+  /* 原本的「圖片」資料夾改名為「活動頁」：MSBN、吸底、曝光資源圖全部直接放在裡面，不再分子資料夾。
+     活動名稱只用在 ZIP 檔名與暫存檔名。 */
+  var imageRoot = '活動頁';
+  var imageJobs = [];
+  (bundle.images || []).forEach(function (file) {
+    if (file && file.dataUrl) imageJobs.push({ folder: imageRoot, file: file });
+  });
+  (bundle.exposureImages || []).forEach(function (file) {
+    if (file && file.dataUrl) imageJobs.push({ folder: imageRoot, file: file });
+  });
+  var imageCount = imageJobs.length;
   var imageChain = Promise.resolve();
-  (bundle.images || []).forEach(function (file, imageIndex) {
-    if (!file || !file.dataUrl) return;
+  imageJobs.forEach(function (job, imageIndex) {
     imageChain = imageChain.then(function () {
       appLoadingUpdate(89 + Math.floor(((imageIndex + 1) / Math.max(1, imageCount)) * 5),
-        'LOADING · 打包 ZIP', '正在加入圖片 ' + (imageIndex + 1) + '/' + imageCount + '…');
-      return addImportDataUrlToZip(zip, uniquePath('圖片', file.filename || '成品.png'), file.dataUrl).then(function () {
+        'LOADING · 打包 ZIP', '正在加入圖片 ' + (imageIndex + 1) + '/' + imageCount + '（' + job.folder + '）…');
+      return addImportDataUrlToZip(zip, uniquePath(job.folder, job.file.filename || '成品.png'), job.file.dataUrl).then(function () {
         /* ZIP 已持有 Blob 後釋放暫時的 Base64 參照，降低產檔尖峰記憶體。 */
-        file.dataUrl = '';
+        job.file.dataUrl = '';
       });
     });
   });
@@ -21343,7 +22715,7 @@ function downloadImportPackageZip(bundle) {
     if (bundle.snapshot) {
       var compactSnapshot = compactImportSnapshotForStorage(bundle.snapshot);
       bundle.snapshot = null;
-      zip.file(uniquePath('暫存檔', '匯入暫存_' + bundle.timestamp + '.json'), importSnapshotJsonBlob(compactSnapshot), {
+      zip.file(uniquePath('暫存檔', activity + '_匯入暫存.json'), importSnapshotJsonBlob(compactSnapshot), {
         binary: true,
         compression: 'STORE'
       });
@@ -21365,7 +22737,7 @@ function downloadImportPackageZip(bundle) {
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
-      a.download = 'BODA_工單圖片暫存檔_' + bundle.timestamp + '.zip';
+      a.download = activity + '.zip';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -21387,13 +22759,32 @@ document.getElementById('btn-download-import-package').addEventListener('click',
     appLoadingFinish('沒有可輸出的內容');
     return;
   }
+  /* 有文字超過版位字數：不輸出圖片（多出來的字不自動刪，交給使用者決定要留哪些）。 */
+  var textLimitIssues = refreshImportTextLimitMarks();
+  if (textLimitIssues.length) {
+    alert('有 ' + textLimitIssues.length + ' 處文字超過版位字數，修正後才能下載圖片：\n\n' +
+      textLimitIssues.slice(0, 10).map(function (issue) {
+        return '・第 ' + (issue.idx + 1) + ' 格 ' + issue.blockName + '｜' + issue.message;
+      }).join('\n') +
+      (textLimitIssues.length > 10 ? '\n…還有 ' + (textLimitIssues.length - 10) + ' 處' : '') +
+      '\n\n多出來的字不會被自動刪掉，請在畫布上自己決定要留哪些字（紅框處）。');
+    focusImportTextLimitIssue(textLimitIssues[0]);
+    appLoadingFinish('已取消下載');
+    return;
+  }
+  /* 左側製作流程還有沒完成也沒略過的步驟：先提醒，使用者確認後才下載。 */
+  if (typeof confirmWorkflowPackageDownload === 'function' && !confirmWorkflowPackageDownload()) {
+    appLoadingFinish('已取消下載');
+    return;
+  }
   var btn = this;
   var originalHtml = btn.innerHTML;
   var timestamp = Date.now();
-  var bundle = { timestamp: timestamp, workOrder: null, images: [], snapshot: null, warnings: [] };
+  var bundle = { timestamp: timestamp, workOrder: null, images: [], exposureImages: [], snapshot: null, warnings: [] };
   btn.disabled = true;
   btn.innerHTML = lineIcon('loading') + ' 打包 ZIP 中…';
-  appLoadingStart('LOADING · 建立完整 ZIP', 8, '正在準備回填工單、成品圖片、色票與暫存檔…');
+  /* lock：輸出期間鎖住畫布與工具列，避免截圖中途誤觸（滑過畫布會換掉目前選取、綠框跟著進成品）。 */
+  appLoadingStart('LOADING · 建立完整 ZIP', 8, '正在準備回填工單、成品圖片、色票與暫存檔…', { lock: true });
   Promise.resolve()
     .then(function () {
       if (!currentImportWorkbook) {
@@ -21416,8 +22807,19 @@ document.getElementById('btn-download-import-package').addEventListener('click',
             return item.filename;
           }).join('、'));
         }
+        (result && result.notes || []).forEach(function (note) { if (note) bundle.warnings.push(note); });
       }).catch(function (err) {
         bundle.warnings.push('圖片未輸出：' + (err && err.message ? err.message : err));
+      });
+    })
+    .then(function () {
+      /* 活動頁資料夾：曝光資源（shopee 編輯器）的各版位成品，走它自己的截圖／壓縮流程，只是不另外下載 ZIP。 */
+      appLoadingUpdate(86, 'LOADING · 輸出圖片', '正在輸出活動頁（曝光資源）圖片…');
+      return requestExposureExportFiles().then(function (res) {
+        bundle.exposureImages = res && res.files ? res.files : [];
+        if (res && res.note) bundle.warnings.push(res.note);
+      }).catch(function (err) {
+        bundle.warnings.push('活動頁（曝光資源）圖片未輸出：' + (err && err.message ? err.message : err));
       });
     })
     .then(function () {
@@ -21606,6 +23008,8 @@ var bottomLastEditedStateJson = '';
 /* 新 xlsx 送進 iframe 後，在工單解析完成前，工單解析結果優先於父頁暫存 state。
    避免可見版型推導出的檔名 state 把剛建立的 LOGO 素材清掉。 */
 var bottomWorkOrderNeedsParserAuthority = false;
+/* 吸底預覽已經回傳過哪一份工單（版本號）解析完成後的成品；見 PREVIEW_IMAGE。 */
+var bottomPreviewShownVersion = 0;
 var bottomExportSeq = 0;
 var bottomExportWaiters = {};
 
@@ -21668,11 +23072,14 @@ function bottomStateFromLayoutTemplate(wb, embeddedStateJson) {
   });
 }
 
-function extractEmbeddedBottomState(arrayBuffer) {
-  if (!arrayBuffer || typeof ExcelJS === 'undefined') return Promise.resolve('');
+function extractEmbeddedBottomState(arrayBuffer, parsedWorkbook) {
+  if (!parsedWorkbook && (!arrayBuffer || typeof ExcelJS === 'undefined')) return Promise.resolve('');
   try {
-    var wb = new ExcelJS.Workbook();
-    return wb.xlsx.load(arrayBuffer.slice ? arrayBuffer.slice(0) : arrayBuffer).then(function () {
+    /* 匯入工單時 parseImportXlsx 已經用 ExcelJS 解析過同一份檔案；直接沿用，
+       不要在主執行緒上再完整解析一次（大型工單會多卡好幾百毫秒到數秒）。 */
+    var wb = parsedWorkbook || new ExcelJS.Workbook();
+    var loaded = parsedWorkbook ? Promise.resolve() : wb.xlsx.load(arrayBuffer.slice ? arrayBuffer.slice(0) : arrayBuffer);
+    return loaded.then(function () {
       var ws = wb.getWorksheet('_BODA_BOTTOM_STATE');
       var embeddedState = '';
       if (ws && String(ws.getCell('A1').value || '') === 'BODA_BOTTOM_STATE_V1') {
@@ -21799,15 +23206,34 @@ function restoreBottomPersist() {
 /* STEP 2 上傳的圖片（檔名＋dataURL）交給吸底，讓試算表吸底填的 LOGO 圖檔名對得到圖。 */
 function bottomHostImageAssets() {
   /* 吸底只拿這些圖當 LOGO 用，所以給 LOGO 版本（白邊裁切／底色統一，不烘影子） */
-  return (uploadedImages || []).filter(function (img) { return img && img.url; }).map(function (img) {
+  var list = (uploadedImages || []).filter(function (img) { return img && img.url; });
+  /* 同檔名重新上傳會留下舊的那筆（畫布一律改用最新那張）。每張都是好幾 MB 的 dataURL，
+     postMessage 要整份複製進 iframe，重複的那些會讓每次匯入多卡好幾百毫秒；
+     只送每個檔名最新的一筆，吸底（找第一筆同名）也就跟畫布用同一張。 */
+  var newestIndex = {};
+  list.forEach(function (img, index) { newestIndex[String(img.name || '').trim().toLowerCase()] = index; });
+  return list.filter(function (img, index) {
+    return newestIndex[String(img.name || '').trim().toLowerCase()] === index;
+  }).map(function (img) {
     return { name: img.name, url: img.logoUrl || img.baseUrl || img.url, logoBg: importLogoPlateColorOf(img) };
   });
 }
+/* 預覽 iframe 目前手上的素材版本；跟這次要送的一樣就不再整包複製一次。 */
+var bottomPreviewAssetsSignature = '';
+function bottomHostAssetsSignature(images) {
+  return (images || []).map(function (img) {
+    return String(img.name || '') + '|' + importShadowFingerprint(img.url) + '|' + String(img.logoBg || '');
+  }).join('\n');
+}
 function broadcastBottomImageAssets() {
-  var message = { source: 'BODA_PARENT', type: 'IMAGE_ASSETS', images: bottomHostImageAssets() };
+  var images = bottomHostImageAssets();
+  var message = { source: 'BODA_PARENT', type: 'IMAGE_ASSETS', images: images };
   if (bottomBridgeReady) postToBottom(message);
   if (standaloneBottomBridgeReady) postToStandaloneBottom(message);
-  if (bottomPreviewBridgeReady) postToBottomPreview(message);
+  if (bottomPreviewBridgeReady) {
+    var signature = bottomHostAssetsSignature(images);
+    if (signature !== bottomPreviewAssetsSignature && postToBottomPreview(message)) bottomPreviewAssetsSignature = signature;
+  }
 }
 /* 吸底頁的「下載工單＋圖片＋暫存檔」：匯入工單畫布不在畫面上時截圖會是空白，
    所以輸出期間把「匯入工單」頁放到畫面外照常排版，輸出完再收回。 */
@@ -21826,7 +23252,7 @@ function runImportPackageDownloadFromBottom() {
   })();
 }
 
-function rememberBottomWorkOrder(name, arrayBuffer, hasBottomWorkOrder) {
+function rememberBottomWorkOrder(name, arrayBuffer, hasBottomWorkOrder, parsedWorkbook) {
   /* 換了新的匯入工單，上一份吸底成品不可沿用。 */
   importBottomPreviewResult = null;
   bottomWorkOrderNeedsParserAuthority = false;
@@ -21855,7 +23281,7 @@ function rememberBottomWorkOrder(name, arrayBuffer, hasBottomWorkOrder) {
     return;
   }
   queueBottomPersist();
-  extractEmbeddedBottomState(latestBottomWorkOrder.buffer).then(function (stateJson) {
+  extractEmbeddedBottomState(latestBottomWorkOrder.buffer, parsedWorkbook || null).then(function (stateJson) {
     if (!latestBottomWorkOrder || latestBottomWorkOrder.version !== bottomWorkOrderVersion) return;
     latestBottomWorkOrder.bottomState = stateJson || '';
     /* 新工單先保留 parser 權；可見版型推導 state 只能當 fallback，
@@ -22063,8 +23489,13 @@ function hideImportBottomPreview() {
 
 function sendLatestWorkOrderToBottomPreview(reason) {
   if (!latestBottomWorkOrder || !latestBottomWorkOrder.buffer) return false;
+  /* 新匯入的工單，內嵌吸底狀態還在讀（bottomState 尚未設定）時先不送：
+     讀完會以 embedded-state-ready 送一次完整的。以前會先送一次、讀完再送一次，
+     隱藏的吸底預覽就把同一份工單解析＋渲染兩遍，全都佔用同一條主執行緒。 */
+  if (latestBottomWorkOrder.bottomState === undefined && reason !== 'embedded-state-ready') return false;
   if (latestBottomWorkOrder.version <= bottomPreviewLastSentVersion && reason !== 'state-ready' && reason !== 'embedded-state-ready') return false;
   var copy = latestBottomWorkOrder.buffer.slice(0);
+  var previewImages = bottomHostImageAssets();
   var sent = postToBottomPreview({
     source: 'BODA_PARENT',
     type: 'WORKORDER_FILE',
@@ -22074,10 +23505,14 @@ function sendLatestWorkOrderToBottomPreview(reason) {
     workOrderVersion: latestBottomWorkOrder.version,
     bottomState: getBottomStateForSync(),
     preferParsedWorkOrder: !!bottomWorkOrderNeedsParserAuthority,
-    images: bottomHostImageAssets(),
+    images: previewImages,
     buffer: copy
   }, [copy]);
-  if (sent) bottomPreviewLastSentVersion = latestBottomWorkOrder.version;
+  if (sent) {
+    bottomPreviewLastSentVersion = latestBottomWorkOrder.version;
+    /* WORKORDER_FILE 已經帶了整份素材（iframe 會設成 BottomHostAssets），之後相同的 IMAGE_ASSETS 不必再送。 */
+    bottomPreviewAssetsSignature = bottomHostAssetsSignature(previewImages);
+  }
   return sent;
 }
 
@@ -22134,6 +23569,7 @@ function ensureBottomPreviewLoaded(forceReload) {
     bottomPreviewToolLoaded = false;
     bottomPreviewBridgeReady = false;
     bottomPreviewLastSentVersion = 0;
+    bottomPreviewAssetsSignature = '';
     wrap.classList.remove('missing'); frame.removeAttribute('src');
   }
   if (bottomPreviewToolLoaded && frame.getAttribute('src')) return;
@@ -22147,7 +23583,7 @@ function ensureBottomPreviewLoaded(forceReload) {
   };
 
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=import-preview&bridge=1&v=20261016-live-sync1';
+  frame.src = 'bottom/index.html?embed=import-preview&bridge=1&v=20261106-merged-labels';
 }
 /* bottom/index.html 是一套完整的吸底編輯器，仍用 iframe 隔離 CSS、Konva 與狀態。
    嵌入模式由 bottom 自己把面板排到左側，父頁只保留素材庫標題與三個頁簽。 */
@@ -22184,7 +23620,7 @@ function ensureBottomToolLoaded(forceReload) {
     }, 80);
   };
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20261016-live-sync1';
+  frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20261106-merged-labels';
 }
 
 function postToStandaloneBottom(message, transfer) {
@@ -22260,7 +23696,7 @@ function ensureStandaloneBottomLoaded(forceReload) {
     }, 80);
   };
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=standalone&bridge=1&v=20261016-live-sync1';
+  frame.src = 'bottom/index.html?embed=standalone&bridge=1&v=20261106-merged-labels';
 }
 function syncGeneratorToolMode() {
   var isSticky = currentPaletteTab === 'sticky';
@@ -22342,6 +23778,17 @@ window.addEventListener('message', function (event) {
     var previewImage = document.getElementById('import-bottom-preview-image');
     var previewVersion = Number(msg.workOrderVersion) || 0;
     if (latestBottomWorkOrder && previewVersion && previewVersion !== latestBottomWorkOrder.version) return;
+    /* 新工單剛上傳時，吸底預覽會先因「等級預設」等訊息用舊狀態畫一張（沒有工單版本號），
+       等工單解析完才畫出正確的那張。那張舊圖會讓吸底文字一上傳就顯示錯的（例如上一份
+       工單的「案型」）。這份工單的正確成品回來之前，不顯示沒有版本號的成品；
+       最多等 8 秒，避免吸底預覽沒回應時畫布一直空著。 */
+    var latestBottomVersion = latestBottomWorkOrder ? latestBottomWorkOrder.version : 0;
+    if (latestBottomVersion && previewVersion === latestBottomVersion) {
+      bottomPreviewShownVersion = latestBottomVersion;
+    } else if (latestBottomVersion && !previewVersion && bottomPreviewShownVersion !== latestBottomVersion &&
+        currentImportHasBottomWorkOrder && Date.now() - (Number(latestBottomWorkOrder.savedAt) || 0) < 8000) {
+      return;
+    }
     if (previewImage && msg.dataUrl) {
       previewImage.onload = function () {
         if (previewWrap) previewWrap.classList.add('has-image');
@@ -22359,7 +23806,10 @@ window.addEventListener('message', function (event) {
         workOrderVersion: previewVersion || (latestBottomWorkOrder ? latestBottomWorkOrder.version : 0)
       };
       settleBottomPreviewWaiters(null, importBottomPreviewResult);
-      if (currentImportHasBottomWorkOrder && currentImportColumns && currentImportColumns.length) {
+      /* 預覽 iframe 匯入後會回傳好幾次（狀態同步、工單解析完成…），每次都整片重畫約 1 秒。
+         只換畫布最下面的吸底那一塊；尺寸不同時才整片重畫。 */
+      if (currentImportHasBottomWorkOrder && currentImportColumns && currentImportColumns.length &&
+          !updateImportBottomFinalInPlace()) {
         renderImportColumns(currentImportColumns);
       }
     }
@@ -22387,9 +23837,15 @@ window.addEventListener('message', function (event) {
   if (msg.type === 'READY') {
     if (fromPreview) {
       bottomPreviewBridgeReady = true;
-      if (latestBottomWorkOrder) sendLatestWorkOrderToBottomPreview('bridge-ready');
-      else if (getBottomStateForSync()) postToBottomPreview({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() });
-      dispatchBottomPreviewForExport();
+      bottomPreviewAssetsSignature = ''; /* 新載入的 iframe 還沒有任何素材 */
+      /* 以前 bridge-ready 送一次、dispatchBottomPreviewForExport 再送一次同一份，
+         預覽 iframe 就把同一份工單解析＋渲染兩遍（還各複製一次全部素材）。只送一次：
+         bridge-ready 因版本已送過（iframe 重新載入）而沒送出時，才改用 state-ready 補送。 */
+      if (latestBottomWorkOrder) {
+        if (!sendLatestWorkOrderToBottomPreview('bridge-ready')) dispatchBottomPreviewForExport();
+      } else {
+        dispatchBottomPreviewForExport();
+      }
       return;
     }
     if (fromStandalone) {
@@ -23694,6 +25150,7 @@ document.getElementById('btn-all').addEventListener('click', function () {
   }
   var btn = this;
   btn.disabled = true; btn.textContent = '⏳ 輸出中…';
+  appLoadingLock(true); /* 輸出期間鎖住畫布與工具列 */
   exportSampleImage().then(function () {
     exportWorkOrderJSON();          /* 排版暫存檔 */
     return exportWorkOrderXlsx();   /* 工單（副區/MSBN 有哪個就出哪個工作表） */
@@ -24200,8 +25657,8 @@ function bindMaintControls() {
 /* 曝光資源＝shopee/index.html，用 iframe 載入（第一次進到這一頁才載）。
    file:// 和 GitHub Pages 用 ../shopee/（可跨目錄）；
    localhost dev server 透過 junction 用 shopee/（不能 ../）。 */
-var EXPOSURE_SRC_LOCAL  = 'shopee/index.html?host=boda&pluginBase=../jbp/js/&v=20261016-b-level-export-icons2';
-var EXPOSURE_SRC_REMOTE = '../shopee/index.html?host=boda&pluginBase=../BODA/jbp/js/&v=20261016-b-level-export-icons2';
+var EXPOSURE_SRC_LOCAL  = 'shopee/index.html?host=boda&pluginBase=../jbp/js/&v=20261106-swatch-usable2';
+var EXPOSURE_SRC_REMOTE = '../shopee/index.html?host=boda&pluginBase=../BODA/jbp/js/&v=20261106-swatch-usable2';
 var EXPOSURE_SRC = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? EXPOSURE_SRC_LOCAL : EXPOSURE_SRC_REMOTE;
 var exposureLoaded = false;
@@ -24236,10 +25693,49 @@ function scaleExposureLayoutBulkActions(frame) {
     }
   } catch (e) { /* iframe 尚未可讀或跨來源時略過，主頁仍可正常使用。 */ }
 }
+/* 「下載工單＋圖片＋暫存檔」的活動頁資料夾：向曝光資源 iframe 要它「下載全部勾選畫版」會產生的那批圖，
+   走 shopee/js/bn-editor-plugin.js 的 _bnCollectExportFiles（同一套截圖、KB 壓縮、SearchICON 84x84），
+   只是不另外下載 BN_Export.zip，改把 [{name, dataUrl}] 交回來。
+   曝光資源頁沒開過（iframe 未載入）就跳過並寫進輸出提醒；曝光資源頁不在畫面上時，
+   先用 bn-offscreen-render 把它排到畫面外照常排版，裡面的版位 iframe 才截得到圖。 */
+function requestExposureExportFiles() {
+  var frame = document.getElementById('exposure-frame');
+  var win = frame && frame.contentWindow;
+  var collect = null;
+  try { collect = win && win._bnCollectExportFiles; } catch (e) { collect = null; }
+  if (!exposureLoaded || typeof collect !== 'function') {
+    return Promise.resolve({ files: [], note: '活動頁（曝光資源）圖片未輸出：尚未開啟過「曝光資源」頁，或曝光資源還沒載入完成。開啟一次曝光資源頁後再下載，ZIP 就會包含活動頁資料夾。' });
+  }
+  var view = document.getElementById('view-exposure');
+  var offscreen = !!(view && !view.classList.contains('active'));
+  if (offscreen) view.classList.add('bn-offscreen-render');
+  return new Promise(function (resolve) {
+    var settled = false;
+    var timer = setTimeout(function () { finish(new Error('曝光資源輸出逾時（180 秒）')); }, 180000);
+    function finish(err, files, report) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (offscreen && view) view.classList.remove('bn-offscreen-render');
+      var list = (files || []).map(function (file) {
+        return { filename: String(file && (file.name || file.filename) || '活動頁.png'), dataUrl: String(file && file.dataUrl || ''), kind: 'exposure' };
+      }).filter(function (file) { return file.dataUrl; });
+      var note = '';
+      if (err) note = '活動頁（曝光資源）圖片未輸出：' + (err.message || err);
+      else if (report && report.fail) note = '活動頁（曝光資源）有 ' + report.fail + ' 個版位截圖失敗：' + (report.failedNames || []).join('、');
+      resolve({ files: list, note: note });
+    }
+    try {
+      var started = collect(function (err, files, report) { finish(err, files, report); });
+      if (started === false && !settled) finish(new Error('曝光資源正在下載中'));
+    } catch (e) { finish(e); }
+  });
+}
 function ensureExposureLoaded() {
   if (exposureLoaded) return;
   if (!APP_LOADING.active) appLoadingStart('LOADING · 曝光資源', 8, '正在開啟曝光資源…');
   exposureLoaded = true;
+  exposurePaletteMergeReadyAt = Infinity; /* 載入完成並推送配色後才開放（見下方 load） */
   var wrap = document.getElementById('exposure-wrap');
   var frame = document.getElementById('exposure-frame');
   if (!frame) { appLoadingFinish('曝光資源元件不存在'); return; }
@@ -24265,9 +25761,13 @@ function ensureExposureLoaded() {
       if (typeof pushImportCtaBgToExposure === 'function' && importTheme.ctaBg) pushImportCtaBgToExposure(importTheme.ctaBg);
       if (typeof pushImportCtaTextToExposure === 'function' && importTheme.ctaText) pushImportCtaTextToExposure(importTheme.ctaText);
       if (typeof pushExposureTextPalette === 'function') {
-        var sharedExposurePalette = readSharedExposureTextPalette();
+        /* 暫存檔還原的配色仍有效時以它為準；曝光資源載入時自己廣播的初始色可能已寫進共用值。 */
+        var restoredPaletteLock = activeSnapshotTextPaletteLock();
+        var sharedExposurePalette = restoredPaletteLock ? restoredPaletteLock.palette : readSharedExposureTextPalette();
         if (sharedExposurePalette) pushExposureTextPalette(sharedExposurePalette);
       }
+      /* 上面的配色推送會在 0／180／650ms 送達；之後曝光資源再廣播的才是使用者手動改色。 */
+      exposurePaletteMergeReadyAt = Date.now() + 1200;
       if (typeof syncCtaTextToColorTool === 'function') syncCtaTextToColorTool();
       if (typeof pushExposureOverviewText === 'function') pushExposureOverviewText();
       /* 工單可能在曝光資源 iframe 建立前就已匯入；載入完成後要重送
@@ -24299,8 +25799,8 @@ function ensureExposureLoaded() {
 }
 
 /* 背景色＝shopee/color/color-tool.html，用 iframe 載入（第一次進到這一頁才載）。 */
-var COLOR_TOOL_SRC_LOCAL  = 'shopee/color/color-tool.html?host=boda';
-var COLOR_TOOL_SRC_REMOTE = '../shopee/color/color-tool.html?host=boda';
+var COLOR_TOOL_SRC_LOCAL  = 'shopee/color/color-tool.html?host=boda&v=20261106-picker-stay';
+var COLOR_TOOL_SRC_REMOTE = '../shopee/color/color-tool.html?host=boda&v=20261106-picker-stay';
 var COLOR_TOOL_SRC = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? COLOR_TOOL_SRC_LOCAL : COLOR_TOOL_SRC_REMOTE;
 var colorToolLoaded = false;
@@ -24329,9 +25829,14 @@ function ensureColorToolLoaded() {
          才讀背景色工具自己的既有值。 */
       var sharedPalette = readSharedExposureTextPalette();
       var sharedMainText = normalizeSharedHexColor(sharedPalette && sharedPalette.mainText);
+      var sharedSubText = normalizeSharedHexColor(sharedPalette && sharedPalette.subText);
       if (sharedMainText) {
         pushMainTextColorToColorTool(sharedMainText);
-        setTimeout(function () { pushMainTextColorToColorTool(sharedMainText); }, 500);
+        if (sharedSubText) pushSubTextColorToColorTool(sharedSubText);
+        setTimeout(function () {
+          pushMainTextColorToColorTool(sharedMainText);
+          if (sharedSubText) pushSubTextColorToColorTool(sharedSubText);
+        }, 500);
       } else {
         syncMainTextFromColorTool();
         setTimeout(function () { syncMainTextFromColorTool(); }, 500);
@@ -24382,6 +25887,19 @@ window.addEventListener('message', function (e) {
   if (d.type === 'wo-color-tool-link') {
     colorToolLinked = !!d.linked;
   }
+  /* 取色工具配出（或手動改）的主標字色 → 曝光資源主標（品牌名跟著）、匯入工單 CTA 底色跟著換。
+     reset＝使用者按了「還原建議色」：解除暫存檔配色鎖，否則鎖會把建議色擋回暫存檔的顏色。 */
+  if (d.type === 'wo-color-tool-main-text' && d.linked && !_mainTextColorSyncing) {
+    if (d.reset) writeSnapshotTextPaletteLock('', null);
+    applySharedMainTextColor(d.mainText, d.manual ? 'color-tool-manual' : 'color-tool');
+    return;
+  }
+  /* 取色工具的副標字色 → 曝光資源副標（日期跟著）、匯入工單促標底色／圓標底色跟著換。 */
+  if (d.type === 'wo-color-tool-sub-text' && d.linked && !_subTextColorSyncing) {
+    if (d.reset) writeSnapshotTextPaletteLock('', null);
+    applySharedSubTextColor(d.subText, d.manual ? 'color-tool-manual' : 'color-tool');
+    return;
+  }
   if (d.type === 'wo-color-tool-request-bg') {
     pushImportBgToColorTool();
   }
@@ -24420,10 +25938,13 @@ window.addEventListener('message', function (e) {
     var hex = d.bg;
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
       hex = hex.toLowerCase();
+      /* 只是把主頁剛推過去的同一個背景色回傳（例如還原暫存檔後同步），不算換底色，
+         不能因此清掉暫存檔裡手動指定的促標／CTA 顏色。 */
+      var colorToolBgChanged = normalizeSharedHexColor(resolvedImportBg()) !== hex;
       importTheme.bg = hex;
       importTheme.bgAuto = false;
       /* 背景色工具換底色時它自己的 CTA 覆寫已清除；這裡同步讓三處都回到自動 CTA。 */
-      relinkImportPromoColorsToBackground();
+      if (colorToolBgChanged) relinkImportPromoColorsToBackground();
       writeSharedCanvasBg(hex);
       saveImportTheme();
       applyImportTheme();
@@ -24545,9 +26066,132 @@ function showView(name, options) {
   /* 首次載入的曝光資源／維修／吸底，會由各自的 iframe 或模板流程在真正完成後結束 Loading。
      已經載好的頁面與其他工具則在下一個繪製週期收起。 */
   if (viewLoadingToken && !viewWaitsForOwnLoad) appLoadingFinishView(viewLoadingToken, (name === 'home' ? '首頁已就緒' : '工具已就緒'));
+  renderWorkflowNav();
+}
+
+/* ══ 製作流程（左側導覽的步驟）══════════════════════════════
+   活動頁資源（原匯入工單頁）→ 曝光資源 → 取色工具 → 吸底工具 → 整包下載。
+   每一步可按「完成」或「略過」（例如廠商不做曝光資源、只做 MS），狀態顯示在左側導覽；
+   整包下載時若還有沒完成也沒略過的步驟，先提醒再下載。上傳新工單時狀態重設；
+   暫存檔會一起存下狀態，還原時帶回來。 */
+var WORKFLOW_STEPS = [
+  { key: 'import', label: '活動頁資源', view: 'import' },
+  { key: 'exposure', label: '曝光資源', view: 'exposure' },
+  { key: 'color', label: '取色工具', view: 'color' },
+  { key: 'bottom', label: '吸底工具', view: 'bottom' }
+];
+var WORKFLOW_STATUS_KEY = 'boda_workflow_step_status_v1';
+var workflowCurrentStep = '';
+function readWorkflowStatus() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(WORKFLOW_STATUS_KEY) || '{}');
+    return saved && typeof saved === 'object' ? saved : {};
+  } catch (e) { return {}; }
+}
+function writeWorkflowStatus(status) {
+  var clean = {};
+  WORKFLOW_STEPS.forEach(function (step) {
+    var v = status && status[step.key];
+    if (v === 'done' || v === 'skipped') clean[step.key] = v;
+  });
+  try { localStorage.setItem(WORKFLOW_STATUS_KEY, JSON.stringify(clean)); } catch (e) {}
+  renderWorkflowNav();
+  return clean;
+}
+function setWorkflowStepStatus(key, status) {
+  var all = readWorkflowStatus();
+  if (status) all[key] = status; else delete all[key];
+  writeWorkflowStatus(all);
+}
+function resetWorkflowStatus() { writeWorkflowStatus({}); }
+function unfinishedWorkflowSteps() {
+  var status = readWorkflowStatus();
+  return WORKFLOW_STEPS.filter(function (step) { return status[step.key] !== 'done' && status[step.key] !== 'skipped'; });
+}
+function workflowStepByKey(key) {
+  return WORKFLOW_STEPS.filter(function (step) { return step.key === key; })[0] || null;
+}
+/* 目前畫面對應哪一步。 */
+function currentWorkflowStepKey() {
+  var activeView = document.querySelector('#views > .view.active');
+  var view = activeView ? activeView.id.replace(/^view-/, '') : '';
+  var step = WORKFLOW_STEPS.filter(function (s) { return s.view === view; })[0];
+  return step ? step.key : '';
+}
+function renderWorkflowNav() {
+  if (typeof WORKFLOW_STEPS === 'undefined' || !WORKFLOW_STEPS) return; /* 初始化前的 showView 先略過 */
+  var status = readWorkflowStatus();
+  var current = currentWorkflowStepKey();
+  document.querySelectorAll('#nav-rail .nav-step').forEach(function (button) {
+    var key = button.getAttribute('data-step');
+    if (key !== 'download') button.classList.toggle('active', key === current);
+    var state = status[key] || '';
+    button.setAttribute('data-status', state);
+    var badge = button.querySelector('.step-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'step-badge';
+      badge.setAttribute('aria-hidden', 'true');
+      button.appendChild(badge);
+    }
+    badge.textContent = state === 'done' ? '✓' : (state === 'skipped' ? '略' : '');
+    var base = String(button.getAttribute('data-base-title') || button.getAttribute('title') || '');
+    if (!button.getAttribute('data-base-title')) button.setAttribute('data-base-title', base);
+    button.setAttribute('title', base + (state === 'done' ? '（已完成）' : (state === 'skipped' ? '（已略過）' : '')));
+  });
+  var actions = document.getElementById('step-actions');
+  var currentButton = current && document.querySelector('#nav-rail .nav-step[data-step="' + current + '"]');
+  if (!actions) return;
+  if (!currentButton) { actions.hidden = true; return; }
+  if (currentButton.nextElementSibling !== actions) currentButton.parentNode.insertBefore(actions, currentButton.nextSibling);
+  actions.style.order = window.getComputedStyle(currentButton).order;
+  var isLast = WORKFLOW_STEPS[WORKFLOW_STEPS.length - 1].key === current;
+  var next = WORKFLOW_STEPS[WORKFLOW_STEPS.map(function (s) { return s.key; }).indexOf(current) + 1];
+  var doneButton = actions.querySelector('[data-step-act="done"]');
+  var skipButton = actions.querySelector('[data-step-act="skipped"]');
+  doneButton.textContent = isLast ? '完成 ✓' : '完成 ›';
+  doneButton.title = isLast ? '標記這一步已完成' : '標記這一步已完成，前往下一步：' + (next ? next.label : '');
+  skipButton.textContent = isLast ? '略過' : '略過 ›';
+  skipButton.title = '這次不製作這一項（例如廠商不做曝光資源或只做 MS），' + (isLast ? '' : '前往下一步：' + (next ? next.label : ''));
+  actions.hidden = false;
+}
+function goToWorkflowStep(key) {
+  var step = workflowStepByKey(key);
+  if (!step) return;
+  workflowCurrentStep = key;
+  showView(step.view);
+}
+function finishCurrentWorkflowStep(status) {
+  var current = currentWorkflowStepKey();
+  if (!current) return;
+  setWorkflowStepStatus(current, status);
+  var keys = WORKFLOW_STEPS.map(function (s) { return s.key; });
+  var next = WORKFLOW_STEPS[keys.indexOf(current) + 1];
+  if (next) goToWorkflowStep(next.key);
+}
+/* 左側「整包下載」：沿用匯入工單頁的「下載工單＋圖片＋暫存檔」（未完成步驟的提醒在那個按鈕裡）；
+   不在匯入工單頁時，會把畫布暫時放到畫面外排版再截圖。 */
+function startWorkflowPackageDownload() {
+  runImportPackageDownloadFromBottom();
+}
+/* 下載前檢查：還有沒完成也沒略過的步驟，先提醒。回傳 false＝使用者取消。 */
+function confirmWorkflowPackageDownload() {
+  var unfinished = unfinishedWorkflowSteps();
+  if (!unfinished.length) return true;
+  return confirm('尚有資源未完成編輯，請確認是否需要下載。\n\n未完成：' +
+    unfinished.map(function (step) { return step.label; }).join('、') +
+    '\n\n（不製作的項目可在該步驟按「略過」；按「確定」仍會照目前內容下載。）');
 }
 document.querySelectorAll('.nav-item').forEach(function (b) {
-  b.addEventListener('click', function () { showView(b.getAttribute('data-view')); });
+  b.addEventListener('click', function () {
+    if (b.getAttribute('data-action') === 'package-download') { startWorkflowPackageDownload(); return; }
+    var step = b.getAttribute('data-step');
+    if (step) { goToWorkflowStep(step); return; }
+    showView(b.getAttribute('data-view'));
+  });
+});
+document.querySelectorAll('#step-actions [data-step-act]').forEach(function (b) {
+  b.addEventListener('click', function () { finishCurrentWorkflowStep(b.getAttribute('data-step-act')); });
 });
 document.querySelectorAll('.home-card').forEach(function (b) {
   b.addEventListener('click', function () { showView(b.getAttribute('data-goto')); });
@@ -24616,7 +26260,52 @@ bindImportScrollSync();  /* 中間畫布主控；右側工具列只單向跟隨 
 
 /* 除錯用：不透過任何試算表/JSON，直接把目前所有已註冊的版位都畫出來，
    純粹測試「載入版位模板 → 渲染」這條路徑本身是否正常。 */
-document.getElementById('btn-preview-all').addEventListener('click', function () {
+document.getElementById('btn-preview-all').addEventListener('click', function () { showPreviewAllDefaults(); });
+/* 「清除畫面內容」：版位保留，每一格的資料回到版位預設（促標、品名、圓標等示範文字），
+   圖片清空，圖片縮放／位置、前後位置、商品編輯狀態與上一步紀錄一併重設，並寫回匯入工單暫存。
+   統一顏色、已上傳的圖片素材、工單回填對應（xlsx 儲存格）與吸底不動。
+   「直接預覽全部版位」顯示中時，等於把預覽重新建一次（預覽本來就是預設資料，不寫入暫存）。 */
+function clearImportCanvasContent() {
+  var importLog = document.getElementById('import-log');
+  var previewActive = isPreviewAllCanvasActive();
+  if (!previewActive && !currentImportColumns.length) {
+    if (importLog) importLog.innerHTML = '<span class="err">畫布上還沒有內容，不需要清除</span>';
+    appLoadingFinish('畫布上還沒有內容');
+    return;
+  }
+  var ok = confirm(
+    '確定要清除畫面內容嗎？\n\n' +
+    '・版位保留，促標、品名、圓標等文字回到預設示範文字\n' +
+    '・畫布上的圖片全部清空，圖片縮放、位置與前後位置也會重設\n' +
+    '・統一顏色與已上傳的圖片素材不會刪除\n\n' +
+    '清除後無法用「上一步」復原；需要保留目前內容，請先按「下載工單＋圖片＋暫存檔」。'
+  );
+  if (!ok) { appLoadingFinish('已取消清除'); return; }
+  if (window.BNImageLayout && typeof BNImageLayout.hideTransformControls === 'function') BNImageLayout.hideTransformControls();
+  if (previewActive) {
+    showPreviewAllDefaults();
+    return;
+  }
+  ensureBlocksLoaded(function () {
+    currentImportColumns.forEach(function (col) {
+      if (!col) return;
+      col.data = BNCore.getBlock(col.blockId) ? Object.assign({}, BNCore.defaultData(col.blockId)) : {};
+      col._imageOrder = [];
+      col._imageOrderCustom = false;
+      col._imagePartLayerOrder = {};
+      col._dynamicRowRows = undefined;
+    });
+    /* 新的圖片版面文件：縮放／位移歸零，上一步／下一步紀錄清空。 */
+    beginImportImageLayoutDocument(false);
+    renderImportColumns(currentImportColumns);
+    saveImportImageLayout();
+    saveImportState();
+    if (importLog) importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已清除畫面內容：' + currentImportColumns.length + ' 格版位回到預設示範內容</span>';
+    appLoadingFinish('畫面內容已清除');
+  });
+}
+document.getElementById('btn-clear-import-canvas').addEventListener('click', clearImportCanvasContent);
+function showPreviewAllDefaults() {
   var importLog = document.getElementById('import-log');
   importLog.innerHTML = '<span class="ok">載入版位模板中…</span>';
   ensureBlocksLoaded(function () {
@@ -24634,7 +26323,7 @@ document.getElementById('btn-preview-all').addEventListener('click', function ()
     importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 共 ' + ids.length + ' 個版位模板，全部畫在右邊了（實際載入成功的數量，如果少於19，代表確實有版位載入失敗）</span>';
     appLoadingFinish('全部版位預覽已完成');
   });
-});
+}
 
 /* 先把上次匯入工單的內容與來源讀回記憶體，再決定要開哪個工具頁。
    如此重新整理後停在匯入頁時，能分辨既有內容是 generator 還是檔案來源，
@@ -24673,7 +26362,8 @@ window.addEventListener('hashchange', function () {
 ensureBlocksLoaded(function () {
   var initialImportColumns = currentImportColumns;
   if (initialImportColumns.length) {
-    trimImportColumnImages(initialImportColumns).then(function () {
+    /* 重新整理後照上次的原樣畫回來，不再自動裁白邊（理由同還原暫存檔）。 */
+    Promise.resolve(initialImportColumns).then(function () {
       if (currentImportColumns === initialImportColumns) {
         saveImportState();
         renderImportColumns(currentImportColumns);
@@ -24689,7 +26379,7 @@ ensureBlocksLoaded(function () {
 
 <!-- 支援按鈕：回饋表移至左側使用教學下方；共用說明書暫時隱藏。 -->
 <style id="boda-help-styles">
-#boda-help-feedback{order:7;margin-top:0;}
+#boda-help-feedback{order:21;margin-top:0;}
 #boda-help-manual,#feedback-btn{display:none!important;}
 </style>
 <button id="boda-help-feedback" class="boda-tour-launch boda-feedback-launch" type="button" data-skip-app-loading aria-label="開啟使用反饋表（另開視窗）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.9L3.5 20.5l1.4-4.7a9 9 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5h1.2"/><path d="m14.5 6.5 3 3M12 12l1-4 5.7-5.7a2.1 2.1 0 0 1 3 3L16 11z"/></svg><span>使用反饋表</span></button>

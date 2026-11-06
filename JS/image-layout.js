@@ -202,8 +202,11 @@
   /* 把記住的位移套到這張圖上（用 transform，不影響其他張圖的排版位置）。
      編輯器輸出可能比商品本體多出影子邊界；矩陣會把本體還原到原來的錨點，
      同時讓影子延伸到圖片框外，flex 佔位仍維持原寬度。 */
-  function applyOffset(img, groupKey, index) {
-    var o = getOffset(groupKey, index);
+  /* override：只用在畫面上的位移（例如暫時夾回範圍內），不寫回 offsetStore。
+     實際套在畫面上的位移記在 img._bnAppliedOffset，供夾制計算與拖曳起點使用。 */
+  function applyOffset(img, groupKey, index, override) {
+    var o = override || getOffset(groupKey, index);
+    img._bnAppliedOffset = { x: o.x || 0, y: o.y || 0 };
     var weight = getWeight(groupKey, index, img);
     var geometry = imageEditorGeometry(img);
     img._bnImageLayoutWeight = weight;
@@ -333,9 +336,15 @@
     return { x: sx, y: sy };
   }
 
-  function clampImageOffset(img, groupKey, index, bounds) {
+  /* displayOnly：自動排版（重畫、圖片載入、還原暫存）只把畫面上的位置夾回範圍內，
+     不改寫存好的位移。第一次排版時圖片框可能還沒切換成正確的直／橫範圍、或還是舊畫面，
+     若直接寫回，使用者調好的位置會被永久夾掉，暫存檔／重新整理就還原不回來。
+     拖曳、滾輪、四角縮放等使用者操作才會寫回夾制後的結果。 */
+  function clampImageOffset(img, groupKey, index, bounds, displayOnly) {
     if (!bounds || !img || !img.offsetWidth || !img.offsetHeight) return;
-    var offset = getOffset(groupKey, index);
+    var stored = getOffset(groupKey, index);
+    /* rect 反映的是「目前畫面上套用的」位移，基準位置要用它反推。 */
+    var offset = img._bnAppliedOffset || stored;
     var rect = img.getBoundingClientRect();
     var scale = elementScale(img, rect);
     var geometry = imageEditorGeometry(img);
@@ -375,12 +384,18 @@
       minY = (bounds.top - baseTop) / scale.y;
       maxY = (bounds.bottom - imageH - baseTop) / scale.y;
     }
-    var x = Math.min(maxX, Math.max(minX, offset.x));
-    var y = Math.min(maxY, Math.max(minY, offset.y));
+    var x = Math.min(maxX, Math.max(minX, stored.x));
+    var y = Math.min(maxY, Math.max(minY, stored.y));
     if (!isFinite(x)) x = 0;
     if (!isFinite(y)) y = 0;
-    if (Math.abs(x - offset.x) > 0.01 || Math.abs(y - offset.y) > 0.01) {
+    if (displayOnly) {
+      if (Math.abs(x - offset.x) > 0.01 || Math.abs(y - offset.y) > 0.01) applyOffset(img, groupKey, index, { x: x, y: y });
+      return;
+    }
+    if (Math.abs(x - stored.x) > 0.01 || Math.abs(y - stored.y) > 0.01) {
       setOffset(groupKey, index, x, y);
+      applyOffset(img, groupKey, index);
+    } else if (Math.abs(stored.x - offset.x) > 0.01 || Math.abs(stored.y - offset.y) > 0.01) {
       applyOffset(img, groupKey, index);
     }
   }
@@ -402,9 +417,16 @@
      2. 再把每張圖自己的縮放權重乘上去。權重不參與上面那個「壓回範圍內」的計算，
         所以匯入工單時會依單一或同區域聯集範圍夾制縮放與位移
         （其他頁面維持原本的自由縮放行為）。 */
-  function applyLayout(group) {
+  /* opts.persistClamp：使用者剛縮放（滾輪、四角把手）時，夾回範圍內的位置要寫回；
+     其他自動排版只影響畫面，不改寫存好的位移（見 clampImageOffset）。 */
+  function applyLayout(group, opts) {
+    var persistClamp = !!(opts && opts.persistClamp);
     var imgs = getImgs(group);
     if (!imgs.length) return;
+    /* overflow:hidden 的圖片框也是捲動容器，scrollIntoView／聚焦可能把它內部捲動，
+       圖片看起來就被位移了；排版時一律歸零。 */
+    var zoneEl = closestImageZone(group);
+    if (zoneEl && (zoneEl.scrollTop || zoneEl.scrollLeft)) { zoneEl.scrollTop = 0; zoneEl.scrollLeft = 0; }
 
     var containerH = group.clientHeight;
     var containerW = group.clientWidth;
@@ -418,8 +440,14 @@
 
     var savedSlotRatios = null;
     var savedGapPx = null;
+    /* 佔位比例是在某個容器大小下算出來的。容器大小一變（例如依曝品原圖直／橫，把曝品＋贈品
+       範圍從寬版切成直版），就要用新範圍重算；不能沿用舊範圍的比例，否則重畫時誰先排版，
+       誰就會被縮成舊範圍的大小（換前後位置後商品突然變大／變小就是這個原因）。
+       換影子圖等容器不變的情況，仍沿用原本比例，同組其他圖片不會跳動。 */
+    var slotBox = containerW + 'x' + containerH;
     imgs.some(function (img) {
       if (!img.dataset || !img.dataset.layoutSlotRatios) return false;
+      if (img.dataset.layoutSlotBox && img.dataset.layoutSlotBox !== slotBox) return false;
       try {
         var parsed = JSON.parse(img.dataset.layoutSlotRatios);
         if (Array.isArray(parsed) && parsed.length === imgs.length && parsed.every(function (ratio) {
@@ -464,12 +492,13 @@
       img.style.maxHeight = 'none';
       appliedSlotRatios.push(slotWidth / containerW);
       applyOffset(img, groupKey, i);
-      if (bounds) clampImageOffset(img, groupKey, i, bounds);
+      if (bounds) clampImageOffset(img, groupKey, i, bounds, !persistClamp);
     });
     imgs.forEach(function (img) {
       if (!img.dataset) return;
       img.dataset.layoutSlotRatios = JSON.stringify(appliedSlotRatios);
       img.dataset.layoutGapPx = String(layoutGap);
+      img.dataset.layoutSlotBox = slotBox;
     });
   }
 
@@ -677,10 +706,13 @@
   var transformOverlayParts = null;
   var transformOverlayRefreshQueued = false;
 
-  function isImportProductImage(group) {
+  /* 可以點選出四角縮放／↻ 旋轉框的圖片：
+     - 商品、贈品：旋轉後由 index.html 重新合成影子；
+     - 代言人圖：一樣可縮放／旋轉，但不烘影子（index.html 旋轉後直接寫回）。
+     簽名與 LOGO 維持原本操作，不顯示把手。 */
+  function isImportTransformImage(group) {
     if (!group || imageHistoryContext(group) !== 'import') return false;
-    /* 商品與贈品都走商品影子管線；人物／簽名與 LOGO 維持原本操作，不顯示把手。 */
-    return /^(?:productImg|giftImg)\d*$/i.test(String(group.getAttribute('data-field-key') || ''));
+    return /^(?:productImg|giftImg|endorserImg)\d*$/i.test(String(group.getAttribute('data-field-key') || ''));
   }
 
   function installTransformOverlay() {
@@ -697,26 +729,29 @@
       '.bn-import-transform-corner[data-bn-corner="se"]{right:0;bottom:0;transform:translate(50%,50%);cursor:nwse-resize;}' +
       '.bn-import-transform-rotate{position:absolute;left:50%;top:-38px;box-sizing:border-box;width:27px;height:27px;padding:0;border:2px solid #fff;border-radius:50%;background:#229188;color:#fff;font:700 19px/22px Arial,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.3);transform:translateX(-50%);cursor:grab;pointer-events:auto;touch-action:none;}' +
       '.bn-import-transform-rotate:active{cursor:grabbing;}' +
-      '.bn-import-transform-badge{position:absolute;left:50%;top:-66px;display:none;min-width:36px;padding:2px 5px;border-radius:4px;background:rgba(20,40,35,.9);color:#fff;font:700 10px/1.2 Arial,sans-serif;text-align:center;transform:translateX(-50%);white-space:nowrap;pointer-events:none;}';
+      '.bn-import-transform-badge{position:absolute;left:50%;top:-66px;display:none;min-width:36px;padding:2px 5px;border-radius:4px;background:rgba(20,40,35,.9);color:#fff;font:700 10px/1.2 Arial,sans-serif;text-align:center;transform:translateX(-50%);white-space:nowrap;pointer-events:none;}' +
+      /* LOGO、簽名等不能縮放旋轉的圖：從右側工具列點選時只框出位置，不顯示把手。 */
+      '.bn-import-transform-overlay.is-frame-only .bn-import-transform-corner,.bn-import-transform-overlay.is-frame-only .bn-import-transform-rotate{display:none;}' +
+      '.bn-import-transform-overlay.is-frame-only{border-style:dashed;}';
     (document.head || document.documentElement).appendChild(style);
 
     var overlay = document.createElement('div');
     overlay.className = 'bn-import-transform-overlay';
     overlay.setAttribute('data-bn-edit-only', '1');
-    overlay.setAttribute('aria-label', '商品縮放與旋轉控制');
+    overlay.setAttribute('aria-label', '圖片縮放與旋轉控制');
     ['nw', 'ne', 'sw', 'se'].forEach(function (corner) {
       var handle = document.createElement('button');
       handle.type = 'button';
       handle.className = 'bn-import-transform-corner';
       handle.setAttribute('data-bn-corner', corner);
-      handle.setAttribute('aria-label', '等比例縮放商品');
+      handle.setAttribute('aria-label', '等比例縮放圖片');
       overlay.appendChild(handle);
     });
     var rotate = document.createElement('button');
     rotate.type = 'button';
     rotate.className = 'bn-import-transform-rotate';
-    rotate.setAttribute('aria-label', '拖曳可任意旋轉商品，雙擊可復原本次旋轉');
-    rotate.title = '拖曳可任意旋轉商品';
+    rotate.setAttribute('aria-label', '拖曳可任意旋轉圖片，雙擊可復原本次旋轉');
+    rotate.title = '拖曳可任意旋轉圖片';
     rotate.textContent = '↻';
     overlay.appendChild(rotate);
     var badge = document.createElement('span');
@@ -738,11 +773,28 @@
     window.addEventListener('scroll', scheduleTransformOverlayRefresh, true);
   }
 
+  /* index.html 另外存的「商品本體在含影子輸出圖中的位置」（data-product-body-*）。
+     會裁切的圖片框排版時不用 layout* 幾何（整張 contain），但選取框仍要只框商品本體。 */
+  function productBodyGeometry(img) {
+    var data = img && img.dataset;
+    if (!data) return null;
+    var g = {
+      sourceWidth: Number(data.productBodyWidth),
+      sourceHeight: Number(data.productBodyHeight),
+      outputWidth: Number(data.productOutputWidth),
+      outputHeight: Number(data.productOutputHeight),
+      offsetX: Number(data.productBodyOffsetX) || 0,
+      offsetY: Number(data.productBodyOffsetY) || 0
+    };
+    return g.sourceWidth > 0 && g.sourceHeight > 0 && g.outputWidth > 0 && g.outputHeight > 0 ? g : null;
+  }
+
+  /* 選取框範圍：只框商品本體，不含影子。 */
   function visibleProductRect(img) {
     if (!img || !img.getBoundingClientRect) return null;
     var rect = img.getBoundingClientRect();
     if (!(rect.width > 0 && rect.height > 0)) return null;
-    var geometry = imageEditorGeometry(img);
+    var geometry = imageEditorGeometry(img) || productBodyGeometry(img);
     if (!geometry || !(geometry.outputWidth > 0 && geometry.outputHeight > 0)) return rect;
     return {
       left: rect.left + rect.width * geometry.offsetX / geometry.outputWidth,
@@ -757,7 +809,8 @@
     if (!transformSelection || !transformOverlay) return;
     var img = transformSelection.img;
     var group = transformSelection.group;
-    if (!img || !img.isConnected || !group || !group.isConnected || !isImportProductImage(group)) {
+    if (!img || !img.isConnected || !group || !group.isConnected ||
+        (!transformSelection.frameOnly && !isImportTransformImage(group))) {
       hideTransformOverlay();
       return;
     }
@@ -781,23 +834,214 @@
   function scheduleTransformOverlayRefresh() {
     if (transformOverlayRefreshQueued) return;
     transformOverlayRefreshQueued = true;
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(refreshTransformOverlay);
-    else setTimeout(refreshTransformOverlay, 0);
+    /* 下一個繪製週期更新；視窗在背景時 rAF 可能暫停，最多等 60ms 也要更新。 */
+    var run = function () { if (transformOverlayRefreshQueued) refreshTransformOverlay(); };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+    setTimeout(run, 60);
   }
 
   function hideTransformOverlay() {
     transformSelection = null;
+    clearSelectionPriority();
     if (transformOverlay) {
       transformOverlay.style.display = 'none';
       transformOverlay.classList.remove('is-processing');
+      transformOverlay.classList.remove('is-frame-only');
     }
   }
 
-  function selectTransformImage(img, group, index) {
-    if (!isImportProductImage(group)) return;
+  /* opts.frameOnly：只框出位置（LOGO、簽名等不能縮放旋轉的圖）。
+     opts.priority：從右側工具列指定要操作這一張時，疊在它上面的其他圖片暫時讓開滑鼠，
+     即使被別張圖蓋住，也能直接在畫布上拖曳、滾輪縮放；點畫布其他地方取消選取就恢復。 */
+  function selectTransformImage(img, group, index, opts) {
+    opts = opts || {};
+    if (!opts.frameOnly && !isImportTransformImage(group)) return;
     installTransformOverlay();
-    transformSelection = { img: img, group: group, index: index };
+    clearSelectionPriority();
+    transformSelection = { img: img, group: group, index: index, frameOnly: !!opts.frameOnly };
+    transformOverlay.classList.toggle('is-frame-only', !!opts.frameOnly);
+    if (opts.priority) applySelectionPriority(img);
     scheduleTransformOverlayRefresh();
+  }
+
+  /* ── 圖片點擊判定 ─────────────────────────────────────────
+     圖片元素的可點範圍是整個矩形，連透明的部分也算；兩張圖疊在一起時，
+     上層圖片的透明邊會擋住下層看得到的圖，造成「看起來沒擋到卻點不到」。 */
+  var yieldedImages = [];
+  function stackingZOf(el) {
+    var z = Number(el && el.style && el.style.zIndex);
+    return isFinite(z) ? z : 0;
+  }
+  /* a 是否疊在 b 上面（同一個版位內）：先比圖片框的 z-index，再比框內的 z-index，最後比 HTML 先後。 */
+  function imageIsAbove(a, b) {
+    var za = a.closest ? a.closest('[data-img-field]') : null;
+    var zb = b.closest ? b.closest('[data-img-field]') : null;
+    if (za && zb && za !== zb) {
+      var dz = stackingZOf(za) - stackingZOf(zb);
+      if (dz) return dz > 0;
+      return !!(za.compareDocumentPosition(zb) & Node.DOCUMENT_POSITION_PRECEDING);
+    }
+    var di = stackingZOf(a) - stackingZOf(b);
+    if (di) return di > 0;
+    return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING);
+  }
+  function rectsOverlap(a, b) {
+    return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  }
+  /* 圖片外面那兩層容器（圖片框 [data-img-field] 與 .bn-imggroup）本身透明，卻會接收滑鼠；
+     上層欄位的容器常整塊蓋住下層圖片，造成「看起來沒擋到卻點不到」。
+     有背景色（例如曝品範圍的色塊）的框是看得到的，不算透明容器。 */
+  function isTransparentImageContainer(el) {
+    if (!el || el.nodeType !== 1 || !el.classList) return false;
+    if (!el.classList.contains('bn-imggroup') && !el.hasAttribute('data-img-field')) return false;
+    if (!workOrderMountOf(el)) return false;
+    var cs = window.getComputedStyle(el);
+    if (cs.backgroundImage && cs.backgroundImage !== 'none') return false;
+    var m = /rgba?\(([^)]+)\)/.exec(cs.backgroundColor || '');
+    if (m) {
+      var parts = m[1].split(',');
+      var alpha = parts.length > 3 ? Number(parts[3]) : 1;
+      if (alpha > 0.05) return false;
+    }
+    return true;
+  }
+  function yieldElement(el) {
+    if (!el || el.classList.contains('bn-img-yield')) return;
+    el.classList.add('bn-img-yield');
+    yieldedImages.push(el);
+  }
+  function applySelectionPriority(img) {
+    var mount = workOrderMountOf(img);
+    if (!mount) return;
+    var rect = img.getBoundingClientRect();
+    var ownGroup = img.closest('.bn-imggroup');
+    var ownZone = img.closest('[data-img-field]');
+    Array.prototype.forEach.call(mount.querySelectorAll('img.bn-imggroup-img'), function (other) {
+      if (other === img || !rectsOverlap(rect, other.getBoundingClientRect()) || !imageIsAbove(other, img)) return;
+      yieldElement(other);
+      /* 連同它外面的透明容器一起讓開（不能是被選圖片自己的容器）。 */
+      [other.closest('.bn-imggroup'), other.closest('[data-img-field]')].forEach(function (box) {
+        if (box && box !== ownGroup && box !== ownZone && !box.contains(img) && isTransparentImageContainer(box)) yieldElement(box);
+      });
+    });
+  }
+  function clearSelectionPriority() {
+    yieldedImages.forEach(function (other) { other.classList.remove('bn-img-yield'); });
+    yieldedImages = [];
+  }
+
+  /* 透明處點穿：滑鼠停在某張圖的透明像素上、而且下面還有圖片時，讓這張圖暫時不接收滑鼠，
+     按下去就會落在下面真正看得到的那張（拖曳、滾輪縮放、點選都一樣）。 */
+  var alphaSamples = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+  var passThroughImages = [];
+  var passThroughFrame = 0;
+  var passThroughPoint = null;
+  function installPointerStyle() {
+    if (typeof document === 'undefined' || document.querySelector('style[data-bn-image-pointer-style]')) return;
+    var style = document.createElement('style');
+    style.setAttribute('data-bn-image-pointer-style', '1');
+    style.textContent = '.bn-img-passthrough,.bn-img-yield{pointer-events:none !important;}';
+    (document.head || document.documentElement).appendChild(style);
+  }
+  function alphaAtPoint(img, x, y) {
+    if (!alphaSamples || !img.complete || !img.naturalWidth || !img.naturalHeight) return 255;
+    var src = img.currentSrc || img.src || '';
+    var sample = alphaSamples.get(img);
+    if (!sample || sample.src !== src) {
+      var scale = Math.min(1, 256 / Math.max(img.naturalWidth, img.naturalHeight));
+      var w = Math.max(1, Math.round(img.naturalWidth * scale));
+      var h = Math.max(1, Math.round(img.naturalHeight * scale));
+      sample = { src: src, w: 0, h: 0, data: null };
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, w, h);
+        sample = { src: src, w: w, h: h, data: ctx.getImageData(0, 0, w, h).data };
+      } catch (e) { /* 跨網域圖片讀不到像素：當成不透明，維持原本的點擊行為 */ }
+      alphaSamples.set(img, sample);
+    }
+    if (!sample.data) return 255;
+    var rect = img.getBoundingClientRect();
+    if (!(rect.width > 0 && rect.height > 0)) return 0;
+    /* 圖片以 object-fit:contain 置中顯示；先算出實際畫圖的範圍再對應像素。 */
+    var fit = Math.min(rect.width / img.naturalWidth, rect.height / img.naturalHeight);
+    var drawW = img.naturalWidth * fit, drawH = img.naturalHeight * fit;
+    var u = (x - rect.left - (rect.width - drawW) / 2) / drawW;
+    var v = (y - rect.top - (rect.height - drawH) / 2) / drawH;
+    if (u < 0 || v < 0 || u >= 1 || v >= 1) return 0;
+    var px = Math.min(sample.w - 1, Math.floor(u * sample.w));
+    var py = Math.min(sample.h - 1, Math.floor(v * sample.h));
+    return sample.data[(py * sample.w + px) * 4 + 3];
+  }
+  function restorePassThrough() {
+    passThroughImages.forEach(function (img) { img.classList.remove('bn-img-passthrough'); });
+    passThroughImages = [];
+  }
+  function updatePassThrough() {
+    passThroughFrame = 0;
+    var point = passThroughPoint;
+    restorePassThrough();
+    if (!point || typeof document.elementsFromPoint !== 'function') return;
+    var stack = document.elementsFromPoint(point.x, point.y);
+    /* 由上往下找第一張「這一點有顏色」的圖片；在它之上的透明圖片、透明容器都讓滑鼠穿過去。
+       中間遇到文字、色塊等其他圖層就停止（那是看得到的內容，維持原本的點擊行為）。 */
+    var skip = [];
+    var target = null;
+    for (var i = 0; i < stack.length; i++) {
+      var el = stack[i];
+      if (el.matches && el.matches('img.bn-imggroup-img')) {
+        if (alphaAtPoint(el, point.x, point.y) > 24) { target = el; break; }
+        skip.push(el);
+        continue;
+      }
+      if (isTransparentImageContainer(el)) { skip.push(el); continue; }
+      break;
+    }
+    if (!target || !skip.length) return;
+    /* 目標圖片自己的容器不能穿過（它們在目標下面，本來就不會擋到）。 */
+    skip.forEach(function (el) {
+      if (el.contains && el.contains(target)) return;
+      el.classList.add('bn-img-passthrough');
+      passThroughImages.push(el);
+    });
+  }
+  function isPassThroughCandidate(el) {
+    return !!(el && el.matches && (el.matches('img.bn-imggroup-img') || el.matches('.bn-imggroup') || el.hasAttribute('data-img-field')));
+  }
+  function schedulePassThrough(event) {
+    if (event.buttons) return; /* 拖曳中不換目標 */
+    var onImage = isPassThroughCandidate(event.target);
+    if (!onImage && !passThroughImages.length) return;
+    passThroughPoint = { x: event.clientX, y: event.clientY };
+    if (passThroughFrame) return;
+    /* 用計時器而不是 requestAnimationFrame：視窗在背景時 rAF 可能整個暫停，排程會卡住不再更新。 */
+    passThroughFrame = setTimeout(updatePassThrough, 16);
+  }
+  if (typeof document !== 'undefined') {
+    installPointerStyle();
+    document.addEventListener('pointermove', schedulePassThrough, true);
+    /* 只在滑鼠真的離開視窗時重置（pointerout 且沒有 relatedTarget）；不能監聽 pointerleave，
+       它在每個元素離開時都會觸發，點穿一生效就會被自己取消。 */
+    document.addEventListener('pointerout', function (event) {
+      if (event.relatedTarget) return;
+      passThroughPoint = null;
+      restorePassThrough();
+    }, true);
+    /* 從素材區拖圖片進畫布時，放開的位置要照原本的圖片框判定，不能被點穿狀態影響。 */
+    document.addEventListener('dragenter', function () { passThroughPoint = null; restorePassThrough(); }, true);
+  }
+
+  /* 給右側工具列使用：框出指定的圖片並讓它優先接收滑鼠；能縮放旋轉的圖同時顯示把手。 */
+  function selectImageFromTool(img) {
+    if (!img || !img.closest) return false;
+    var group = img.closest('.bn-imggroup');
+    if (!group) return false;
+    var index = getImgs(group).indexOf(img);
+    if (index < 0) return false;
+    installPointerStyle();
+    selectTransformImage(img, group, index, { frameOnly: !isImportTransformImage(group), priority: true });
+    return true;
   }
 
   function currentTransformSelection() {
@@ -858,7 +1102,7 @@
           if (Math.abs(nextWeight - getWeight(groupKey, selection.index, selection.img)) < 0.001) return;
           moved = true;
           setWeight(groupKey, selection.index, nextWeight, selection.img);
-          applyLayout(selection.group);
+          applyLayout(selection.group, { persistClamp: true });
           scheduleTransformOverlayRefresh();
         }
         function finish() {
@@ -938,7 +1182,7 @@
         /* 裁切編輯器會原位換 src；只更新這張圖的 transform，保持同組 flex 位置。 */
         applyOffset(img, getGroupKey(group), i);
         if (isBoundedWorkOrderGroup(group)) {
-          clampImageOffset(img, getGroupKey(group), i, imageBoundaryOfGroup(group));
+          clampImageOffset(img, getGroupKey(group), i, imageBoundaryOfGroup(group), true);
         }
         if (transformSelection && transformSelection.img === img) scheduleTransformOverlayRefresh();
       });
@@ -953,7 +1197,7 @@
         w += (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
         w = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, w));
         setWeight(groupKey, i, w, img);
-        applyLayout(group);
+        applyLayout(group, { persistClamp: true });
         if (transformSelection && transformSelection.img === img) scheduleTransformOverlayRefresh();
         img._bnImageLayoutWheelTimer = setTimeout(function () {
           img._bnImageLayoutWheelTimer = null;
@@ -969,7 +1213,8 @@
         e.stopPropagation();
         emitImageHistory(group, 'begin', 'move');
         var groupKey = getGroupKey(group);
-        var start = getOffset(groupKey, i);
+        /* 從畫面上實際看到的位置開始拖（可能是自動夾回範圍後的位置），圖片才不會一按就跳。 */
+        var start = img._bnAppliedOffset ? { x: img._bnAppliedOffset.x, y: img._bnAppliedOffset.y } : getOffset(groupKey, i);
         var startX = e.clientX, startY = e.clientY;
         var moved = false;
         /* 匯入預覽整塊會被 CSS transform 縮放，滑鼠移動的距離要換算回原始尺寸，
@@ -1015,14 +1260,14 @@
         if (transformSelection && transformSelection.img === img) scheduleTransformOverlayRefresh();
       });
 
-      /* 只有正式「匯入工單」畫布的商品／贈品顯示四角縮放與 ↻ 把手。
+      /* 只有正式「匯入工單」畫布的商品／贈品／代言人圖顯示四角縮放與 ↻ 把手。
          點選本身不改資料；原有的按住拖移、滾輪縮放、雙擊復原仍完整保留。 */
       img.addEventListener('click', function () {
-        if (isImportProductImage(group)) selectTransformImage(img, group, i);
+        if (isImportTransformImage(group)) selectTransformImage(img, group, i);
       });
 
       img.style.cursor = 'grab';
-      img.title = isImportProductImage(group)
+      img.title = isImportTransformImage(group)
         ? '點一下顯示四角縮放與 ↻ 旋轉；也可滾輪縮放、按住左鍵拖曳、連按兩下復原'
         : '滾輪縮放這張圖、按住左鍵可拖曳移動位置、連按兩下復原（匯入工單與維修畫布時不能超出圖片範圍）';
     });
@@ -1102,13 +1347,14 @@
             if (!item || !item.dataset) return;
             delete item.dataset.layoutSlotRatios;
             delete item.dataset.layoutGapPx;
+            delete item.dataset.layoutSlotBox;
           });
         }
         layoutWhenReady(group);
       } else {
         var groupKey = getGroupKey(group);
         applyOffset(img, groupKey, index);
-        if (isBoundedWorkOrderGroup(group)) clampImageOffset(img, groupKey, index, imageBoundaryOfGroup(group));
+        if (isBoundedWorkOrderGroup(group)) clampImageOffset(img, groupKey, index, imageBoundaryOfGroup(group), true);
       }
       return true;
     },
@@ -1147,6 +1393,8 @@
     },
     /* 讓影子管線在原地換掉 src 後，立即把選取框重新量到新的商品本體範圍。 */
     refreshTransformControls: scheduleTransformOverlayRefresh,
-    hideTransformControls: hideTransformOverlay
+    hideTransformControls: hideTransformOverlay,
+    /* 右側工具列點某一張圖時呼叫：畫布框出這張圖，並讓它優先接收滑鼠。 */
+    selectImage: selectImageFromTool
   };
 })();
