@@ -249,7 +249,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
       <tr><td>SearchICON文案</td><td>2 字</td><td>Search ICON 文字版。</td></tr>
       <tr><td>AR文案</td><td>6 字</td><td>AR 版位文案。</td></tr>
       <tr><td>代言人照+簽名檔路徑(將取代2品)</td><td>2 張</td><td>在這格<strong>右邊那格</strong>填兩個檔名，用逗號、＋號或換行分開都可以。</td></tr>
-      <tr><td>代言人小字</td><td>兩排、每排 8 字</td><td>在這格<strong>右邊那格</strong>填文字，字級、顏色照 MSBN 代言人小字的規則。</td></tr>
+      <tr><td>代言人小字</td><td>10 字（兩排、每排 5 字）</td><td>在這格<strong>右邊那格</strong>填文字，字級、顏色照 MSBN 的規則。超過 10 字時曝光資源會標紅、不能下載。</td></tr>
     </tbody>
   </table></div>
   <figure class="shot"><a class="zoom" href="img/04-overview-sheet.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/04-overview-sheet.png" width="733" height="345" alt="工單總覽頁簽節錄：代言人照+簽名檔路徑那一列，右邊是兩張圖的檔名，再過去是代言人小字" loading="lazy"></a><figcaption>工單總覽節錄（以測試工單為例）。<span class="callout">1</span>「代言人照+簽名檔路徑」右邊那格填兩張圖的檔名；<span class="callout">2</span>「代言人小字」右邊那格填小字。</figcaption></figure>
@@ -310,12 +310,13 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
     <li><strong>只放在這些版位</strong>：ddcard、IG、HBN、LPBN、Coin_pageBN、FB_POST、SCBN、活動總覽、SBA、AMS。首頁 LOGO 牆、AR、Search_Image、SearchICON 不放。</li>
     <li><strong>會取代 2 件商品</strong>：有代言人照或簽名檔時，商品圖只顯示最上層的 1 件；如果同時還有人物圖，商品就完全不顯示。</li>
     <li><span class="callout">1</span><strong>上傳／更換</strong>：按「＋ 上傳代言人照」「＋ 上傳簽名檔」，或由工單自動帶入。</li>
+    <li><strong>匯入時的預設位置</strong>：代言人照在右邊；照片左邊，上面是代言人小字、下面是簽名檔，三者不重疊、緊靠在旁邊，小字＋簽名整組的高度約在照片的中間。之後可以自己拖曳調整。</li>
     <li><span class="callout">2</span><strong>清單按鈕</strong>：「▲▼」決定代言人照在商品前面或後面；「編輯」可以裁切、去背、擦除（沒有影子功能）；角度欄直接輸入旋轉角度；「⇄」互換照片和簽名檔；「移除」刪掉這張。</li>
     <li><strong>在畫布上旋轉</strong>：拖圖片上方的旋轉把手（按住 <kbd>Shift</kbd> 每 15° 一格，雙擊回到 0°）。旋轉後看起來的大小不變。</li>
   </ul>
   <h3>代言人小字</h3>
   <ul>
-    <li><span class="callout">3</span><strong>字數</strong>：兩排、每排 8 字（中文 1、英數 0.5），超過會自動換到下一排；按 <kbd>Enter</kbd> 可以自己換排。</li>
+    <li><span class="callout">3</span><strong>字數</strong>：最多 10 字，兩排、每排 5 字（中文 1、英數 0.5）。打滿一排會自動換到第二排，也可以按 <kbd>Enter</kbd> 自己換排；打字或貼上超過 10 字會直接擋住。工單帶入超過 10 字時，字數會變紅、不能下載，請刪到 10 字內。</li>
     <li><strong>字級固定</strong>：跟 MSBN 一樣，1200 寬的版位用 24px，其他版位依寬度等比換算：AMS 22px、ddcard 21px、SBA_PC 20px、IG 18px。滑鼠滾輪不能放大縮小。</li>
     <li><span class="callout">4</span><strong>字色</strong>：預設「自動黑白」，小字底下偏暗就用白字，否則用深色字。想指定顏色可以直接選色；要回到自動，再按一次「自動黑白」。</li>
   </ul>
