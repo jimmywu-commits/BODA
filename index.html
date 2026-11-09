@@ -899,6 +899,15 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #palette-level select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-tint);}
 #palette-level .lv-hint{font-size:11px;color:var(--ink2);line-height:1.6;}
 #palette-level .lv-hint b{color:var(--teal-dark);}
+/* 活動頁資源（匯入工單）左上角的等級下拉：跟工單生成器、吸底、曝光資源同步 */
+#import-level{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
+#import-level label{font-size:11.5px;font-weight:800;color:var(--ink2);letter-spacing:.3px;}
+#import-level select{width:100%;height:34px;padding:0 10px;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);background:#fff;color:var(--ink);font-size:12.5px;font-weight:700;cursor:pointer;}
+#import-level select:hover{border-color:var(--teal);}
+#import-level select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-tint);}
+#import-level .lv-hint{font-size:11px;color:var(--ink2);line-height:1.6;}
+#import-level .lv-hint b{color:var(--teal-dark);}
 #palette-tabs{display:flex;gap:3px;padding:8px 10px 0;background:var(--bg);
   border-bottom:1px solid var(--border);align-items:flex-end;flex-shrink:0;}
 .ptab{flex:1;appearance:none;font-size:12.5px;font-weight:700;cursor:pointer;
@@ -1387,17 +1396,14 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           <div id="palette-level">
             <label for="level-select">等級</label>
             <select id="level-select">
-              <option value="brand_star_mega">A Brand star (Mega)</option>
-              <option value="brand_star_mega_zj">A Brand star (Mega) 資交</option>
-              <option value="select_pkg">A 精選套裝</option>
-              <option value="mdd">A 品牌旗艦MDD</option>
-              <option value="mdd_zj">A 品牌旗艦MDD 資交</option>
-              <option value="bod_a">B+ BOD A</option>
-              <option value="bod_a_zj">B+ BOD A 資交</option>
-              <option value="bod_b_mega">B+ BOD B (Mega)</option>
-              <option value="basic">B+ 基礎套裝</option>
-              <option value="jbp_multi">B JBP多店</option>
-              <option value="gold_mega">B 金牌 (Mega)</option>
+              <option value="brand_star_mega">大促 Brand star</option>
+              <option value="brand_star_mega_zj">大促 Brand star 資交</option>
+              <option value="ad_multi">AD單買(多店活動)</option>
+              <option value="ad_bn_only">AD單買(BN Only)</option>
+              <option value="bod_a_plus">A BOD+</option>
+              <option value="bod_a">A BOD</option>
+              <option value="bod_a_plus_zj">A BOD+(資交)</option>
+              <option value="bod_a_zj">A BOD(資交)</option>
             </select>
             <div class="lv-hint" id="level-hint"></div>
           </div>
@@ -1504,6 +1510,11 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           <div id="import-side-head">
             <h1><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg> 匯入工單</h1>
             <p>把填好的工單（.xlsx 或本工具下載的 .json）拖進來，或點擊選檔，會依內容自動畫出對應版位，並可以再編輯文字。</p>
+          </div>
+          <div id="import-level">
+            <label for="import-level-select">等級</label>
+            <select id="import-level-select" aria-describedby="import-level-hint"></select>
+            <div class="lv-hint" id="import-level-hint"></div>
           </div>
           <div id="import-drop">
             <div class="id-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M9 12h6M9 16h6"/></svg></div>
@@ -10457,34 +10468,24 @@ function exportWorkOrderXlsx(exportOptions) {
     'SearchImage': { display: 'Search Image', size: '1125×156', format: 'JPG/PNG', rules: '副標≤7；LOGO 1～3 個', reminder: '依選用版型提供 1～3 個 LOGO', layouts: 'Search_Image1logo／2logo／3logo', available: true },
     'SCPN': { display: 'SCBN／SCPN', size: '1200×200', format: 'JPG', rules: '品牌名≤9；副標≤7；CTA', reminder: '商城橫幅', layouts: 'SCBN_APP', available: true }
   };
+  /* 曝光資源版位：新等級沿用最接近的舊等級版位（同 boda-level-plugin.js 的 sheet 對應），
+     等版位詳情表更新新等級名稱後再改這裡。 */
+  var BOD_EXPOSURE_PLAN = [
+    ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['首頁LOGO牆', '預設'], ['AR', '預設'], ['FB_Post', '預設'], ['AMS BN', '預設'],
+    ['Coin_page', '選配'], ['IG', '選配'], ['SearchIcon', '選配'], ['SearchImage', '選配']
+  ];
+  var MULTI_STORE_EXPOSURE_PLAN = [
+    ['IG', '預設'], ['HBN', '預設'], ['DDCard', '預設'], ['Coin_page', '預設'], ['FB_Post', '預設'], ['SCPN', '預設'], ['SearchImage', '預設'], ['SearchIcon', '預設']
+  ];
   var LEVEL_PLAN = {
     'brand_star_mega': [],
     'brand_star_mega_zj': [],
-    'select_pkg': [],
-    'mdd': [],
-    'mdd_zj': [],
-    'bod_a': [
-      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['首頁LOGO牆', '預設'], ['AR', '預設'], ['FB_Post', '預設'], ['AMS BN', '預設'],
-      ['Coin_page', '選配'], ['IG', '選配'], ['SearchIcon', '選配'], ['SearchImage', '選配']
-    ],
-    'bod_a_zj': [
-      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['首頁LOGO牆', '預設'], ['AR', '預設'], ['FB_Post', '預設'], ['AMS BN', '預設'],
-      ['Coin_page', '選配'], ['IG', '選配'], ['SearchIcon', '選配'], ['SearchImage', '選配']
-    ],
-    'bod_b_mega': [
-      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['首頁LOGO牆', '預設'], ['AR', '預設'],
-      ['FB_Post', '選配'], ['AMS BN', '選配'], ['Coin_page', '選配'], ['IG', '選配']
-    ],
-    'basic': [
-      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['首頁LOGO牆', '預設'], ['AR', '預設'],
-      ['FB_Post', '選配'], ['AMS BN', '選配'], ['Coin_page', '選配'], ['IG', '選配']
-    ],
-    'jbp_multi': [
-      ['IG', '預設'], ['HBN', '預設'], ['DDCard', '預設'], ['Coin_page', '預設'], ['FB_Post', '預設'], ['SCPN', '預設'], ['SearchImage', '預設'], ['SearchIcon', '預設']
-    ],
-    'gold_mega': [
-      ['DDCard', '預設'], ['HBN', '預設'], ['活動總覽', '預設'], ['AR', '預設'], ['Coin_page', '選配']
-    ]
+    'ad_multi': MULTI_STORE_EXPOSURE_PLAN,
+    'ad_bn_only': MULTI_STORE_EXPOSURE_PLAN,
+    'bod_a_plus': BOD_EXPOSURE_PLAN,
+    'bod_a': BOD_EXPOSURE_PLAN,
+    'bod_a_plus_zj': BOD_EXPOSURE_PLAN,
+    'bod_a_zj': BOD_EXPOSURE_PLAN
   };
 
   function exposurePlanForLevel(levelId) {
@@ -11795,6 +11796,8 @@ function parseLayoutTemplateWorkbook(wb) {
         entries: msbnEntries,
         header: bareFile,
         band: headerRow,
+        /* 「三大保障_D-2-3」：版型跟 MSBN 一樣，但等級張數另外算（三大保障欄） */
+        guarantee: /^三大保障/.test(header.text),
         sourceKey: 'layout-template:msbn:' + headerRow + ':' + header.col + ':' + bareFile
       });
     });
@@ -12055,23 +12058,22 @@ function workbookLevelIdFromValue(value) {
         normalizeWorkbookLevelText(LEVELS[i].label) === normalized) return LEVELS[i].id;
   }
 
-  /* 相容外部工單略去 A／B 等級前綴或改用全形括號的寫法；先判斷「資交」，
-     避免 BOD A 資交被較寬鬆的 BOD A 規則吃掉。 */
+  /* 相容外部工單略去等級前綴、改用全形括號或舊名稱的寫法；先判斷「資交」與「BOD+」，
+     避免 A BOD+(資交) 被較寬鬆的 A BOD 規則吃掉。 */
   var isExchange = normalized.indexOf('資交') !== -1;
-  if (/brandstar.*mega/.test(normalized)) return isExchange ? 'brand_star_mega_zj' : 'brand_star_mega';
-  if (normalized.indexOf('精選套裝') !== -1) return 'select_pkg';
-  if (normalized.indexOf('品牌旗艦mdd') !== -1 || normalized.indexOf('mdd') !== -1) return isExchange ? 'mdd_zj' : 'mdd';
-  if (/boda/.test(normalized)) return isExchange ? 'bod_a_zj' : 'bod_a';
-  if (/bodb/.test(normalized) && normalized.indexOf('mega') !== -1) return 'bod_b_mega';
-  if (normalized.indexOf('基礎套裝') !== -1) return 'basic';
-  /* 既有人工單同時出現 JBP／JPB 兩種拼法，並可能帶「B級」「多店活動」等字樣。
-     兩者都視為同一個「B JBP多店」，避免因三個英文字母順序不同而掉回預設 A。 */
+  if (normalized.indexOf('brandstar') !== -1) return isExchange ? 'brand_star_mega_zj' : 'brand_star_mega';
+  if (normalized.indexOf('ad單買') !== -1 || normalized.indexOf('ad單購') !== -1) {
+    return /bnonly|只有bn|僅bn/.test(normalized) ? 'ad_bn_only' : 'ad_multi';
+  }
+  if (/bod\+/.test(normalized) || /bodplus/.test(normalized)) return isExchange ? 'bod_a_plus_zj' : 'bod_a_plus';
+  if (normalized.indexOf('bod') !== -1) return isExchange ? 'bod_a_zj' : 'bod_a';
+  /* 舊等級：品牌旗艦 MDD 併入 A BOD；JBP 多店（多店活動）對應 AD單買(多店活動)。 */
+  if (normalized.indexOf('mdd') !== -1) return isExchange ? 'bod_a_zj' : 'bod_a';
   if (normalized.indexOf('jbp多店') !== -1 || normalized.indexOf('jpb多店') !== -1 ||
-      (normalized.indexOf('多店') !== -1 && /j(?:bp|pb)/.test(normalized))) return 'jbp_multi';
-  if (normalized.indexOf('金牌') !== -1 && normalized.indexOf('mega') !== -1) return 'gold_mega';
+      (normalized.indexOf('多店') !== -1 && /j(?:bp|pb)/.test(normalized))) return 'ad_multi';
 
   /* 最後一層才做真正的模糊比對，容許少字、空格、括號及輕微拼字差異。
-     分數不足不硬猜，由呼叫端統一回到 A Brand star (Mega)。 */
+     分數不足不硬猜，由呼叫端統一回到預設等級（大促 Brand star）。 */
   var bestId = '', bestScore = 0;
   LEVELS.forEach(function (level) {
     [level.label, level.id].forEach(function (candidate) {
@@ -12153,7 +12155,7 @@ function applyWorkbookOverviewLevel(wb) {
   if (!parsed) parsed = { raw: '', row: 0, col: 0 };
   parsed.id = targetId;
   parsed.usedDefault = !matchedId;
-  if (parsed.usedDefault) console.warn('[BODA] 工單總覽的包套無法對應，已使用預設等級 A Brand star (Mega)：', parsed.raw || '空白');
+  if (parsed.usedDefault) console.warn('[BODA] 工單總覽的包套無法對應，已使用預設等級 大促 Brand star：', parsed.raw || '空白');
   /* STEP 1 有可能在等級控制器完成初始化前就讀完活頁簿。先記住結果並延後補套，
      不能因為當下函式尚未掛到 window 就安靜留在舊等級。 */
   pendingWorkbookLevelId = targetId;
@@ -12368,6 +12370,44 @@ function parseWorkbookOverviewByLabels(wb) {
   }
   return result.found ? result : null;
 }
+/* 工單總覽「代言人照+簽名檔路徑(將取代2品)」右邊一格＝兩張圖的檔名（逗號、＋號或換行分隔）；
+   「代言人小字」右邊一格＝小字（字級／黑白字規則同 MSBN，在曝光資源計算）。
+   位置不固定（DD Card、HBN 各有一組），整張表以標籤定位，取第一組有填的值。
+   只看標籤緊鄰的一格：沒填時不往右找，免得把右邊的「代言人小字」標籤當成檔名。 */
+function parseWorkbookOverviewEndorser(wb) {
+  var result = { files: [], note: '', found: false };
+  var ws = workOrderWorksheet(wb, '工單總覽');
+  if (!ws) return result;
+  var maxRow = Math.min(Number(ws.rowCount) || 0, 500);
+  var maxCol = Math.min(Number(ws.columnCount) || 0, 40);
+  function cellAt(r, c) { try { return ws.getCell(r, c); } catch (_) { return null; } }
+  function masterOf(cell) { return cell && cell.master ? cell.master : cell; }
+  function valueRightOf(r, c) {
+    var label = masterOf(cellAt(r, c));
+    for (var cc = c + 1; cc <= maxCol; cc++) {
+      var cell = masterOf(cellAt(r, cc));
+      if (label && cell && cell.address === label.address) continue; /* 還在標籤的合併範圍裡 */
+      return workbookCellPlainString(cell);
+    }
+    return '';
+  }
+  for (var r = 1; r <= maxRow; r++) {
+    for (var c = 1; c <= maxCol; c++) {
+      var cell = cellAt(r, c);
+      if (!cell || (cell.master && cell.master !== cell)) continue;
+      var label = workbookCellPlainString(cell).replace(/\s+/g, '');
+      if (!label) continue;
+      if (/^代言人照/.test(label)) {
+        result.found = true;
+        if (!result.files.length) result.files = splitEndorserFileNames(valueRightOf(r, c));
+      } else if (/^代言人小字/.test(label)) {
+        result.found = true;
+        if (!result.note) result.note = valueRightOf(r, c);
+      }
+    }
+  }
+  return result;
+}
 var currentImportOverviewByLabels = null;
 function applyWorkbookOverviewBackground(wb) {
   var overviewWs = workOrderWorksheet(wb, '工單總覽');
@@ -12415,7 +12455,7 @@ function parseWorkbookExposureSpec(wb) {
   function cell(row, col) { return row > 0 ? workbookCellPlainString(ws.getCell(row, col)) : ''; }
   var levelInfo = parseWorkbookOverviewLevel(wb);
   var resolvedLevelId = levelInfo && levelInfo.id ? levelInfo.id : WORKBOOK_DEFAULT_LEVEL_ID;
-  var resolvedLevelLabel = (typeof getLevel === 'function') ? getLevel(resolvedLevelId).label : 'A Brand star (Mega)';
+  var resolvedLevelLabel = (typeof getLevel === 'function') ? getLevel(resolvedLevelId).label : '大促 Brand star';
   var resources = [];
   for (var row = 23; row <= Math.max(23, ws.rowCount || 23); row++) {
     var key = cell(row, 1);
@@ -12471,12 +12511,15 @@ function syncWorkbookOverviewTextToExposure(wb) {
   if (!ws) return false;
   if (typeof syncImportedExposureOverviewText !== 'function') return false;
   var byLabels = currentImportOverviewByLabels || parseWorkbookOverviewByLabels(wb);
+  /* 代言人照＋簽名檔、代言人小字：兩種工單格式都以標籤定位 */
+  var endorser = parseWorkbookOverviewEndorser(wb);
   if (byLabels && (byLabels.main || byLabels.sub || byLabels.date || byLabels.productFiles.length || byLabels.logoFiles.length)) {
     /* BD 標籤版：固定儲存格 B10～B19 在這種表裡是別的欄位，不能混用。 */
     var labelData = {
       brand: '', main: byLabels.main, sub: byLabels.sub, date: byLabels.date,
       icon: '', ar: '', logoFiles: byLabels.logoFiles.join(','),
-      productFiles: byLabels.productFiles.join(',')
+      productFiles: byLabels.productFiles.join(','),
+      endorserFiles: endorser.files.join('\n'), endorserNote: endorser.note
     };
     syncImportedExposureOverviewText(labelData);
     syncExposureOverviewAssets(labelData);
@@ -12492,7 +12535,8 @@ function syncWorkbookOverviewTextToExposure(wb) {
     ar: workbookCellPlainString(ws.getCell('B19')),
     logoFiles: '',
     productFiles: productRow && !isDefaultExposureProductFileText(workbookCellPlainString(ws.getCell(productRow, 2)))
-      ? workbookCellPlainString(ws.getCell(productRow, 2)) : ''
+      ? workbookCellPlainString(ws.getCell(productRow, 2)) : '',
+    endorserFiles: endorser.files.join('\n'), endorserNote: endorser.note
   };
   syncImportedExposureOverviewText(overviewData);
   syncExposureOverviewAssets(overviewData);
@@ -15639,6 +15683,7 @@ function buildImportStateSavePayload() {
         data: c.data,
         header: c.header,
         band: c.band,
+        guarantee: !!c.guarantee,
         sourceKey: c.sourceKey || '',
         xlsxBindings: Array.isArray(c._xlsxBindings) ? c._xlsxBindings.map(function (binding) {
           return { address: binding.address, targetKey: binding.targetKey, label: binding.label };
@@ -15714,6 +15759,7 @@ function applyImportState(state) {
       data: c.data || {},
       header: c.header,
       band: c.band,
+      guarantee: !!c.guarantee,
       sourceKey: c.sourceKey || '',
       _xlsxBindings: Array.isArray(c.xlsxBindings) ? c.xlsxBindings.map(function (binding) {
         return { address: binding.address, targetKey: binding.targetKey, label: binding.label };
@@ -16833,6 +16879,9 @@ function normalizeExposureOverviewText(data, keepTimestamp) {
     ar: data.ar == null ? '' : String(data.ar),
     logoFiles: data.logoFiles == null ? '' : String(data.logoFiles),
     productFiles: data.productFiles == null ? '' : String(data.productFiles),
+    /* 工單總覽「代言人照+簽名檔路徑」：檔名以換行分隔保存（檔名本身可能有逗號，例如 滿2,000折） */
+    endorserFiles: data.endorserFiles == null ? '' : String(data.endorserFiles),
+    endorserNote: data.endorserNote == null ? '' : String(data.endorserNote),
     ts: ts
   };
 }
@@ -16926,12 +16975,63 @@ function exposureAssetsForNames(value) {
     return found ? { name: found.name, src: found.url, baseSrc: found.baseUrl || found.url, logoSrc: found.logoUrl || found.baseUrl || found.url, logoBg: importLogoPlateColorOf(found) } : null;
   }).filter(Boolean);
 }
+/* 代言人照＋簽名檔的檔名可能用逗號、＋號或換行隔開（千分位逗號照 splitImageList 不拆）。
+   檔名本身若含「+」，整段或相鄰兩段接回去剛好是已上傳的檔名時就不拆。最多兩張。 */
+function uploadedImageNamed(name) {
+  return (uploadedImages || []).some(function (asset) { return asset && sameImageFilename(asset.name, name); });
+}
+function splitEndorserFileNames(value) {
+  var text = String(value == null ? '' : value).replace(/\r\n?/g, '\n').trim();
+  if (!text) return [];
+  var pieces = [];
+  text.split(/\n+/).forEach(function (line) {
+    splitImageList(line.replace(/[，、；;]/g, ',')).forEach(function (part) { pieces.push(part); });
+  });
+  var out = [];
+  function baseName(s) { return String(s || '').trim().split(/[\\/]/).pop().trim(); }
+  pieces.forEach(function (piece) {
+    var name = baseName(piece);
+    if (!name) return;
+    if (!/[+＋]/.test(name) || uploadedImageNamed(name)) { out.push(name); return; }
+    var parts = name.split(/[+＋]/).map(baseName).filter(Boolean);
+    for (var i = 0; i < parts.length; i++) {
+      if (i + 1 < parts.length && uploadedImageNamed(parts[i] + '+' + parts[i + 1])) {
+        out.push(parts[i] + '+' + parts[i + 1]);
+        i++;
+      } else {
+        out.push(parts[i]);
+      }
+    }
+  });
+  var seen = {};
+  return out.filter(function (name) {
+    var key = imageFilenameKey(name);
+    if (!key || seen[key]) return false;
+    seen[key] = true;
+    return true;
+  }).slice(0, 2);
+}
+/* 代言人圖送曝光資源時用 baseUrl：BODA 編輯（去背／裁切）後的原圖，不含商品影子。 */
+function exposureEndorserAssets(names) {
+  return (names || []).map(function (name) {
+    var found = (uploadedImages || []).filter(function (asset) {
+      return asset && asset.url && sameImageFilename(asset.name, name);
+    }).pop();
+    return found ? { name: found.name, src: found.baseUrl || found.url, baseSrc: found.baseUrl || found.url } : null;
+  }).filter(Boolean);
+}
+function storedEndorserFileNames(value) {
+  return String(value == null ? '' : value).split(/\n+/).map(function (name) { return name.trim(); }).filter(Boolean).slice(0, 2);
+}
 function pushExposureOverviewAssets(payload) {
   payload = payload || readSharedExposureOverviewText();
   if (!payload) return false;
   var logoNames = normalizeExposureLogoFileNames(payload.logoFiles);
   var productNames = normalizeExposureAssetFileNames(payload.productFiles);
-  if (!logoNames.length && !productNames.length) return false;
+  var endorserNames = storedEndorserFileNames(payload.endorserFiles);
+  var endorserNote = String(payload.endorserNote == null ? '' : payload.endorserNote).trim();
+  if (!logoNames.length && !productNames.length && !endorserNames.length && !endorserNote) return false;
+  var endorserAssets = exposureEndorserAssets(endorserNames);
   var message = {
     type: 'wo-workorder-overview-assets',
     assets: {
@@ -16942,7 +17042,12 @@ function pushExposureOverviewAssets(payload) {
       products: exposureAssetsForNames(productNames.join(',')),
       /* 圖片尚在讀取時不清空現有素材；等 handleImageFiles 讀完後會再推送一次。 */
       replaceLogos: logoNames.length > 0 && exposureAssetsForNames(logoNames.join(',')).length === logoNames.length,
-      replaceProducts: productNames.length > 0 && exposureAssetsForNames(productNames.join(',')).length === productNames.length
+      replaceProducts: productNames.length > 0 && exposureAssetsForNames(productNames.join(',')).length === productNames.length,
+      /* 代言人照＋簽名檔：照工單欄位順序送，曝光資源再依檔名／圖片內容分辨哪張是照片、哪張是簽名。
+         只找到其中一張也先送；另一張讀完後簽章不同會再套一次。 */
+      endorsers: endorserAssets,
+      replaceEndorser: endorserAssets.length > 0,
+      endorserNote: endorserNote
     }
   };
   /* 曝光資源 iframe 可能還沒準備好，所以會隔幾次再補送；但新的一包進來時，上一包還沒送出的補送
@@ -19049,6 +19154,40 @@ function updateImportBottomFinalInPlace() {
   strip.replaceChild(createImportBottomFinalFrame(top, totalWidth, Math.round(height), result.dataUrl), current);
   return true;
 }
+/* 等級決定「活動頁資源」呈現哪些段（工單資料全部保留，只是不畫、也就不會被下載）：
+   - 最上面一整排副區＝副區（level.subarea）
+   - 標成三大保障的段＝三大保障（level.guarantee）
+   - 其餘每一段＝一張 MSBN，依順序只呈現前 level.msbnMax 張
+   分段規則跟 renderImportColumns 的 bandKeyOf 一致。回傳 {欄位索引: true}。 */
+function importLevelHiddenIndexes(columns) {
+  var hidden = {};
+  if (!Array.isArray(columns) || !columns.length || typeof currentLevel !== 'function') return hidden;
+  var level = currentLevel() || {};
+  var bands = [];
+  columns.forEach(function (col, i) {
+    var key = col && col.band != null ? 'b' + col.band : (String(col && col.blockId || '').indexOf('msbn_') === 0 ? 'm' + i : 'sub');
+    var last = bands[bands.length - 1];
+    if (last && last.key === key) last.items.push(i);
+    else bands.push({ key: key, items: [i] });
+  });
+  var msbnShown = 0, guaranteeShown = 0;
+  bands.forEach(function (band, bandIndex) {
+    var cols = band.items.map(function (i) { return columns[i] || {}; });
+    var isSubarea = bandIndex === 0 && cols.every(function (col) { return String(col.blockId || '').indexOf('subarea_') === 0; });
+    var isGuarantee = cols.some(function (col) { return !!col.guarantee; });
+    var show;
+    if (isSubarea) show = (level.subarea || 0) > 0;
+    else if (isGuarantee) show = guaranteeShown++ < (level.guarantee || 0);
+    else show = msbnShown++ < (level.msbnMax || 0);
+    if (!show) band.items.forEach(function (i) { hidden[i] = true; });
+  });
+  return hidden;
+}
+function importLevelHasBottom() {
+  var level = typeof currentLevel === 'function' ? currentLevel() : null;
+  return !level || (level.bottom || 0) > 0;
+}
+
 function renderImportColumns(columns, skipPreviewRerender) {
   activeImportCanvasContext = 'import';
   currentImportColumns = columns;
@@ -19084,8 +19223,11 @@ function renderImportColumns(columns, skipPreviewRerender) {
     if (col.band != null) return 'b' + col.band;
     return col.blockId.indexOf('msbn_') === 0 ? 'm' + i : 'sub';
   }
+  /* 依等級不呈現的段：不畫、不建工具卡（資料保留，切換等級會再出現） */
+  var levelHidden = importLevelHiddenIndexes(columns);
   var bands = [];
   columns.forEach(function (c, i) {
+    if (levelHidden[i]) return;
     var key = bandKeyOf(c, i);
     var last = bands[bands.length - 1];
     if (last && last.key === key) last.items.push(i);
@@ -19126,12 +19268,16 @@ function renderImportColumns(columns, skipPreviewRerender) {
     if (bi === 0 && bannerH) { bannerTop = cumTop; cumTop += bannerH; }
   });
   var bottomSyncTop = cumTop;
-  var hasMsbn = columns.some(function (col) { return /^msbn_/i.test(String(col.blockId || '')); });
-  var hasImportBottom = importHasBottomSource() && hasMsbn;
+  var hasMsbn = columns.some(function (col, i) { return !levelHidden[i] && /^msbn_/i.test(String(col.blockId || '')); });
+  /* 吸底依等級：AD單買(BN Only) 沒有吸底。資交等級沒有 MSBN 但有吸底，也要畫出來。 */
+  var levelAllowsBottom = importLevelHasBottom();
+  var hasImportBottom = importHasBottomSource() && levelAllowsBottom;
   var bottomOutputWidth = importBottomPreviewResult && Number(importBottomPreviewResult.width) > 0
     ? Number(importBottomPreviewResult.width) : 1200;
   var bottomOutputHeight = importBottomPreviewResult && Number(importBottomPreviewResult.height) > 0
     ? Number(importBottomPreviewResult.height) : 150;
+  /* 這個等級上面什麼都不呈現、只剩吸底時，畫布寬度用吸底本身的寬度 */
+  if (!totalWidth && hasImportBottom) totalWidth = bottomOutputWidth;
   /* 吸底固定是 1200×150；匯入畫布依 MSBN 實際寬度縮放，確保左右邊緣完全對齊。 */
   var bottomSyncH = hasImportBottom && totalWidth
     ? Math.round(totalWidth * bottomOutputHeight / bottomOutputWidth) : 0;
@@ -19164,6 +19310,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
   var toolBlockColumns = {};
 
   columns.forEach(function (col, idx) {
+    if (levelHidden[idx]) return; /* 這個等級不呈現 */
     var def = BNCore.getBlock(col.blockId);
     if (!def) {
       var warnBox = document.createElement('div');
@@ -19231,8 +19378,12 @@ function renderImportColumns(columns, skipPreviewRerender) {
   }
   /* 重畫「統一顏色」區：沒有手動改過的顏色要把這批版位實際的色號吸進來顯示 */
   renderImportColorPanel();
-  if (columns.length && document.querySelector('#import-block-tools .import-band-tool-col[data-col="0"], #import-block-tools .import-block-tool[data-col="0"]')) {
-    markActiveImportCol(preservedActiveIndex >= 0 ? preservedActiveIndex : 0);
+  /* 第一個有呈現的版位（等級可能把最上面的副區藏起來） */
+  var firstShownIdx = -1;
+  for (var fi = 0; fi < columns.length; fi++) { if (!levelHidden[fi]) { firstShownIdx = fi; break; } }
+  if (preservedActiveIndex >= 0 && levelHidden[preservedActiveIndex]) preservedActiveIndex = -1;
+  if (firstShownIdx >= 0 && document.querySelector('#import-block-tools .import-band-tool-col[data-col="' + firstShownIdx + '"], #import-block-tools .import-block-tool[data-col="' + firstShownIdx + '"]')) {
+    markActiveImportCol(preservedActiveIndex >= 0 ? preservedActiveIndex : firstShownIdx);
     if (preservedToolScrollTop != null) {
       requestAnimationFrame(function () {
         var tools = document.getElementById('import-canvas-tools');
@@ -21538,6 +21689,7 @@ function afterImportParsed(rawColumns, options) {
         data: data,
         header: c.header,
         band: c.band,
+        guarantee: !!c.guarantee,
         sourceKey: c.sourceKey || '',
         _xlsxBindings: Array.isArray(c.xlsxBindings) ? c.xlsxBindings.map(function (binding, bindingIndex) {
           return {
@@ -22007,6 +22159,7 @@ function buildImportSnapshot() {
         blockId: col.blockId,
         header: col.header,
         band: col.band,
+        guarantee: !!col.guarantee,
         sourceKey: col.sourceKey || '',
         xlsxBindings: Array.isArray(col._xlsxBindings) ? col._xlsxBindings.map(function (binding) { return { address: binding.address, targetKey: binding.targetKey, label: binding.label }; }) : [],
         dynamicRowRows: Array.isArray(col._dynamicRowRows) ? col._dynamicRowRows.slice() : null,
@@ -22262,7 +22415,8 @@ function waitForBottomPreviewBridge(timeoutMs) {
   });
 }
 function requestBottomVariantFiles() {
-  if (!importHasBottomSource()) return Promise.resolve({ files: [], note: '' });
+  /* 等級沒有吸底（AD單買(BN Only)）：工單裡的吸底資料保留，但不輸出吸底圖 */
+  if (!importHasBottomSource() || !importLevelHasBottom()) return Promise.resolve({ files: [], note: '' });
   return waitForBottomPreviewBridge(25000).then(function (ready) {
     if (!ready) return bottomVariantFallback(new Error('吸底預覽尚未就緒（吸底工具或字體尚未載入完成）'));
     /* 先確定預覽 iframe 已經吃到目前的工單／編輯狀態（等它回一張 PREVIEW_IMAGE），再要多狀態圖，
@@ -22310,8 +22464,9 @@ function settleBottomVariantRequest(msg) {
    還沒產生或已過期就先向吸底預覽要一張新的，放回畫布後再截圖。
    （沒有 MSBN 的畫布不接吸底成品，但仍要先同步預覽，後面的多狀態圖輸出才拿得到正確內容。） */
 function ensureImportBottomReadyForExport() {
-  if (!importHasBottomSource()) return Promise.resolve();
-  var hasMsbn = (currentImportColumns || []).some(function (col) { return /^msbn_/i.test(String(col.blockId || '')); });
+  if (!importHasBottomSource() || !importLevelHasBottom()) return Promise.resolve();
+  /* 吸底依等級接在畫布最下面（不再要求一定要有 MSBN）；跟 renderImportColumns 的條件一致 */
+  var hasMsbn = true;
   var strip = document.getElementById('imp-strip');
   var finalImg = strip && strip.querySelector('.import-bottom-final');
   var upToDate = finalImg && importBottomPreviewResult && importBottomPreviewResult.dataUrl &&
@@ -22517,6 +22672,7 @@ function restoreImportSnapshot(snap) {
         blockId: c.blockId,
         header: c.header,
         band: c.band,
+        guarantee: !!c.guarantee,
         sourceKey: c.sourceKey || '',
         _xlsxBindings: Array.isArray(c.xlsxBindings) ? c.xlsxBindings.map(function (binding, bindingIndex) {
           return {
@@ -22554,6 +22710,7 @@ function restoreImportSnapshot(snap) {
         blockId: c.blockId,
         header: c.header,
         band: c.band,
+        guarantee: !!c.guarantee,
         sourceKey: c.sourceKey || '',
         _xlsxBindings: Array.isArray(c.xlsxBindings) ? c.xlsxBindings.map(function (binding, bindingIndex) {
           return {
@@ -23183,27 +23340,43 @@ var state = loadState() || { group: null, slots: [null, null, null, null] };
 if (!state.msbn) state.msbn = []; /* MSBN 區（接在副區下方），舊的暫存沒有這欄位就補上 */
 /* ── 等級：決定 MSBN 區可放幾顆 ────────────────────────────
    下拉在左側素材庫（標題/說明 與 頁簽 之間），選擇會記在本機。 */
-/* msbnMax＝MSBN 區可放幾顆，數字來自 jbp/BOD A曝光資源版位詳情表.xlsx 的「MSBN張數」欄。
-   之後表格改了，這裡的數字也要跟著改（label 必須跟試算表 A 欄一字不差）。 */
+/* 等級表（2026-11-09 更新）：label＝工單總覽的包套名稱。
+   guarantee 三大保障、subarea 副區、msbnMax 基本 MSBN、bottom 吸底（張／組／檔），
+   決定「活動頁資源」要呈現幾張；extraMsbn 是額外可廠商自製的 MSBN（不由本工具製作，只供參考）。
+   表格裡的「-」一律寫 0。曝光資源（boda-level-plugin.js）也有一份同樣 id 的清單，改這裡要一起改。 */
 var LEVELS = [
-  { id: 'brand_star_mega',    label: 'A Brand star (Mega)',      msbnMax: 8 },
-  { id: 'brand_star_mega_zj', label: 'A Brand star (Mega) 資交', msbnMax: 4 },
-  { id: 'select_pkg',         label: 'A 精選套裝',                msbnMax: 4 },
-  { id: 'mdd',                label: 'A 品牌旗艦MDD',             msbnMax: 6 },
-  { id: 'mdd_zj',             label: 'A 品牌旗艦MDD 資交',        msbnMax: 0 },
-  { id: 'bod_a',              label: 'B+ BOD A',                 msbnMax: 6 },
-  { id: 'bod_a_zj',           label: 'B+ BOD A 資交',            msbnMax: 0 },
-  { id: 'bod_b_mega',         label: 'B+ BOD B (Mega)',          msbnMax: 6 },
-  { id: 'basic',              label: 'B+ 基礎套裝',               msbnMax: 6 },
-  { id: 'jbp_multi',          label: 'B JBP多店',                 msbnMax: 3 },
-  { id: 'gold_mega',          label: 'B 金牌 (Mega)',             msbnMax: 3 }
+  { id: 'brand_star_mega',    label: '大促 Brand star',      guarantee: 1, subarea: 1, msbnMax: 8, extraMsbn: 8, bottom: 1 },
+  { id: 'brand_star_mega_zj', label: '大促 Brand star 資交', guarantee: 1, subarea: 1, msbnMax: 4, extraMsbn: 8, bottom: 1 },
+  { id: 'ad_multi',           label: 'AD單買(多店活動)',     guarantee: 1, subarea: 1, msbnMax: 8, extraMsbn: 0, bottom: 1 },
+  { id: 'ad_bn_only',         label: 'AD單買(BN Only)',      guarantee: 0, subarea: 0, msbnMax: 0, extraMsbn: 0, bottom: 0 },
+  { id: 'bod_a_plus',         label: 'A BOD+',               guarantee: 1, subarea: 1, msbnMax: 8, extraMsbn: 8, bottom: 1 },
+  { id: 'bod_a',              label: 'A BOD',                guarantee: 1, subarea: 1, msbnMax: 8, extraMsbn: 8, bottom: 1 },
+  { id: 'bod_a_plus_zj',      label: 'A BOD+(資交)',         guarantee: 0, subarea: 0, msbnMax: 0, extraMsbn: 8, bottom: 1 },
+  { id: 'bod_a_zj',           label: 'A BOD(資交)',          guarantee: 0, subarea: 0, msbnMax: 0, extraMsbn: 8, bottom: 1 }
 ];
 var LEVEL_KEY = 'wo_level_v1';
 var DEFAULT_LEVEL_ID = 'brand_star_mega'; /* 沒選過時的預設等級 */
+/* 舊版等級 id（本機暫存、舊暫存檔）改對應到新等級；沒列到的退回預設等級。 */
+var LEGACY_LEVEL_IDS = { mdd: 'bod_a', mdd_zj: 'bod_a_zj', jbp_multi: 'ad_multi' };
 function getLevel(id) {
+  if (LEGACY_LEVEL_IDS[id]) id = LEGACY_LEVEL_IDS[id];
   for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].id === id) return LEVELS[i];
   for (var j = 0; j < LEVELS.length; j++) if (LEVELS[j].id === DEFAULT_LEVEL_ID) return LEVELS[j];
   return LEVELS[0];
+}
+/* 等級在「活動頁資源」的呈現說明（等級下拉底下的提示） */
+function levelResourceSummaryHtml(level) {
+  level = level || currentLevel();
+  if (!level.guarantee && !level.subarea && !level.msbnMax && !level.bottom) {
+    return '此等級只有 BN（曝光資源），活動頁資源<b>不呈現</b>三大保障、副區、MSBN、吸底。';
+  }
+  var parts = [];
+  parts.push('三大保障 <b>' + (level.guarantee || '–') + '</b>');
+  parts.push('副區 <b>' + (level.subarea || '–') + '</b>');
+  parts.push('MSBN <b>' + (level.msbnMax || '–') + '</b> 張');
+  parts.push('吸底 <b>' + (level.bottom || '–') + '</b> 組');
+  var extra = level.extraMsbn ? '（另可廠商自製 MSBN ' + level.extraMsbn + ' 張）' : '';
+  return '活動頁資源呈現：' + parts.join('、') + extra;
 }
 var currentLevelId = (function () {
   var saved = null;
@@ -25351,19 +25524,25 @@ function applyCanvasZoom(el) {
 (function () {
   var sel = document.getElementById('level-select');
   var bottomSel = document.getElementById('bottom-level-select');
+  /* 活動頁資源（匯入工單）的等級下拉：跟工單生成器、吸底、曝光資源是同一個等級 */
+  var importSel = document.getElementById('import-level-select');
   var hint = document.getElementById('level-hint');
+  var importHint = document.getElementById('import-level-hint');
   if (!sel) return;
 
+  function levelOptionsHtml() {
+    return LEVELS.map(function (level) {
+      return '<option value="' + level.id + '">' + esc(level.label) + '</option>';
+    }).join('');
+  }
   function syncLevelSelects() {
     var levelOptions = LEVELS.map(function (level) { return { id: level.id, label: level.label }; });
-    if (bottomSel) {
-      if (!bottomSel.options.length) {
-        bottomSel.innerHTML = LEVELS.map(function (level) {
-          return '<option value="' + level.id + '">' + esc(level.label) + '</option>';
-        }).join('');
-      }
-      bottomSel.value = currentLevelId;
-    }
+    [sel, bottomSel, importSel].forEach(function (select) {
+      if (!select) return;
+      if (select.options.length !== LEVELS.length) select.innerHTML = levelOptionsHtml();
+      select.value = currentLevelId;
+    });
+    if (importHint) importHint.innerHTML = levelResourceSummaryHtml(currentLevel());
     if (standaloneBottomBridgeReady) {
       postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_LEVEL_OPTIONS', levels: levelOptions });
     }
@@ -25373,7 +25552,16 @@ function applyCanvasZoom(el) {
   function paintHint() {
     hint.innerHTML = (MSBN_MAX > 0)
       ? 'MSBN 區可放 <b>' + MSBN_MAX + '</b> 顆（依等級自動調整）'
-      : '此等級<b>不提供 MSBN</b>（版位詳情表 MSBN 張數＝0）';
+      : '此等級<b>不提供 MSBN</b>';
+    if (importHint) importHint.innerHTML = levelResourceSummaryHtml(currentLevel());
+  }
+  /* 等級決定活動頁資源呈現幾張三大保障／副區／MSBN、要不要吸底：已匯入的畫布立刻重畫。
+     工單資料都還在，切回原本的等級會再出現。 */
+  function refreshImportForLevel() {
+    if (typeof renderImportColumns !== 'function') return;
+    if (!currentImportColumns || !currentImportColumns.length || !blocksLoadedForImport) return;
+    if (activeImportCanvasContext && activeImportCanvasContext !== 'import') return;
+    renderImportColumns(currentImportColumns);
   }
 
   sel.value = currentLevelId;
@@ -25420,6 +25608,7 @@ function applyCanvasZoom(el) {
     renderPalette();  /* 素材庫上「畫布合計最多 N 顆」的字要跟著更新 */
     renderCanvas();
     syncBottomLevelPreset();
+    refreshImportForLevel();
     if (!fromRemote) broadcastLevel();
   }
 
@@ -25445,6 +25634,7 @@ function applyCanvasZoom(el) {
 
   sel.addEventListener('change', function () { applyLevelId(sel.value, false); });
   if (bottomSel) bottomSel.addEventListener('change', function () { applyLevelId(bottomSel.value, false); });
+  if (importSel) importSel.addEventListener('change', function () { applyLevelId(importSel.value, false); });
 
   /* 曝光資源那頁（iframe）改了等級 → 這邊跟著改 */
   window.addEventListener('message', function (e) {
@@ -26711,24 +26901,49 @@ ensureBlocksLoaded(function () {
 </script>
 
 
-<!-- 支援按鈕：回饋表移至左側使用教學下方；共用說明書暫時隱藏。 -->
+<!-- 支援按鈕：左下角「使用教學」下方依序是使用手冊、教學影片、使用反饋表；共用說明書暫時隱藏。 -->
 <style id="boda-help-styles">
-#boda-help-feedback{order:21;margin-top:0;}
+#boda-help-guide{order:21;margin-top:0;}
+#boda-help-video{order:22;margin-top:0;}
+#boda-help-feedback{order:23;margin-top:0;}
 #boda-help-manual,#feedback-btn{display:none!important;}
+#boda-help-note{position:fixed;z-index:100000;max-width:240px;padding:9px 12px;border-radius:9px;background:#1b1b1f;color:#f2f2f4;border:1px solid #555562;font-size:12px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.35);pointer-events:none;opacity:0;transition:opacity .18s;}
+#boda-help-note.show{opacity:1;}
 </style>
+<button id="boda-help-guide" class="boda-tour-launch" type="button" data-skip-app-loading aria-label="開啟使用手冊（另開分頁）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.5C10 5 7.5 4.5 4 4.5v14c3.5 0 6 .5 8 2 2-1.5 4.5-2 8-2v-14c-3.5 0-6 .5-8 2z"/><path d="M12 6.5v14"/></svg><span>使用手冊</span></button>
+<button id="boda-help-video" class="boda-tour-launch" type="button" data-skip-app-loading aria-label="觀看教學影片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m10 9.2 5 2.8-5 2.8z"/></svg><span>教學影片</span></button>
 <button id="boda-help-feedback" class="boda-tour-launch boda-feedback-launch" type="button" data-skip-app-loading aria-label="開啟使用反饋表（另開視窗）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.9L3.5 20.5l1.4-4.7a9 9 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5h1.2"/><path d="m14.5 6.5 3 3M12 12l1-4 5.7-5.7a2.1 2.1 0 0 1 3 3L16 11z"/></svg><span>使用反饋表</span></button>
 <button id="boda-help-manual" type="button" hidden aria-hidden="true">📖 使用說明書</button>
 <script id="boda-help-script">
 (function(){
   var feedbackUrl='https://docs.google.com/forms/d/e/1FAIpQLSdUnE4CC48TqjM__ucjOOC-b-D8tgCijuNBRQENf2pBaysCsQ/viewform?usp=dialog';
   var manualUrl='../shopee/JBP編輯器使用說明書.pdf#view=FitH';
+  var guideUrl='manual/index.html';
+  var videoUrl=''; /* 教學影片網址：影片上線後填在這裡，按鈕就會直接開影片 */
   var feedbackButton=document.getElementById('boda-help-feedback'),manualButton=document.getElementById('boda-help-manual');
+  var guideButton=document.getElementById('boda-help-guide'),videoButton=document.getElementById('boda-help-video');
   function openUrl(url){window.open(url,'_blank','noopener');}
+  var noteEl=null,noteTimer=0;
+  function showHelpNote(anchor,text){
+    if(!noteEl){noteEl=document.createElement('div');noteEl.id='boda-help-note';noteEl.setAttribute('role','status');document.body.appendChild(noteEl);}
+    noteEl.textContent=text;
+    var r=anchor.getBoundingClientRect();
+    noteEl.style.left=Math.round(r.right+10)+'px';
+    noteEl.style.top=Math.round(Math.max(8,r.top+r.height/2-18))+'px';
+    noteEl.classList.add('show');
+    clearTimeout(noteTimer);noteTimer=setTimeout(function(){noteEl.classList.remove('show');},2600);
+  }
   feedbackButton.addEventListener('click',function(){openUrl(feedbackUrl);});
   manualButton.addEventListener('click',function(){openUrl(manualUrl);});
+  guideButton.addEventListener('click',function(){openUrl(guideUrl);});
+  videoButton.addEventListener('click',function(){
+    if(videoUrl){openUrl(videoUrl);return;}
+    showHelpNote(videoButton,'教學影片準備中，上線後點這裡就能觀看。');
+  });
   feedbackButton.title='開啟使用反饋表';manualButton.title='開啟 SHOPEE 共用使用說明書';
+  guideButton.title='開啟 BODA 使用手冊';videoButton.title=videoUrl?'觀看教學影片':'教學影片準備中';
   var rail=document.getElementById('nav-rail');
-  if(rail)rail.appendChild(feedbackButton);
+  if(rail){rail.appendChild(guideButton);rail.appendChild(videoButton);rail.appendChild(feedbackButton);}
   window.BODAHelpAvoidCollisions=function(){}; /* 保留舊介面，不再執行浮動位置計算。 */
 })();
 </script>

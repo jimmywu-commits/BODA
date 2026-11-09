@@ -12,19 +12,21 @@
 
   var _scriptDir = (document.currentScript && document.currentScript.src || '').replace(/[^\/\\]*$/, '');
 
+  /* 等級表（2026-11-09 更新，與 BODA index.html 的 LEVELS 同一份 id／名稱／MSBN 張數）。
+     sheet＝「BOD A曝光資源版位詳情表.xlsx」裡借用的舊等級列（決定曝光資源預設／選配版位）；
+     詳情表日後加上新等級名稱時，會優先用新名稱那一列。 */
   var LEVELS = [
-    { id: 'brand_star_mega',    label: 'A Brand star (Mega)' },
-    { id: 'brand_star_mega_zj', label: 'A Brand star (Mega) 資交' },
-    { id: 'select_pkg',         label: 'A 精選套裝' },
-    { id: 'mdd',                label: 'A 品牌旗艦MDD' },
-    { id: 'mdd_zj',             label: 'A 品牌旗艦MDD 資交' },
-    { id: 'bod_a',              label: 'B+ BOD A' },
-    { id: 'bod_a_zj',           label: 'B+ BOD A 資交' },
-    { id: 'bod_b_mega',         label: 'B+ BOD B (Mega)' },
-    { id: 'basic',              label: 'B+ 基礎套裝' },
-    { id: 'jbp_multi',          label: 'B JBP多店' },
-    { id: 'gold_mega',          label: 'B 金牌 (Mega)' }
+    { id: 'brand_star_mega',    label: '大促 Brand star',      msbnMax: 8, sheet: 'A Brand star (Mega)' },
+    { id: 'brand_star_mega_zj', label: '大促 Brand star 資交', msbnMax: 4, sheet: 'A Brand star (Mega) 資交' },
+    { id: 'ad_multi',           label: 'AD單買(多店活動)',     msbnMax: 8, sheet: 'B JBP多店' },
+    { id: 'ad_bn_only',         label: 'AD單買(BN Only)',      msbnMax: 0, sheet: 'B JBP多店' },
+    { id: 'bod_a_plus',         label: 'A BOD+',               msbnMax: 8, sheet: 'B+ BOD A' },
+    { id: 'bod_a',              label: 'A BOD',                msbnMax: 8, sheet: 'B+ BOD A' },
+    { id: 'bod_a_plus_zj',      label: 'A BOD+(資交)',         msbnMax: 0, sheet: 'B+ BOD A 資交' },
+    { id: 'bod_a_zj',           label: 'A BOD(資交)',          msbnMax: 0, sheet: 'B+ BOD A 資交' }
   ];
+  /* 舊版等級 id（本機暫存）對應到新等級；沒列到的退回預設等級。 */
+  var LEGACY_LEVEL_IDS = { mdd: 'bod_a', mdd_zj: 'bod_a_zj', jbp_multi: 'ad_multi' };
   var LEVEL_KEY = 'wo_level_v1';
   var DEFAULT_LEVEL_ID = 'brand_star_mega';
   var SHEET_FILE = 'BOD A曝光資源版位詳情表.xlsx';
@@ -54,16 +56,28 @@
   var SHEET = null;
   var sheetError = '';
 
-  function readLevel() {
-    var v = null;
-    try { v = localStorage.getItem(LEVEL_KEY); } catch (e) {}
+  function normalizeLevelId(v) {
+    v = String(v == null ? '' : v);
+    if (LEGACY_LEVEL_IDS[v]) v = LEGACY_LEVEL_IDS[v];
     for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].id === v) return v;
     return DEFAULT_LEVEL_ID;
   }
-  function levelLabel(id) {
-    for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].id === id) return LEVELS[i].label;
-    for (var j = 0; j < LEVELS.length; j++) if (LEVELS[j].id === DEFAULT_LEVEL_ID) return LEVELS[j].label;
-    return LEVELS[0].label;
+  function readLevel() {
+    var v = null;
+    try { v = localStorage.getItem(LEVEL_KEY); } catch (e) {}
+    return normalizeLevelId(v);
+  }
+  function levelOf(id) {
+    for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].id === id) return LEVELS[i];
+    for (var j = 0; j < LEVELS.length; j++) if (LEVELS[j].id === DEFAULT_LEVEL_ID) return LEVELS[j];
+    return LEVELS[0];
+  }
+  function levelLabel(id) { return levelOf(id).label; }
+  /* 版位詳情表裡這個等級的那一列：先找新名稱，找不到再用借用的舊等級列 */
+  function levelSheetConf(id) {
+    if (!SHEET) return null;
+    var level = levelOf(id || currentLevelId);
+    return SHEET[level.label] || (level.sheet ? SHEET[level.sheet] : null) || null;
   }
 
   /* ── 等級下拉：插在「文字內容」上面 ───────────────────── */
@@ -78,6 +92,7 @@
   }
 
   function applyLevel(id, broadcast) {
+    if (id) id = normalizeLevelId(id);
     if (id && id !== currentLevelId) {
       userTouched = {};
       _logoVariantManualOverride = false;
@@ -117,10 +132,11 @@
     if (!note) return;
     if (sheetError) { note.className = 'warn'; note.textContent = sheetError; return; }
     note.className = '';
-    var conf = SHEET && SHEET[levelLabel(currentLevelId)];
+    var conf = levelSheetConf(currentLevelId);
     if (!conf) { note.textContent = '版位詳情表裡沒有這個等級，先顯示全部排版。'; return; }
-    var msbnTxt = (conf.msbnMax == null) ? ''
-      : (conf.msbnMax > 0 ? '　MSBN 可放 ' + conf.msbnMax + ' 顆。' : '　此等級不提供 MSBN。');
+    /* MSBN 張數以新等級表為準（詳情表借用的舊等級列張數不同） */
+    var levelMsbn = levelOf(currentLevelId).msbnMax;
+    var msbnTxt = levelMsbn > 0 ? '　MSBN 可放 ' + levelMsbn + ' 顆。' : '　此等級不提供 MSBN。';
     var plan = planForLevel();
     var d = 0, o = 0;
     plan.rows.forEach(function (r) {
@@ -139,7 +155,7 @@
   function paintEmptyText() {
     var el = document.getElementById('preview-empty-text');
     if (!el) return;
-    var conf = SHEET && SHEET[levelLabel(currentLevelId)];
+    var conf = levelSheetConf(currentLevelId);
     var plan = planForLevel();
     el.textContent = (conf && !conf.order.length && !plan.rows.some(function (r) { return !!r.layout; }))
       ? EMPTY_TEXT_NO_SLOT : EMPTY_TEXT_DEFAULT;
@@ -234,7 +250,7 @@
   function planForLevel() {
     var layouts = (typeof window.loadLayouts === 'function' ? window.loadLayouts() : [])
       .filter(function (l) { return l.enabled; });
-    var conf = SHEET && SHEET[levelLabel(currentLevelId)];
+    var conf = levelSheetConf(currentLevelId);
 
     function stem(v) {
       return normKey(String(v == null ? '' : v).replace(/\.html$/i, ''));
@@ -289,7 +305,7 @@
   }
 
   function arLevelHasSlot(){
-    var conf = SHEET && SHEET[levelLabel(currentLevelId)];
+    var conf = levelSheetConf(currentLevelId);
     if(!conf) return false;
     return conf.order.some(function(name){ return normKey(name).indexOf('ar') === 0; });
   }

@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>版位排版工具手冊</title>
+<style>
+:root{
+  --bg:#F5F7F6;
+  --panel:#FFFFFF;
+  --panel-2:#E9EFED;
+  --ink:#17201E;
+  --ink-dim:#5B6764;
+  --line:#D7E0DD;
+  --accent:#0B7D72;
+  --accent-ink:#FFFFFF;
+  --warn:#8A5A0B;
+  --warn-bg:#F7ECD6;
+  --code-bg:#E8EEEC;
+  --todo:#9AA8A4;
+  --shadow:0 1px 2px rgba(18,32,29,.06),0 8px 24px rgba(18,32,29,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121716; --panel:#1C2321; --panel-2:#242D2B; --ink:#E7EDEB; --ink-dim:#97A4A0; --line:#33403D;
+    --accent:#3CC3B2; --accent-ink:#0B1513; --warn:#E9A23B; --warn-bg:#3A301C; --code-bg:#242D2B; --todo:#5F6E6A;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121716; --panel:#1C2321; --panel-2:#242D2B; --ink:#E7EDEB; --ink-dim:#97A4A0; --line:#33403D;
+  --accent:#3CC3B2; --accent-ink:#0B1513; --warn:#E9A23B; --warn-bg:#3A301C; --code-bg:#242D2B; --todo:#5F6E6A;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  font-size:16px;line-height:1.75;overflow-wrap:anywhere;
+}
+h1,h2,h3{text-wrap:balance;margin:0}
+code,kbd,.mono{font-family:"JetBrains Mono","SFMono-Regular",Consolas,ui-monospace,monospace}
+a{color:var(--accent)}
+::selection{background:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
+
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr);max-width:1180px;margin:0 auto}
+@media (max-width:860px){.shell{grid-template-columns:minmax(0,1fr)}}
+
+.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+  padding:36px 18px 36px 26px;border-right:1px solid var(--line);scrollbar-width:thin}
+@media (max-width:860px){.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line);padding:22px 16px}}
+.toc-brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.toc-mark{width:26px;height:26px;border-radius:7px;background:var(--accent);color:var(--accent-ink);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex:none}
+.toc-brand b{font-size:14.5px}
+.toc nav{display:flex;flex-direction:column;gap:2px}
+.toc a{color:var(--ink-dim);text-decoration:none;font-size:13.5px;padding:6px 10px;border-radius:8px}
+.toc a:hover{background:var(--panel-2);color:var(--ink)}
+.toc .grp{font-size:11px;letter-spacing:.09em;color:var(--ink-dim);opacity:.75;margin:16px 10px 6px;font-weight:700}
+.toc .grp:first-of-type{margin-top:2px}
+
+main{padding:56px 44px 100px;min-width:0}
+@media (max-width:640px){main{padding:32px 16px 72px}}
+
+.cover{margin-bottom:46px}
+.cover .kicker{font-size:12px;letter-spacing:.14em;color:var(--accent);font-weight:700;margin-bottom:12px;display:block}
+.cover h1{font-size:clamp(28px,4.4vw,40px);font-weight:900;line-height:1.25;margin-bottom:14px}
+.cover .lede{font-size:17px;color:var(--ink-dim);max-width:62ch;line-height:1.7;margin:0}
+.cover .who{margin-top:20px;display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-size:12.5px;padding:4px 12px;border-radius:99px;background:var(--panel-2);color:var(--ink-dim);
+  border:1px solid var(--line);font-weight:600}
+
+section{margin-bottom:52px;scroll-margin-top:20px}
+.stepnum{font-size:13px;color:var(--accent);font-weight:700;display:block;margin-bottom:6px;letter-spacing:.04em}
+h2{font-size:22px;font-weight:700;margin-bottom:10px}
+h3{font-size:17px;font-weight:700;margin:22px 0 8px}
+p{margin:0 0 12px;max-width:66ch}
+ul,ol{margin:0 0 14px;padding-left:1.3em;max-width:64ch}
+li{margin-bottom:5px}
+.muted{color:var(--ink-dim);font-size:13.5px}
+.lead{color:var(--ink-dim);font-size:14.5px;max-width:64ch;margin-bottom:14px}
+
+kbd{font-size:12px;font-weight:600;background:var(--code-bg);color:var(--ink);
+  padding:1px 7px;border-radius:5px;border:1px solid var(--line);border-bottom-width:2px}
+
+.box{border-radius:14px;padding:15px 18px;margin:16px 0;max-width:64ch;box-shadow:var(--shadow)}
+.box .label{font-size:11.5px;letter-spacing:.08em;font-weight:700;display:block;margin-bottom:6px}
+.box p:last-child,.box ul:last-child{margin-bottom:0}
+.box.tip{background:var(--panel);border:1px solid var(--line)}
+.box.tip .label{color:var(--accent)}
+.box.warn{background:var(--warn-bg);border:1px solid var(--line)}
+.box.warn .label{color:var(--warn)}
+
+/* 截圖位置（待補實機截圖） */
+figure.shot{margin:14px 0 20px;max-width:100%}
+figure.shot.todo{border:2px dashed var(--todo);border-radius:12px;background:var(--panel-2);
+  min-height:140px;padding:18px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+figure.shot.todo::before{content:"截圖待補";font-size:11.5px;letter-spacing:.1em;font-weight:700;color:var(--ink-dim)}
+figure.shot.todo figcaption{font-size:13px;color:var(--ink-dim);margin:0}
+figure.shot img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:var(--shadow);background:var(--panel)}
+figure.shot figcaption{font-size:13px;color:var(--ink-dim);margin-top:8px;max-width:66ch}
+.shot-row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+.shot-row img{flex:none}
+.callout{display:inline-flex;align-items:center;justify-content:center;min-width:1.45em;height:1.45em;padding:0 .3em;border-radius:99px;background:#ee4d2d;color:#fff;font-size:.78em;font-weight:700;line-height:1;vertical-align:.08em;margin-right:.3em}
+
+.tbl{max-width:100%;overflow-x:auto;margin:10px 0 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--panel-2);font-weight:700;white-space:nowrap}
+td.n,th.n{text-align:center;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;max-width:68ch;margin-bottom:10px}
+.xcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.xcard .xh{font-weight:700;font-size:13.5px;color:var(--accent);margin-bottom:6px}
+.xcard p{font-size:13px;margin-bottom:0;color:var(--ink-dim)}
+
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 16px;max-width:68ch}
+.flow span{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px 10px;font-size:13.5px;font-weight:600}
+.flow i{font-style:normal;color:var(--ink-dim)}
+
+footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);font-size:12.5px;max-width:64ch}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="toc">
+  <div class="toc-brand"><span class="toc-mark">BOD</span><b>版位排版工具手冊</b></div>
+  <nav>
+    <span class="grp">開始</span>
+    <a href="#start">第一次打開怎麼做</a>
+    <a href="#level">先選對等級</a>
+    <span class="grp">做工單</span>
+    <a href="#import">活動頁資源（匯入工單）</a>
+    <a href="#overview">工單總覽要填什麼</a>
+    <span class="grp">曝光資源</span>
+    <a href="#exposure">畫面總覽</a>
+    <a href="#assets">Logo、商品圖、背景圖</a>
+    <a href="#endorser">代言人：照片、簽名檔、小字</a>
+    <a href="#follow">代言人在各版位自動配合</a>
+    <a href="#lock">鎖鏈：連動與單張獨立</a>
+    <span class="grp">收尾</span>
+    <a href="#color">取色工具</a>
+    <a href="#bottom">吸底工具</a>
+    <a href="#export">下載與暫存</a>
+    <a href="#faq">常見問題與已知限制</a>
+  </nav>
+</aside>
+<main>
+
+<div class="cover">
+  <span class="kicker">BOD 版位設計工具組</span>
+  <h1>版位排版工具操作手冊</h1>
+  <p class="lede">從匯入工單、做曝光資源，到取色、吸底和整包交件，照這份手冊一步一步做就能完成一檔活動。截圖都是工具的實際畫面，橘色框和編號對應旁邊的說明。</p>
+  <div class="who"><span class="tag">美術設計</span><span class="tag">營運／專案窗口</span></div>
+</div>
+
+<section id="start">
+  <span class="stepnum">START</span>
+  <h2>第一次打開怎麼做</h2>
+  <p class="lead">打開工具會先看到首頁。左側導覽列就是依序製作的五個步驟：</p>
+  <div class="flow"><span>1 活動頁資源</span><i>→</i><span>2 曝光資源</span><i>→</i><span>3 取色工具</span><i>→</i><span>4 吸底工具</span><i>→</i><span>5 整包下載</span></div>
+  <figure class="shot"><div class="shot-row"><img src="img/00-home.png" width="733" height="828" alt="首頁：左側製作流程、中間的匯入入口、左下角的教學與說明按鈕" loading="lazy"><img src="img/00-step-actions.png" width="80" height="420" alt="目前步驟下方的完成與略過按鈕" loading="lazy"></div><figcaption>左：首頁。右：進入步驟後，目前步驟下方會出現「完成 ›／略過 ›」。</figcaption></figure>
+  <ul>
+    <li><span class="callout">1</span><strong>製作流程</strong>：照順序往下做，點一下就切換到那一步。</li>
+    <li><span class="callout">2</span><strong>從這裡進入</strong>：拿到窗口填好的工單後，按「匯入工單」開始；只做曝光資源或吸底時，也可以直接點那兩個入口。</li>
+    <li><span class="callout">3</span><strong>教學與說明</strong>：「使用教學」是互動導覽，「使用手冊」就是這份文件，「教學影片」上線後在這裡看，「使用反饋表」回報問題。</li>
+    <li><strong>完成／略過</strong>：目前步驟下方會出現「完成 ›」「略過 ›」，按下就標記狀態並前往下一步。這次用不到的步驟按略過即可。</li>
+  </ul>
+  <div class="box tip">
+    <span class="label">建議順序</span>
+    <p>先確認<strong>等級</strong>（下一節），再上傳工單與圖片。等級決定活動頁資源要畫幾張 MSBN、有沒有吸底，也決定曝光資源預設勾哪些版位。</p>
+  </div>
+  <p class="muted">工具會自動把進度存在這台電腦的瀏覽器裡，重新整理會回到上次的畫面。但這只是本機暫存，換電腦或清除瀏覽器資料就會不見，重要進度請記得下載暫存檔（見「下載與暫存」）。</p>
+</section>
+
+<section id="level">
+  <span class="stepnum">01</span>
+  <h2>先選對等級</h2>
+  <p class="lead">等級名稱就是工單總覽上的「包套」。各等級在活動頁資源呈現的數量如下（「–」表示沒有）：</p>
+  <div class="tbl"><table>
+    <thead><tr><th>等級</th><th class="n">三大保障</th><th class="n">副區</th><th class="n">基本 MSBN</th><th class="n">額外廠商自製 MSBN</th><th class="n">吸底</th></tr></thead>
+    <tbody>
+      <tr><td>大促 Brand star</td><td class="n">1</td><td class="n">1</td><td class="n">8</td><td class="n">8</td><td class="n">1</td></tr>
+      <tr><td>大促 Brand star 資交</td><td class="n">1</td><td class="n">1</td><td class="n">4</td><td class="n">8</td><td class="n">1</td></tr>
+      <tr><td>AD單買(多店活動)</td><td class="n">1</td><td class="n">1</td><td class="n">8</td><td class="n">–</td><td class="n">1</td></tr>
+      <tr><td>AD單買(BN Only)</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">–</td></tr>
+      <tr><td>A BOD+</td><td class="n">1</td><td class="n">1</td><td class="n">8</td><td class="n">8</td><td class="n">1</td></tr>
+      <tr><td>A BOD</td><td class="n">1</td><td class="n">1</td><td class="n">8</td><td class="n">8</td><td class="n">1</td></tr>
+      <tr><td>A BOD+(資交)</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">8</td><td class="n">1</td></tr>
+      <tr><td>A BOD(資交)</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">8</td><td class="n">1</td></tr>
+    </tbody>
+  </table></div>
+  <figure class="shot"><img src="img/01-level.png" width="350" height="146" alt="活動頁資源的等級下拉與提示文字" loading="lazy"><figcaption>活動頁資源左欄最上面的「等級」，下方會寫這個等級要呈現的數量。</figcaption></figure>
+  <ul>
+    <li><strong>三個地方同步</strong>：活動頁資源、曝光資源（左側最上面）、吸底工具都有「等級」下拉，改任何一個，其他兩個會一起變。</li>
+    <li><strong>上傳工單會自動切換</strong>：工單總覽的「包套(等級)」會在匯入時自動帶入等級。</li>
+    <li><strong>活動頁資源只畫該等級有的張數</strong>：例如資交等級不畫三大保障、副區與基本 MSBN；AD單買(BN Only) 只有曝光資源，活動頁資源不呈現任何版位，也沒有吸底。</li>
+    <li><strong>資料不會被刪</strong>：被等級隱藏的欄位只是不畫、不下載，切回有包含的等級就會再出現。</li>
+    <li><strong>曝光資源自動勾版位</strong>：左側等級下方會寫「此等級：預設 N 個版位、選配 M 個（選配要自己打勾）」。</li>
+  </ul>
+</section>
+
+<section id="import">
+  <span class="stepnum">02</span>
+  <h2>活動頁資源（匯入工單）</h2>
+  <p class="lead">把填好的工單和圖片丟進來，工具會依內容畫出副區、MSBN 與吸底，並把共用文案送到曝光資源。</p>
+  <figure class="shot"><img src="img/03-import.png" width="800" height="903" alt="活動頁資源畫面：左欄的等級與上傳區、中間的匯入預覽、右側的版位編輯與操作" loading="lazy"><figcaption>活動頁資源。編號對應下方步驟。</figcaption></figure>
+  <ol>
+    <li><span class="callout">1</span><strong>確認等級</strong>：上傳工單時會依「包套」自動切換，也可以手動改。</li>
+    <li><span class="callout">2</span><strong>STEP 1：上傳工單</strong>。把 .xlsx（或本工具下載的 .json）拖進虛線框，或點一下選檔。</li>
+    <li><span class="callout">3</span><strong>STEP 2：上傳圖片</strong>。可以多選，也可以拖整個資料夾，或按「選擇圖片資料夾」。圖片會依工單裡的檔名自動對到欄位。</li>
+    <li><span class="callout">4</span><strong>看預覽</strong>：中間是所有版位的成品預覽，上方可以調顯示比例。</li>
+    <li><span class="callout">5</span><strong>檢查與微調</strong>：點預覽裡的版位，右側「版位編輯與操作」可以改文字、換圖、刪圖和調前後順序。移動或縮放圖片時可以按「↶ 上一步／↷ 下一步」，或用 <kbd>Ctrl Z</kbd>／<kbd>Ctrl Shift Z</kbd>。</li>
+    <li><span class="callout">6</span><strong>下載</strong>：做完按「下載工單＋圖片＋暫存檔」。上方有紅色提醒（例如字數超過）時要先處理。</li>
+  </ol>
+  <ul>
+    <li><strong>統一顏色</strong>：改一個顏色，畫布上所有版位一起變。背景色跟曝光資源<strong>雙向連動</strong>，兩邊改都會同步。</li>
+    <li><strong>商品影子</strong>：上傳商品圖時自動加影子，可選光源（左／中／右／關閉）和位移；改了設定沒更新時按「套用修改」。</li>
+    <li><strong>直接預覽全部版位</strong>：不用匯入檔案，每個版位各顯示一次，方便先看長相。</li>
+    <li><strong>清除畫面內容</strong>：版位保留，文字回到示範文字、圖片清空；統一顏色和已上傳的圖片素材不會刪除。</li>
+    <li><strong>上傳暫存檔還原編輯</strong>：載回之前下載的 .json，接著上次的進度做。</li>
+  </ul>
+</section>
+
+<section id="overview">
+  <span class="stepnum">03</span>
+  <h2>工單總覽要填什麼</h2>
+  <p class="lead">工單的「工單總覽」頁簽放的是曝光資源共用的內容。字數規則一律是中文算 1、英數算 0.5。</p>
+  <div class="tbl"><table>
+    <thead><tr><th>欄位</th><th>上限</th><th>工具怎麼用</th></tr></thead>
+    <tbody>
+      <tr><td>包套(等級)</td><td>下拉選單</td><td>匯入時自動切換等級；MSBN 額度會跟著算出來。</td></tr>
+      <tr><td>主標</td><td>8 字</td><td>曝光資源各版位的主標。</td></tr>
+      <tr><td>副標</td><td>7 字</td><td>曝光資源各版位的副標。</td></tr>
+      <tr><td>日期／警語</td><td>14 字</td><td>日期、活動期間或警語。</td></tr>
+      <tr><td>曝光資源圖片</td><td>3 張</td><td>商品圖檔名，多張用逗號分隔。</td></tr>
+      <tr><td>背景顏色</td><td>#RRGGBB</td><td>與曝光資源背景色、活動頁資源統一背景同步。</td></tr>
+      <tr><td>品牌名</td><td>9 字</td><td>曝光資源品牌名。</td></tr>
+      <tr><td>SearchICON文案</td><td>2 字</td><td>Search ICON 文字版。</td></tr>
+      <tr><td>AR文案</td><td>6 字</td><td>AR 版位文案。</td></tr>
+      <tr><td>代言人照+簽名檔路徑(將取代2品)</td><td>2 張</td><td>在這格<strong>右邊那格</strong>填兩個檔名，用逗號、＋號或換行分開都可以。</td></tr>
+      <tr><td>代言人小字</td><td>兩排、每排 8 字</td><td>在這格<strong>右邊那格</strong>填文字，字級、顏色照 MSBN 代言人小字的規則。</td></tr>
+    </tbody>
+  </table></div>
+  <figure class="shot"><img src="img/04-overview-sheet.png" width="733" height="345" alt="工單總覽頁簽節錄：代言人照+簽名檔路徑那一列，右邊是兩張圖的檔名，再過去是代言人小字" loading="lazy"><figcaption>工單總覽節錄（以測試工單為例）。<span class="callout">1</span>「代言人照+簽名檔路徑」右邊那格填兩張圖的檔名；<span class="callout">2</span>「代言人小字」右邊那格填小字。</figcaption></figure>
+  <h3>工具怎麼分辨哪張是照片、哪張是簽名檔</h3>
+  <ol>
+    <li><strong>先看檔名</strong>：檔名有「簽名、簽、sign、signature」就當簽名檔；有「代言、照、photo、人像、形象」就當代言人照。</li>
+    <li><strong>檔名看不出來就看圖</strong>：線條細、大面積留白或透明的判斷成簽名檔，另一張當照片。</li>
+    <li><strong>還是判斷不出來</strong>：照填寫順序，第一張是照片、第二張是簽名檔。</li>
+  </ol>
+  <p>判斷錯了也沒關係，在曝光資源的代言人清單按「⇄」就能互換。同一份工單重新送一次，不會蓋掉你手動調好的位置、角度和小字。</p>
+  <div class="box tip">
+    <span class="label">小技巧</span>
+    <p>工單裡填的檔名要跟 STEP 2 上傳的圖片檔名一致，工具才配得到圖。最穩的做法是直接在檔名寫「代言人照」「簽名檔」。</p>
+  </div>
+</section>
+
+<section id="exposure">
+  <span class="stepnum">04</span>
+  <h2>曝光資源：畫面總覽</h2>
+  <p class="lead">左側是工具列，右側每一塊是一張獨立版位，標頭寫版位名稱與尺寸。工單匯入後，主標、副標、日期、品牌名、圖片和代言人資料會自動帶進來。</p>
+  <figure class="shot"><img src="img/05-exposure.png" width="800" height="903" alt="曝光資源畫面：左側工具列的等級、文字內容、排版選擇與下載按鈕，右側是各版位預覽" loading="lazy"><figcaption>曝光資源（等級 A BOD+）。右側預覽是 HBN 與 ddcard，代言人照、簽名檔和小字已經自動排好。</figcaption></figure>
+  <p class="lead">左側工具列由上而下：</p>
+  <ul>
+    <li><span class="callout">1</span><strong>等級</strong>：跟整個工具同步，決定預設勾選的版位。</li>
+    <li><span class="callout">2</span><strong>文字內容</strong>：主標、副標、日期、品牌名、SearchICON文案。欄位旁有字數提示，旁邊的圓點是這段文字的顏色。</li>
+    <li><strong>其他顏色</strong>：背景、CTA 等顏色；點色票可以輸入色碼或吸取螢幕顏色。</li>
+    <li><strong>Logo 上傳</strong>、<strong>商品圖</strong>、<strong>代言人</strong>、<strong>背景圖</strong>：見下面幾節。</li>
+    <li><strong>排版選擇</strong>：勾選這次要出的版位，可以全選、全消。</li>
+    <li><span class="callout">3</span><strong>鎖鏈</strong>：每張版位標頭右上角，決定這張要不要跟其他版位連動（見「鎖鏈」一節）。</li>
+    <li><span class="callout">4</span><strong>下載全部勾選畫版</strong>：輸出成品。下方還有「下載暫存」「上傳暫存」「清除本機暫存」。</li>
+  </ul>
+  <div class="box warn">
+    <span class="label">提醒</span>
+    <p>右側每一張都要捲動檢查，不要只看第一張。文字出現<strong>紅框</strong>（超出字數）或<strong>橘色內容提醒</strong>時，要先處理才能下載。</p>
+  </div>
+</section>
+
+<section id="assets">
+  <span class="stepnum">05</span>
+  <h2>Logo、商品圖、背景圖</h2>
+  <ul>
+    <li><strong>Logo 上傳（最多 3 張）</strong>：點擊或拖曳上傳，再調整大小與位置。</li>
+    <li><strong>商品圖（最多 3 張）</strong>：按「＋ 上傳商品圖」開上傳視窗，確認圖片、相對大小與排列後套用。中間固定是比較大的主品；左右可以拖曳或用箭頭換位。</li>
+    <li><strong>在畫布上調整商品</strong>：先點一下商品，四角出現縮放點、上方出現旋轉把手。拖商品是移動，拖四角是等比縮放，拖把手是旋轉；點空白處收起。</li>
+    <li><strong>商品影子</strong>：在商品清單按「影子」，或「編輯 → 加／編輯影子」，可調光源方向、位移、寬度、長度與顏色。</li>
+    <li><strong>人物圖 1／2</strong>：上傳 1 張人物圖時，商品最多只顯示最上層 2 件；上傳第 2 張時，商品圖完全不顯示。移除人物圖後會自動恢復。</li>
+    <li><strong>背景圖</strong>：按「上傳背景圖」開背景圖庫，分 EL、Fashion、FMCG、Lifestyle 四大類。每個版位可以在右側各自調整縮放與位置。</li>
+  </ul>
+  <figure class="shot"><div class="shot-row"><img src="img/06-product-modal.png" width="540" height="473" alt="上傳商品圖視窗：選取圖片步驟，已選 3 張，第一張標示主品" loading="lazy"><img src="img/06-product-select.png" width="220" height="204" alt="畫布上選取商品後出現的四角縮放點與上方旋轉把手" loading="lazy"></div><figcaption>左：「＋ 上傳商品圖」的視窗，先選圖、再確認大小比例。右：在畫布上點一下商品，出現四角縮放點與上方旋轉把手。</figcaption></figure>
+</section>
+
+<section id="endorser">
+  <span class="stepnum">06</span>
+  <h2>代言人：照片、簽名檔、小字</h2>
+  <p class="lead">左側「代言人（照片＋簽名檔，不加影子）」區塊，管理方式跟商品圖一樣，但兩張圖都不會加影子。</p>
+  <figure class="shot"><img src="img/07-endorser.png" width="297" height="404" alt="代言人區塊：上傳或更換按鈕、清單列、代言人小字輸入框與字色切換" loading="lazy"><figcaption>左側工具列的代言人區塊（已上傳時按鈕會變成「更換」）。</figcaption></figure>
+  <ul>
+    <li><strong>只放在這些版位</strong>：ddcard、IG、HBN、LPBN、Coin_pageBN、FB_POST、SCBN、活動總覽、SBA、AMS。首頁 LOGO 牆、AR、Search_Image、SearchICON 不放。</li>
+    <li><strong>會取代 2 件商品</strong>：有代言人照或簽名檔時，商品圖只顯示最上層的 1 件；如果同時還有人物圖，商品就完全不顯示。</li>
+    <li><span class="callout">1</span><strong>上傳／更換</strong>：按「＋ 上傳代言人照」「＋ 上傳簽名檔」，或由工單自動帶入。</li>
+    <li><span class="callout">2</span><strong>清單按鈕</strong>：「▲▼」決定代言人照在商品前面或後面；「編輯」可以裁切、去背、擦除（沒有影子功能）；角度欄直接輸入旋轉角度；「⇄」互換照片和簽名檔；「移除」刪掉這張。</li>
+    <li><strong>在畫布上旋轉</strong>：拖圖片上方的旋轉把手（按住 <kbd>Shift</kbd> 每 15° 一格，雙擊回到 0°）。旋轉後看起來的大小不變。</li>
+  </ul>
+  <h3>代言人小字</h3>
+  <ul>
+    <li><span class="callout">3</span><strong>字數</strong>：兩排、每排 8 字（中文 1、英數 0.5），超過會自動換到下一排；按 <kbd>Enter</kbd> 可以自己換排。</li>
+    <li><strong>字級固定</strong>：跟 MSBN 一樣，1200 寬的版位用 24px，其他版位依寬度等比換算：AMS 22px、ddcard 21px、SBA_PC 20px、IG 18px。滑鼠滾輪不能放大縮小。</li>
+    <li><span class="callout">4</span><strong>字色</strong>：預設「自動黑白」，小字底下偏暗就用白字，否則用深色字。想指定顏色可以直接選色；要回到自動，再按一次「自動黑白」。</li>
+  </ul>
+</section>
+
+<section id="follow">
+  <span class="stepnum">07</span>
+  <h2>代言人在各版位自動配合</h2>
+  <p class="lead">不用每個版位都調。<strong>HBN 是主要指標、LPBN 是第二指標</strong>：在這兩個版位調好代言人，其他版位會自動排好。</p>
+  <div class="tbl"><table>
+    <thead><tr><th>跟著誰</th><th>版位</th></tr></thead>
+    <tbody>
+      <tr><td><strong>HBN</strong></td><td>HBN（橫式／方式）、活動總覽、AMS、SCBN、SBA_PC（跟 HBN 一樣扁或更扁的版位）</td></tr>
+      <tr><td><strong>LPBN</strong></td><td>LPBN_APP、LPBN_PC、FB_POST、ddcard、IG、Coin_pageBN、SBA_APP（比 HBN 高、比較方的版位）</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>只調 HBN 也可以</strong>：LPBN 還沒調整過之前，第二組也先跟 HBN。</li>
+    <li><strong>LPBN 調過之後</strong>：第二組改跟 LPBN，之後再改 HBN 不會動到這一組。換一張代言人照，就會重新全部跟 HBN。</li>
+    <li><strong>人不會被切</strong>：自動排的版位，代言人照左、右、上方都不會超出畫面；底部可以出血，比例跟 HBN 一樣。</li>
+    <li><strong>不壓文字區</strong>：照片、簽名檔、小字都會避開主標、副標、日期、品牌名與 Logo。CTA 按鈕不算文字區，人像可以在按鈕後面；簽名檔或小字被按鈕蓋住太多時，只會把它們挪開，人像大小不變。</li>
+    <li><strong>簽名檔＋小字是一組</strong>：兩者的大小跟著小字的 24px 規則換算，跟人像保持一樣的距離，不會因為版位比例被拉遠。</li>
+    <li><strong>在其他版位手動拖</strong>：只會改那一張（和它的方／橫雙胞胎），不會回頭改 HBN 或 LPBN；那一張也不再自動調整。之後 HBN 或 LPBN 再調整時，這一張會重新跟著，手動調的位置會被蓋過。想一直保留，就解除那一張的鎖鏈。</li>
+    <li><strong>舊的暫存檔</strong>：打開舊暫存時，工具會以 HBN 的排法自動換成新規則，不用重調。</li>
+  </ul>
+  <figure class="shot"><img src="img/08-follow.png" width="733" height="704" alt="同一組代言人在 HBN、LPBN_APP、FB_POST、ddcard 的排法：人像都在畫面內，小字和簽名檔緊貼人像，沒有壓到文字" loading="lazy"><figcaption>只在 HBN 調整，其他版位自動配合：人像都在畫面內，小字和簽名檔跟人像一樣近，沒有壓到主標、副標。</figcaption></figure>
+  <div class="box warn">
+    <span class="label">提醒</span>
+    <p>自動配合只套用在<strong>鎖鏈是連動中</strong>的版位。某一張解除連動後，它就保留自己的排法，不會再跟著 HBN 或 LPBN。</p>
+  </div>
+</section>
+
+<section id="lock">
+  <span class="stepnum">08</span>
+  <h2>鎖鏈：連動與單張獨立</h2>
+  <p class="lead">每個版位標頭右上角都有一個鎖鏈圖示，預設是連動中。</p>
+  <ul>
+    <li><strong>連動中</strong>：商品、人物圖、代言人的位置與大小，會依各版位的規則跟著一起變。</li>
+    <li><strong>點一下解除</strong>：這一張變成獨立編輯，怎麼調都不影響其他版位。</li>
+    <li><strong>再點一下重新加入</strong>：這一張會套回目前大家共同的排法，之後繼續跟著連動。</li>
+  </ul>
+  <figure class="shot"><img src="img/09-lock.png" width="330" height="380" alt="版位標頭右上角的鎖鏈：上面是連動中，下面是已解除" loading="lazy"><figcaption>上：連動中（藍色相扣）。下：已解除，這一張單獨編輯（灰色斷開）。</figcaption></figure>
+  <p class="muted">首頁 LOGO 牆、SearchICON_PRODUCT 有各自的排法，不參加這套連動，標頭也不會出現鎖鏈。</p>
+</section>
+
+<section id="color">
+  <span class="stepnum">09</span>
+  <h2>取色工具</h2>
+  <p class="lead">「HBN Banner 取色工具」有兩個分頁：</p>
+  <figure class="shot"><img src="img/10-color.png" width="800" height="903" alt="取色工具配色模擬分頁：左側輸入底色、副標候選與輸出，右側預覽與各色票" loading="lazy"><figcaption>「配色模擬」分頁。</figcaption></figure>
+  <ul>
+    <li><strong>配色模擬</strong>：<span class="callout">1</span>輸入底色，工具依規則算出主標、副標、警語與 CTA 的顏色，<span class="callout">4</span>右側即時預覽。<span class="callout">2</span>副標有多個候選色，點一下就套用。底色欄位旁的連結圖示亮著時，表示跟曝光資源底色連動中。<span class="callout">3</span>完成後按「輸出 CSV 檔」，格式對應色票.xlsx。</li>
+    <li><strong>取色</strong>：載入 HBN 圖片資料夾，或直接把圖片拖進來，工具會抓出每張圖的底色、主標、副標、警語、CTA 文字與 CTA 底色，並標出對比度；可以複製或下載 CSV。</li>
+  </ul>
+  <p class="muted">配色原則：整張只用四色（底、深、強調、白）；淺底配深色字，深底配白主標＋淺黃或米色副標；CTA 文字原則上用白字。</p>
+</section>
+
+<section id="bottom">
+  <span class="stepnum">10</span>
+  <h2>吸底工具</h2>
+  <p class="lead">做頁面底部那條 1200 × 150 的促銷橫幅。一條有 2～5 顆「icon＋文字」，匯出時每張反白一顆、其他轉灰，一次出齊。</p>
+  <figure class="shot"><img src="img/11-bottom.png" width="800" height="903" alt="吸底工具：左側面板有等級、上傳、反白顏色、模板顆數與每顆內容，右側是吸底預覽" loading="lazy"><figcaption>吸底工具：左側是設定，右側是預覽（目前反白第 1 顆「主會場」）。</figcaption></figure>
+  <ul>
+    <li><strong>資料來源</strong>：請先在活動頁資源上傳工單；LOGO、ICON、文案與分頁設定會一起帶進來。</li>
+    <li><strong>步驟</strong>：<span class="callout">1</span>選模板顆數 → <span class="callout">2</span>每顆點縮圖選 icon（可搜尋），需要時用「大小」滑桿調整（50%～250%），再輸入文字（建議 5 字內）→ <span class="callout">3</span>在預覽確認 → <span class="callout">4</span>匯出。</li>
+    <li><strong>紅字提醒</strong>：圖片放太大、壓到文字或超出邊界時會出現紅字。紅字不會擋匯出，但請回頭看一下畫面。</li>
+    <li><strong>等級</strong>：吸底也有等級下拉，跟整個工具同步；AD單買(BN Only) 沒有吸底。</li>
+  </ul>
+</section>
+
+<section id="export">
+  <span class="stepnum">11</span>
+  <h2>下載與暫存</h2>
+  <div class="cardgrid">
+    <div class="xcard"><div class="xh">曝光資源｜下載全部勾選畫版</div><p>打包成 ZIP：每個勾選版位一張圖，加上「原始檔編輯.json」暫存檔。</p></div>
+    <div class="xcard"><div class="xh">活動頁資源｜下載工單＋圖片＋暫存檔</div><p>回填文字、色碼與共用文案到原 Excel，並附合成 PNG、各版位獨立 PNG（副區整排、MSBN 逐顆、吸底多狀態圖）和編輯暫存 .json。</p></div>
+    <div class="xcard"><div class="xh">步驟 5｜整包下載</div><p>一次打包工單、圖片、色票和暫存檔。正式交件用這個。</p></div>
+  </div>
+  <figure class="shot"><div class="shot-row"><img src="img/12-export-progress.png" width="510" height="170" alt="下載進度：LOADING 曝光資源下載，截圖中 6/16" loading="lazy"><img src="img/12-export-zip.png" width="548" height="330" alt="曝光資源下載的 ZIP 內容：每個版位一張圖，加上原始檔編輯.json" loading="lazy"></div><figcaption>上：打包時的進度（請等它跑完）。下：曝光資源 ZIP 的內容，每個勾選版位一張圖，加上暫存檔「原始檔編輯.json」。</figcaption></figure>
+  <ul>
+    <li><strong>自動暫存</strong>：編輯中會自動存在這台電腦的瀏覽器，重新整理會還原。</li>
+    <li><strong>換電腦接著做</strong>：用下載的 .json 暫存檔載回：曝光資源是左側工具列最下方的「上傳暫存」，活動頁資源是左欄的「上傳暫存檔還原編輯」。</li>
+    <li><strong>清除重來</strong>：曝光資源左側最下方有「清除本機暫存」。清除前請先下載暫存檔備份。</li>
+  </ul>
+  <div class="box warn">
+    <span class="label">下載前檢查</span>
+    <p>文字超出字數上限，或文案內容提醒還沒確認時，工具會擋下下載並跳出提示。打包期間請等它跑完，不要關閉分頁。</p>
+  </div>
+</section>
+
+<section id="faq">
+  <span class="stepnum">12</span>
+  <h2>常見問題與已知限制</h2>
+  <ul>
+    <li><strong>有些版位看不到代言人？</strong>首頁 LOGO 牆、AR、Search_Image、SearchICON 本來就不放代言人。</li>
+    <li><strong>上傳代言人後商品變少了？</strong>代言人照＋簽名檔會取代 2 件商品，只留最上層 1 件；同時有人物圖時商品全部隱藏。</li>
+    <li><strong>小字可以放大嗎？</strong>不行。小字字級固定照 MSBN 規則，每個版位都是換算後的正確大小。</li>
+    <li><strong>某一張的代言人想自己排？</strong>在那一張直接拖曳即可，只影響那一張（和它的方／橫雙胞胎）；但之後改 HBN 或 LPBN 時會被蓋過。要完全獨立，就解除那一張的鎖鏈。</li>
+    <li><strong>換電腦後內容不見了？</strong>本機暫存只存在原本那台電腦的瀏覽器，請用 .json 暫存檔或整包下載搬資料。</li>
+    <li><strong>新等級的曝光資源預設版位</strong>：目前暫時沿用舊等級的設定（大促 → A Brand star、AD單買 → B JBP多店、A BOD → B+ BOD A），版位詳情表加上新等級名稱後會自動改用新設定。</li>
+  </ul>
+</section>
+
+<footer>BOD 版位設計工具組・內部使用・依 2026-11 的工具版本撰寫，截圖為實際畫面（測試資料）</footer>
+</main>
+</div>
+</body>
+</html>
