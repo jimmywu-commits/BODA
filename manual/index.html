@@ -102,9 +102,13 @@ figure.shot.todo{border:2px dashed var(--todo);border-radius:12px;background:var
 figure.shot.todo::before{content:"截圖待補";font-size:11.5px;letter-spacing:.1em;font-weight:700;color:var(--ink-dim)}
 figure.shot.todo figcaption{font-size:13px;color:var(--ink-dim);margin:0}
 figure.shot img{display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:var(--shadow);background:var(--panel)}
+figure.shot a.zoom{display:inline-block;cursor:zoom-in}
 figure.shot figcaption{font-size:13px;color:var(--ink-dim);margin-top:8px;max-width:66ch}
 .shot-row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
 .shot-row img{flex:none}
+.shot-side{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;margin:6px 0 14px}
+.shot-side figure.shot{margin:0;flex:none}
+.shot-side ul{flex:1;min-width:260px;margin-top:4px}
 .callout{display:inline-flex;align-items:center;justify-content:center;min-width:1.45em;height:1.45em;padding:0 .3em;border-radius:99px;background:#ee4d2d;color:#fff;font-size:.78em;font-weight:700;line-height:1;vertical-align:.08em;margin-right:.3em}
 
 .tbl{max-width:100%;overflow-x:auto;margin:10px 0 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
@@ -162,15 +166,16 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
 <section id="start">
   <span class="stepnum">START</span>
   <h2>第一次打開怎麼做</h2>
-  <p class="lead">打開工具會先看到首頁。左側導覽列就是依序製作的五個步驟：</p>
+  <p class="lead">左側導覽列就是依序製作的五個步驟，點一下就切換；重新打開工具會回到上次所在的步驟。拿到窗口填好的工單後，從「1 活動頁資源」開始。</p>
   <div class="flow"><span>1 活動頁資源</span><i>→</i><span>2 曝光資源</span><i>→</i><span>3 取色工具</span><i>→</i><span>4 吸底工具</span><i>→</i><span>5 整包下載</span></div>
-  <figure class="shot"><div class="shot-row"><img src="img/00-home.png" width="733" height="828" alt="首頁：左側製作流程、中間的匯入入口、左下角的教學與說明按鈕" loading="lazy"><img src="img/00-step-actions.png" width="80" height="420" alt="目前步驟下方的完成與略過按鈕" loading="lazy"></div><figcaption>左：首頁。右：進入步驟後，目前步驟下方會出現「完成 ›／略過 ›」。</figcaption></figure>
-  <ul>
-    <li><span class="callout">1</span><strong>製作流程</strong>：照順序往下做，點一下就切換到那一步。</li>
-    <li><span class="callout">2</span><strong>從這裡進入</strong>：拿到窗口填好的工單後，按「匯入工單」開始；只做曝光資源或吸底時，也可以直接點那兩個入口。</li>
-    <li><span class="callout">3</span><strong>教學與說明</strong>：「使用教學」是互動導覽，「使用手冊」就是這份文件，「教學影片」上線後在這裡看，「使用反饋表」回報問題。</li>
-    <li><strong>完成／略過</strong>：目前步驟下方會出現「完成 ›」「略過 ›」，按下就標記狀態並前往下一步。這次用不到的步驟按略過即可。</li>
-  </ul>
+  <div class="shot-side">
+    <figure class="shot"><a class="zoom" href="img/00-rail.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/00-rail.png" width="118" height="828" alt="左側導覽列：製作流程五個步驟、目前步驟下方的完成與略過、最下方的教學與說明按鈕" loading="lazy"></a></figure>
+    <ul>
+      <li><span class="callout">1</span><strong>製作流程</strong>：活動頁資源 → 曝光資源 → 取色工具 → 吸底工具 → 整包下載，照順序往下做。</li>
+      <li><span class="callout">2</span><strong>完成／略過</strong>：目前步驟下方會出現「完成 ›」「略過 ›」，按下就標記狀態並前往下一步，完成的步驟會打上勾。這次用不到的步驟按略過即可。</li>
+      <li><span class="callout">3</span><strong>教學與說明</strong>：「使用教學」是互動導覽，「使用手冊」就是這份文件，「教學影片」上線後在這裡看，「使用反饋表」回報問題。</li>
+    </ul>
+  </div>
   <div class="box tip">
     <span class="label">建議順序</span>
     <p>先確認<strong>等級</strong>（下一節），再上傳工單與圖片。等級決定活動頁資源要畫幾張 MSBN、有沒有吸底，也決定曝光資源預設勾哪些版位。</p>
@@ -195,7 +200,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
       <tr><td>A BOD(資交)</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">8</td><td class="n">1</td></tr>
     </tbody>
   </table></div>
-  <figure class="shot"><img src="img/01-level.png" width="350" height="146" alt="活動頁資源的等級下拉與提示文字" loading="lazy"><figcaption>活動頁資源左欄最上面的「等級」，下方會寫這個等級要呈現的數量。</figcaption></figure>
+  <figure class="shot"><a class="zoom" href="img/01-level.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/01-level.png" width="350" height="146" alt="活動頁資源的等級下拉與提示文字" loading="lazy"></a><figcaption>活動頁資源左欄最上面的「等級」，下方會寫這個等級要呈現的數量。</figcaption></figure>
   <ul>
     <li><strong>三個地方同步</strong>：活動頁資源、曝光資源（左側最上面）、吸底工具都有「等級」下拉，改任何一個，其他兩個會一起變。</li>
     <li><strong>上傳工單會自動切換</strong>：工單總覽的「包套(等級)」會在匯入時自動帶入等級。</li>
@@ -209,14 +214,14 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <span class="stepnum">02</span>
   <h2>活動頁資源（匯入工單）</h2>
   <p class="lead">把填好的工單和圖片丟進來，工具會依內容畫出副區、MSBN 與吸底，並把共用文案送到曝光資源。</p>
-  <figure class="shot"><img src="img/03-import.png" width="800" height="903" alt="活動頁資源畫面：左欄的等級與上傳區、中間的匯入預覽、右側的版位編輯與操作" loading="lazy"><figcaption>活動頁資源。編號對應下方步驟。</figcaption></figure>
+  <figure class="shot"><a class="zoom" href="img/03-import.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/03-import.png" width="1440" height="903" alt="活動頁資源畫面：左欄的等級與上傳區、中間的匯入預覽、右側的版位編輯與操作" loading="lazy"></a><figcaption>活動頁資源。編號對應下方步驟。</figcaption></figure>
   <ol>
     <li><span class="callout">1</span><strong>確認等級</strong>：上傳工單時會依「包套」自動切換，也可以手動改。</li>
     <li><span class="callout">2</span><strong>STEP 1：上傳工單</strong>。把 .xlsx（或本工具下載的 .json）拖進虛線框，或點一下選檔。</li>
     <li><span class="callout">3</span><strong>STEP 2：上傳圖片</strong>。可以多選，也可以拖整個資料夾，或按「選擇圖片資料夾」。圖片會依工單裡的檔名自動對到欄位。</li>
     <li><span class="callout">4</span><strong>看預覽</strong>：中間是所有版位的成品預覽，上方可以調顯示比例。</li>
     <li><span class="callout">5</span><strong>檢查與微調</strong>：點預覽裡的版位，右側「版位編輯與操作」可以改文字、換圖、刪圖和調前後順序。移動或縮放圖片時可以按「↶ 上一步／↷ 下一步」，或用 <kbd>Ctrl Z</kbd>／<kbd>Ctrl Shift Z</kbd>。</li>
-    <li><span class="callout">6</span><strong>下載</strong>：做完按「下載工單＋圖片＋暫存檔」。上方有紅色提醒（例如字數超過）時要先處理。</li>
+    <li><span class="callout">6</span><strong>下載</strong>：做完按「下載工單＋圖片＋暫存檔」（跟左側「整包下載」是同一個功能）。上方有紅色提醒（例如字數超過）時要先處理。</li>
   </ol>
   <ul>
     <li><strong>統一顏色</strong>：改一個顏色，畫布上所有版位一起變。背景色跟曝光資源<strong>雙向連動</strong>，兩邊改都會同步。</li>
@@ -247,7 +252,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
       <tr><td>代言人小字</td><td>兩排、每排 8 字</td><td>在這格<strong>右邊那格</strong>填文字，字級、顏色照 MSBN 代言人小字的規則。</td></tr>
     </tbody>
   </table></div>
-  <figure class="shot"><img src="img/04-overview-sheet.png" width="733" height="345" alt="工單總覽頁簽節錄：代言人照+簽名檔路徑那一列，右邊是兩張圖的檔名，再過去是代言人小字" loading="lazy"><figcaption>工單總覽節錄（以測試工單為例）。<span class="callout">1</span>「代言人照+簽名檔路徑」右邊那格填兩張圖的檔名；<span class="callout">2</span>「代言人小字」右邊那格填小字。</figcaption></figure>
+  <figure class="shot"><a class="zoom" href="img/04-overview-sheet.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/04-overview-sheet.png" width="733" height="345" alt="工單總覽頁簽節錄：代言人照+簽名檔路徑那一列，右邊是兩張圖的檔名，再過去是代言人小字" loading="lazy"></a><figcaption>工單總覽節錄（以測試工單為例）。<span class="callout">1</span>「代言人照+簽名檔路徑」右邊那格填兩張圖的檔名；<span class="callout">2</span>「代言人小字」右邊那格填小字。</figcaption></figure>
   <h3>工具怎麼分辨哪張是照片、哪張是簽名檔</h3>
   <ol>
     <li><strong>先看檔名</strong>：檔名有「簽名、簽、sign、signature」就當簽名檔；有「代言、照、photo、人像、形象」就當代言人照。</li>
@@ -265,7 +270,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <span class="stepnum">04</span>
   <h2>曝光資源：畫面總覽</h2>
   <p class="lead">左側是工具列，右側每一塊是一張獨立版位，標頭寫版位名稱與尺寸。工單匯入後，主標、副標、日期、品牌名、圖片和代言人資料會自動帶進來。</p>
-  <figure class="shot"><img src="img/05-exposure.png" width="800" height="903" alt="曝光資源畫面：左側工具列的等級、文字內容、排版選擇與下載按鈕，右側是各版位預覽" loading="lazy"><figcaption>曝光資源（等級 A BOD+）。右側預覽是 HBN 與 ddcard，代言人照、簽名檔和小字已經自動排好。</figcaption></figure>
+  <figure class="shot"><a class="zoom" href="img/05-exposure.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/05-exposure.png" width="800" height="903" alt="曝光資源畫面：左側工具列的等級、文字內容、排版選擇與下載按鈕，右側是各版位預覽" loading="lazy"></a><figcaption>曝光資源（等級 A BOD+）。右側預覽是 HBN 與 ddcard，代言人照、簽名檔和小字已經自動排好。</figcaption></figure>
   <p class="lead">左側工具列由上而下：</p>
   <ul>
     <li><span class="callout">1</span><strong>等級</strong>：跟整個工具同步，決定預設勾選的版位。</li>
@@ -293,14 +298,14 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
     <li><strong>人物圖 1／2</strong>：上傳 1 張人物圖時，商品最多只顯示最上層 2 件；上傳第 2 張時，商品圖完全不顯示。移除人物圖後會自動恢復。</li>
     <li><strong>背景圖</strong>：按「上傳背景圖」開背景圖庫，分 EL、Fashion、FMCG、Lifestyle 四大類。每個版位可以在右側各自調整縮放與位置。</li>
   </ul>
-  <figure class="shot"><div class="shot-row"><img src="img/06-product-modal.png" width="540" height="473" alt="上傳商品圖視窗：選取圖片步驟，已選 3 張，第一張標示主品" loading="lazy"><img src="img/06-product-select.png" width="220" height="204" alt="畫布上選取商品後出現的四角縮放點與上方旋轉把手" loading="lazy"></div><figcaption>左：「＋ 上傳商品圖」的視窗，先選圖、再確認大小比例。右：在畫布上點一下商品，出現四角縮放點與上方旋轉把手。</figcaption></figure>
+  <figure class="shot"><div class="shot-row"><a class="zoom" href="img/06-product-modal.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/06-product-modal.png" width="540" height="473" alt="上傳商品圖視窗：選取圖片步驟，已選 3 張，第一張標示主品" loading="lazy"></a><a class="zoom" href="img/06-product-select.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/06-product-select.png" width="220" height="204" alt="畫布上選取商品後出現的四角縮放點與上方旋轉把手" loading="lazy"></a></div><figcaption>左：「＋ 上傳商品圖」的視窗，先選圖、再確認大小比例。右：在畫布上點一下商品，出現四角縮放點與上方旋轉把手。</figcaption></figure>
 </section>
 
 <section id="endorser">
   <span class="stepnum">06</span>
   <h2>代言人：照片、簽名檔、小字</h2>
   <p class="lead">左側「代言人（照片＋簽名檔，不加影子）」區塊，管理方式跟商品圖一樣，但兩張圖都不會加影子。</p>
-  <figure class="shot"><img src="img/07-endorser.png" width="297" height="404" alt="代言人區塊：上傳或更換按鈕、清單列、代言人小字輸入框與字色切換" loading="lazy"><figcaption>左側工具列的代言人區塊（已上傳時按鈕會變成「更換」）。</figcaption></figure>
+  <figure class="shot"><a class="zoom" href="img/07-endorser.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/07-endorser.png" width="297" height="404" alt="代言人區塊：上傳或更換按鈕、清單列、代言人小字輸入框與字色切換" loading="lazy"></a><figcaption>左側工具列的代言人區塊（已上傳時按鈕會變成「更換」）。</figcaption></figure>
   <ul>
     <li><strong>只放在這些版位</strong>：ddcard、IG、HBN、LPBN、Coin_pageBN、FB_POST、SCBN、活動總覽、SBA、AMS。首頁 LOGO 牆、AR、Search_Image、SearchICON 不放。</li>
     <li><strong>會取代 2 件商品</strong>：有代言人照或簽名檔時，商品圖只顯示最上層的 1 件；如果同時還有人物圖，商品就完全不顯示。</li>
@@ -336,7 +341,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
     <li><strong>在其他版位手動拖</strong>：只會改那一張（和它的方／橫雙胞胎），不會回頭改 HBN 或 LPBN；那一張也不再自動調整。之後 HBN 或 LPBN 再調整時，這一張會重新跟著，手動調的位置會被蓋過。想一直保留，就解除那一張的鎖鏈。</li>
     <li><strong>舊的暫存檔</strong>：打開舊暫存時，工具會以 HBN 的排法自動換成新規則，不用重調。</li>
   </ul>
-  <figure class="shot"><img src="img/08-follow.png" width="733" height="704" alt="同一組代言人在 HBN、LPBN_APP、FB_POST、ddcard 的排法：人像都在畫面內，小字和簽名檔緊貼人像，沒有壓到文字" loading="lazy"><figcaption>只在 HBN 調整，其他版位自動配合：人像都在畫面內，小字和簽名檔跟人像一樣近，沒有壓到主標、副標。</figcaption></figure>
+  <figure class="shot"><a class="zoom" href="img/08-follow.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/08-follow.png" width="733" height="704" alt="同一組代言人在 HBN、LPBN_APP、FB_POST、ddcard 的排法：人像都在畫面內，小字和簽名檔緊貼人像，沒有壓到文字" loading="lazy"></a><figcaption>只在 HBN 調整，其他版位自動配合：人像都在畫面內，小字和簽名檔跟人像一樣近，沒有壓到主標、副標。</figcaption></figure>
   <div class="box warn">
     <span class="label">提醒</span>
     <p>自動配合只套用在<strong>鎖鏈是連動中</strong>的版位。某一張解除連動後，它就保留自己的排法，不會再跟著 HBN 或 LPBN。</p>
@@ -352,7 +357,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
     <li><strong>點一下解除</strong>：這一張變成獨立編輯，怎麼調都不影響其他版位。</li>
     <li><strong>再點一下重新加入</strong>：這一張會套回目前大家共同的排法，之後繼續跟著連動。</li>
   </ul>
-  <figure class="shot"><img src="img/09-lock.png" width="330" height="380" alt="版位標頭右上角的鎖鏈：上面是連動中，下面是已解除" loading="lazy"><figcaption>上：連動中（藍色相扣）。下：已解除，這一張單獨編輯（灰色斷開）。</figcaption></figure>
+  <figure class="shot"><a class="zoom" href="img/09-lock.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/09-lock.png" width="330" height="380" alt="版位標頭右上角的鎖鏈：上面是連動中，下面是已解除" loading="lazy"></a><figcaption>上：連動中（藍色相扣）。下：已解除，這一張單獨編輯（灰色斷開）。</figcaption></figure>
   <p class="muted">首頁 LOGO 牆、SearchICON_PRODUCT 有各自的排法，不參加這套連動，標頭也不會出現鎖鏈。</p>
 </section>
 
@@ -360,7 +365,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <span class="stepnum">09</span>
   <h2>取色工具</h2>
   <p class="lead">「HBN Banner 取色工具」有兩個分頁：</p>
-  <figure class="shot"><img src="img/10-color.png" width="800" height="903" alt="取色工具配色模擬分頁：左側輸入底色、副標候選與輸出，右側預覽與各色票" loading="lazy"><figcaption>「配色模擬」分頁。</figcaption></figure>
+  <figure class="shot"><a class="zoom" href="img/10-color.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/10-color.png" width="1440" height="1242" alt="取色工具配色模擬分頁：左側輸入底色、副標候選與輸出，右側預覽與各色票" loading="lazy"></a><figcaption>「配色模擬」分頁。</figcaption></figure>
   <ul>
     <li><strong>配色模擬</strong>：<span class="callout">1</span>輸入底色，工具依規則算出主標、副標、警語與 CTA 的顏色，<span class="callout">4</span>右側即時預覽。<span class="callout">2</span>副標有多個候選色，點一下就套用。底色欄位旁的連結圖示亮著時，表示跟曝光資源底色連動中。<span class="callout">3</span>完成後按「輸出 CSV 檔」，格式對應色票.xlsx。</li>
     <li><strong>取色</strong>：載入 HBN 圖片資料夾，或直接把圖片拖進來，工具會抓出每張圖的底色、主標、副標、警語、CTA 文字與 CTA 底色，並標出對比度；可以複製或下載 CSV。</li>
@@ -372,7 +377,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <span class="stepnum">10</span>
   <h2>吸底工具</h2>
   <p class="lead">做頁面底部那條 1200 × 150 的促銷橫幅。一條有 2～5 顆「icon＋文字」，匯出時每張反白一顆、其他轉灰，一次出齊。</p>
-  <figure class="shot"><img src="img/11-bottom.png" width="800" height="903" alt="吸底工具：左側面板有等級、上傳、反白顏色、模板顆數與每顆內容，右側是吸底預覽" loading="lazy"><figcaption>吸底工具：左側是設定，右側是預覽（目前反白第 1 顆「主會場」）。</figcaption></figure>
+  <figure class="shot"><a class="zoom" href="img/11-bottom.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/11-bottom.png" width="1440" height="1242" alt="吸底工具：左側面板有等級、上傳、反白顏色、模板顆數與每顆內容，右側是吸底預覽" loading="lazy"></a><figcaption>吸底工具：左側是設定，右側是預覽（目前反白第 1 顆「主會場」）。</figcaption></figure>
   <ul>
     <li><strong>資料來源</strong>：請先在活動頁資源上傳工單；LOGO、ICON、文案與分頁設定會一起帶進來。</li>
     <li><strong>步驟</strong>：<span class="callout">1</span>選模板顆數 → <span class="callout">2</span>每顆點縮圖選 icon（可搜尋），需要時用「大小」滑桿調整（50%～250%），再輸入文字（建議 5 字內）→ <span class="callout">3</span>在預覽確認 → <span class="callout">4</span>匯出。</li>
@@ -386,10 +391,9 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <h2>下載與暫存</h2>
   <div class="cardgrid">
     <div class="xcard"><div class="xh">曝光資源｜下載全部勾選畫版</div><p>打包成 ZIP：每個勾選版位一張圖，加上「原始檔編輯.json」暫存檔。</p></div>
-    <div class="xcard"><div class="xh">活動頁資源｜下載工單＋圖片＋暫存檔</div><p>回填文字、色碼與共用文案到原 Excel，並附合成 PNG、各版位獨立 PNG（副區整排、MSBN 逐顆、吸底多狀態圖）和編輯暫存 .json。</p></div>
-    <div class="xcard"><div class="xh">步驟 5｜整包下載</div><p>一次打包工單、圖片、色票和暫存檔。正式交件用這個。</p></div>
+    <div class="xcard"><div class="xh">整包下載＝活動頁資源的「下載工單＋圖片＋暫存檔」</div><p>左側「整包下載」和活動頁資源的下載按鈕是同一個功能：回填文字、色碼與共用文案到原 Excel，並附合成 PNG、各版位獨立 PNG（副區整排、MSBN 逐顆、吸底多狀態圖）、色票和編輯暫存 .json。還有步驟沒完成也沒略過時，會先提醒。</p></div>
   </div>
-  <figure class="shot"><div class="shot-row"><img src="img/12-export-progress.png" width="510" height="170" alt="下載進度：LOADING 曝光資源下載，截圖中 6/16" loading="lazy"><img src="img/12-export-zip.png" width="548" height="330" alt="曝光資源下載的 ZIP 內容：每個版位一張圖，加上原始檔編輯.json" loading="lazy"></div><figcaption>上：打包時的進度（請等它跑完）。下：曝光資源 ZIP 的內容，每個勾選版位一張圖，加上暫存檔「原始檔編輯.json」。</figcaption></figure>
+  <figure class="shot"><div class="shot-row"><a class="zoom" href="img/12-export-progress.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/12-export-progress.png" width="510" height="170" alt="下載進度：LOADING 曝光資源下載，截圖中 6/16" loading="lazy"></a><a class="zoom" href="img/12-export-zip.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/12-export-zip.png" width="548" height="330" alt="曝光資源下載的 ZIP 內容：每個版位一張圖，加上原始檔編輯.json" loading="lazy"></a></div><figcaption>上：打包時的進度（請等它跑完）。下：曝光資源 ZIP 的內容，每個勾選版位一張圖，加上暫存檔「原始檔編輯.json」。</figcaption></figure>
   <ul>
     <li><strong>自動暫存</strong>：編輯中會自動存在這台電腦的瀏覽器，重新整理會還原。</li>
     <li><strong>換電腦接著做</strong>：用下載的 .json 暫存檔載回：曝光資源是左側工具列最下方的「上傳暫存」，活動頁資源是左欄的「上傳暫存檔還原編輯」。</li>
