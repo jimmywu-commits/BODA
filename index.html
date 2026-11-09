@@ -509,8 +509,48 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #color-fallback .ef-desc{font-size:12.5px;line-height:1.8;}
 #color-fallback b{color:var(--teal-dark);}
 
-/* ══════════════ 匯入工單（佔位頁） ══════════════ */
-/* ══════════════ 匯入工單 ══════════════ */
+/* ══════════════ 匯入工單（製作流程第 1 步：上傳工單試算表、圖片素材或暫存檔） ══════════════ */
+#view-upload.active{display:block;}
+#upload-app{max-width:980px;margin:0 auto;padding:30px 28px 48px;}
+#upload-head h1{font-size:19px;font-weight:800;display:flex;align-items:center;gap:7px;}
+#upload-head p{font-size:12.5px;color:var(--ink2);margin-top:6px;line-height:1.7;max-width:70ch;}
+#upload-head p b{color:var(--teal-dark);}
+#upload-level{margin-top:18px;padding:14px 16px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  display:grid;grid-template-columns:auto minmax(200px,300px) 1fr;gap:6px 14px;align-items:center;box-shadow:var(--shadow);}
+#upload-level label{font-size:12px;font-weight:800;color:var(--ink2);letter-spacing:.3px;}
+#upload-level select{width:100%;height:34px;padding:0 10px;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);background:#fff;color:var(--ink);font-size:12.5px;font-weight:700;cursor:pointer;}
+#upload-level select:hover{border-color:var(--teal);}
+#upload-level select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-tint);}
+#upload-level .lv-hint{font-size:11.5px;color:var(--ink2);line-height:1.6;}
+#upload-level .lv-hint b{color:var(--teal-dark);}
+#upload-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px;}
+.upload-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;min-width:0;}
+.upload-card-head{font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:10px;}
+#view-upload #import-drop,#view-upload #import-img-drop{flex:1;margin:0;min-height:220px;padding:36px 18px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border:2px dashed var(--border-strong);border-radius:var(--radius);background:#fbfcfc;font-size:12.5px;}
+#view-upload #import-drop:hover,#view-upload #import-drop.dragover,
+#view-upload #import-img-drop:hover,#view-upload #import-img-drop.dragover{border-color:var(--teal);background:var(--teal-tint);}
+#view-upload #import-drop .id-text,#view-upload #import-img-drop .id-text{font-size:12.5px;line-height:1.7;}
+#view-upload #import-log{margin:10px 2px 0;min-height:1.6em;font-size:11.5px;}
+#view-upload #import-img-actions{margin-top:10px;}
+#upload-img-status{margin:10px 2px 0;font-size:11.5px;color:var(--ink3);line-height:1.6;}
+#upload-img-status b{color:var(--teal-dark);}
+#upload-restore{margin-top:18px;padding:14px 16px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  display:flex;align-items:center;gap:16px;box-shadow:var(--shadow);}
+#upload-restore .upload-restore-text{flex:1;min-width:0;font-size:12px;color:var(--ink2);line-height:1.7;}
+#upload-restore .upload-restore-text b{display:block;color:var(--ink);font-size:12.5px;}
+#view-upload #btn-upload-snapshot{width:auto;flex:none;margin-top:0;padding:0 16px;min-height:36px;}
+@media (max-width:900px){
+  #upload-app{padding:22px 16px 40px;}
+  #upload-level{grid-template-columns:1fr;}
+  #upload-steps{grid-template-columns:minmax(0,1fr);}
+  #upload-restore{flex-direction:column;align-items:stretch;}
+  #view-upload #btn-upload-snapshot{width:100%;}
+}
+/* ══════════════ 活動頁資源（原匯入工單頁：編輯 MSBN／副區畫布） ══════════════ */
 #view-import.active{display:flex;}
 /* ══════════════ 吸底（獨立工具頁） ══════════════ */
 #view-bottom.active{display:flex;}
@@ -540,12 +580,14 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-dl-bar .dl-hint{font-size:10px;color:var(--ink3);text-align:center;margin-top:6px;line-height:1.5;}
 #import-side-head{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
 #import-side-head h1{font-size:15px;font-weight:800;}
-#view-import .line-icon{display:inline-block;width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.15em;flex:none;}
-#view-import .id-icon .line-icon{width:30px;height:30px;vertical-align:middle;}
+#view-import .line-icon,#view-upload .line-icon{display:inline-block;width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.15em;flex:none;}
+#view-import .id-icon .line-icon,#view-upload .id-icon .line-icon{width:30px;height:30px;vertical-align:middle;}
+#view-upload .id-icon .line-icon{width:38px;height:38px;}
 #view-import .ie-icon .line-icon{width:36px;height:36px;vertical-align:middle;}
 #view-import #import-side-head h1 .line-icon{width:18px;height:18px;margin-right:3px;vertical-align:-3px;}
-#view-import .btn .line-icon{width:15px;height:15px;margin-right:3px;vertical-align:-3px;}
-#view-import #import-img-head .line-icon{width:15px;height:15px;margin-right:3px;vertical-align:-3px;}
+#view-upload #upload-head h1 .line-icon{width:22px;height:22px;color:var(--teal-dark);}
+#view-import .btn .line-icon,#view-upload .btn .line-icon{width:15px;height:15px;margin-right:3px;vertical-align:-3px;}
+#view-upload .upload-card-head .line-icon{width:15px;height:15px;margin-right:3px;vertical-align:-3px;}
 #view-import #import-color-head > span{display:inline-flex;align-items:center;gap:4px;}
 #view-import #import-color-head .line-icon{width:15px;height:15px;vertical-align:middle;}
 #view-import .field-mini-btn .line-icon,#view-import .icc-reset .line-icon{width:13px;height:13px;vertical-align:-2px;}
@@ -565,8 +607,11 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-generator-hint{margin:0 16px 10px;font-size:10.5px;color:var(--ink3);line-height:1.55;text-align:center;}
 
 #import-log{margin:0 16px;font-size:11px;color:var(--ink3);line-height:1.6;}
-#import-log .err{color:var(--danger);}
-#import-log .ok{color:var(--teal-dark);}
+#import-log .err,#import-canvas-log .err{color:var(--danger);}
+#import-log .ok,#import-canvas-log .ok{color:var(--teal-dark);}
+/* 活動頁資源左欄的狀態列：照抄「匯入工單」頁 #import-log 的內容（畫布操作的結果也寫在那裡），沒有訊息時不佔位。 */
+#import-canvas-log{margin:12px 16px 0;font-size:11px;color:var(--ink3);line-height:1.6;}
+#import-canvas-log:empty{display:none;}
 
 #import-fields-scroll{display:block;}
 #import-fields-scroll .imp-col{display:none;}
@@ -704,6 +749,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-empty2 .ie-icon{font-size:36px;margin-bottom:10px;}
 #import-empty2 h2{font-size:14px;font-weight:800;color:var(--ink2);margin-bottom:6px;}
 #import-empty2 p{font-size:12px;}
+#import-empty2 #import-empty-goto-upload{margin-top:14px;padding:0 16px;min-height:34px;}
 #import-preview-list{display:none;flex-direction:column;gap:18px;min-width:0;max-width:100%;}
 #import-preview-list.show{display:flex;}
 
@@ -751,9 +797,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #bn-dynamic-row-toast button{height:26px;padding:0 10px;border:1px solid rgba(255,255,255,.65);border-radius:5px;background:transparent;color:#fff;font-size:11px;font-weight:700;cursor:pointer;}
 #bn-dynamic-row-toast button:hover{background:rgba(255,255,255,.16);}
 
-/* 圖片素材上傳區 */
-#import-img-section{margin:0 16px 14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
-#import-img-head{font-size:11.5px;font-weight:700;color:var(--ink2);margin-bottom:8px;}
+/* 圖片素材上傳區（在「匯入工單」頁的 STEP 2 卡片裡） */
 #import-img-drop{border:1.5px dashed var(--border-strong);border-radius:var(--radius-sm);
   padding:26px 14px;text-align:center;cursor:pointer;transition:.12s;font-size:11px;color:var(--ink2);}
 #import-img-drop .id-icon{font-size:28px;margin-bottom:8px;}
@@ -761,14 +805,15 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 #import-img-actions{display:flex;gap:8px;margin-top:8px;}
 #import-img-actions .btn{flex:1;min-height:34px;border:1.5px dashed var(--border-strong);background:#fff;color:var(--ink2);}
 #import-img-actions .btn:hover{border-color:var(--teal);background:var(--teal-tint);color:var(--teal-dark);}
-/* 暫存還原屬於匯入流程，緊接 STEP 2；尺寸沿用原本按鈕，只改成同區的虛線語彙。 */
+/* 暫存還原屬於匯入流程，放在「匯入工單」頁最下方；沿用同區的虛線語彙。 */
 #btn-upload-snapshot{width:100%;margin-top:8px;border:1.5px dashed var(--border-strong);background:#fff;color:var(--ink2);}
 #btn-upload-snapshot:hover{border-color:var(--teal);background:var(--teal-tint);color:var(--teal-dark);}
-/* 左側僅負責上傳；已上傳素材不再顯示縮圖，避免工具列冗長。 */
+/* 已上傳素材不顯示縮圖（上傳在「匯入工單」頁，張數寫在 STEP 2 下方）。 */
 #import-img-gallery{display:none !important;}
 #import-img-gallery .im-empty{font-size:10.5px;color:var(--ink3);line-height:1.6;}
-/* 商品影子設定：上傳圖片時自動烘進圖片，這裡調的會重新套用到已上傳的素材 */
-#import-shadow-panel{margin-top:10px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:#fbfcfc;font-size:11px;color:var(--ink2);}
+/* 活動頁資源左欄的商品影子設定：上傳圖片時自動烘進圖片，這裡調的會重新套用到已上傳的素材 */
+#import-shadow-section{margin:14px 16px 14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+#import-shadow-panel{margin-top:0;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:#fbfcfc;font-size:11px;color:var(--ink2);}
 #import-shadow-panel .ishd-title{font-weight:600;color:var(--teal-dark);margin-bottom:6px;}
 #import-shadow-panel .ishd-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5px 0;}
 #import-shadow-panel .ishd-row input[type=range]{flex:1;max-width:130px;}
@@ -1269,19 +1314,20 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 #import-generator-load,
 #import-generator-hint{display:none!important;}
 /* 左側工具列精簡：首頁與頂端方塊 icon 隱藏。
-   製作流程順序：活動頁資源 → 曝光資源 → 取色工具 → 吸底工具 → 整包下載。 */
+   製作流程順序：匯入工單 → 曝光資源（BN 先做）→ 活動頁資源（MS）→ 取色工具 → 吸底工具 → 整包下載。 */
 #nav-rail .nav-logo,
 .nav-item[data-view="home"]{display:none!important;}
-.nav-item[data-step="import"]{order:1;}
+.nav-item[data-step="upload"]{order:1;}
 .nav-item[data-step="exposure"]{order:2;}
+.nav-item[data-step="import"]{order:3;}
 .nav-item[data-step="color"]{order:4;}
 .nav-item[data-step="bottom"]{order:5;}
 .nav-item[data-step="download"]{order:6;}
 .nav-item[data-view="maint"]{order:7;}
-/* 步驟之間的虛線，表示依序進行。 */
+/* 步驟之間的虛線，表示依序進行（第一步「匯入工單」上方不畫）。 */
 .nav-step{position:relative;}
-.nav-step:not([data-step="import"]){margin-top:12px;}
-.nav-step:not([data-step="import"])::before{content:"";position:absolute;left:50%;top:-15px;height:12px;
+.nav-step:not([data-step="upload"]){margin-top:12px;}
+.nav-step:not([data-step="upload"])::before{content:"";position:absolute;left:50%;top:-15px;height:12px;
   border-left:1.5px dashed rgba(255,255,255,.3);pointer-events:none;}
 /* 步驟狀態：已完成打勾、已略過灰色「略」。 */
 .nav-step .step-badge{position:absolute;top:3px;right:7px;width:15px;height:15px;border-radius:50%;
@@ -1318,21 +1364,24 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     <button class="nav-item" data-view="generator" title="工單生成器">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg></span><span class="lbl">工單生成器</span>
     </button>
-    <!-- 製作流程（依序）：活動頁資源 → 曝光資源 → 取色工具 → 吸底工具 → 整包下載。
-         「活動頁資源」就是原本的匯入工單頁（上傳曝光資源＋活動頁的 Excel 與圖片，並編輯 MSBN／副區畫布）。 -->
-    <button class="nav-item nav-step" data-view="import" data-step="import" title="步驟 1：活動頁資源（上傳工單 Excel 與圖片、編輯 MSBN／副區）">
-      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></span><span class="lbl">活動頁資源</span>
+    <!-- 製作流程（依序）：匯入工單 → 曝光資源（BN 先做）→ 活動頁資源（MS）→ 取色工具 → 吸底工具 → 整包下載。
+         「匯入工單」是上傳頁（STEP 1 工單試算表、STEP 2 圖片、上傳暫存檔）；「活動頁資源」只負責編輯 MSBN／副區畫布。 -->
+    <button class="nav-item nav-step" data-view="upload" data-step="upload" title="步驟 1：匯入工單（上傳工單試算表、圖片素材或暫存檔）">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15V4"/><path d="m7.8 8.2 4.2-4.2 4.2 4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></span><span class="lbl">匯入工單</span>
     </button>
-    <button class="nav-item nav-step" data-view="exposure" data-step="exposure" title="步驟 2：曝光資源">
+    <button class="nav-item nav-step" data-view="exposure" data-step="exposure" title="步驟 2：曝光資源（BN 先做）">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></span><span class="lbl">曝光資源</span>
     </button>
-    <button class="nav-item nav-step" data-view="color" data-step="color" title="步驟 3：取色工具（色票）">
+    <button class="nav-item nav-step" data-view="import" data-step="import" title="步驟 3：活動頁資源（編輯 MSBN／副區）">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="6" rx="1.2"/><rect x="3.5" y="12" width="7.5" height="8.5" rx="1.2"/><rect x="13" y="12" width="7.5" height="8.5" rx="1.2"/></svg></span><span class="lbl">活動頁資源</span>
+    </button>
+    <button class="nav-item nav-step" data-view="color" data-step="color" title="步驟 4：取色工具（色票）">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 3.87 7 13 7 13s7-9.13 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="3" fill="var(--bg,#fff)" stroke="none"/></svg></span><span class="lbl">取色工具</span>
     </button>
-    <button class="nav-item nav-step" data-view="bottom" data-step="bottom" title="步驟 4：吸底工具">
+    <button class="nav-item nav-step" data-view="bottom" data-step="bottom" title="步驟 5：吸底工具">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12v5H6z"/><path d="M4 12h16v8H4z"/><path d="M8 12V9M16 12V9"/><path d="M8 16h8"/></svg></span><span class="lbl">吸底工具</span>
     </button>
-    <button class="nav-item nav-step" data-step="download" data-action="package-download" data-skip-app-loading title="步驟 5：整包下載（工單＋圖片＋色票＋暫存檔）">
+    <button class="nav-item nav-step" data-step="download" data-action="package-download" data-skip-app-loading title="步驟 6：整包下載（工單＋圖片＋色票＋暫存檔）">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></span><span class="lbl">整包下載</span>
     </button>
     <!-- 目前步驟下方的「完成／略過」：由 renderWorkflowNav 移到使用中的步驟後面。 -->
@@ -1502,29 +1551,33 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
       </div>
     </div>
 
-    <!-- ══════════════ 匯入工單 ══════════════ -->
-    <div id="view-import" class="view">
-      <div id="import-app">
-
-        <div id="import-side">
-          <div id="import-side-head">
-            <h1><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg> 匯入工單</h1>
-            <p>把填好的工單（.xlsx 或本工具下載的 .json）拖進來，或點擊選檔，會依內容自動畫出對應版位，並可以再編輯文字。</p>
-          </div>
-          <div id="import-level">
-            <label for="import-level-select">等級</label>
-            <select id="import-level-select" aria-describedby="import-level-hint"></select>
-            <div class="lv-hint" id="import-level-hint"></div>
-          </div>
-          <div id="import-drop">
-            <div class="id-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M9 12h6M9 16h6"/></svg></div>
-            <div class="id-text"><b>STEP 1<br>拖曳工單試算表到這裡</b>或點擊選擇</div>
-            <input type="file" id="import-file-input" accept=".xlsx,.json" hidden>
-          </div>
-          <div id="import-log"></div>
-
-          <div id="import-img-section">
-            <div id="import-img-head"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg> 圖片素材（可多選或整包資料夾）</div>
+    <!-- ══════════════ 匯入工單（製作流程第 1 步）══════════════
+         原本在「活動頁資源」左欄的 STEP 1／STEP 2／選擇圖片資料夾／上傳暫存檔，獨立成這一頁（活動頁資源不再保留）。
+         元件 id 沿用，上傳流程（handleImportFile／handleImageFiles／還原暫存檔）不變；
+         匯入時活動頁資源畫布在背景照常排版，切過去時再補掃一次圖片框（見 showView）。 -->
+    <div id="view-upload" class="view">
+      <div id="upload-app">
+        <div id="upload-head">
+          <h1><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="m7.8 8.2 4.2-4.2 4.2 4.2"/><path d="M4 15.8V20h16v-4.2"/></svg>匯入工單</h1>
+          <p>先上傳填好的工單試算表（STEP 1），再放入圖片素材（STEP 2）。工具會依工單畫出曝光資源與活動頁資源；確認讀取完成後，按左側<b>「完成 ›」</b>前往曝光資源。</p>
+        </div>
+        <div id="upload-level">
+          <label for="upload-level-select">等級</label>
+          <select id="upload-level-select" aria-describedby="upload-level-hint"></select>
+          <div class="lv-hint" id="upload-level-hint"></div>
+        </div>
+        <div id="upload-steps">
+          <section class="upload-card" aria-labelledby="upload-workorder-head">
+            <div class="upload-card-head" id="upload-workorder-head"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M9 12h6M9 16h6"/></svg> 工單試算表（.xlsx 或本工具下載的 .json）</div>
+            <div id="import-drop">
+              <div class="id-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M9 12h6M9 16h6"/></svg></div>
+              <div class="id-text"><b>STEP 1<br>拖曳工單試算表到這裡</b>或點擊選擇</div>
+              <input type="file" id="import-file-input" accept=".xlsx,.json" hidden>
+            </div>
+            <div id="import-log" aria-live="polite"></div>
+          </section>
+          <section class="upload-card" id="import-img-section" aria-labelledby="import-img-head">
+            <div class="upload-card-head" id="import-img-head"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg> 圖片素材（可多選或整包資料夾）</div>
             <div id="import-img-drop">
               <div class="id-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.6"/><path d="m3.5 17 5-5 3.6 3.5 2.8-2.7 5.6 5.2"/></svg></div>
               <div class="id-text"><b>STEP 2<br>拖曳圖片或整個資料夾到這裡</b>，或點擊選擇</div>
@@ -1534,8 +1587,34 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
               <button class="btn" type="button" id="btn-import-img-folder">選擇圖片資料夾</button>
               <input type="file" id="import-img-folder-input" accept="image/*" webkitdirectory directory multiple hidden>
             </div>
-            <button class="btn" id="btn-upload-snapshot"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V10"/><path d="m7.8 13.8 4.2-4.2 4.2 4.2"/><path d="M4 4h16v5"/></svg> 上傳暫存檔還原編輯</button>
-            <input type="file" id="snapshot-file-input" accept=".json" hidden>
+            <div id="upload-img-status" aria-live="polite">還沒有上傳圖片</div>
+          </section>
+        </div>
+        <div id="upload-restore">
+          <div class="upload-restore-text"><b>接著上次的進度做？</b>上傳之前下載的 .json 暫存檔，會還原文字、圖片位置與大小、配色和流程完成狀態。</div>
+          <button class="btn" id="btn-upload-snapshot"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V10"/><path d="m7.8 13.8 4.2-4.2 4.2 4.2"/><path d="M4 4h16v5"/></svg> 上傳暫存檔還原編輯</button>
+          <input type="file" id="snapshot-file-input" accept=".json" hidden>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 活動頁資源（原匯入工單頁）：編輯 MSBN／副區畫布 ══════════════ -->
+    <div id="view-import" class="view">
+      <div id="import-app">
+
+        <div id="import-side">
+          <div id="import-side-head">
+            <h1><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="6" rx="1.2"/><rect x="3.5" y="12" width="7.5" height="8.5" rx="1.2"/><rect x="13" y="12" width="7.5" height="8.5" rx="1.2"/></svg> 活動頁資源</h1>
+            <p>編輯 MSBN、副區等活動頁版位的文字、圖片與顏色。工單與圖片請先在左側「匯入工單」上傳。</p>
+          </div>
+          <div id="import-level">
+            <label for="import-level-select">等級</label>
+            <select id="import-level-select" aria-describedby="import-level-hint"></select>
+            <div class="lv-hint" id="import-level-hint"></div>
+          </div>
+          <div id="import-canvas-log" aria-live="polite"></div>
+
+          <div id="import-shadow-section">
             <input type="file" id="imp-field-img-input" accept="image/*" hidden>
             <div id="import-shadow-panel">
               <div class="ishd-title">商品影子（上傳時自動套用）</div>
@@ -1563,10 +1642,10 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           <div id="import-color-section">
             <div id="import-color-head">
               <span><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="8.5" cy="10" r="1"/><circle cx="12" cy="7.8" r="1"/><circle cx="15.5" cy="10" r="1"/><path d="M16.5 16.5c-.8.8-1.8 1.2-3 1.2h-1.2"/></svg> 統一顏色</span>
-              <button class="btn ghost" id="btn-color-reset-all" title="全部改回每個版位原本的顏色"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8a8 8 0 1 1-.2 7.3"/><path d="M5 3.8v4.5h4.5"/></svg> 全部還原</button>
+              <button class="btn ghost" id="btn-color-reset-all" title="全部改回每個版位原本的顏色（背景色不變）"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8a8 8 0 1 1-.2 7.3"/><path d="M5 3.8v4.5h4.5"/></svg> 全部還原</button>
             </div>
             <div id="import-color-note">改一個顏色，畫布上<b>所有版位一起變</b>。沒改過的欄位會顯示版位目前實際的色號。
-              背景色跟「曝光資源」<b>雙向連動</b>，兩邊改都會同步。</div>
+              背景色不在這裡改：請到「曝光資源」或「取色工具」調整，這裡的畫布會<b>自動跟著</b>。</div>
             <div id="import-color-list"></div>
           </div>
 
@@ -1615,7 +1694,8 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
               <div id="import-empty2">
                 <div class="ie-icon"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 15.8V20h16v-4.2"/></svg></div>
                 <h2>還沒有匯入任何工單</h2>
-                <p>左側拖曳或選擇檔案開始</p>
+                <p>請先到左側「匯入工單」上傳工單試算表與圖片</p>
+                <button class="btn" type="button" id="import-empty-goto-upload">前往匯入工單</button>
               </div>
               <div id="import-preview-list"></div>
               <div id="import-bottom-preview-frame-wrap" aria-hidden="true"><iframe id="import-bottom-preview-frame" title="匯入工單吸底成品渲染器" tabindex="-1"></iframe></div>
@@ -7719,7 +7799,7 @@ function appLoadingPulse(label) {
 /* 頁面切換不是重工作業，但常會接著初始化 iframe、字體或大型畫布。
    先以共用視窗接住切換，再由真正的載入流程覆蓋進度；一般頁面至少等一個繪製週期才淡出。 */
 function appLoadingStartView(name) {
-  var labels = { home: '首頁', generator: '工單生成器', import: '匯入工單', exposure: '曝光資源', bottom: '吸底工具', maint: '維修' };
+  var labels = { home: '首頁', generator: '工單生成器', upload: '匯入工單', import: '活動頁資源', exposure: '曝光資源', color: '取色工具', bottom: '吸底工具', maint: '維修' };
   APP_LOADING.viewToken++;
   var token = APP_LOADING.viewToken;
   appLoadingStart('LOADING · 正在開啟' + (labels[name] || '工具'), 12, '正在準備畫面與必要資源…');
@@ -11263,7 +11343,8 @@ function ensureBlocksLoaded(cb, range) {
   var to = ownOverlay || !range ? 92 : range.to;
   if (!ownOverlay && !range) { from = APP_LOADING.percent || 0; to = Math.min(95, from + 8); }
   var importLog = document.getElementById('import-log');
-  if (importLog) importLog.innerHTML = '<span class="ok">讀取成功，載入版位模板中…</span>';
+  var blocksLoadingText = '讀取成功，載入版位模板中…';
+  if (importLog) importLog.innerHTML = '<span class="ok">' + blocksLoadingText + '</span>';
   bnLoadAllBlocks(function (result) {
     /* 只有「全部」都成功，才把這次結果鎖定下來，之後不再重抓；
        只要有任何一個失敗，這個標記就不設，下次呼叫（不管是使用者點重試、
@@ -11273,6 +11354,9 @@ function ensureBlocksLoaded(cb, range) {
     } else {
       console.error('[BNCore] 版位模板沒有全部載入成功（' + (result ? result.succeeded : 0) + '/' + (result ? result.total : '?') + '），保留重試機會');
     }
+    /* 載完還停在「載入版位模板中…」就收掉（開頁還原上次畫布時沒有後續訊息，不收會一直掛在 STEP 1 下面）；
+       匯入流程接下來會寫自己的結果。 */
+    if (importLog && importLog.textContent === blocksLoadingText) importLog.innerHTML = '';
     var queued = blocksLoadingCallbacks; blocksLoadingCallbacks = null;
     queued.forEach(function (fn) { fn(); });
   }, 'blocks/', function (p) {
@@ -15251,7 +15335,25 @@ function normalizeLogoImageFields(col, def) {
 /* 已上傳的素材列成一排小縮圖，可以直接拖到右邊畫布的圖片框裡。
    （拖曳時 dataTransfer 只帶「第幾張」這個索引，不帶 data: 網址本身 ——
      圖片轉成 base64 後動輒好幾 MB，塞進 dataTransfer 會拖不動。） */
+/* 「匯入工單」頁 STEP 2 下方的已上傳張數（縮圖不顯示）。同檔名重新上傳只算一張。 */
+function renderUploadImageStatus() {
+  var status = document.getElementById('upload-img-status');
+  if (!status) return;
+  var names = {};
+  var count = 0;
+  (uploadedImages || []).forEach(function (img) {
+    if (!img || !img.url) return;
+    var key = String(img.name || '').trim().toLowerCase() || ('#' + count);
+    if (names[key]) return;
+    names[key] = true;
+    count++;
+  });
+  status.innerHTML = count
+    ? '已上傳 <b>' + count + '</b> 張圖片，工單裡檔名對得上的欄位會自動帶入。'
+    : '還沒有上傳圖片';
+}
 function renderImageGallery() {
+  renderUploadImageStatus();
   var wrap = document.getElementById('import-img-gallery');
   if (!wrap) return;
   /* 不把所有原圖的 Base64 拼成一條 HTML。即使影子工作圖已縮小，baseUrl 仍是原圖，
@@ -18292,6 +18394,8 @@ function renderImportColorPanel() {
   var hasProductNameBlock = paletteColumns.some(function (col) { return /^(?:msbn|subarea)_/i.test(String(col.blockId || '')); });
   var linkedDefaults = importLinkedDefaultColors(importTheme, sampled, bgNow);
   var colorItems = IMPORT_COLOR_ITEMS.filter(function (it) {
+    /* 活動頁資源不提供換背景色：背景色在曝光資源／取色工具調整，這裡的畫布照共用背景色自動跟著。 */
+    if (it.key === 'bg') return false;
     if ((it.key === 'nameOnLightBg' || it.key === 'nameOnDarkBg') && !hasProductNameBlock) return false;
     if (it.key === 'cardBg') return hasEligibleCardBg;
     if (it.key === 'cardBgA23Left' || it.key === 'cardBgA23Right') return hasA23;
@@ -18871,11 +18975,12 @@ window.addEventListener('storage', function (e) {
 
 document.getElementById('btn-color-reset-all').addEventListener('click', function () {
   writeSnapshotTextPaletteLock('', null); /* 全部重設＝回到自動配色，不再沿用暫存檔的文字色 */
-  IMPORT_COLOR_ITEMS.forEach(function (it) { importTheme[it.key] = ''; });
-  importTheme.bg = EXPOSURE_DEFAULT_BG;
-  importTheme.bgAuto = false;
-  writeSharedCanvasBg(importTheme.bg);
-  pushImportBgToExposure(importTheme.bg);
+  /* 活動頁資源不管背景色（在曝光資源／取色工具調整），全部還原時背景色維持不變。 */
+  var keepBg = importTheme.bg;
+  var keepBgAuto = importTheme.bgAuto;
+  IMPORT_COLOR_ITEMS.forEach(function (it) { if (it.key !== 'bg') importTheme[it.key] = ''; });
+  importTheme.bg = keepBg;
+  importTheme.bgAuto = keepBgAuto;
   setImportCtaBg('');
   setImportCtaText('');
   saveImportTheme();
@@ -22643,8 +22748,13 @@ function restoreImportSnapshot(snap) {
   });
   /* 背景色與曝光資源文字配色先還原：之後推 CTA 給曝光資源時，它回傳的就是暫存檔的顏色。 */
   var restoredSnapshotBg = restoreSnapshotSharedColors(snap);
-  /* 製作流程的完成／略過狀態跟著暫存檔還原（舊暫存檔沒有這段就維持目前狀態）。 */
-  if (snap.workflowStatus && typeof snap.workflowStatus === 'object') writeWorkflowStatus(snap.workflowStatus);
+  /* 製作流程的完成／略過狀態跟著暫存檔還原（舊暫存檔沒有這段就維持目前狀態）。
+     「匯入工單」是後來才拆出的第 1 步：暫存檔都已經匯入過，沒記錄時視為已完成。 */
+  if (snap.workflowStatus && typeof snap.workflowStatus === 'object') {
+    var restoredWorkflowStatus = Object.assign({}, snap.workflowStatus);
+    if (!restoredWorkflowStatus.upload) restoredWorkflowStatus.upload = 'done';
+    writeWorkflowStatus(restoredWorkflowStatus);
+  }
   /* 統一顏色一起還原（舊版暫存檔沒有這段就維持目前設定） */
   if (snap.theme && typeof snap.theme === 'object') {
     IMPORT_COLOR_ITEMS.forEach(function (it) {
@@ -25524,11 +25634,18 @@ function applyCanvasZoom(el) {
 (function () {
   var sel = document.getElementById('level-select');
   var bottomSel = document.getElementById('bottom-level-select');
-  /* 活動頁資源（匯入工單）的等級下拉：跟工單生成器、吸底、曝光資源是同一個等級 */
+  /* 匯入工單頁、活動頁資源的等級下拉：跟工單生成器、吸底、曝光資源是同一個等級 */
   var importSel = document.getElementById('import-level-select');
+  var uploadSel = document.getElementById('upload-level-select');
   var hint = document.getElementById('level-hint');
   var importHint = document.getElementById('import-level-hint');
+  var uploadHint = document.getElementById('upload-level-hint');
   if (!sel) return;
+  function paintImportLevelHints() {
+    var html = levelResourceSummaryHtml(currentLevel());
+    if (importHint) importHint.innerHTML = html;
+    if (uploadHint) uploadHint.innerHTML = html;
+  }
 
   function levelOptionsHtml() {
     return LEVELS.map(function (level) {
@@ -25537,12 +25654,12 @@ function applyCanvasZoom(el) {
   }
   function syncLevelSelects() {
     var levelOptions = LEVELS.map(function (level) { return { id: level.id, label: level.label }; });
-    [sel, bottomSel, importSel].forEach(function (select) {
+    [sel, bottomSel, importSel, uploadSel].forEach(function (select) {
       if (!select) return;
       if (select.options.length !== LEVELS.length) select.innerHTML = levelOptionsHtml();
       select.value = currentLevelId;
     });
-    if (importHint) importHint.innerHTML = levelResourceSummaryHtml(currentLevel());
+    paintImportLevelHints();
     if (standaloneBottomBridgeReady) {
       postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_LEVEL_OPTIONS', levels: levelOptions });
     }
@@ -25553,7 +25670,7 @@ function applyCanvasZoom(el) {
     hint.innerHTML = (MSBN_MAX > 0)
       ? 'MSBN 區可放 <b>' + MSBN_MAX + '</b> 顆（依等級自動調整）'
       : '此等級<b>不提供 MSBN</b>';
-    if (importHint) importHint.innerHTML = levelResourceSummaryHtml(currentLevel());
+    paintImportLevelHints();
   }
   /* 等級決定活動頁資源呈現幾張三大保障／副區／MSBN、要不要吸底：已匯入的畫布立刻重畫。
      工單資料都還在，切回原本的等級會再出現。 */
@@ -25635,6 +25752,7 @@ function applyCanvasZoom(el) {
   sel.addEventListener('change', function () { applyLevelId(sel.value, false); });
   if (bottomSel) bottomSel.addEventListener('change', function () { applyLevelId(bottomSel.value, false); });
   if (importSel) importSel.addEventListener('change', function () { applyLevelId(importSel.value, false); });
+  if (uploadSel) uploadSel.addEventListener('change', function () { applyLevelId(uploadSel.value, false); });
 
   /* 曝光資源那頁（iframe）改了等級 → 這邊跟著改 */
   window.addEventListener('message', function (e) {
@@ -25756,7 +25874,7 @@ document.getElementById('btn-export-config').addEventListener('click', exportCon
    頁面切換：首頁 / 工單生成器 / 匯入工單
 ════════════════════════════════════════ */
 var VIEW_STORAGE_KEY = 'wo_last_view';
-var VALID_VIEWS = ['home', 'exposure', 'color', 'import', 'bottom', 'maint'];
+var VALID_VIEWS = ['home', 'upload', 'exposure', 'color', 'import', 'bottom', 'maint'];
 
 /* ════════════════════════════════════════
    維修頁：把所有版位一次列出來測試
@@ -26529,12 +26647,13 @@ function getSavedView() {
     if (isValidView(sessionView)) return sessionView;
   } catch (e) {}
 
-  return 'home';
+  /* 第一次打開（沒有記錄）直接到製作流程第 1 步「匯入工單」；首頁入口已下架。 */
+  return 'upload';
 }
 
 function showView(name, options) {
   options = options || {};
-  if (!isValidView(name)) name = 'home';
+  if (!isValidView(name)) name = 'upload';
   var viewLoadingToken = options.skipLoading ? 0 : appLoadingStartView(name);
   var viewWaitsForOwnLoad = (name === 'exposure' && !exposureLoaded) ||
     (name === 'maint' && !maintLoaded) ||
@@ -26594,13 +26713,14 @@ function showView(name, options) {
 }
 
 /* ══ 製作流程（左側導覽的步驟）══════════════════════════════
-   活動頁資源（原匯入工單頁）→ 曝光資源 → 取色工具 → 吸底工具 → 整包下載。
+   匯入工單（上傳頁）→ 曝光資源（BN 先做）→ 活動頁資源（MS）→ 取色工具 → 吸底工具 → 整包下載。
    每一步可按「完成」或「略過」（例如廠商不做曝光資源、只做 MS），狀態顯示在左側導覽；
    整包下載時若還有沒完成也沒略過的步驟，先提醒再下載。上傳新工單時狀態重設；
-   暫存檔會一起存下狀態，還原時帶回來。 */
+   暫存檔會一起存下狀態，還原時帶回來。key 'import' 一直是活動頁資源（view-import），舊狀態可直接沿用。 */
 var WORKFLOW_STEPS = [
-  { key: 'import', label: '活動頁資源', view: 'import' },
+  { key: 'upload', label: '匯入工單', view: 'upload' },
   { key: 'exposure', label: '曝光資源', view: 'exposure' },
+  { key: 'import', label: '活動頁資源', view: 'import' },
   { key: 'color', label: '取色工具', view: 'color' },
   { key: 'bottom', label: '吸底工具', view: 'bottom' }
 ];
@@ -26720,6 +26840,11 @@ document.querySelectorAll('#step-actions [data-step-act]').forEach(function (b) 
 document.querySelectorAll('.home-card').forEach(function (b) {
   b.addEventListener('click', function () { showView(b.getAttribute('data-goto')); });
 });
+/* 活動頁資源畫布還沒有內容時，空白提示裡的「前往匯入工單」。 */
+(function () {
+  var gotoUpload = document.getElementById('import-empty-goto-upload');
+  if (gotoUpload) gotoUpload.addEventListener('click', function () { goToWorkflowStep('upload'); });
+})();
 
 /* ════════════════════════════════════════
    初始化
@@ -26777,6 +26902,16 @@ document.getElementById('imp-field-img-input').addEventListener('change', functi
   e.target.value = '';
 });
 
+/* 匯入與畫布操作的訊息都寫在「匯入工單」頁的 #import-log；活動頁資源左欄照抄一份，
+   在活動頁資源清除畫面、換圖、調整圖層時也看得到結果。 */
+(function mirrorImportLogToCanvasPanel() {
+  var src = document.getElementById('import-log');
+  var dst = document.getElementById('import-canvas-log');
+  if (!src || !dst || typeof MutationObserver !== 'function') return;
+  function copy() { if (dst.innerHTML !== src.innerHTML) dst.innerHTML = src.innerHTML; }
+  new MutationObserver(copy).observe(src, { childList: true, subtree: true, characterData: true });
+  copy();
+})();
 renderImageGallery();
 bindMaintControls();
 probeImportMidBanner(); /* 量一次 img/three.jpg 的比例（副區與 MSBN 之間那張固定圖） */
@@ -26948,8 +27083,10 @@ ensureBlocksLoaded(function () {
 })();
 </script>
 <!-- 獨立操作導覽：只展示介面與動畫，不修改工單或觸發上傳／下載。 -->
-<script id="boda-tour-script" data-version="20261106-2">
-/* BODA 互動導覽 v1.10 / 2026-11-06
+<script id="boda-tour-script" data-version="20261109-1">
+/* BODA 互動導覽 v1.11 / 2026-11-09
+ * v1.11：製作流程改為 匯入工單 → 曝光資源 → 活動頁資源 → 取色工具 → 吸底工具 → 整包下載；
+ *       STEP 1／STEP 2／上傳暫存檔改在「匯入工單」頁示範，完整導覽照新流程排序；統一顏色不再說明背景色。
  * v1.9：新增「左側製作流程」「超過字數提示」兩步，改寫兩行文字編輯、圖片工具列、配色連動等說明；
  *       新步驟會在真實畫面上疊出示範（完成勾勾、紅框、下載區清單），不只是框選區域。
  * v1.10：圖片欄位規則改框 STEP 1 並移到第 2 步；畫布沒有商品圖時疊「示範畫布」（改字只框文字、
@@ -26962,72 +27099,72 @@ ensureBlocksLoaded(function () {
 (function () {
   'use strict';
   if (window.BODATour) return;
-  var VERSION = '20261106-2';
+  var VERSION = '20261109-1';
   var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 8.5a2.5 2.5 0 0 1 4.7 1.2c0 1.8-2.5 2-2.5 3.8M12 17h.01"/></svg>';
   var POINTER = '<svg viewBox="0 0 22 28" fill="currentColor" stroke="#111111" stroke-width="1" aria-hidden="true"><path d="m3 2 16 14-8 1-4 8z"/></svg>';
   var FILE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6"/></svg>';
   var IMAGE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>';
   var STEPS = [
-    {id:'workflow',group:'製作流程',view:'import',target:'#nav-rail',stage:'workflow',title:'左側就是製作流程，照順序往下做',
-      text:'<b>活動頁資源 → 曝光資源 → 取色工具 → 吸底工具 → 整包下載</b>。每一步做完按<b>「完成」</b>會打上琥珀色勾；廠商不製作的項目按<b>「略過」</b>。按整包下載時，還沒完成也沒略過的步驟會先提醒你。',
+    {id:'workflow',group:'製作流程',view:'upload',target:'#nav-rail',stage:'workflow',title:'左側就是製作流程，照順序往下做',
+      text:'<b>匯入工單 → 曝光資源 → 活動頁資源 → 取色工具 → 吸底工具 → 整包下載</b>。先上傳工單，再做曝光資源（BN）、活動頁資源（MS）。每一步做完按<b>「完成」</b>會打上琥珀色勾；廠商不製作的項目按<b>「略過」</b>。按整包下載時，還沒完成也沒略過的步驟會先提醒你。',
       tip:'左側選單上的勾勾與提醒是示意，不會改變你目前的完成狀態。',demo:'workflow'},
-    {id:'import',group:'匯入與編輯',view:'import',target:'#import-drop',title:'STEP 1：匯入填好的工單',
-      text:'將 <b>.xlsx 工單</b>拖到這個區塊，或點擊選檔。工具會依 <code>Layout_Output</code> 的欄位與版位，建立預覽畫布。',
-      tip:'依這包版本的介面，試算表與圖片分成 STEP 1、STEP 2 上傳。',demo:'upload',ghost:'工單.xlsx'},
-    {id:'matching',group:'匯入與編輯',view:'import',target:'#import-drop',stage:'matching',title:'工單的圖片欄位：逗號分開，每格最多 5 張',
+    {id:'import',group:'匯入工單',view:'upload',target:'#import-drop',title:'STEP 1：匯入填好的工單',
+      text:'在<b>匯入工單</b>頁，將 <b>.xlsx 工單</b>拖到這個區塊，或點擊選檔。工具會依 <code>Layout_Output</code> 的欄位與版位，建立曝光資源與活動頁資源的畫布；等級也會依工單的包套自動切換。',
+      tip:'試算表與圖片分成 STEP 1、STEP 2 上傳，都在「匯入工單」這一頁。',demo:'upload',ghost:'工單.xlsx'},
+    {id:'matching',group:'匯入工單',view:'upload',target:'#import-drop',stage:'matching',title:'工單的圖片欄位：逗號分開，每格最多 5 張',
       text:'STEP 1 的工單裡，<b>商品圖、LOGO 等圖片欄位</b>填的是圖片檔名。一格要放多張圖時<b>用逗號分開</b>，每個檔名都會獨立配對，副檔名可不同。<b>每格最多 5 張</b>，超過只取前 5 張，匯入完成時會列出被略過的欄位。',
       tip:'旁邊的工單表格是示意。找不到圖時，先檢查檔名是否一致、有沒有多餘空白，以及逗號的分隔方式。',demo:'matching'},
-    {id:'images',group:'匯入與編輯',view:'import',target:['#import-img-drop','#import-img-section'],title:'STEP 2：整包圖片資料夾放進來',
-      text:'把商品圖與 LOGO 資料夾拖進來，或按<b>選擇圖片資料夾</b>。工具會依工單裡填的檔名自動配對；圖片放在資料夾內的第二、第三層，也會向下讀取。',
+    {id:'images',group:'匯入工單',view:'upload',target:['#import-img-drop','#import-img-section'],title:'STEP 2：整包圖片資料夾放進來',
+      text:'把商品圖與 LOGO 資料夾拖進來，或按<b>選擇圖片資料夾</b>。工具會依工單裡填的檔名自動配對；圖片放在資料夾內的第二、第三層，也會向下讀取。下方會顯示已上傳幾張。',
       tip:'這裡的動畫只是示意，不會開啟選檔視窗或上傳檔案。',demo:'folder',ghost:'商品與LOGO資料夾'},
-    {id:'preview',group:'匯入與編輯',view:'import',target:['#import-canvas-area','#import-canvas-main'],stage:'preview',demoCanvas:true,title:'在中央畫布確認整張成品',
-      text:'這裡會顯示副區、MSBN 與匯入的內容。上下捲動畫布逐一確認；工具列的<b>顯示比例</b>是預覽縮放，不等於商品本身的大小。',
-      tip:'畫布還沒有商品圖時，導覽會疊上一張<b>示範畫布</b>（商品圖為示意），不會灌入工單或改動你的畫面。想重新開始，可按左側「直接預覽全部版位」下方的<b>清除畫面內容</b>。',demo:'exposure'},
-    {id:'text',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],stage:'text-hint',demoCanvas:true,title:'在畫布直接改字，兩行欄位隨你排',
-      text:'直接點畫布上的文字就能改。品名、促標、代言人小字等<b>兩行欄位</b>：按 <b>Enter</b> 在游標處斷行、在第二行開頭按 <b>Backspace</b> 接回一行；一行打滿會自動流到下一行。副區品名只有一行時，下方<b>警語會自動往上補位</b>，加回第二行又回到原位。',
-      tip:'框起來的是畫布上的文字（沒有匯入時是示範畫布）；導覽不會修改你的文字。',demo:'twoline'},
-    {id:'text-limit',group:'匯入與編輯',view:'import',target:['#import-canvas-area','#import-canvas-main'],stage:'text-limit',demoCanvas:true,title:'超過字數：框出來、不刪字、擋下載',
-      text:'工單裡超過版位字數的文字，會被<b>紅框框出</b>，旁邊標出規則與多幾個字。<b>多出來的字不會被自動刪掉</b>，由你決定要留哪些；左側下載區會列出所有問題，點一下就跳到該欄位。全部修正前，<b>不能下載圖片</b>。',
-      tip:'畫面上的紅框與清單是示意，跟實際功能長得一樣，但不會改動你的文字。英數算半個字，跟 Excel 的算法相同。',demo:'text-limit'},
-    {id:'image-tools',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],stage:'image-select',demoCanvas:true,title:'右側工具列：圖片與前後位置',
-      text:'右側的圖片操作列提供<b>編輯、換圖、刪除</b>。曝品與贈品依<b>左右分組</b>，用<b>「前後位置」</b>箭頭決定誰疊在前面，列表順序也會跟著換。<b>點一下工具列的圖片，畫布會直接框出那張圖</b>，不怕點不到被擋住的商品。',
-      tip:'換圖與刪除都會變更實際內容，導覽不會執行這些操作。',demo:'resize'},
-    {id:'transform',group:'匯入與編輯',view:'import',target:['#import-canvas-main','#import-canvas-area'],stage:'transform',demoCanvas:true,title:'拖曳縮放與任意角度旋轉',
-      text:'在畫布點選商品圖或<b>代言人圖</b>，用四角控制點縮放，或拖曳上方 <b>↻</b> 任意旋轉；不是每按一次只能轉 90°。調整前後位置也會保留你縮放好的大小。',
-      tip:'旋轉的是示範商品；你畫布上的圖片只會標出選取框，不會被移動、縮放或旋轉。',demo:'rotate'},
-    {id:'asset-tools',group:'匯入與編輯',view:'import',target:['#import-canvas-tools','#import-block-tools'],stage:'asset-tools',title:'右側工具列：管理圖片素材',
-      text:'在右側圖片工具列，可以針對 <b>LOGO 圖、商品圖、代言人圖、代言人簽名檔圖</b>，進行<b>編輯、換圖、新增、刪除</b>；同一欄有多張圖時，用 <b>▲▼</b> 調整前後。操作前先確認選到正確的版位與素材。',
-      tip:'框起來的是已上傳圖片時的工具列示範；導覽不會實際新增、更換或刪除圖片。',demo:'assets'},
-    {id:'shadow',group:'匯入與編輯',view:'import',target:'#import-shadow-panel',title:'調整商品影子的方向與位移',
-      text:'調整光源、左右及上下位移；陰影色依實際畫布背景計算。若預覽未更新，可按<b>套用修改</b>重新處理。',
-      tip:'處理多張圖片可能需要等待 Loading；導覽不會重製任何圖片。',demo:'shadow'},
-    {id:'colors',group:'匯入與編輯',view:'import',target:'#import-color-section',title:'統一顏色，讓整組一致',
-      text:'在這裡調整共用色，讓相關版位一起更新；也可以<b>直接點畫布上的共用色塊</b>，左側會定位對應色票並開啟色盤。<b>主標色</b>帶動 CTA 底色與圓標底色、<b>副標色</b>帶動促標底色；背景、主標、副標與曝光資源、取色工具<b>三處雙向同步</b>。',
-      tip:'點色塊的空白處可換色；點文字則是編輯文字。導覽中的滑鼠與色盤是操作示意，不會實際修改作品。',demo:'colors'},
-    {id:'exposure',group:'曝光與交付',view:'exposure',frame:'exposure-frame',frameAnchor:'level-layouts',stage:'exposure-level',target:['#exposure-frame','#view-exposure'],title:'曝光資源：等級決定要做哪些版位',
-      text:'從左側切到<b>曝光資源</b>，先在側欄最上方選<b>活動等級</b>。等級會連動下方的<b>「排版選擇」</b>：自動勾選這個等級要做的版位（BN、DDCARD、Search…），<b>版位數量</b>也跟著變。再確認 LOGO、文案與商品圖；換色時的色票<b>只顯示目前底色能用的顏色</b>。',
+    {id:'exposure',group:'曝光資源',view:'exposure',frame:'exposure-frame',frameAnchor:'level-layouts',stage:'exposure-level',target:['#exposure-frame','#view-exposure'],title:'曝光資源：等級決定要做哪些版位',
+      text:'匯入後先做<b>曝光資源</b>（BN），在側欄最上方確認<b>活動等級</b>。等級會連動下方的<b>「排版選擇」</b>：自動勾選這個等級要做的版位（BN、DDCARD、Search…），<b>版位數量</b>也跟著變。再確認 LOGO、文案與商品圖；換色時的色票<b>只顯示目前底色能用的顏色</b>。',
       tip:'右邊清單同步顯示目前等級勾選的版位與名稱；導覽不會代改等級或勾選。首次開啟時會載入既有工具，不會重置已開啟的內容。',demo:'level'},
-    {id:'backgrounds',group:'曝光與交付',view:'exposure',frame:'exposure-frame',frameAnchor:'bg-library',stage:'bg-library',target:['#exposure-frame','#view-exposure'],title:'背景圖庫：搜尋合適的背景',
+    {id:'backgrounds',group:'曝光資源',view:'exposure',frame:'exposure-frame',frameAnchor:'bg-library',stage:'bg-library',target:['#exposure-frame','#view-exposure'],title:'背景圖庫：搜尋合適的背景',
       text:'曝光資源側欄的「背景圖」可以開啟<b>背景圖庫</b>，依關鍵字、品牌或色系搜尋，點選背景圖就會套用到版位；也可以上傳自己的背景圖。圖庫內容會依<b>活動等級</b>切換。',
       tip:'框起來的是實際的背景圖庫畫面；導覽只打開來給你看，不會套用任何背景，換下一步時會自動關閉。',demo:'backgrounds'},
-    {id:'bottom',group:'曝光與交付',view:'bottom',frame:'bottom-standalone-frame',frameTargets:['#app','main'],target:['#bottom-standalone-frame','#view-bottom'],title:'有吸底需求，再編輯吸底工具',
-      text:'工單有吸底內容時，可到<b>吸底工具</b>確認各顆的 LOGO、ICON、文字與狀態。工單原本沒有吸底時，不必額外製作。',
-      tip:'請先由匯入工單載入資料，再確認吸底的預覽結果。',demo:'bottom'},
-    {id:'color-tool',group:'曝光與交付',view:'color',frame:'color-frame',frameAnchor:'color-references',target:['#color-frame','#view-color'],title:'取色工具：價格與選單配色參考',
+    {id:'preview',group:'活動頁資源',view:'import',target:['#import-canvas-area','#import-canvas-main'],stage:'preview',demoCanvas:true,title:'活動頁資源：在中央畫布確認整張成品',
+      text:'曝光資源做完，切到<b>活動頁資源</b>（MS）。中央畫布會顯示副區、MSBN 與匯入的內容，上下捲動逐一確認；工具列的<b>顯示比例</b>是預覽縮放，不等於商品本身的大小。',
+      tip:'畫布還沒有商品圖時，導覽會疊上一張<b>示範畫布</b>（商品圖為示意），不會灌入工單或改動你的畫面。想重新開始，可按左側「直接預覽全部版位」下方的<b>清除畫面內容</b>。',demo:'exposure'},
+    {id:'text',group:'活動頁資源',view:'import',target:['#import-canvas-main','#import-canvas-area'],stage:'text-hint',demoCanvas:true,title:'在畫布直接改字，兩行欄位隨你排',
+      text:'直接點畫布上的文字就能改。品名、促標、代言人小字等<b>兩行欄位</b>：按 <b>Enter</b> 在游標處斷行、在第二行開頭按 <b>Backspace</b> 接回一行；一行打滿會自動流到下一行。副區品名只有一行時，下方<b>警語會自動往上補位</b>，加回第二行又回到原位。',
+      tip:'框起來的是畫布上的文字（沒有匯入時是示範畫布）；導覽不會修改你的文字。',demo:'twoline'},
+    {id:'text-limit',group:'活動頁資源',view:'import',target:['#import-canvas-area','#import-canvas-main'],stage:'text-limit',demoCanvas:true,title:'超過字數：框出來、不刪字、擋下載',
+      text:'工單裡超過版位字數的文字，會被<b>紅框框出</b>，旁邊標出規則與多幾個字。<b>多出來的字不會被自動刪掉</b>，由你決定要留哪些；左側下載區會列出所有問題，點一下就跳到該欄位。全部修正前，<b>不能下載圖片</b>。',
+      tip:'畫面上的紅框與清單是示意，跟實際功能長得一樣，但不會改動你的文字。英數算半個字，跟 Excel 的算法相同。',demo:'text-limit'},
+    {id:'image-tools',group:'活動頁資源',view:'import',target:['#import-canvas-main','#import-canvas-area'],stage:'image-select',demoCanvas:true,title:'右側工具列：圖片與前後位置',
+      text:'右側的圖片操作列提供<b>編輯、換圖、刪除</b>。曝品與贈品依<b>左右分組</b>，用<b>「前後位置」</b>箭頭決定誰疊在前面，列表順序也會跟著換。<b>點一下工具列的圖片，畫布會直接框出那張圖</b>，不怕點不到被擋住的商品。',
+      tip:'換圖與刪除都會變更實際內容，導覽不會執行這些操作。',demo:'resize'},
+    {id:'transform',group:'活動頁資源',view:'import',target:['#import-canvas-main','#import-canvas-area'],stage:'transform',demoCanvas:true,title:'拖曳縮放與任意角度旋轉',
+      text:'在畫布點選商品圖或<b>代言人圖</b>，用四角控制點縮放，或拖曳上方 <b>↻</b> 任意旋轉；不是每按一次只能轉 90°。調整前後位置也會保留你縮放好的大小。',
+      tip:'旋轉的是示範商品；你畫布上的圖片只會標出選取框，不會被移動、縮放或旋轉。',demo:'rotate'},
+    {id:'asset-tools',group:'活動頁資源',view:'import',target:['#import-canvas-tools','#import-block-tools'],stage:'asset-tools',title:'右側工具列：管理圖片素材',
+      text:'在右側圖片工具列，可以針對 <b>LOGO 圖、商品圖、代言人圖、代言人簽名檔圖</b>，進行<b>編輯、換圖、新增、刪除</b>；同一欄有多張圖時，用 <b>▲▼</b> 調整前後。操作前先確認選到正確的版位與素材。',
+      tip:'框起來的是已上傳圖片時的工具列示範；導覽不會實際新增、更換或刪除圖片。',demo:'assets'},
+    {id:'shadow',group:'活動頁資源',view:'import',target:'#import-shadow-panel',title:'調整商品影子的方向與位移',
+      text:'調整光源、左右及上下位移；陰影色依實際畫布背景計算。若預覽未更新，可按<b>套用修改</b>重新處理。',
+      tip:'處理多張圖片可能需要等待 Loading；導覽不會重製任何圖片。',demo:'shadow'},
+    {id:'colors',group:'活動頁資源',view:'import',target:'#import-color-section',title:'統一顏色，讓整組一致',
+      text:'在這裡調整共用色，讓相關版位一起更新；也可以<b>直接點畫布上的共用色塊</b>，左側會定位對應色票並開啟色盤。<b>主標色</b>帶動 CTA 底色與圓標底色、<b>副標色</b>帶動促標底色。<b>背景色不在這裡改</b>：請到曝光資源或取色工具調整，活動頁資源會自動跟著。',
+      tip:'點色塊的空白處可換色；點文字則是編輯文字。導覽中的滑鼠與色盤是操作示意，不會實際修改作品。',demo:'colors'},
+    {id:'color-tool',group:'取色與吸底',view:'color',frame:'color-frame',frameAnchor:'color-references',target:['#color-frame','#view-color'],title:'取色工具：價格與選單配色參考',
       text:'從左側進入<b>取色工具</b>。配出的<b>主標、副標</b>與曝光資源雙向同步，任一邊改色另一邊跟著換。在<b>配色參考－價格／選單</b>調整背景、原價、活動價與按鈕狀態色，這些顏色<b>下載素材時會附在 CSV 檔內</b>。',
       tip:'下載包的「色票」資料夾會附上色票_取色工具.csv；導覽不會實際改色或觸發下載。',demo:'color-reference'},
-    {id:'download',group:'曝光與交付',view:'import',target:'#btn-download-import-package',stage:'download',extraTarget:'#nav-rail .nav-step[data-step="download"]',title:'確認完成，再一次下載交付',
+    {id:'bottom',group:'取色與吸底',view:'bottom',frame:'bottom-standalone-frame',frameTargets:['#app','main'],target:['#bottom-standalone-frame','#view-bottom'],title:'有吸底需求，再編輯吸底工具',
+      text:'工單有吸底內容時，可到<b>吸底工具</b>確認各顆的 LOGO、ICON、文字與狀態。工單原本沒有吸底時，不必額外製作。',
+      tip:'請先在「匯入工單」載入資料，再確認吸底的預覽結果。',demo:'bottom'},
+    {id:'download',group:'交付',view:'import',target:'#btn-download-import-package',stage:'download',extraTarget:'#nav-rail .nav-step[data-step="download"]',title:'確認完成，再一次下載交付',
       text:'按<b>下載工單＋圖片＋暫存檔</b>，或左側流程最後一步<b>「整包下載」</b>——兩個是同一個功能，都會輸出目前工單、圖片、色票與可還原的編輯狀態。有文字<b>超過字數</b>時會先擋下；流程還有<b>未完成的步驟</b>會先提醒。',
       tip:'兩個亮框都可以下載；導覽只說明位置，不會替你觸發下載。下一步會介紹如何還原暫存檔。',demo:'download'},
-    {id:'restore',group:'曝光與交付',view:'import',target:'#btn-upload-snapshot',title:'暫存檔，讓下次可以接著做',
+    {id:'restore',group:'交付',view:'upload',target:'#btn-upload-snapshot',title:'暫存檔，讓下次可以接著做',
       text:'同一台瀏覽器有本機暫存；若要跨電腦或保留一份可還原的版本，請另外保存下載包中的 <b>JSON 暫存檔</b>。上傳暫存檔會<b>完整還原</b>圖片的位置與大小、文字、配色與流程完成狀態。',
-      tip:'「上傳暫存檔還原編輯」可載回先前內容；本機暫存不等於永久備份。按「完成教學」會回到剛才的頁面與捲動位置。',demo:'restore'}
+      tip:'「匯入工單」頁下方的「上傳暫存檔還原編輯」可載回先前內容；本機暫存不等於永久備份。按「完成教學」會回到剛才的頁面與捲動位置。',demo:'restore'}
   ];
   var ROUTES = {
     full:{label:'完整導覽',ids:STEPS.map(function(s){return s.id;})},
-    news:{label:'本次更新重點',ids:['workflow','text','text-limit','image-tools','colors','color-tool','download']},
-    import:{label:'只看匯入與編輯',ids:['import','matching','images','preview','text','text-limit','image-tools','transform','asset-tools','shadow','colors','download','restore']},
-    delivery:{label:'只看曝光與交付',ids:['workflow','exposure','backgrounds','bottom','color-tool','download','restore']}
+    news:{label:'本次更新重點',ids:['workflow','import','images','restore','exposure','preview','colors']},
+    import:{label:'只看匯入與活動頁資源',ids:['import','matching','images','preview','text','text-limit','image-tools','transform','asset-tools','shadow','colors','download','restore']},
+    delivery:{label:'只看曝光與交付',ids:['workflow','exposure','backgrounds','color-tool','bottom','download','restore']}
   };
   /* 路線標籤的步數依實際步驟自動計算，增減步驟時不用再手改數字。 */
   Object.keys(ROUTES).forEach(function(key){ROUTES[key].label+=' · '+ROUTES[key].ids.length+' 步';});
@@ -27201,7 +27338,7 @@ ensureBlocksLoaded(function () {
     }else if(type==='download'){
       body='<span class="bdt-download-file">XLSX<br>工單</span><span class="bdt-download-file">PNG<br>成品圖</span><span class="bdt-download-file">JSON<br>暫存檔</span>';
     }else if(type==='workflow'){
-      body='<div class="bdt-flow-rail">'+[['活動頁資源','done','✓',0],['曝光資源','done','✓',.7],['取色工具','skip','略',1.4],['吸底工具','','',0],['整包下載','','',0]].map(function(item){
+      body='<div class="bdt-flow-rail">'+[['匯入工單','done','✓',0],['曝光資源','done','✓',.6],['活動頁資源','done','✓',1.2],['取色工具','skip','略',1.8],['吸底工具','','',0],['整包下載','','',0]].map(function(item){
           return '<span>'+item[0]+(item[1]?'<i class="is-'+item[1]+'" style="animation-delay:'+item[3]+'s">'+item[2]+'</i>':'')+'</span>';
         }).join('')+'</div>'+
         '<div class="bdt-flow-note"><span>做完按「完成」打勾，<br>不製作的按「略過」。</span><b>⚠ 吸底工具未完成：<br>整包下載前先提醒</b></div>';
