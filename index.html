@@ -27663,12 +27663,17 @@ ensureBlocksLoaded(function () {
 
 <!-- 支援按鈕：左下角「使用教學」下方依序是使用手冊、教學影片、使用反饋表；共用說明書暫時隱藏。 -->
 <style id="boda-help-styles">
-#boda-reset-all{order:21;margin-top:0;}
-#boda-reset-all svg{color:#f87171;}
-#boda-reset-all:hover{background:rgba(248,113,113,.14);border-color:#f87171;}
-#boda-help-guide{order:22;margin-top:0;}
-#boda-help-video{order:23;margin-top:0;}
-#boda-help-feedback{order:24;margin-top:0;}
+/* 「清除重置」放在說明按鈕群最上面（使用教學上方），樣式跟下面的說明按鈕分開：
+   紅色細框、透明底、較小，一眼看出是危險操作而不是說明功能。 */
+#nav-rail #boda-reset-all{order:19;margin-top:auto;margin-bottom:6px;width:60px;padding:6px 2px;gap:3px;
+  background:transparent;border:1px dashed rgba(248,113,113,.6);border-radius:6px;color:#fca5a5;}
+#nav-rail #boda-reset-all svg{width:16px;height:16px;color:#f87171;}
+#nav-rail #boda-reset-all span{font-size:9.5px;font-weight:700;}
+#nav-rail #boda-reset-all:hover{background:rgba(248,113,113,.16);border-style:solid;border-color:#f87171;color:#fff;}
+#nav-rail #boda-tour-launch{margin-top:0;}
+#boda-help-guide{order:21;margin-top:0;}
+#boda-help-video{order:22;margin-top:0;}
+#boda-help-feedback{order:23;margin-top:0;}
 #boda-help-manual,#feedback-btn{display:none!important;}
 #boda-help-note{position:fixed;z-index:100000;max-width:240px;padding:9px 12px;border-radius:9px;background:#1b1b1f;color:#f2f2f4;border:1px solid #555562;font-size:12px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.35);pointer-events:none;opacity:0;transition:opacity .18s;}
 #boda-help-note.show{opacity:1;}
