@@ -52,6 +52,107 @@
     return String(s == null ? '' : s).toLowerCase().replace(/[\s_\-　]/g, '').trim();
   }
 
+  /* ── 工單總覽的版位名稱 ↔ 排版檔（名字模糊比對）────────────────
+     工單寫法很多（DD Card BN (APP)、DDCard、C2C HBN (PC)、Mall HBN、FB POST、FB_Post、
+     AMS BN 推廣者後臺BN、Coin_page、SCPN…），統一先轉成版位類別再比對排版檔。 */
+  function workorderSlotsOfName(name) {
+    var spaced = String(name == null ? '' : name).toLowerCase().replace(/[_\-　]+/g, ' ');
+    var c = spaced.replace(/\s+/g, '');
+    var word = function (w) { return new RegExp('(^|[^a-z0-9])' + w + '([^a-z0-9]|$)').test(spaced); };
+    var out = [];
+    if (/ddcard/.test(c)) out.push('ddcard');
+    if (/lpbn/.test(c)) {
+      var app = /app/.test(c), pc = word('pc');
+      if (app && !pc) out.push('lpbnapp');
+      else if (pc && !app) out.push('lpbnpc');
+      else out.push('lpbnapp', 'lpbnpc');
+    }
+    if (/hbn/.test(c)) out.push('hbn');
+    if (/活動總覽/.test(c)) out.push('活動總覽');
+    if (/logo牆|logowall/.test(c)) out.push('logowall');
+    if (/fbpost|facebook/.test(c)) out.push('fbpost');
+    if (/ams/.test(c)) out.push('ams');
+    if (word('ar')) out.push('ar');
+    if (/coin/.test(c)) out.push('coin');
+    if (word('ig') || /instagram/.test(c)) out.push('ig');
+    if (/sc[bp]n/.test(c)) out.push('scbn');
+    if (/sba/.test(c)) out.push('sba');
+    if (/searchicon/.test(c)) out.push('searchicon');
+    if (/searchimage|searchimg/.test(c)) out.push('searchimage');
+    return out;
+  }
+  function workorderSlotOfLayout(layout) {
+    var f = String(layout && (layout.file || layout.name) || '').replace(/^.*[\\/]/, '')
+      .toLowerCase().replace(/[\s\-　]+/g, '');
+    if (/^ddcard/.test(f)) return 'ddcard';
+    if (/^lpbn_?app/.test(f)) return 'lpbnapp';
+    if (/^lpbn_?pc/.test(f)) return 'lpbnpc';
+    if (/^hbn/.test(f)) return 'hbn';
+    if (/^活動總覽/.test(f)) return '活動總覽';
+    if (/^首頁logo牆/.test(f)) return 'logowall';
+    if (/^fb_?post/.test(f)) return 'fbpost';
+    if (/^ams/.test(f)) return 'ams';
+    if (/^ar(?:[._]|$)/.test(f)) return 'ar';
+    if (/^coin/.test(f)) return 'coin';
+    if (/^ig/.test(f)) return 'ig';
+    if (/^scbn/.test(f)) return 'scbn';
+    if (/^sba/.test(f)) return 'sba';
+    if (/^searchicon/.test(f)) return 'searchicon';
+    if (/^search_?image/.test(f)) return 'searchimage';
+    return '';
+  }
+
+  /* 工單總覽列出的曝光資源版位（BODA 匯入工單時送來）：{ importId, slots: { 類別: [工單名稱…] } }。
+     存在 localStorage（bn 開頭，「清除本機暫存」會一起清），重新整理後清單照樣在。 */
+  var WORKORDER_PLACEMENT_KEY = 'bn-workorder-placement-v1';
+  var workorderPlacement = readWorkorderPlacement();
+  var workorderAppliedIds = {}; /* { 版位 id: 工單勾的值 }：這次開頁後由工單勾選過的版位，晚到的暫存還原不可蓋回舊勾選 */
+  function readWorkorderPlacement() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(WORKORDER_PLACEMENT_KEY) || 'null');
+      return saved && saved.slots && typeof saved.slots === 'object' ? saved : null;
+    } catch (e) { return null; }
+  }
+  function writeWorkorderPlacement(value) {
+    workorderPlacement = value;
+    try {
+      if (value) localStorage.setItem(WORKORDER_PLACEMENT_KEY, JSON.stringify(value));
+      else localStorage.removeItem(WORKORDER_PLACEMENT_KEY);
+    } catch (e) {}
+  }
+  function clearWorkorderPlacement() { writeWorkorderPlacement(null); }
+  function workorderListsSlot(slot) {
+    return !!(workorderPlacement && slot && workorderPlacement.slots[slot]);
+  }
+  /* 工單沒列到的版位：自動選 LOGO 方／橫版、無 LOGO 版時不可再自動勾回來（使用者手動勾不受限）。 */
+  function workorderBlocksAutoCheck(layout) {
+    return !!workorderPlacement && !workorderListsSlot(workorderSlotOfLayout(layout));
+  }
+  /* 等級的版位詳情表沒列到、但工單有列的版位：加進排版清單（工單是這次製作的依據）。
+     等級已經有的類別不再加（例如 LPBN 固定只用 LPBN_APP／LPBN_PC 兩個）。 */
+  function appendWorkorderRows(rows, layouts) {
+    if (!workorderPlacement) return rows;
+    var have = {}, present = {}, groups = {};
+    rows.forEach(function (r) {
+      if (!r.layout) return;
+      have[String(r.layout.id)] = true;
+      var slot = workorderSlotOfLayout(r.layout);
+      if (slot) present[slot] = true;
+    });
+    layouts.forEach(function (l) {
+      if (have[String(l.id)]) return;
+      var slot = workorderSlotOfLayout(l);
+      if (!slot || present[slot] || !workorderListsSlot(slot)) return;
+      (groups[slot] = groups[slot] || []).push(l);
+    });
+    Object.keys(workorderPlacement.slots).forEach(function (slot) {
+      (groups[slot] || []).forEach(function (l) {
+        rows.push({ slot: workorderPlacement.slots[slot][0] + '（工單）', layout: l, def: true, fromWorkorder: true });
+      });
+    });
+    return rows;
+  }
+
   var currentLevelId = readLevel();
   var SHEET = null;
   var sheetError = '';
@@ -95,6 +196,9 @@
     if (id) id = normalizeLevelId(id);
     if (id && id !== currentLevelId) {
       userTouched = {};
+      /* 換等級＝改用新等級的預設勾選：還原的勾選、上一份工單的版位清單都不再適用。 */
+      restoredChecked = {};
+      clearWorkorderPlacement();
       _logoVariantManualOverride = false;
     }
     if (id) currentLevelId = id;
@@ -147,7 +251,8 @@
       note.textContent = '此等級在版位詳情表裡沒有曝光資源版位。' + msbnTxt;
       return;
     }
-    note.textContent = '此等級：預設 ' + d + ' 個版位、選配 ' + o + ' 個（選配要自己打勾）。' + msbnTxt;
+    note.textContent = '此等級：預設 ' + d + ' 個版位、選配 ' + o + ' 個（選配要自己打勾）。' + msbnTxt +
+      (workorderPlacement ? '　已依工單總覽的版位勾選。' : '');
   }
 
   var EMPTY_TEXT_DEFAULT = '請在左側勾選排版';
@@ -298,6 +403,7 @@
         rows.push({ slot: name, layout: l, def: conf.def[name] });
       });
     });
+    appendWorkorderRows(rows, layouts);
     return {
       all: rows.filter(function (r) { return r.layout; }).map(function (r) { return r.layout; }),
       rows: rows
@@ -325,9 +431,18 @@
 
   var userTouched = {};
   var restoredChecked = {};
-  window._bnSetRestoredChecked = function (map) {
+  /* bn-state-plugin 還原暫存時呼叫：還原的勾選要贏過等級預設，重新整理後手動調整才不會被改回去。
+     這次開頁後工單已經勾過的版位不讓晚到的暫存蓋回去（暫存是匯入前的舊勾選）。 */
+  window._bnSetRestoredChecked = function (map, levelId) {
+    /* 暫存的勾選是在別的等級做的（例如這次匯入了別的等級的工單）：不還原，用目前等級的預設。 */
+    if (levelId && normalizeLevelId(levelId) !== currentLevelId) return;
     restoredChecked = {};
     Object.keys(map || {}).forEach(function (id) {
+      if (Object.prototype.hasOwnProperty.call(workorderAppliedIds, String(id))) {
+        /* saveChecked 已經先把舊值寫進 checked，這裡改回工單勾的值 */
+        if (window.checked) window.checked[String(id)] = workorderAppliedIds[String(id)];
+        return;
+      }
       restoredChecked[String(id)] = !!map[id];
       userTouched[String(id)] = true;
       if (window.checked) window.checked[String(id)] = !!map[id];
@@ -388,6 +503,11 @@
     }).join('');
   }
 
+  /* 手動勾選後，晚到的暫存還原也要以使用者最後的選擇為準。 */
+  function noteManualCheck(id, val) {
+    if (Object.prototype.hasOwnProperty.call(workorderAppliedIds, String(id))) workorderAppliedIds[String(id)] = !!val;
+  }
+
   function myCheckAll(val) {
     var plan = planForLevel();
     var checked = window.checked || (window.checked = {});
@@ -395,6 +515,7 @@
       if (!r.layout) return;
       checked[r.layout.id] = !!val;
       userTouched[r.layout.id] = true;
+      noteManualCheck(r.layout.id, val);
     });
     if (plan.rows.some(function (r) { return r.layout && isLogoVariantLayout(r.layout); })) {
       _logoVariantManualOverride = true;
@@ -420,6 +541,7 @@
     var checked = window.checked || (window.checked = {});
     checked[id] = !!val;
     userTouched[id] = true;
+    noteManualCheck(id, val);
     var selected = (planForLevel().rows || []).find(function (r) {
       return r.layout && String(r.layout.id) === String(id);
     });
@@ -454,6 +576,8 @@
       var pair = groups[k];
       var variants = [pair.none, pair.square, pair.horizontal].filter(Boolean);
       if (!variants.length || (!pair.none && (!pair.square || !pair.horizontal))) return;
+      /* 工單總覽沒列到的版位（已取消勾選）：自動選 LOGO 版本時不要再勾回來。 */
+      if (variants.every(workorderBlocksAutoCheck)) return;
       variants.forEach(function (layout) {
         var currentVariant = layoutVariant(layout);
         var next = variant === 'none' ? (pair.none ? currentVariant === 'none' : true) :
@@ -476,13 +600,104 @@
       wrapped._lvWrapped = true;
       window.renderPreviews = wrapped;
     }
+    /* 自動勾選（無 LOGO 版、LOGO 方／橫版）走 setLayoutChecks；工單沒列到的版位不讓它自動勾回來。 */
+    var origSet = window.setLayoutChecks;
+    if (typeof origSet === 'function' && !origSet._lvWrapped) {
+      var wrappedSet = function (nextById) {
+        var byId = {}, next = {};
+        (typeof window.loadLayouts === 'function' ? window.loadLayouts() : []).forEach(function (l) { byId[String(l.id)] = l; });
+        Object.keys(nextById || {}).forEach(function (id) {
+          if (nextById[id] && byId[String(id)] && workorderBlocksAutoCheck(byId[String(id)])) return;
+          next[id] = nextById[id];
+        });
+        return origSet.call(this, next);
+      };
+      wrappedSet._lvWrapped = true;
+      window.setLayoutChecks = wrappedSet;
+    }
   }
 
+  function workorderResourceListed(r) {
+    if (r && String(r.check || '') === '未選') return false;
+    var count = r && r.count;
+    if (count === '' || count == null) return true;
+    var n = Number(count);
+    return !isFinite(n) || n > 0;
+  }
+  /* 勾選結果回報給 BODA（顯示在「匯入工單」頁 STEP 1 下方）。 */
+  function reportWorkorderPlacement(info) {
+    if (!window.parent || window.parent === window) return;
+    var checked = window.checked || {};
+    var names = (planForLevel().rows || []).filter(function (r) {
+      return r.layout && checked[r.layout.id];
+    }).map(function (r) { return r.layout.name; });
+    try {
+      window.parent.postMessage({
+        type: 'wo-workorder-exposure-spec-result', importId: info.importId || '', replay: !!info.replay,
+        checked: names, listed: info.listed || [], unmatched: info.unmatched || [],
+        skipped: info.skipped || [], noLayout: info.noLayout || []
+      }, '*');
+    } catch (e) {}
+  }
+  /* 新版工單（工單總覽「版位」欄，BODA 送 exhaustive）：列出的就是這次要做的曝光資源，
+     有列到的勾選、沒列到的取消勾選；名字模糊比對成版位類別。
+     同一次匯入重送（曝光資源晚開、iframe 重載）只補回清單，不覆蓋之後的手動調整。 */
+  function applyWorkorderPlacementList(spec) {
+    var importId = String(spec.importId || '');
+    var slots = {}, listed = [], unmatched = [], skipped = [];
+    spec.resources.forEach(function (r) {
+      var name = String(r && r.key || '').replace(/\s+/g, ' ').trim();
+      if (!name) return;
+      var found = workorderSlotsOfName(name);
+      if (!found.length) { unmatched.push(name); return; }
+      if (!workorderResourceListed(r)) { skipped.push(name); return; }
+      listed.push(name);
+      found.forEach(function (slot) {
+        if (!slots[slot]) slots[slot] = [];
+        if (slots[slot].indexOf(name) === -1) slots[slot].push(name);
+      });
+    });
+    var replay = !!(importId && workorderPlacement && workorderPlacement.importId === importId);
+    writeWorkorderPlacement({ importId: importId, slots: slots });
+    var checked = window.checked || (window.checked = {});
+    var present = {};
+    (planForLevel().rows || []).forEach(function (r) {
+      if (!r.layout) return;
+      var slot = workorderSlotOfLayout(r.layout);
+      var on = workorderListsSlot(slot);
+      if (on) present[slot] = true;
+      if (replay) return;
+      checked[r.layout.id] = on;
+      userTouched[r.layout.id] = true;
+      workorderAppliedIds[String(r.layout.id)] = on;
+    });
+    var noLayout = Object.keys(slots).filter(function (slot) { return !present[slot]; })
+      .map(function (slot) { return slots[slot][0]; });
+    if (!replay) _logoVariantManualOverride = false;
+    myRenderChecks();
+    paintNote();
+    if (typeof window.renderPreviews === 'function') window.renderPreviews();
+    /* 工單勾的是整類（例如 ddcard 的方／橫／無 LOGO 版都勾），再依目前的 LOGO 自動挑版本。 */
+    var variantSync = null;
+    if (!replay && (window._bnLogos || []).length && typeof window._bnSyncLogoLayoutSelection === 'function') {
+      try { variantSync = window._bnSyncLogoLayoutSelection(); } catch (e) { variantSync = null; }
+    }
+    if (!replay) { try { document.dispatchEvent(new CustomEvent('bn-state-dirty')); } catch (e) {} }
+    Promise.resolve(variantSync).catch(function () {}).then(function () {
+      reportWorkorderPlacement({ importId: importId, replay: replay, listed: listed, unmatched: unmatched, skipped: skipped, noLayout: noLayout });
+    });
+    return true;
+  }
   function applyWorkorderExposureSpec(spec) {
-    if (!spec || !Array.isArray(spec.resources) || !spec.resources.length) return false;
+    if (!spec) return false;
+    if (spec.exhaustive && Array.isArray(spec.resources)) return applyWorkorderPlacementList(spec);
+    /* 舊版工單（0918V3 曝光資源矩陣）或沒有版位清單：不使用工單版位清單，只調整有列到的版位。 */
+    clearWorkorderPlacement();
+    if (!Array.isArray(spec.resources) || !spec.resources.length) { myRenderChecks(); paintNote(); return false; }
     var resources = spec.resources.map(function (r) {
       return {
         key: normKey(String(r && r.key || '')),
+        slots: workorderSlotsOfName(r && r.key),
         count: Number(r && r.count) || 0,
         selected: Number(r && r.count) > 0 && String(r && r.check || '') !== '未選'
       };
@@ -493,8 +708,13 @@
     layouts.forEach(function (layout) {
       var layoutKey = normKey(String(layout && (layout.file || layout.name) || ''));
       if (!layoutKey) return;
+      var slot = workorderSlotOfLayout(layout);
+      /* 先比版位類別；名字認不出類別時才退回舊的字串包含比對（避免 AR 被 ddcard、Search_Image 吃掉）。 */
       var hit = resources.filter(function (resource) {
-        return layoutKey.indexOf(resource.key) !== -1 || resource.key.indexOf(layoutKey) !== -1;
+        return slot && resource.slots.indexOf(slot) !== -1;
+      })[0] || resources.filter(function (resource) {
+        return !resource.slots.length &&
+          (layoutKey.indexOf(resource.key) !== -1 || resource.key.indexOf(layoutKey) !== -1);
       })[0];
       if (!hit) return;
       var next = !!hit.selected;
