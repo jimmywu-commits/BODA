@@ -1329,6 +1329,16 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 .nav-step:not([data-step="upload"]){margin-top:12px;}
 .nav-step:not([data-step="upload"])::before{content:"";position:absolute;left:50%;top:-15px;height:12px;
   border-left:1.5px dashed rgba(255,255,255,.3);pointer-events:none;}
+/* 製作流程有 6 步：矮螢幕（筆電）先縮小間距；真的放不下時左側欄可以捲動，最下方的說明按鈕不會被切掉。 */
+#nav-rail{overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
+#nav-rail::-webkit-scrollbar{display:none;}
+@media (max-height:820px){
+  #nav-rail{padding:10px 0;gap:4px;}
+  #nav-rail .nav-item{padding:6px 2px;gap:3px;}
+  .nav-step:not([data-step="upload"]){margin-top:8px;}
+  .nav-step:not([data-step="upload"])::before{top:-11px;height:8px;}
+  #nav-rail .boda-tour-launch{padding:7px 2px;gap:3px;}
+}
 /* 步驟狀態：已完成打勾、已略過灰色「略」。 */
 .nav-step .step-badge{position:absolute;top:3px;right:7px;width:15px;height:15px;border-radius:50%;
   display:none;place-items:center;font:800 9px/1 system-ui,sans-serif;color:#fff;box-shadow:0 0 0 2px var(--ink);}
@@ -26683,12 +26693,14 @@ function showView(name, options) {
        切頁與工單生成器編輯期間不會自動覆蓋匯入工單畫布。 */
     refreshGeneratorImportButton();
     /* 隱藏頁籤裡的圖片框在第一次渲染時可能量不到尺寸；頁面真正顯示後再掃一次，
-       確保每一個圖片欄位立即恢復滾輪縮放、拖曳與雙擊復原。 */
+       確保每一個圖片欄位立即恢復滾輪縮放、拖曳與雙擊復原。
+       工單與圖片現在在「匯入工單」頁上傳（這頁在背景排版），超過字數的紅框提示也在顯示後重新定位。 */
     requestAnimationFrame(function () {
       var importView = document.getElementById('view-import');
       if (importView && window.BNImageLayout && typeof BNImageLayout.scanAndProcess === 'function') {
         BNImageLayout.scanAndProcess(importView);
       }
+      if (typeof scheduleImportTextLimitMarks === 'function') scheduleImportTextLimitMarks();
     });
   }
 
