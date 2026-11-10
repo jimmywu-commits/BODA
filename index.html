@@ -15174,13 +15174,79 @@ function readImportDroppedFiles(dataTransfer) {
    原圖常是 3000×6000 以上（手機照、Photoroom 去背 PNG）：每張解碼約 70MB，曝光資源又會
    複製給每個版位 iframe（約 30 個）各自解碼，幾張大圖就會讓分頁「Out of Memory」。 */
 var IMPORT_IMAGE_MAX_EDGE = 2000;
+var IMPORT_IMAGE_MAX_BYTES = 100 * 1024 * 1024; /* dataURL 上限 ≈ 100 MB，超過就自動壓縮 */
+
+/* 把一個已經畫到 canvas 上的圖，用 binary search 找出剛好不超過 maxBytes 的 JPEG 品質。
+   下限 quality 0.30，再低還是超過就等比縮小 canvas 再試一次（最多縮到長邊 1200px）。
+   canvas 用完會清掉。 */
+function _compressCanvasToLimit(canvas, maxBytes, resolveFallback) {
+  var w = canvas.width, h = canvas.height;
+  var best = '';
+  /* binary search JPEG quality: 0.30 ~ 0.95 */
+  var lo = 0.30, hi = 0.95;
+  for (var iter = 0; iter < 8; iter++) {
+    var mid = (lo + hi) / 2;
+    var url = '';
+    try { url = canvas.toDataURL('image/jpeg', mid); } catch (e) {}
+    if (!url) { lo = mid; continue; }
+    if (url.length <= maxBytes) { best = url; lo = mid; }
+    else { hi = mid; }
+  }
+  if (best) { canvas.width = canvas.height = 0; return best; }
+  /* 品質 0.30 還是太大：等比縮小 canvas 再試（長邊目標 1600 → 1200 為止） */
+  var targets = [1600, 1400, 1200];
+  for (var ti = 0; ti < targets.length; ti++) {
+    var longEdge = Math.max(w, h);
+    if (longEdge <= targets[ti]) continue;
+    var scale = targets[ti] / longEdge;
+    var c2 = document.createElement('canvas');
+    c2.width = Math.max(1, Math.round(w * scale));
+    c2.height = Math.max(1, Math.round(h * scale));
+    var ctx2 = c2.getContext('2d');
+    ctx2.imageSmoothingEnabled = true;
+    ctx2.imageSmoothingQuality = 'high';
+    ctx2.drawImage(canvas, 0, 0, c2.width, c2.height);
+    for (var qi = 0; qi <= 7; qi++) {
+      var q = 0.95 - qi * 0.08;
+      var u = '';
+      try { u = c2.toDataURL('image/jpeg', q); } catch (e) {}
+      if (u && u.length <= maxBytes) { best = u; break; }
+    }
+    c2.width = c2.height = 0;
+    if (best) break;
+  }
+  canvas.width = canvas.height = 0;
+  if (best) return best;
+  /* 真的壓不下來：回退到 readRaw 的結果（已經盡力了，保留原圖） */
+  if (typeof resolveFallback === 'function') resolveFallback('');
+}
+
 /* 讀一個圖片檔成 dataURL：長邊超過上限就等比縮小（PNG／WebP 保留透明、JPG 品質 0.92）；
-   SVG、GIF（向量、動畫）與讀不到尺寸的檔案照原樣讀。用 objectURL 量尺寸，大圖不會先產生一條巨型 base64 字串。 */
+   SVG、GIF（向量、動畫）與讀不到尺寸的檔案照原樣讀。用 objectURL 量尺寸，大圖不會先產生一條巨型 base64 字串。
+   最後檢查 dataURL 大小，超過 IMPORT_IMAGE_MAX_BYTES 就自動壓縮到剛好不超過上限。 */
 function readImportImageFile(file) {
   function readRaw() {
     return new Promise(function (resolve) {
       var fr = new FileReader();
-      fr.onload = function () { resolve(fr.result); };
+      fr.onload = function () {
+        var url = fr.result;
+        if (url && url.length > IMPORT_IMAGE_MAX_BYTES) {
+          /* raw 讀出來的 dataURL 已超標：畫到 canvas 再壓縮 */
+          var img = new Image();
+          img.onload = function () {
+            var c = document.createElement('canvas');
+            c.width = img.naturalWidth; c.height = img.naturalHeight;
+            var ctx = c.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            var compressed = _compressCanvasToLimit(c, IMPORT_IMAGE_MAX_BYTES, resolve);
+            resolve(compressed || url);
+          };
+          img.onerror = function () { resolve(url); };
+          img.src = url;
+          return;
+        }
+        resolve(url);
+      };
       fr.onerror = function () { resolve(''); };
       fr.readAsDataURL(file);
     });
@@ -15210,8 +15276,15 @@ function readImportImageFile(file) {
       var isJpeg = /jpe?g/.test(type) || /\.jpe?g$/.test(name);
       var out = '';
       try { out = isJpeg ? canvas.toDataURL('image/jpeg', 0.92) : canvas.toDataURL('image/png'); } catch (e) { out = ''; }
+      if (!out) { canvas.width = canvas.height = 0; readRaw().then(resolve); return; }
+      /* 壓縮後仍超標就自動降品質 */
+      if (out.length > IMPORT_IMAGE_MAX_BYTES) {
+        var compressed = _compressCanvasToLimit(canvas, IMPORT_IMAGE_MAX_BYTES, resolve);
+        resolve(compressed || out);
+        return;
+      }
       canvas.width = canvas.height = 0;
-      if (out) resolve(out); else readRaw().then(resolve);
+      resolve(out);
     };
     img.onerror = function () { URL.revokeObjectURL(objectUrl); readRaw().then(resolve); };
     img.src = objectUrl;
@@ -27359,7 +27432,7 @@ function clearImportCanvasContent() {
     '確定要清除畫面內容嗎？\n\n' +
     '・版位保留，促標、品名、圓標等文字回到預設示範文字\n' +
     '・畫布上的圖片全部清空，圖片縮放、位置與前後位置也會重設\n' +
-    '・統一顏色與已上傳的圖片素材不會刪除\n\n' +
+    '・統一顏色、已上傳的圖片素材、工單來源資料一併清除\n\n' +
     '清除後無法用「上一步」復原；需要保留目前內容，請先按「下載工單＋圖片＋暫存檔」。'
   );
   if (!ok) { appLoadingFinish('已取消清除'); return; }
@@ -27381,6 +27454,38 @@ function clearImportCanvasContent() {
     beginImportImageLayoutDocument(false);
     renderImportColumns(currentImportColumns);
     saveImportImageLayout();
+    /* 清空已上傳圖片素材、工單來源與產生器簽章 */
+    uploadedImages = [];
+    currentImportWorkbook = null;
+    currentImportWorkbookName = '';
+    currentImportSource = '';
+    currentGeneratorSignature = '';
+    /* 清除六個共用顏色 localStorage 鍵 */
+    try { localStorage.removeItem('wo_shared_canvas_bg_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_shared_cta_bg_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_shared_cta_text_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_shared_exposure_sub_text_color_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_shared_exposure_text_palette_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_snapshot_text_palette_lock_v1'); } catch (e) {}
+    /* 重設匯入主題顏色 */
+    IMPORT_COLOR_ITEMS.forEach(function (it) { importTheme[it.key] = ''; });
+    importTheme.bgAuto = false;
+    /* 清除吸底資料庫 */
+    try { indexedDB.deleteDatabase('boda-bottom-persist'); } catch (e) {}
+    /* 推送空的素材到曝光資源 iframe */
+    try {
+      var _clrFrame = document.getElementById('exposure-frame');
+      if (_clrFrame && _clrFrame.contentWindow) {
+        _clrFrame.contentWindow.postMessage({
+          type: 'wo-workorder-overview-assets',
+          assets: { logos: [], products: [], endorsers: [], endorserNote: '', replaceLogos: true, replaceProducts: true, replaceEndorser: true }
+        }, '*');
+      }
+    } catch (e) {}
+    /* 推送空的素材到吸底工具 */
+    try { broadcastBottomImageAssets(); } catch (e) {}
+    /* 讓 saveImportState 寫入空狀態覆蓋 localStorage */
+    importPersistDisabled = false;
     saveImportState();
     if (importLog) importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已清除畫面內容：' + currentImportColumns.length + ' 格版位回到預設示範內容</span>';
     appLoadingFinish('畫面內容已清除');
