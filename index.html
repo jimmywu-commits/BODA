@@ -12382,8 +12382,14 @@ function parseWorkbookOverviewByLabels(wb) {
     return String(s || '').replace(/\s+/g, '')
       .replace(/：/g, ':').replace(/（/g, '(').replace(/）/g, ')').replace(/／/g, '/');
   }
+  /* 只讀「內容」那幾欄（標題列「內容」到「CTA／Check」前一欄）：右邊的 CTA 欄常是整段縱向合併，
+     不限制的話，日期沒填時會讀到 CTA 文案（例：「放心買 安心退▸」）。縱向合併、主格在上面列的也跳過。 */
+  var contentFrom = 0, contentTo = maxCol;
   function rightText(r, c) {
-    for (var cc = c + 1; cc <= maxCol; cc++) {
+    var from = Math.max(c + 1, contentFrom || 0), to = contentTo;
+    for (var cc = from; cc <= to; cc++) {
+      var cell = cellAt(r, cc);
+      if (cell && cell.master && cell.master !== cell && Number(cell.master.row) < r) continue;
       var v = text(r, cc);
       if (v) return v;
     }
@@ -12410,7 +12416,24 @@ function parseWorkbookOverviewByLabels(wb) {
     }
   }
   if (anchorRow) {
+    /* 標題列（版位｜…｜內容｜…｜CTA｜Check）：決定「內容」欄的範圍。 */
+    /* 錨點可能先對到上方的提示文字（例：J2「…下方「製作內容文案」會自動切換…」），標題列往下多找幾列。 */
+    for (var hr = anchorRow + 1; hr <= Math.min(maxRow, anchorRow + 40) && !contentFrom; hr++) {
+      var ctaCol = 0, checkCol = 0, contentCol = 0;
+      for (var hc = 1; hc <= maxCol; hc++) {
+        var ht0 = norm(text(hr, hc));
+        if (ht0 === '內容') contentCol = hc;
+        else if (/^CTA$/i.test(ht0)) ctaCol = hc;
+        else if (/^Check$/i.test(ht0)) checkCol = hc;
+      }
+      if (contentCol) {
+        contentFrom = contentCol;
+        var stopCol = [ctaCol, checkCol].filter(function (col) { return col > contentCol; }).sort(function (a, b) { return a - b; })[0];
+        contentTo = stopCol ? stopCol - 1 : maxCol;
+      }
+    }
     var got = { main: false, sub: false, date: false, products: false, logos: false };
+    var logoBlock = null;
     for (var rr = anchorRow + 1; rr <= maxRow; rr++) {
       if (got.main && got.sub && got.date && got.products && got.logos) break;
       for (var cc = 1; cc <= maxCol; cc++) {
@@ -12418,11 +12441,12 @@ function parseWorkbookOverviewByLabels(wb) {
         if (isMergedSlave(cell)) continue;
         var label = norm(workbookCellPlainString(cell));
         if (!label) continue;
-        if (!got.main && /^主標/.test(label)) { got.main = true; result.main = rightText(rr, cc); result.found = true; }
-        else if (!got.sub && /^副標/.test(label)) { got.sub = true; result.sub = rightText(rr, cc); result.found = true; }
-        else if (!got.date && (/^日期/.test(label) || /^警語/.test(label))) { got.date = true; result.date = rightText(rr, cc); result.found = true; }
+        /* 主標／副標／日期／商品：取第一組「有填」的（DD Card 沒填日期時，改用 HBN 那組）。 */
+        if (!got.main && /^主標/.test(label)) { result.found = true; result.main = rightText(rr, cc); got.main = !!result.main; }
+        else if (!got.sub && /^副標/.test(label)) { result.found = true; result.sub = rightText(rr, cc); got.sub = !!result.sub; }
+        else if (!got.date && (/^日期/.test(label) || /^警語/.test(label))) { result.found = true; result.date = rightText(rr, cc); got.date = !!result.date; }
         else if (!got.products && /^商品品名/.test(label)) {
-          got.products = true; result.found = true;
+          result.found = true;
           var names = [];
           for (var k = 1; k <= 3; k++) {
             var pc = cellAt(rr, cc + k);
@@ -12431,6 +12455,7 @@ function parseWorkbookOverviewByLabels(wb) {
             if (pv) names.push(pv);
           }
           result.productFiles = normalizeExposureAssetFileNames(names.join(','));
+          got.products = result.productFiles.length > 0;
         }
         /* LOGO(限0-3個內)依序：右邊三格分別是左邊／中間／右邊的 LOGO 檔名。
            只認第一組（DD Card 那一列）；同一張表的 HBN 列重複寫的 LOGO 不再覆蓋。 */
@@ -12458,6 +12483,7 @@ function parseWorkbookOverviewByLabels(wb) {
             if (lv) logoNames.push(lv);
           });
           result.logoFiles = normalizeExposureLogoFileNames(logoNames.join(','));
+          logoBlock = { row: rr, cols: logoCols };
         }
       }
     }
@@ -12468,6 +12494,25 @@ function parseWorkbookOverviewByLabels(wb) {
   if (dynamicLogoFiles.length) {
     result.logoFiles = dynamicLogoFiles;
     result.found = true;
+  }
+  /* LOGO 區塊（標籤列和下面兩列、左中右三欄）裡有寫明副檔名的圖檔（例：樂維根_新LOGO_640x360.jpg），
+     就以那幾個為準。有的工單在 LOGO 列填品牌名或商品 KV 名、真正的 LOGO 檔名寫在下面的路徑列，
+     照舊只讀 LOGO 列會把商品圖當成 LOGO。完整路徑只取檔名。 */
+  if (logoBlock) {
+    var explicitLogos = [];
+    for (var lr = logoBlock.row; lr <= Math.min(maxRow, logoBlock.row + 2); lr++) {
+      logoBlock.cols.forEach(function (lcol) {
+        var raw = text(lr, lcol);
+        if (!/\.(png|jpe?g|webp|gif|svg)$/i.test(raw)) return;
+        var base = raw.split(/[\\/]/).pop().trim();
+        if (base && explicitLogos.indexOf(base) === -1) explicitLogos.push(base);
+      });
+    }
+    var explicitNormalized = normalizeExposureLogoFileNames(explicitLogos.join(','));
+    if (explicitNormalized.length) {
+      result.logoFiles = explicitNormalized;
+      result.found = true;
+    }
   }
   for (var br = 1; br <= maxRow && !result.bg; br++) {
     for (var bc = 1; bc <= maxCol; bc++) {

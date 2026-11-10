@@ -467,9 +467,11 @@
      母版把兩格～五格全部列出，只取「填了最多內容」的那一段，同分取格數多的。 */
   function analyseLayoutSticky(workbook) {
     var names = workbook.SheetNames || [];
-    function norm(n) { return String(n || "").trim().toLowerCase().replace(/[\s_-]+/g, "_"); }
+    /* 頁簽名稱可能被加上括號或引號（例：「Layout_Output」），比對前先拿掉。 */
+    function stripQuotes(n) { return String(n || "").replace(/[「」『』【】《》〈〉"'“”‘’()（）\[\]]/g, "").trim(); }
+    function norm(n) { return stripQuotes(n).toLowerCase().replace(/[\s_-]+/g, "_"); }
     var outputSheets = names.filter(function (n) { return norm(n) === "layout_output"; });
-    var templateSheets = names.filter(function (n) { return /^layout[\s_-]*template/i.test(String(n).trim()) && !/backup/i.test(n); });
+    var templateSheets = names.filter(function (n) { return /^layout[\s_-]*template/i.test(stripQuotes(n)) && !/backup/i.test(n); });
     for (var i = 0; i < outputSheets.length; i++) {
       var blocks = detectLayoutStickyBlocks(sheetToRows(workbook, outputSheets[i]), outputSheets[i]);
       if (blocks.length) return blocks;
