@@ -2471,7 +2471,7 @@
     }
     function normalizeWorkorderAssets(items, kind){
       return (Array.isArray(items) ? items : []).filter(function(item){
-        return item && /^data:image\//i.test(String(item.src || '')) &&
+        return item && /^(?:data:image\/|blob:)/i.test(String(item.src || '')) &&
           !(kind === 'logo' && isWorkorderLogoPlaceholder(item));
       });
     }

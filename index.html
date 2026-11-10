@@ -14921,12 +14921,7 @@ function reapplyImportShadowToUploads(commit) {
           console.warn('[BODA] 影子已更新，但' + label + '失敗。', err);
         }
       }
-      finishStep('更新素材清單', renderImageGallery);
-      if (currentImportWorkbook) finishStep('同步工單總覽', function () { syncWorkbookOverviewTextToExposure(currentImportWorkbook); });
-      finishStep('同步吸底素材', broadcastBottomImageAssets);
-      finishStep('同步曝光資源', syncExposureOverviewAssets);
-      finishStep('儲存吸底暫存', queueBottomPersist);
-      finishStep('儲存工單暫存', saveImportState);
+      finishStep('更新素材清單與同步子工具', syncAllChildTools);
       if (overlay) appLoadingFinish('商品影子已更新');
     }
     clearTimeout(overlayTimer);
@@ -15253,13 +15248,11 @@ function handleImageFiles(fileList) {
     uploadedImages = uploadedImages.filter(function (x) { return x && x.url; });
     appLoadingUpdate(36, 'LOADING · 上傳圖片', '正在把 ' + files.length + ' 張圖片放進對應的版位…', 52);
     appLoadingYield().then(function () {
-      renderImageGallery();
       autoMatchImagesToColumns();
       renderImportFieldsForCurrentColumns();
-      if (currentImportWorkbook) syncWorkbookOverviewTextToExposure(currentImportWorkbook);
-      broadcastBottomImageAssets();
-      queueBottomPersist();
-      /* 自動比對到的商品圖，這時才去背＋加影子；影子接在同一條進度後段。 */
+      renderImageGallery();
+      /* 自動比對到的商品圖，這時才去背＋加影子；影子接在同一條進度後段。
+         曝光資源／吸底素材統一在影子完成後由 syncAllChildTools 一次推送。 */
       appLoadingHandoff(55, '圖片素材已上傳');
       scheduleImportShadowReapply(true);
       if (!importShadowReapplyRunning) appLoadingFinish('圖片素材已上傳');
@@ -17472,20 +17465,21 @@ function pushExposureOverviewAssets(payload) {
       endorserNote: endorserNote
     }
   };
-  /* 曝光資源 iframe 可能還沒準備好，所以會隔幾次再補送；但新的一包進來時，上一包還沒送出的補送
-     要取消。每包都含商品／LOGO 圖片，一次上傳會連續推好幾包，不取消就會把同樣的大圖複製十幾次。 */
-  exposureOverviewAssetTimers.forEach(clearTimeout);
-  exposureOverviewAssetTimers = [0, 250, 800, 1600].map(function (delay) {
-    return setTimeout(function () {
-      try {
-        var frame = document.getElementById('exposure-frame');
-        if (frame && frame.contentWindow) frame.contentWindow.postMessage(message, '*');
-      } catch (e) {}
-    }, delay);
-  });
+  /* Debounce：連續呼叫只保留最後一包，100ms 內取代舊的，最終只發一次。
+     若 iframe 尚未 ready，曝光資源載入完成後會主動拉取最新素材。 */
+  clearTimeout(_exposureOverviewAssetDebounce);
+  _exposureOverviewAssetPending = message;
+  _exposureOverviewAssetDebounce = setTimeout(function () {
+    try {
+      var frame = document.getElementById('exposure-frame');
+      if (frame && frame.contentWindow) frame.contentWindow.postMessage(_exposureOverviewAssetPending, '*');
+    } catch (e) {}
+    _exposureOverviewAssetPending = null;
+  }, 100);
   return true;
 }
-var exposureOverviewAssetTimers = [];
+var _exposureOverviewAssetDebounce = null;
+var _exposureOverviewAssetPending = null;
 function syncExposureOverviewAssets(data) {
   return pushExposureOverviewAssets(data || readSharedExposureOverviewText());
 }
@@ -24249,6 +24243,24 @@ function bottomHostAssetsSignature(images) {
     return String(img.name || '') + '|' + importShadowFingerprint(img.url) + '|' + String(img.logoBg || '');
   }).join('\n');
 }
+/* 一次同步所有子工具：素材清單、曝光資源、吸底素材、暫存。
+   影子完成後只跑這一次，不再分段觸發造成重複序列化。 */
+function syncAllChildTools() {
+  renderImageGallery();
+  if (currentImportWorkbook) {
+    try { syncWorkbookOverviewTextToExposure(currentImportWorkbook); }
+    catch (err) { console.warn('[BODA] syncAllChildTools 工單總覽失敗', err); }
+  }
+  try { broadcastBottomImageAssets(); }
+  catch (err) { console.warn('[BODA] syncAllChildTools 吸底素材失敗', err); }
+  try { syncExposureOverviewAssets(); }
+  catch (err) { console.warn('[BODA] syncAllChildTools 曝光資源失敗', err); }
+  try { queueBottomPersist(); }
+  catch (err) { console.warn('[BODA] syncAllChildTools 吸底暫存失敗', err); }
+  try { saveImportState(); }
+  catch (err) { console.warn('[BODA] syncAllChildTools 工單暫存失敗', err); }
+}
+
 function broadcastBottomImageAssets() {
   var images = bottomHostImageAssets();
   var message = { source: 'BODA_PARENT', type: 'IMAGE_ASSETS', images: images };
