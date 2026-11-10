@@ -927,6 +927,9 @@ html,body{height:100%;background:var(--bg);color:var(--ink);
 /* 清除畫面內容：會清掉目前編輯結果，用紅色系提醒是不可逆的動作。 */
 #import-demo-bar #btn-clear-import-canvas{margin-top:12px;color:#c2412d;border-color:rgba(194,65,45,.35);}
 #import-demo-bar #btn-clear-import-canvas:hover{background:rgba(194,65,45,.07);border-color:rgba(194,65,45,.6);}
+/* 深度清除：連配色、排版、活動頁資料都清掉，比清除畫面內容更徹底 */
+#import-demo-bar #btn-deep-clear-all{margin-top:18px;color:var(--ink3);border-color:transparent;font-size:10px;padding:3px 8px;width:auto;margin-left:auto;margin-right:auto;opacity:.55;}
+#import-demo-bar #btn-deep-clear-all:hover{opacity:1;color:#c2412d;border-color:rgba(194,65,45,.25);background:rgba(194,65,45,.04);}
 .ic-color-row{display:flex;align-items:center;gap:6px;}
 .ic-color-row .icc-label{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--ink2);}
 .ic-color-row .icc-label .icc-auto{display:block;font-size:9.5px;font-weight:600;color:var(--teal-dark);margin-top:1px;}
@@ -1693,6 +1696,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
               清除畫面內容
             </button>
             <div class="demo-hint">版位保留；促標、品名、圓標等文字回到預設示範文字，圖片清空。統一顏色與已上傳的圖片素材不會刪除</div>
+            <button class="btn ghost" id="btn-deep-clear-all" type="button" title="徹底清除所有暫存、配色、排版、活動頁資料">重置所有資料</button>
           </div>
 
           <div id="import-dl-bar">
@@ -16911,7 +16915,7 @@ var CANVAS_CTX = {
     renderMode: 'import',
     sideRoot: '#import-fields-scroll',
     afterChange: function () {
-      saveImportState();
+      queueImportStateSave();
       renderImageGallery();
     }
   },
@@ -19904,7 +19908,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
       toolBlockColumns: toolBlockColumns,
       bandKey: toolBand ? toolBand.key : ('c' + idx),
       bandItems: toolBand ? toolBand.items : [idx],
-      commit: function () { saveImportState(); },
+      commit: function () { queueImportStateSave(); },
       rerenderAll: function () { renderImportColumns(currentImportColumns, true); }
     });
 
@@ -20719,7 +20723,7 @@ function rerenderAfterDynamicRowMutation(col, idx, ctxName, focusKey) {
   var ctx = canvasCtx(ctxName);
   if (ctxName === 'import') {
     /* 動態列改變會影響整個 band 高度，必須重建整排 1200px 畫布。 */
-    saveImportState();
+    queueImportStateSave();
     renderImageGallery();
     renderImportColumns(currentImportColumns);
   } else {
@@ -20874,7 +20878,7 @@ function bindEndorserTextDrag(mountEl, col, idx, ctxName) {
         if (!moved) return;
         var selection = window.getSelection && window.getSelection();
         if (selection) selection.removeAllRanges();
-        if (ctxName === 'import') saveImportState();
+        if (ctxName === 'import') queueImportStateSave();
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
@@ -20899,7 +20903,7 @@ function addCanvasSecondLine(col, idx, ctxName, key) {
   if (BNSchemaRenderer.hasSecondLineText(current)) return;
   col.data[key] = current.split('\n')[0] + '\n文案資訊';
   if (ctxName === 'import') {
-    saveImportState();
+    queueImportStateSave();
     renderImportColumns(currentImportColumns);
     return;
   }
@@ -21756,7 +21760,7 @@ function applyImportCanvasTextRules(el, col, idx, ctxName, key) {
     return;
   }
 
-  saveImportState();
+  queueImportStateSave();
   var sideInput = importSideTextInput(canvasCtx(ctxName), idx, key);
   if (sideInput) sideInput.value = transformed.text;
   if (rowsChanged) {
@@ -21929,7 +21933,7 @@ function bindCanvasEditable(mountEl, col, idx, ctxName) {
         });
         return;   /* 維修／全部預覽只改各自記憶體，不動正式工單暫存 */
       }
-      saveImportState();
+      queueImportStateSave();
       var sideInput = ctx.sideRoot
         && document.querySelector(ctx.sideRoot + ' .field[data-key="' + key + '"] input.fv');
       if (sideInput) sideInput.value = text;
@@ -24231,7 +24235,7 @@ function bottomPersistGet() {
 }
 /* 任何吸底變動（匯入新工單、吸底編輯、等級預設）後呼叫；短時間內多次變動只寫一次。 */
 function queueBottomPersist() {
-  if (bottomPersistRestoring) return;
+  if (bottomPersistRestoring || window.__bodaResetting) return;
   clearTimeout(bottomPersistTimer);
   bottomPersistTimer = setTimeout(function () {
     bottomPersistPut({
@@ -24317,32 +24321,45 @@ function bottomHostAssetsSignature(images) {
   }).join('\n');
 }
 /* 一次同步所有子工具：素材清單、曝光資源、吸底素材、暫存。
-   影子完成後只跑這一次，不再分段觸發造成重複序列化。 */
+   影子完成後只跑這一次，不再分段觸發造成重複序列化。
+   80ms debounce：快速連續影子重烘不會重複觸發同步。 */
+var _syncAllChildToolsTimer = null;
 function syncAllChildTools() {
-  renderImageGallery();
-  if (currentImportWorkbook) {
-    try { syncWorkbookOverviewTextToExposure(currentImportWorkbook); }
-    catch (err) { console.warn('[BODA] syncAllChildTools 工單總覽失敗', err); }
-  }
-  try { broadcastBottomImageAssets(); }
-  catch (err) { console.warn('[BODA] syncAllChildTools 吸底素材失敗', err); }
-  try { syncExposureOverviewAssets(); }
-  catch (err) { console.warn('[BODA] syncAllChildTools 曝光資源失敗', err); }
-  try { queueBottomPersist(); }
-  catch (err) { console.warn('[BODA] syncAllChildTools 吸底暫存失敗', err); }
-  try { saveImportState(); }
-  catch (err) { console.warn('[BODA] syncAllChildTools 工單暫存失敗', err); }
+  clearTimeout(_syncAllChildToolsTimer);
+  _syncAllChildToolsTimer = setTimeout(function () {
+    _syncAllChildToolsTimer = null;
+    renderImageGallery();
+    if (currentImportWorkbook) {
+      try { syncWorkbookOverviewTextToExposure(currentImportWorkbook); }
+      catch (err) { console.warn('[BODA] syncAllChildTools 工單總覽失敗', err); }
+    }
+    try { broadcastBottomImageAssets(); }
+    catch (err) { console.warn('[BODA] syncAllChildTools 吸底素材失敗', err); }
+    try { syncExposureOverviewAssets(); }
+    catch (err) { console.warn('[BODA] syncAllChildTools 曝光資源失敗', err); }
+    try { queueBottomPersist(); }
+    catch (err) { console.warn('[BODA] syncAllChildTools 吸底暫存失敗', err); }
+    try { saveImportState(); }
+    catch (err) { console.warn('[BODA] syncAllChildTools 工單暫存失敗', err); }
+  }, 80);
 }
 
+/* 吸底 / 獨立吸底也跟 preview 一樣，素材沒變就不重新 postMessage（避免每張數 MB 的 dataURL 重複複製） */
+var bottomAssetsSignature = '';
+var standaloneBottomAssetsSignature = '';
 function broadcastBottomImageAssets() {
   var images = bottomHostImageAssets();
   var message = { source: 'BODA_PARENT', type: 'IMAGE_ASSETS', images: images };
-  if (bottomBridgeReady) postToBottom(message);
-  if (standaloneBottomBridgeReady) postToStandaloneBottom(message);
+  var sig = bottomHostAssetsSignature(images);
+  if (bottomBridgeReady) {
+    if (sig !== bottomAssetsSignature) { postToBottom(message); bottomAssetsSignature = sig; }
+  } else { bottomAssetsSignature = ''; }
+  if (standaloneBottomBridgeReady) {
+    if (sig !== standaloneBottomAssetsSignature) { postToStandaloneBottom(message); standaloneBottomAssetsSignature = sig; }
+  } else { standaloneBottomAssetsSignature = ''; }
   if (bottomPreviewBridgeReady) {
-    var signature = bottomHostAssetsSignature(images);
-    if (signature !== bottomPreviewAssetsSignature && postToBottomPreview(message)) bottomPreviewAssetsSignature = signature;
-  }
+    if (sig !== bottomPreviewAssetsSignature && postToBottomPreview(message)) bottomPreviewAssetsSignature = sig;
+  } else { bottomPreviewAssetsSignature = ''; }
 }
 /* 吸底頁的「下載工單＋圖片＋暫存檔」：匯入工單畫布不在畫面上時截圖會是空白，
    所以輸出期間把「匯入工單」頁放到畫面外照常排版，輸出完再收回。 */
@@ -27492,6 +27509,85 @@ function clearImportCanvasContent() {
   });
 }
 document.getElementById('btn-clear-import-canvas').addEventListener('click', clearImportCanvasContent);
+
+/* 深度清除：比清除畫面內容更徹底，連配色、排版、活動頁資料全部重置。
+   適用於換全新專案、或工具卡住需要完全重置的場合。 */
+function deepClearAll() {
+  var ok = confirm(
+    '確定要重置所有資料嗎？\n\n' +
+    '・清除所有畫布內容、圖片素材、工單來源\n' +
+    '・清除所有統一配色、排版設定\n' +
+    '・清除活動頁暫存與 localStorage 快取\n' +
+    '・清除吸底編輯器 IndexedDB 資料庫\n' +
+    '・上傳進度與步驟狀態回到初始\n\n' +
+    '這個動作無法復原。如需要保留目前內容，請先按「下載工單＋圖片＋暫存檔」。'
+  );
+  if (!ok) return;
+
+  /* 1) 清除畫布內容（含圖片、顏色、來源、IndexedDB） */
+  if (window.BNImageLayout && typeof BNImageLayout.hideTransformControls === 'function') BNImageLayout.hideTransformControls();
+  ensureBlocksLoaded(function () {
+    currentImportColumns.forEach(function (col) {
+      if (!col) return;
+      col.data = BNCore.getBlock(col.blockId) ? Object.assign({}, BNCore.defaultData(col.blockId)) : {};
+      col._imageOrder = [];
+      col._imageOrderCustom = false;
+      col._imagePartLayerOrder = {};
+      col._dynamicRowRows = undefined;
+    });
+    beginImportImageLayoutDocument(false);
+    uploadedImages = [];
+    currentImportWorkbook = null;
+    currentImportWorkbookName = '';
+    currentImportSource = '';
+    currentGeneratorSignature = '';
+    try { localStorage.removeItem('wo_shared_canvas_bg_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_shared_cta_bg_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_shared_cta_text_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_shared_exposure_sub_text_color_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_shared_exposure_text_palette_v1'); } catch (e) {}
+    try { localStorage.removeItem('wo_snapshot_text_palette_lock_v1'); } catch (e) {}
+    IMPORT_COLOR_ITEMS.forEach(function (it) { importTheme[it.key] = ''; });
+    importTheme.bgAuto = false;
+    try { indexedDB.deleteDatabase('boda-bottom-persist'); } catch (e) {}
+
+    /* 2) 清除匯入工單 localStorage 暫存 */
+    try { localStorage.removeItem(IMPORT_STORAGE_KEY); } catch (e) {}
+    try { localStorage.removeItem('boda_import_image_layout'); } catch (e) {}
+    try { localStorage.removeItem('boda_import_shadow_settings'); } catch (e) {}
+    try { localStorage.removeItem('boda_import_theme'); } catch (e) {}
+    try { localStorage.removeItem('boda_last_view'); } catch (e) {}
+
+    /* 3) 清除上傳步驟狀態 */
+    try { setUploadStepState('import-drop', '', ''); } catch (e) {}
+    try { setUploadStepState('import-img-drop', '', ''); } catch (e) {}
+    try { document.getElementById('upload-img-status').textContent = '還沒有上傳圖片'; } catch (e) {}
+    try { document.getElementById('import-log').innerHTML = ''; } catch (e) {}
+
+    /* 4) 推送空的素材到曝光資源 iframe 與吸底工具 */
+    try {
+      var _dcFrame = document.getElementById('exposure-frame');
+      if (_dcFrame && _dcFrame.contentWindow) {
+        _dcFrame.contentWindow.postMessage({
+          type: 'wo-workorder-overview-assets',
+          assets: { logos: [], products: [], endorsers: [], endorserNote: '', replaceLogos: true, replaceProducts: true, replaceEndorser: true }
+        }, '*');
+      }
+    } catch (e) {}
+    try { broadcastBottomImageAssets(); } catch (e) {}
+
+    /* 5) 重設並寫入空狀態 */
+    renderImportColumns(currentImportColumns);
+    renderImageGallery();
+    importPersistDisabled = false;
+    saveImportState();
+
+    var importLog = document.getElementById('import-log');
+    if (importLog) importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已重置所有資料</span>';
+    appLoadingFinish('所有資料已重置');
+  });
+}
+document.getElementById('btn-deep-clear-all').addEventListener('click', deepClearAll);
 function showPreviewAllDefaults() {
   var importLog = document.getElementById('import-log');
   importLog.innerHTML = '<span class="ok">載入版位模板中…</span>';
@@ -27532,6 +27628,7 @@ if (teachingModeActive) document.body.classList.add('tutorial-' + teachingMode);
 var initialView = getSavedView();
 showView(initialView); /* 還原上次所在工具頁，不再每次強制回首頁 */
 window.addEventListener('beforeunload', function () {
+  if (window.__bodaResetting) return; /* 「清除重置」中：不可再把舊狀態寫回去 */
   saveImportImageLayout(); /* 滾輪 220ms 合併計時尚未結束、或拖曳中重新整理，也保存當下狀態 */
   if (importStateSaveTimer) { clearTimeout(importStateSaveTimer); saveImportState(); }
   if (bottomPersistTimer) { clearTimeout(bottomPersistTimer); bottomPersistTimer = null; queueBottomPersist(); }
@@ -27552,7 +27649,7 @@ ensureBlocksLoaded(function () {
     /* 重新整理後照上次的原樣畫回來，不再自動裁白邊（理由同還原暫存檔）。 */
     Promise.resolve(initialImportColumns).then(function () {
       if (currentImportColumns === initialImportColumns) {
-        saveImportState();
+        queueImportStateSave();
         renderImportColumns(currentImportColumns);
       }
       appLoadingFinish('初始版位載入完成');
@@ -27566,13 +27663,17 @@ ensureBlocksLoaded(function () {
 
 <!-- 支援按鈕：左下角「使用教學」下方依序是使用手冊、教學影片、使用反饋表；共用說明書暫時隱藏。 -->
 <style id="boda-help-styles">
-#boda-help-guide{order:21;margin-top:0;}
-#boda-help-video{order:22;margin-top:0;}
-#boda-help-feedback{order:23;margin-top:0;}
+#boda-reset-all{order:21;margin-top:0;}
+#boda-reset-all svg{color:#f87171;}
+#boda-reset-all:hover{background:rgba(248,113,113,.14);border-color:#f87171;}
+#boda-help-guide{order:22;margin-top:0;}
+#boda-help-video{order:23;margin-top:0;}
+#boda-help-feedback{order:24;margin-top:0;}
 #boda-help-manual,#feedback-btn{display:none!important;}
 #boda-help-note{position:fixed;z-index:100000;max-width:240px;padding:9px 12px;border-radius:9px;background:#1b1b1f;color:#f2f2f4;border:1px solid #555562;font-size:12px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.35);pointer-events:none;opacity:0;transition:opacity .18s;}
 #boda-help-note.show{opacity:1;}
 </style>
+<button id="boda-reset-all" class="boda-tour-launch" type="button" data-skip-app-loading aria-label="清除全部暫存並重置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 12.5h9l1-12.5"/><path d="M10 11v5.5M14 11v5.5"/></svg><span>清除重置</span></button>
 <button id="boda-help-guide" class="boda-tour-launch" type="button" data-skip-app-loading aria-label="開啟使用手冊（另開分頁）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.5C10 5 7.5 4.5 4 4.5v14c3.5 0 6 .5 8 2 2-1.5 4.5-2 8-2v-14c-3.5 0-6 .5-8 2z"/><path d="M12 6.5v14"/></svg><span>使用手冊</span></button>
 <button id="boda-help-video" class="boda-tour-launch" type="button" data-skip-app-loading aria-label="觀看教學影片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m10 9.2 5 2.8-5 2.8z"/></svg><span>教學影片</span></button>
 <button id="boda-help-feedback" class="boda-tour-launch boda-feedback-launch" type="button" data-skip-app-loading aria-label="開啟使用反饋表（另開視窗）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.9L3.5 20.5l1.4-4.7a9 9 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5h1.2"/><path d="m14.5 6.5 3 3M12 12l1-4 5.7-5.7a2.1 2.1 0 0 1 3 3L16 11z"/></svg><span>使用反饋表</span></button>
@@ -27605,8 +27706,63 @@ ensureBlocksLoaded(function () {
   });
   feedbackButton.title='開啟使用反饋表';manualButton.title='開啟 SHOPEE 共用使用說明書';
   guideButton.title='開啟 BODA 使用手冊';videoButton.title=videoUrl?'觀看教學影片':'教學影片準備中';
+  /* 「清除重置」：把匯入工單、活動頁資源、曝光資源、取色工具、吸底存在這個瀏覽器的東西全部清掉，
+     配色、排版、版位勾選、案型、底色、等級、工單與圖片暫存都回到預設，再重新整理。
+     只清這套工具自己的 key（wo_／bn／boda／hbn- 開頭）與四個 IndexedDB，不動同網域其他工具的資料。
+     保留 bn-layouts（版位 id 對照表，舊暫存檔靠它對回版位）但清掉裡面的勾選結果；
+     反饋表草稿、「新功能」已讀記號不算編輯內容，也保留。 */
+  var resetButton=document.getElementById('boda-reset-all');
+  var RESET_KEEP_KEYS={'bn-layouts':1,'bn-layout-selection-version':1,'bn_feedback_draft_v2':1,'jbp_whatsnew_seen':1};
+  var RESET_IDB=['boda-import-persist','boda-bottom-persist','bn_editor_state_db','hbn-color-tool'];
+  function isToolKey(k){return /^(wo_|bn|boda|hbn-)/i.test(String(k||''));}
+  function freezeAutosave(){
+    window.__bodaResetting=true;
+    try{ if(typeof importPersistDisabled!=='undefined') importPersistDisabled=true; }catch(_){}
+    try{ clearTimeout(importStateSaveTimer); }catch(_){}
+    try{ clearTimeout(bottomPersistTimer); }catch(_){}
+    /* 曝光資源 iframe：用它自己的「清除中」旗標擋住計時器與 beforeunload 自動存檔 */
+    try{ var ex=document.getElementById('exposure-frame'); var w=ex&&ex.contentWindow; if(w){ w._bnClearingState=true; clearTimeout(w._bnSaveTimer); } }catch(_){}
+    /* 吸底 iframe 的自動暫存是 1 秒 debounce，可能在清除後才寫回：重新整理前會再清一次（見下方）。 */
+  }
+  function clearToolStorage(){
+    [window.localStorage,window.sessionStorage].forEach(function(store){
+      if(!store) return;
+      try{
+        Object.keys(store).forEach(function(k){ if(isToolKey(k)&&!RESET_KEEP_KEYS[k]) store.removeItem(k); });
+      }catch(_){}
+    });
+    /* 版位清單保留 id，只清勾選結果，回到等級預設的勾選 */
+    try{
+      var raw=localStorage.getItem('bn-layouts');
+      if(raw){ var list=JSON.parse(raw); if(Array.isArray(list)){ list.forEach(function(l){ if(l&&Object.prototype.hasOwnProperty.call(l,'checked')) delete l.checked; }); localStorage.setItem('bn-layouts',JSON.stringify(list)); } }
+    }catch(_){}
+  }
+  if(resetButton){
+    resetButton.title='清除全部暫存：配色、排版、版位勾選、案型、底色、等級、工單與圖片都回到預設';
+    resetButton.addEventListener('click',function(){
+      if(!confirm('確定要清除全部暫存並重置嗎？\n\n會清掉：匯入的工單與圖片、活動頁資源的版位與編輯、曝光資源的版位勾選、案型、底色與配色、取色工具、吸底、等級與製作流程進度。\n清除後無法復原，需要的話請先「整包下載」備份暫存檔。\n\n按「確定」後會重新整理，回到全新狀態。')) return;
+      freezeAutosave();
+      clearToolStorage();
+      var pending=RESET_IDB.map(function(name){
+        return new Promise(function(done){
+          try{
+            var req=indexedDB.deleteDatabase(name);
+            req.onsuccess=req.onerror=function(){done();};
+            /* iframe 還開著資料庫連線時會被擋住；刪除會排在重新整理、連線關閉之後完成，新頁面開庫前一定先刪完 */
+            req.onblocked=function(){done();};
+          }catch(_){done();}
+        });
+      });
+      Promise.all(pending).then(function(){
+        /* iframe 的自動存檔可能剛好在這段時間寫回，重新整理前再清一次 */
+        clearToolStorage();
+        try{ history.replaceState(null,'',location.pathname+location.search+'#upload'); }catch(_){}
+        location.reload();
+      });
+    });
+  }
   var rail=document.getElementById('nav-rail');
-  if(rail){rail.appendChild(guideButton);rail.appendChild(videoButton);rail.appendChild(feedbackButton);}
+  if(rail){ if(resetButton) rail.appendChild(resetButton); rail.appendChild(guideButton);rail.appendChild(videoButton);rail.appendChild(feedbackButton);}
   window.BODAHelpAvoidCollisions=function(){}; /* 保留舊介面，不再執行浮動位置計算。 */
 })();
 </script>
