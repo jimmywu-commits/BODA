@@ -23,7 +23,7 @@
   var FONT_FAMILY = "ShopeeNotoSansContent";
   /* 字體來源依序嘗試：先用專案自己的 ../fonts/（BODA 裡的 fonts/ 資料夾，離線或 CDN 慢時也能載），
      失敗才改抓 GitHub Pages 的 CDN。之前只有 CDN 一個來源，22MB 抓不下來時 READY 永遠不會送出，
-     主工具的「下載工單＋圖片＋暫存檔」就會拿不到任何吸底圖片。 */
+     主工具最左側「整包下載」就會拿不到任何吸底圖片。 */
   var BASE_URLS = [
     "../fonts/",
     "https://jimmywu-commits.github.io/shopee/fonts/",

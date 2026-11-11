@@ -547,16 +547,43 @@
     }
   }
 
-  /* 面板底部只保留常駐下載；上傳暫存檔已移到 STEP 2 正下方。 */
-  function buildHostActionFooter() {
+  function downloadBottomPageResources(store, ui, rerender) {
+    if (ui.pageResourceExporting) return;
+    var current = store.getState();
+    var bannerCount = current.banners.length;
+    var total = current.banners.reduce(function (sum, banner) { return sum + banner.slots.length; }, 0);
+    ui.pageResourceExporting = true;
+    ui.exportStatus = "正在輸出吸底資源…";
+    rerender();
+    Promise.resolve()
+      .then(function () { return window.ExportBatch.exportAllBanners(store); })
+      .then(function (groups) {
+        return window.ExportBatch.downloadAllBannersAsZip(groups, "吸底圖", store);
+      })
+      .then(function () {
+        ui.exportStatus = "已下載 " + bannerCount + " 條、共 " + total + " 張 PNG（zip，內含吸底進度存檔）。";
+      })
+      .catch(function (err) {
+        ui.exportStatus = "吸底資源下載失敗：" + (err && err.message ? err.message : err);
+      })
+      .then(function () {
+        ui.pageResourceExporting = false;
+        rerender();
+      });
+  }
+
+  /* 面板底部只保留本頁資源下載；上傳暫存檔已移到 STEP 2 正下方。 */
+  function buildHostActionFooter(state, store, ui, rerender) {
     var node = el("div", { class: "panel-section export-section host-dl-bar" });
     var dlBtn = el("button", { class: "primary block host-dl-btn" }, []);
-    dlBtn.innerHTML = '<svg class="host-btn-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 20h16"/></svg> 下載工單＋圖片＋暫存檔';
-    dlBtn.addEventListener("click", function () { window.BottomParentBridge.requestHostAction("download-package"); });
+    dlBtn.innerHTML = '<svg class="host-btn-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 20h16"/></svg> 下載此資源檔案';
+    if (ui.pageResourceExporting) dlBtn.setAttribute("disabled", "disabled");
+    dlBtn.addEventListener("click", function () { downloadBottomPageResources(store, ui, rerender); });
     node.appendChild(dlBtn);
     node.appendChild(el("div", { class: "host-dl-hint" }, [
-      "會回填目前文字、色碼與共用文案至原 Excel，並下載合成 PNG、各版位獨立 PNG（副區整排、MSBN 逐顆、吸底多狀態圖）與編輯暫存 .json。"
+      "只下載吸底工具目前所有分頁的多狀態 PNG 與吸底進度存檔；完整工單與其他頁資源請使用最左側「整包下載」。"
     ]));
+    if (ui.exportStatus) node.appendChild(note(ui.exportStatus));
     return node;
   }
 
@@ -1407,17 +1434,14 @@
   function buildExportSection(state, banner, store, ui, rerender) {
     var node = el("div", { class: "panel-section export-section" });
 
-    /* 工單生成器的「吸底」頁簽不另開一套「匯出變體」流程；
-       一律回到主工具的下載全部，才會與副區、MSBN、工單試算表一起輸出。 */
+    /* 工單生成器裡的「吸底」頁簽也只下載吸底資源；完整 ZIP 只能由最左側入口下載。 */
     var isGeneratorEmbed = new URLSearchParams(window.location.search).get("embed") === "generator";
     if (isGeneratorEmbed) {
-      var parentExportBtn = el("button", { class: "primary block" }, ["⬇ 下載全部"]);
-      parentExportBtn.addEventListener("click", function () {
-        if (window.BottomParentBridge && window.BottomParentBridge.requestGeneratorDownloadAll) {
-          window.BottomParentBridge.requestGeneratorDownloadAll();
-        }
-      });
+      var parentExportBtn = el("button", { class: "primary block" }, ["⬇ 下載此資源檔案"]);
+      if (ui.pageResourceExporting) parentExportBtn.setAttribute("disabled", "disabled");
+      parentExportBtn.addEventListener("click", function () { downloadBottomPageResources(store, ui, rerender); });
       node.appendChild(parentExportBtn);
+      if (ui.exportStatus) node.appendChild(note(ui.exportStatus));
       return node;
     }
 
@@ -1714,7 +1738,7 @@
 
       footer.innerHTML = "";
       footer.appendChild(isStandaloneHostEmbed()
-        ? buildHostActionFooter()
+        ? buildHostActionFooter(state, store, ui, renderAll)
         : buildExportSection(state, banner, store, ui, renderAll));
 
       if (focusInfo && focusInfo.slotIndex != null) {

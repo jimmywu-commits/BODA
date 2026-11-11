@@ -19,8 +19,10 @@ const IMG_DIR = path.join(ROOT, "img");
 const OUT_FILE = path.join(ROOT, "src", "icons", "manifest.js");
 
 var MIME = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif" };
-/* 這兩個是吸底等級預設用的品牌 LOGO：保持原色，不套橘／紅色。 */
-var BRAND_LOGO_IDS = { "bod-logo": true, "mdd-logo": true };
+/* BOD 是吸底等級預設用的品牌 LOGO：保持原色，不套橘／紅色。 */
+var BRAND_LOGO_IDS = { "bod-logo": true };
+/* MDD 原始素材仍留在 img/ 備查，但建置時排除，不再出現在 ICON 選項中。 */
+var EXCLUDED_ICON_IDS = { "mdd-logo": true };
 
 /*
  * 檔名 → id。
@@ -51,6 +53,9 @@ function main() {
     .filter(function (f) {
       var ext = path.extname(f).toLowerCase();
       return ext === ".svg" || MIME[ext];
+    })
+    .filter(function (f) {
+      return !EXCLUDED_ICON_IDS[toId(path.basename(f, path.extname(f)))];
     })
     .sort(function (a, b) { return a.localeCompare(b, "zh-Hant"); });
 

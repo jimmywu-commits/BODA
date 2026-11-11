@@ -176,11 +176,12 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
       <li><span class="callout">1</span><strong>製作流程</strong>：匯入工單 → 曝光資源（BN 先做）→ 活動頁資源（MS）→ 取色工具 → 吸底工具 → 整包下載，照順序往下做。</li>
       <li><span class="callout">2</span><strong>完成／略過</strong>：目前步驟下方會出現「完成 ›」「略過 ›」，按下就標記狀態並前往下一步，完成的步驟會打上勾。這次用不到的步驟按略過即可。</li>
       <li><span class="callout">3</span><strong>教學與說明</strong>：「使用教學」是互動導覽，「使用手冊」就是這份文件，「教學影片」上線後在這裡看，「使用反饋表」回報問題。</li>
+      <li><strong>清除重置</strong>（使用教學上方的紅色虛線按鈕）：把工單、圖片、活動頁資源、曝光資源的版位勾選、案型、底色與配色、取色工具、吸底、等級全部清掉，回到全新狀態。清除後無法復原，需要的話請先整包下載備份。</li>
     </ul>
   </div>
   <div class="box tip">
     <span class="label">建議順序</span>
-    <p>在「匯入工單」上傳工單與圖片，並確認<strong>等級</strong>（下一節）。等級決定活動頁資源要畫幾張 MSBN、有沒有吸底，也決定曝光資源預設勾哪些版位。</p>
+    <p>在「匯入工單」上傳工單與圖片，並確認<strong>等級</strong>（下一節）。等級決定活動頁資源要畫幾張 MSBN、有沒有吸底，也決定曝光資源可使用哪些版位。</p>
   </div>
   <p class="muted">工具會自動把進度存在這台電腦的瀏覽器裡，重新整理會回到上次的畫面。但這只是本機暫存，換電腦或清除瀏覽器資料就會不見，重要進度請記得下載暫存檔（見「下載與暫存」）。</p>
 </section>
@@ -200,6 +201,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
       <tr><td>A BOD</td><td class="n">1</td><td class="n">1</td><td class="n">8</td><td class="n">8</td><td class="n">1</td></tr>
       <tr><td>A BOD+(資交)</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">8</td><td class="n">1</td></tr>
       <tr><td>A BOD(資交)</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">8</td><td class="n">1</td></tr>
+      <tr><td>B級 JBP(多店活動)</td><td class="n">1</td><td class="n">1</td><td class="n">3</td><td class="n">–</td><td class="n">1</td></tr>
     </tbody>
   </table></div>
   <figure class="shot"><a class="zoom" href="img/01-level.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/01-level.png" width="350" height="146" alt="活動頁資源的等級下拉與提示文字" loading="lazy"></a><figcaption>活動頁資源左欄最上面的「等級」，下方會寫這個等級要呈現的數量（匯入工單頁上方也是同一個下拉）。</figcaption></figure>
@@ -208,7 +210,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
     <li><strong>上傳工單會自動切換</strong>：工單總覽的「包套(等級)」會在匯入時自動帶入等級。</li>
     <li><strong>活動頁資源只畫該等級有的張數</strong>：例如資交等級不畫三大保障、副區與基本 MSBN；AD單買(BN Only) 只有曝光資源，活動頁資源不呈現任何版位，也沒有吸底。</li>
     <li><strong>資料不會被刪</strong>：被等級隱藏的欄位只是不畫、不下載，切回有包含的等級就會再出現。</li>
-    <li><strong>曝光資源自動勾版位</strong>：左側等級下方會寫「此等級：預設 N 個版位、選配 M 個（選配要自己打勾）」。</li>
+    <li><strong>曝光資源依等級顯示</strong>：系統讀取「MS與BN曝光版位.xlsx」D 欄的等級，L～X 欄有打勾的版位才會出現在左側。</li>
   </ul>
 </section>
 
@@ -227,7 +229,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   </ol>
   <div class="box tip">
     <span class="label">小提醒</span>
-    <p>工單裡一格要放多張圖時用逗號分開，每格最多 5 張，超過只取前 5 張。找不到圖時，先檢查檔名是否一致、有沒有多餘空白。</p>
+    <p>工單裡一格要放多張圖時用逗號分開，每格最多 5 張，超過只取前 5 張。圖片先比完整檔名，再做精準主檔名比對：忽略資料夾路徑、副檔名大小寫、前後空白、零寬字元與全形／半形差異；找不到時再做安全的寬鬆比對，額外忽略空白、底線、連字號與「・」。每一層都只有一個候選時才自動帶入；若兩個檔名都可能符合（包含同主檔名同時有 PNG／JPG），工具會列為「有歧義」而不猜圖。</p>
   </div>
 </section>
 
@@ -257,7 +259,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <ul>
     <li><strong>有列到的勾選、沒列到的取消勾選</strong>。名字用模糊比對，例如「DD Card BN (APP)」對到 ddcard、「C2C HBN (PC)」「Mall HBN」對到 HBN、「FB POST」對到 FB_POST、「AMS BN 推廣者後臺BN」對到 AMS。</li>
     <li><strong>LPBN</strong> 只在曝光資源做，所以「LPBN+副區」這種寫在綠底的也會勾 LPBN_APP、LPBN_PC。</li>
-    <li><strong>等級清單沒有、但工單有列的版位</strong>也會加進排版選擇（標「（工單）」）並勾選。</li>
+    <li><strong>等級表沒有勾選的版位</strong>不會加進排版選擇；若工單列了該版位，「匯入工單」會提示沒有對應的可用版型。</li>
     <li>有方／橫 LOGO 兩版的版位，會再依目前的 LOGO 自動選一版。</li>
     <li>之後可以自己再勾或取消，重新整理也會保留；重新匯入工單才會再照工單勾一次。</li>
     <li>對不到的名字會列在「匯入工單」頁 STEP 1 下方，方便檢查。</li>
@@ -271,7 +273,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <p>判斷錯了也沒關係，在曝光資源的代言人清單按「⇄」就能互換。同一份工單重新送一次，不會蓋掉你手動調好的位置、角度和小字。</p>
   <div class="box tip">
     <span class="label">小技巧</span>
-    <p>工單裡填的檔名要跟 STEP 2 上傳的圖片檔名一致，工具才配得到圖。最穩的做法是直接在檔名寫「代言人照」「簽名檔」。</p>
+    <p>最穩的做法仍是讓工單與 STEP 2 圖片使用同一個檔名，並直接在代言人檔名寫「代言人照」「簽名檔」。工具可容忍全形／半形、空白、底線與連字號差異，但不會用相似字或任意模糊猜測；遇到多個可能檔名時會要求人工確認。</p>
   </div>
 </section>
 
@@ -282,13 +284,13 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <figure class="shot"><a class="zoom" href="img/05-exposure.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/05-exposure.png" width="800" height="903" alt="曝光資源畫面：左側工具列的等級、文字內容、排版選擇與下載按鈕，右側是各版位預覽" loading="lazy"></a><figcaption>曝光資源（等級 A BOD+）。右側預覽是 HBN 與 ddcard，代言人照、簽名檔和小字已經自動排好。</figcaption></figure>
   <p class="lead">左側工具列由上而下：</p>
   <ul>
-    <li><span class="callout">1</span><strong>等級</strong>：跟整個工具同步，決定預設勾選的版位。</li>
+    <li><span class="callout">1</span><strong>等級</strong>：跟整個工具同步，只顯示「MS與BN曝光版位.xlsx」該等級有打勾的版位。</li>
     <li><span class="callout">2</span><strong>文字內容</strong>：主標、副標、日期、品牌名、SearchICON文案。欄位旁有字數提示，旁邊的圓點是這段文字的顏色。</li>
     <li><strong>其他顏色</strong>：背景、CTA 等顏色；點色票可以輸入色碼或吸取螢幕顏色。</li>
     <li><strong>Logo 上傳</strong>、<strong>商品圖</strong>、<strong>代言人</strong>、<strong>背景圖</strong>：見下面幾節。</li>
     <li><strong>排版選擇</strong>：勾選這次要出的版位，可以全選、全消。匯入工單時會依工單總覽「版位」欄自動勾好（見「工單總覽要填什麼」）。</li>
     <li><span class="callout">3</span><strong>鎖鏈</strong>：每張版位標頭右上角，決定這張要不要跟其他版位連動（見「鎖鏈」一節）。</li>
-    <li><span class="callout">4</span><strong>下載全部勾選畫版</strong>：輸出成品。下方還有「下載暫存」「上傳暫存」「清除本機暫存」。</li>
+    <li><span class="callout">4</span><strong>下載此資源檔案</strong>：只輸出曝光資源目前勾選的版位。下方還有「下載暫存」「上傳暫存」「清除本機暫存」。</li>
   </ul>
   <div class="box warn">
     <span class="label">提醒</span>
@@ -303,7 +305,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
     <li><strong>Logo 上傳（最多 3 張）</strong>：點擊或拖曳上傳，再調整大小與位置。</li>
     <li><strong>商品圖（最多 3 張）</strong>：按「＋ 上傳商品圖」開上傳視窗，確認圖片、相對大小與排列後套用。中間固定是比較大的主品；左右可以拖曳或用箭頭換位。</li>
     <li><strong>在畫布上調整商品</strong>：先點一下商品，四角出現縮放點、上方出現旋轉把手。拖商品是移動，拖四角是等比縮放，拖把手是旋轉；點空白處收起。</li>
-    <li><strong>商品影子</strong>：在商品清單按「影子」，或「編輯 → 加／編輯影子」，可調光源方向、位移、寬度、長度與顏色。</li>
+    <li><strong>商品影子</strong>：商品區新增「全體商品影子顏色」，選色後按「套用全部」會一次重製所有商品影子，之後換背景也保留固定色；按「依背景自動」可恢復背景建議色。商品清單的「影子」或「編輯 → 加／編輯影子」只調開關、光源方向、位移、寬度與長度，不再各自選顏色。批次換色不會改動商品的位置、大小、裁切、旋轉或前後順序。</li>
     <li><strong>人物圖 1／2</strong>：上傳 1 張人物圖時，商品最多只顯示最上層 2 件；上傳第 2 張時，商品圖完全不顯示。移除人物圖後會自動恢復。</li>
     <li><strong>背景圖</strong>：按「上傳背景圖」開背景圖庫，分 EL、Fashion、FMCG、Lifestyle 四大類。每個版位可以在右側各自調整縮放與位置。</li>
   </ul>
@@ -327,7 +329,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <ul>
     <li><span class="callout">3</span><strong>字數</strong>：最多 10 字，兩排、每排 5 字（中文 1、英數 0.5）。打滿一排會自動換到第二排，也可以按 <kbd>Enter</kbd> 自己換排；打字或貼上超過 10 字會直接擋住。工單帶入超過 10 字時，字數會變紅、不能下載，請刪到 10 字內。</li>
     <li><strong>字級固定</strong>：跟 MSBN 一樣，1200 寬的版位用 24px，其他版位依寬度等比換算：AMS 22px、ddcard 21px、SBA_PC 20px、IG 18px。滑鼠滾輪不能放大縮小。</li>
-    <li><span class="callout">4</span><strong>字色</strong>：預設「自動黑白」，小字底下偏暗就用白字，否則用深色字。想指定顏色可以直接選色；要回到自動，再按一次「自動黑白」。</li>
+    <li><span class="callout">4</span><strong>字色</strong>：預設「自動黑白」。工具會取小字中心下方的圖片像素；透明部分會與實際卡片／畫布背景合成後再判斷，不再一律當白底。合成亮度低於 0.48 用白字 <code>#ffffff</code>，否則用深色字 <code>#111827</code>。想指定顏色可以直接選色；要回到自動，再按一次「自動黑白」。</li>
   </ul>
 </section>
 
@@ -374,18 +376,19 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
 <section id="import">
   <span class="stepnum">09</span>
   <h2>活動頁資源：編輯 MSBN、副區</h2>
-  <p class="lead">曝光資源做完，再到活動頁資源檢查與微調副區、MSBN 與吸底的成品。工單和圖片要先在「匯入工單」上傳。</p>
+  <p class="lead">曝光資源做完，再到活動頁資源檢查與微調副區、MSBN 成品。畫布底部仍可預覽吸底，但吸底檔案請從「吸底工具」下載。工單和圖片要先在「匯入工單」上傳。</p>
   <figure class="shot"><a class="zoom" href="img/03-import.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/03-import.png" width="1440" height="903" alt="活動頁資源畫面：左欄的等級、商品影子、統一顏色與下載，中間的匯入預覽，右側的版位編輯與操作" loading="lazy"></a><figcaption>活動頁資源。編號對應下方說明。</figcaption></figure>
   <ol>
     <li><span class="callout">1</span><strong>等級</strong>：跟匯入工單頁同一個，決定這裡畫幾張三大保障、副區、MSBN。</li>
-    <li><span class="callout">2</span><strong>商品影子</strong>：上傳商品圖時自動加影子，可選光源（左／中／右／關閉）和位移；改了設定沒更新時按「套用修改」。</li>
-    <li><span class="callout">3</span><strong>統一顏色</strong>：改一個顏色，畫布上所有版位一起變。<strong>背景色不在這裡改</strong>，請到曝光資源或取色工具調整，這裡的畫布會自動跟著。</li>
+    <li><span class="callout">2</span><strong>商品影子</strong>：上傳商品圖時自動加影子，可選光源（左／中／右／關閉）和位移；背景換色時會依活動頁本身的 HSL 規則自動重製影子，原本方向與位移不變。改了設定沒更新時按「套用修改」。</li>
+    <li><span class="callout">3</span><strong>統一顏色</strong>：只列出目前畫布實際用到的色彩角色，色號直接讀取渲染後的畫布；同一角色因底色自動使用兩種字色時也會標示。工具列改色會立即重畫畫布，切頁或外部配色變更則會先重畫、再把畫布實際色反向同步回工具列。<strong>背景色不在這裡改</strong>，請到曝光資源或取色工具調整，這裡的畫布會自動跟著。</li>
     <li><span class="callout">4</span><strong>看預覽</strong>：中間是所有版位的成品預覽，上方可以調顯示比例。</li>
-    <li><span class="callout">5</span><strong>檢查與微調</strong>：點預覽裡的版位，右側「版位編輯與操作」可以改文字、換圖、刪圖和調前後順序。移動或縮放圖片時可以按「↶ 上一步／↷ 下一步」，或用 <kbd>Ctrl Z</kbd>／<kbd>Ctrl Shift Z</kbd>。</li>
-    <li><span class="callout">6</span><strong>下載</strong>：做完按「下載工單＋圖片＋暫存檔」（跟左側「整包下載」是同一個功能）。上方有紅色提醒（例如字數超過）時要先處理。</li>
+    <li><span class="callout">5</span><strong>檢查與微調</strong>：滑過預覽只會暫時對應；<strong>點一下要修改的版位會鎖定該格</strong>，再把滑鼠移到右側也不會被途中經過的其他格切換。點另一格可直接改鎖定目標，右側「已鎖定｜解除」可恢復自動跟隨。右側可改文字、換圖、刪圖和調前後順序；移動或縮放圖片時可以按「↶ 上一步／↷ 下一步」，或用 <kbd>Ctrl Z</kbd>／<kbd>Ctrl Shift Z</kbd>。</li>
+    <li><span class="callout">6</span><strong>下載此資源檔案</strong>：只下載活動頁資源目前畫布的合成圖、副區整排 PNG 與 MSBN 單張 PNG，不包含吸底、曝光、工單、色票或暫存檔。上方有紅色提醒（例如字數超過）時要先處理；完整交付請按最左側「整包下載」。</li>
   </ol>
   <ul>
     <li><strong>CTA 不用白色</strong>：CTA 底色跟曝光資源連動；曝光資源的 CTA 是白色時（例如深底配白主標），活動頁資源會自動改用在白卡片和背景色上都看得清楚的顏色（背景色的深色、品牌橘等），字色跟著調整。</li>
+    <li><strong>圓標不可與 CTA 同色</strong>：CTA 保留跨工具共用色；圓標預設跟副標色，若自動配色、手動選色或舊暫存造成兩者同色，系統會立即把圓標換成另一個安全色，工具列、畫布與下載結果一致。</li>
     <li><strong>直接預覽全部版位</strong>：不用匯入檔案，每個版位各顯示一次，方便先看長相。</li>
     <li><strong>清除畫面內容</strong>：版位保留，文字回到示範文字、圖片清空；統一顏色和已上傳的圖片素材不會刪除。</li>
   </ul>
@@ -397,7 +400,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <p class="lead">「HBN Banner 取色工具」有兩個分頁：</p>
   <figure class="shot"><a class="zoom" href="img/10-color.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/10-color.png" width="1440" height="1242" alt="取色工具配色模擬分頁：左側輸入底色、副標候選與輸出，右側預覽與各色票" loading="lazy"></a><figcaption>「配色模擬」分頁。</figcaption></figure>
   <ul>
-    <li><strong>配色模擬</strong>：<span class="callout">1</span>輸入底色，工具依規則算出主標、副標、警語與 CTA 的顏色，<span class="callout">4</span>右側即時預覽。<span class="callout">2</span>副標有多個候選色，點一下就套用。底色欄位旁的連結圖示亮著時，表示跟曝光資源底色連動中。<span class="callout">3</span>完成後按「輸出 CSV 檔」，格式對應色票.xlsx。</li>
+    <li><strong>配色模擬</strong>：<span class="callout">1</span>輸入底色，工具依規則算出主標、副標、警語與 CTA 的顏色，<span class="callout">4</span>右側即時預覽。<span class="callout">2</span>副標有多個候選色，點一下就套用。底色欄位旁的連結圖示亮著時，表示跟曝光資源底色連動中。<span class="callout">3</span>完成後按「下載此資源檔案」，只下載目前取色結果 CSV，格式對應色票.xlsx。</li>
     <li><strong>取色</strong>：載入 HBN 圖片資料夾，或直接把圖片拖進來，工具會抓出每張圖的底色、主標、副標、警語、CTA 文字與 CTA 底色，並標出對比度；可以複製或下載 CSV。</li>
   </ul>
   <p class="muted">配色原則：整張只用四色（底、深、強調、白）；淺底配深色字，深底配白主標＋淺黃或米色副標；CTA 文字原則上用白字。</p>
@@ -413,6 +416,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
     <li><strong>步驟</strong>：<span class="callout">1</span>選模板顆數 → <span class="callout">2</span>每顆點縮圖選 icon（可搜尋），需要時用「大小」滑桿調整（50%～250%），再輸入文字（建議 5 字內）→ <span class="callout">3</span>在預覽確認 → <span class="callout">4</span>匯出。</li>
     <li><strong>紅字提醒</strong>：圖片放太大、壓到文字或超出邊界時會出現紅字。紅字不會擋匯出，但請回頭看一下畫面。</li>
     <li><strong>等級</strong>：吸底也有等級下拉，跟整個工具同步；AD單買(BN Only) 沒有吸底。</li>
+    <li><strong>下載此資源檔案</strong>：只下載吸底工具目前所有分頁的多狀態 PNG，以及可繼續編輯的吸底進度存檔。</li>
   </ul>
 </section>
 
@@ -420,8 +424,8 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
   <span class="stepnum">12</span>
   <h2>下載與暫存</h2>
   <div class="cardgrid">
-    <div class="xcard"><div class="xh">曝光資源｜下載全部勾選畫版</div><p>打包成 ZIP：每個勾選版位一張圖，加上「原始檔編輯.json」暫存檔。</p></div>
-    <div class="xcard"><div class="xh">整包下載＝活動頁資源的「下載工單＋圖片＋暫存檔」</div><p>左側「整包下載」和活動頁資源的下載按鈕是同一個功能：回填文字、色碼與共用文案到原 Excel，並附合成 PNG、各版位獨立 PNG（副區整排、MSBN 逐顆、吸底多狀態圖）、色票和編輯暫存 .json。還有步驟沒完成也沒略過時，會先提醒。</p></div>
+    <div class="xcard"><div class="xh">各工具頁｜下載此資源檔案</div><p>只下載目前這一頁：工單生成器輸出該頁工單與版型；曝光資源輸出勾選版位；活動頁資源輸出合成圖、副區與 MSBN；取色工具輸出 CSV；吸底工具輸出吸底多狀態圖與吸底進度存檔。</p></div>
+    <div class="xcard"><div class="xh">最左側｜整包下載</div><p>這是唯一的完整交付入口：回填文字、色碼與共用文案到原 Excel，並附所有頁圖片（活動頁、曝光與吸底）、色票和編輯暫存 .json。還有步驟沒完成也沒略過時，會先提醒。</p></div>
   </div>
   <figure class="shot"><div class="shot-row"><a class="zoom" href="img/12-export-progress.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/12-export-progress.png" width="510" height="170" alt="下載進度：LOADING 曝光資源下載，截圖中 6/16" loading="lazy"></a><a class="zoom" href="img/12-export-zip.png" target="_blank" rel="noopener" title="點一下看原尺寸"><img src="img/12-export-zip.png" width="548" height="330" alt="曝光資源下載的 ZIP 內容：每個版位一張圖，加上原始檔編輯.json" loading="lazy"></a></div><figcaption>上：打包時的進度（請等它跑完）。下：曝光資源 ZIP 的內容，每個勾選版位一張圖，加上暫存檔「原始檔編輯.json」。</figcaption></figure>
   <ul>
@@ -447,7 +451,7 @@ footer{border-top:1px solid var(--line);padding-top:20px;color:var(--ink-dim);fo
     <li><strong>小字可以放大嗎？</strong>不行。小字字級固定照 MSBN 規則，每個版位都是換算後的正確大小。</li>
     <li><strong>某一張的代言人想自己排？</strong>在那一張直接拖曳即可，只影響那一張（和它的方／橫雙胞胎）；但之後改 HBN 或 LPBN 時會被蓋過。要完全獨立，就解除那一張的鎖鏈。</li>
     <li><strong>換電腦後內容不見了？</strong>本機暫存只存在原本那台電腦的瀏覽器，請用 .json 暫存檔或整包下載搬資料。</li>
-    <li><strong>新等級的曝光資源預設版位</strong>：目前暫時沿用舊等級的設定（大促 → A Brand star、AD單買 → B JBP多店、A BOD → B+ BOD A），版位詳情表加上新等級名稱後會自動改用新設定。</li>
+    <li><strong>等級的曝光資源版位從哪裡來？</strong>讀取 BODA 根目錄的「MS與BN曝光版位.xlsx」；D 欄是等級名稱，L～X 欄有打勾才顯示。修改表格後重新整理曝光資源即可套用。</li>
   </ul>
 </section>
 

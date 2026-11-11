@@ -67,9 +67,9 @@
     {id:'restore',group:'曝光與交付',view:'import',target:'#btn-upload-snapshot',title:'暫存檔，讓下次可以接著做',
       text:'同一台瀏覽器有本機暫存；若要跨電腦或保留一份可還原的版本，請另外保存下載包中的 <b>JSON 暫存檔</b>。',
       tip:'「上傳暫存檔還原編輯」可載回先前內容；本機暫存不等於永久備份。',demo:'restore'},
-    {id:'download',group:'曝光與交付',view:'import',target:'#btn-download-import-package',title:'確認完成，再一次下載交付',
-      text:'按<b>下載工單＋圖片＋暫存檔</b>，輸出目前工單、圖片與可還原的編輯狀態。下載前再確認每個版位的文字、圖片與配色。',
-      tip:'你已完成導覽！按「完成教學」會回到剛才的頁面與捲動位置，不會觸發下載。',demo:'download'}
+    {id:'download',group:'曝光與交付',view:'import',target:'#btn-download-import-package',title:'下載這一頁的資源',
+      text:'按<b>下載此資源檔案</b>只輸出活動頁資源；完整工單、所有頁圖片、色票與暫存檔，請使用最左側流程的<b>整包下載</b>。',
+      tip:'下載前再確認每個版位的文字、圖片與配色。導覽不會替你觸發下載。',demo:'download'}
   ];
   var ROUTES = {
     full:{label:'完整導覽 · 20 步',ids:STEPS.map(function(s){return s.id;})},

@@ -585,6 +585,37 @@
     return '#ffffff';
   }
 
+  /* 品名／指定的 B 系列文案不是一般 bodyText：它們實際使用哪一組字色，
+     取決於文字所在表面的明暗。把這個判定抽成一支共用函式，渲染結果與
+     活動頁左側工具列的「目前畫布實際用色」才不會各算各的。 */
+  function productNameThemeRoleOf(layer, opts, data, fieldPrefix) {
+    var schemaId = String((opts && opts._schemaId) || '');
+    var field = String((layer && layer.field) || '');
+    var isMsbnProductName = /^msbn_/i.test(schemaId) && layer && layer.type === 'text' &&
+      (/^name\d*$/i.test(field) || String(layer.fieldLabel || '') === '品名');
+    var isSubareaProductName = /^subarea_/i.test(schemaId) && layer && layer.type === 'text' &&
+      (/^name\d*$/i.test(field) || /^品名(?:\s*\d+)?$/.test(String(layer.fieldLabel || '')));
+    var isMsbnBCopy = /^msbn_B_/i.test(schemaId) && layer && layer.type === 'text' &&
+      (String(layer.fieldLabel || '').trim() === '文案' ||
+       (/^promo$/i.test(field) && String(layer.themeRole || '') === 'bodyText'));
+    if (!isMsbnProductName && !isSubareaProductName && !isMsbnBCopy) return '';
+
+    var theme = opts && opts.theme;
+    var surface = isSubareaProductName
+      ? (subareaProductNameSurface(data, opts, fieldPrefix) || (theme && (theme.canvasBg || theme.bg)) || '#ffffff')
+      : msbnProductNameSurface(data, opts, fieldPrefix, schemaId, theme, isMsbnBCopy);
+    var surfaceRgb = parseCssColor(surface);
+    var surfaceLuma = surfaceRgb
+      ? (0.2126 * surfaceRgb.r + 0.7152 * surfaceRgb.g + 0.0722 * surfaceRgb.b) / 255
+      : 1;
+    return surfaceLuma >= 0.52 ? 'nameOnLightBg' : 'nameOnDarkBg';
+  }
+
+  function effectiveThemeRoleOf(layer, opts, data, fieldPrefix) {
+    return productNameThemeRoleOf(layer, opts, data, fieldPrefix) ||
+      themeRoleOf(layer, opts && opts._schemaId);
+  }
+
   function themeColorOf(layer, opts, data, fieldPrefix) {
     var theme = opts && opts.theme;
     if (!theme) return null;
@@ -638,22 +669,8 @@
        其餘白卡讀白底，C／D 讀卡片底色。使用者未手動選色時，自動選黑／白高對比字。 */
     var themeSchemaId = String((opts && opts._schemaId) || '');
     var themeField = String((layer && layer.field) || '');
-    var isMsbnProductName = /^msbn_/i.test(themeSchemaId) && layer && layer.type === 'text' &&
-      (/^name\d*$/i.test(themeField) || String(layer.fieldLabel || '') === '品名');
-    var isSubareaProductName = /^subarea_/i.test(themeSchemaId) && layer && layer.type === 'text' &&
-      (/^name\d*$/i.test(themeField) || /^品名(?:\s*\d+)?$/.test(String(layer.fieldLabel || '')));
-    /* MSBN B-1-3／B-1-4 的欄位名稱仍是 promo，但語意是「文案」而非促標；
-       它要跟品名共用深／淺底配色，不跟全站 promoText 白字規則走。 */
-    var isMsbnBCopy = /^msbn_B_/i.test(themeSchemaId) && layer && layer.type === 'text' &&
-      (String(layer.fieldLabel || '').trim() === '文案' ||
-       (/^promo$/i.test(themeField) && String(layer.themeRole || '') === 'bodyText'));
-    if (isMsbnProductName || isSubareaProductName || isMsbnBCopy) {
-      var nameSurface = isSubareaProductName
-        ? (subareaProductNameSurface(data, opts, fieldPrefix) || theme.canvasBg || theme.bg || '#ffffff')
-        : msbnProductNameSurface(data, opts, fieldPrefix, themeSchemaId, theme, isMsbnBCopy);
-      var surfaceRgb = parseCssColor(nameSurface);
-      var surfaceLuma = surfaceRgb ? (0.2126 * surfaceRgb.r + 0.7152 * surfaceRgb.g + 0.0722 * surfaceRgb.b) / 255 : 1;
-      var nameThemeKey = surfaceLuma >= 0.52 ? 'nameOnLightBg' : 'nameOnDarkBg';
+    var nameThemeKey = productNameThemeRoleOf(layer, opts, data, fieldPrefix);
+    if (nameThemeKey) {
       var linkedNameColor = theme[nameThemeKey];
       if (linkedNameColor && String(linkedNameColor).trim()) return String(linkedNameColor).trim();
       return nameThemeKey === 'nameOnLightBg' ? '#111827' : '#ffffff';
@@ -1840,6 +1857,14 @@
       style.push('pointer-events:none');
       attrs = '';
     }
+    /* 讓外層工具列直接讀渲染後的 computedStyle，而不是再猜一次 schema 預設色。
+       品名會標成 nameOnLightBg／nameOnDarkBg；CTA 三角形則標成背景色類型，
+       因此工具列能知道這批畫布真正用了哪些顏色、目前實際顯示什麼色號。 */
+    var effectiveColorRole = effectiveThemeRoleOf(layer, opts, data, fieldPrefix);
+    if (effectiveColorRole) {
+      attrs += ' data-theme-color-role="' + esc(effectiveColorRole) + '"' +
+        ' data-theme-color-kind="' + (layer.type === 'text' ? 'text' : 'background') + '"';
+    }
     if (renderClassNames.length) attrs += ' class="' + renderClassNames.join(' ') + '"';
     if (isEmptyEditableText) attrs += ' data-bn-empty-text="1"';
     /* 警語跟著品名行數上下移：畫布直接編輯品名時由 syncSubareaWarnLift 即時調整。 */
@@ -2823,6 +2848,7 @@
     registerFromSchema: registerFromSchema,
     setConfig: setConfig,
     themeRoleOf: themeRoleOf,
+    effectiveThemeRoleOf: effectiveThemeRoleOf,
     roleColorsOf: roleColorsOf,
     defaultImageOrderOf: defaultImageOrderOf,
     dynamicRowLayoutOf: dynamicRowLayoutOf,

@@ -208,7 +208,7 @@
     triggerDownload(await zip.generateAsync({ type: "blob" }), prefix + "-全部分頁.zip");
   }
 
-  /* 主工具「下載工單＋圖片＋暫存檔」用：全部分頁的多狀態圖，直接回傳檔名＋dataURL，
+  /* 主工具最左側「整包下載」用：全部分頁的多狀態圖，直接回傳檔名＋dataURL，
      檔名規則與吸底自己的 ZIP 相同（分頁名稱-第幾顆-文字.png）。 */
   async function exportAllBannerFiles(store) {
     var groups = await exportAllBanners(store);

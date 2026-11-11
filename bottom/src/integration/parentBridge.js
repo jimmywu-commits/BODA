@@ -87,7 +87,7 @@
     });
   }
 
-  /* 主工具「下載全部」會要求吸底自己輸出所有分頁圖片。
+  /* 工單生成器頁內「下載此資源檔案」會要求吸底自己輸出所有分頁圖片。
      由吸底 iframe 直接建立 ZIP，可沿用和面板按鈕完全相同的渲染流程，
      也避免把多張大型 data URL 再透過 postMessage 複製回主頁。 */
   function exportAllForParent(msg) {
@@ -247,7 +247,7 @@
     } else if (msg.type === "BOTTOM_STATE") {
       applyStateFromParent(msg);
       /* 預覽 iframe 沒有收到 XLSX 時也要能以目前吸底狀態輸出縮圖；
-         工單生成器的「下載全部」會先等這張圖，再寫入 MS Layout 右側。 */
+         工單生成器的「下載此資源檔案」會先等這張圖，再寫入 MS Layout 右側。 */
       if (isImportPreview()) setTimeout(function () { sendPreviewImage(msg); }, 0);
     } else if (msg.type === "IMAGE_ASSETS") {
       /* 主工具 STEP 2 新上傳了圖片：更新清單，補上之前對不到的 LOGO */
@@ -330,7 +330,7 @@
     sendHostFiles: function (kind, files) {
       return post({ type: "HOST_FILES", kind: String(kind || ""), files: Array.prototype.slice.call(files || []) });
     },
-    /* 獨立吸底頁底部的「下載工單＋圖片＋暫存檔」 */
+    /* 舊版獨立吸底頁底部的完整打包 action（新版頁內按鈕已直接下載吸底資源） */
     requestHostAction: function (action) { return post({ type: "HOST_ACTION", action: String(action || "") }); }
   };
 })();
