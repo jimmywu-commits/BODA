@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>BODA 效能監測</title>
+  <link rel="stylesheet" href="CSS/performance-monitor.css">
+  <script src="JS/performance-monitor.js" defer></script>
+</head>
+<body>
+  <main class="monitor">
+    <header class="masthead">
+      <div><p class="eyebrow">BODA / PERFORMANCE</p><h1>效能監測</h1><p class="intro">在這裡紀錄，回到 BODA 照常操作。完成後匯出紀錄，找出載入、編輯或下載時的負擔。</p></div>
+      <a class="back-link" href="index.html" target="_blank" rel="noopener">前往 BODA <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <section class="controls panel" aria-label="紀錄控制">
+      <div class="actions"><button id="open-app" class="primary" type="button">開啟 BODA 並開始紀錄</button><button id="connect-app" type="button">連接已開啟的 BODA</button><button id="toggle-recording" type="button" disabled>暫停紀錄</button><button id="take-snapshot" type="button" disabled>取得現況</button><button id="clear-recording" class="quiet" type="button">清除紀錄</button></div>
+      <div class="connection-line"><span id="connection-dot" class="dot" aria-hidden="true"></span><strong id="connection-status" role="status" aria-live="polite">尚未連接</strong><span id="connection-note">請先開啟 BODA，或連接同一網站中已載入監測程式的 BODA。</span></div>
+      <div class="marker-line"><label for="step-marker">操作前標記</label><select id="step-marker"><option value="upload">上傳工單／圖片</option><option value="exposure">切換曝光資源</option><option value="background">更換背景</option><option value="shadow">調整商品影子</option><option value="activity">切換活動頁</option><option value="export">匯出檔案</option></select><button id="mark-step" type="button" disabled>標記這一步</button><span>先標記，再切回 BODA 操作，方便對照卡頓時間。</span></div>
+      <div class="session-line"><span id="session-label"></span><span id="capture-note">尚無紀錄</span><div class="exports"><button id="export-json" type="button" disabled>匯出 JSON</button><button id="export-csv" type="button" disabled>匯出摘要 CSV</button></div></div>
+      <p id="action-notice" class="notice" role="status" hidden></p>
+    </section>
+
+    <section class="metric-grid" aria-label="主要指標">
+      <article class="metric panel"><span>長任務（超過 50 ms）</span><strong id="metric-longtask">—</strong><small id="metric-longtask-note">等待 BODA 資料</small></article>
+      <article class="metric panel"><span>最大主執行緒延遲</span><strong id="metric-lag">—</strong><small>數值越高，操作越容易卡頓</small></article>
+      <article class="metric panel"><span>目前 JS heap</span><strong id="metric-memory">—</strong><small id="metric-memory-note">瀏覽器不支援時顯示「無法取得」</small></article>
+      <article class="metric panel"><span>目前 iframe 數</span><strong id="metric-frames">—</strong><small id="metric-frames-note">等待畫布現況</small></article>
+    </section>
+
+    <section class="panel section-panel" aria-labelledby="insight-heading"><div class="section-heading"><h2 id="insight-heading">判讀線索</h2><span class="tag">觀察與可能原因分開看</span></div><div id="insight-list" class="insight-list"><p class="empty">有量測資料後，這裡會整理較大的資源、重複載入與較慢的流程。</p></div><p class="subtle insight-note">資源排名、流程平均與重複次數使用目前保留的事件；若紀錄已截斷，明細可能不完整。硬體資訊是瀏覽器提供的估計值，不代表使用者電腦是否合格。</p></section>
+
+    <section class="two-column">
+      <article class="panel section-panel"><div class="section-heading"><h2>載入資源</h2><span id="resource-count" class="tag">0 筆</span></div><dl class="resource-stats"><div><dt>已知傳輸量</dt><dd id="resource-transfer">—</dd></div><div><dt>可能使用快取</dt><dd id="resource-cache">—</dd></div><div><dt>量測範圍</dt><dd id="resource-scope">等待紀錄</dd></div></dl><p class="subtle">傳輸量為瀏覽器提供的 Resource Timing，跨來源未開放計時資料時可能為 0。0 位元不一定代表快取。</p><div class="table-scroll"><table><caption class="sr-only">最慢的資源，最多 12 筆</caption><thead><tr><th scope="col">最慢資源</th><th scope="col">耗時</th><th scope="col">傳輸</th></tr></thead><tbody id="resource-rows"><tr><td colspan="3" class="empty">開始紀錄後，這裡會顯示載入最慢的資源。</td></tr></tbody></table></div></article>
+      <article class="panel section-panel"><div class="section-heading"><h2>流程耗時</h2><span id="workflow-count" class="tag">0 筆</span></div><p class="subtle">比較匯入工單、圖片處理、版位重繪與整包下載等流程。列出已完成的量測；耗時可以重疊。</p><div class="table-scroll"><table><caption class="sr-only">已完成的流程耗時</caption><thead><tr><th scope="col">流程</th><th scope="col">次數</th><th scope="col">平均</th><th scope="col">最慢</th></tr></thead><tbody id="workflow-rows"><tr><td colspan="4" class="empty">尚未收到完成的流程量測。</td></tr></tbody></table></div></article>
+    </section>
+
+    <section class="panel section-panel"><div class="section-heading"><h2>最近事件</h2><div class="event-controls"><label for="event-filter">篩選</label><select id="event-filter"><option value="all">全部事件</option><option value="workflow">流程完成</option><option value="workflow-start">流程開始</option><option value="mark">步驟標記</option><option value="navigation">頁面載入</option><option value="longtask">長任務</option><option value="lag">主執行緒延遲</option><option value="resource">載入資源</option><option value="memory">JS heap</option><option value="frame">iframe</option><option value="error">錯誤</option><option value="interaction">操作</option><option value="lifecycle">頁面狀態</option></select><span id="event-count" class="tag">0 筆</span></div></div><div class="table-scroll event-table"><table><caption class="sr-only">最近 100 筆符合篩選的事件</caption><thead><tr><th scope="col">時間</th><th scope="col">類別</th><th scope="col">事件</th><th scope="col">耗時／數值</th><th scope="col">來源</th></tr></thead><tbody id="event-rows"><tr><td colspan="5" class="empty">尚無事件。開始紀錄後，請到 BODA 重現載入或操作卡頓。</td></tr></tbody></table></div></section>
+
+    <section class="panel section-panel"><div class="section-heading"><h2>連線與環境</h2><span id="source-count" class="tag">0 個來源</span></div><div id="source-list" class="source-list"><p class="empty">尚未收到 BODA 的連線資訊。</p></div></section>
+
+    <footer class="limitations"><h2>讀取範圍與隱私</h2><p>監測頁與 BODA 必須位於相同來源（協定、網域與連接埠相同）。跨來源 iframe 的內部資料無法由父頁讀取；GitHub Pages 與 file:// 也不共用連線。建議透過同一個 HTTPS 網站或 localhost 使用。</p><p>JS heap 只代表可取得的 JavaScript 記憶體，並非瀏覽器或電腦整體 RAM，也不包含全部圖片、畫布與 GPU 記憶體。監測會增加少量負擔，畫面每秒最多更新一次；最多保留 6,000 筆事件，超出的較舊事件會移除。</p><p>本頁不讀取原圖、工單內容或畫布文字。匯出前會去除網址 query／hash 與常見內容欄位；紀錄只保留在本次頁面記憶體，按匯出才會下載檔案。分享紀錄前仍請確認網址路徑與錯誤訊息沒有敏感資訊。</p></footer>
+  </main>
+</body>
+</html>

@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
+<script src="JS/performance-agent.js?v=20261111-perf1"></script>
 <title>版位排版工具</title>
 <style id="boda-tour-styles">
 /* BODA 操作導覽。所有樣式皆以 bdt / boda-tour 命名，避免影響版位與匯出。 */
@@ -1375,6 +1376,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 .nav-item[data-step="bottom"]{order:5;}
 .nav-item[data-step="download"]{order:6;}
 .nav-item[data-view="maint"]{order:7;}
+#boda-performance-link{order:8;text-decoration:none;}
 /* 步驟之間的虛線，表示依序進行（第一步「匯入工單」上方不畫）。 */
 .nav-step{position:relative;}
 .nav-step:not([data-step="upload"]){margin-top:12px;}
@@ -1455,6 +1457,9 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
     <button class="nav-item" data-view="maint" title="維修">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.1a4.4 4.4 0 0 0-5.8 5.8L3.6 17.2a2.2 2.2 0 0 0 3.2 3.2l5.3-5.3a4.4 4.4 0 0 0 5.8-5.8l-3 3-3.2-.8-.8-3.2Z"/></svg></span><span class="lbl">維修</span>
     </button>
+    <a class="nav-item" id="boda-performance-link" href="performance-monitor.html" target="_blank" rel="noopener" title="效能監測（另開分頁，手動開始記錄）" data-skip-app-loading>
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 13h4l3-8 4 14 3-8h4"/></svg></span><span class="lbl">效能監測</span>
+    </a>
   </nav>
 
   <div id="views">
@@ -15223,6 +15228,10 @@ function scheduleImportShadowReapply(commit) {
 }
 function runImportShadowReapply() {
   var commit = importShadowReapplyCommit;
+  var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('activity.shadow.batch', { commit: !!commit, imageCount: (uploadedImages || []).length }) : function () {};
+  var perfFailed = false;
+  var perfCounts = {};
+  try {
   importShadowReapplyCommit = false;
   importShadowReapplyRunning = true;
   importShadowPassBackground = importShadowActualBackground();
@@ -15231,6 +15240,8 @@ function runImportShadowReapply() {
   /* 手動套用先顯示 Loading，再進巡檢；不能先做大量同步工作，最後才亮 Loading。 */
   var ready = commit ? appLoadingYield() : Promise.resolve();
   return ready.then(function () { return reapplyImportShadowToUploads(commit); }).then(function (result) {
+    perfCounts.checkedCount = Number(result && result.checked) || 0;
+    perfCounts.processedCount = Number(result && result.done) || 0;
     if (!commit || !result) return;
     if (isImportShadowEngineReady() || result.angle === 'off') {
       var detail = result.repaired ? '；已補回 ' + result.repaired + ' 張失聯素材' : '';
@@ -15249,6 +15260,7 @@ function runImportShadowReapply() {
           (result.failed && result.failed.length) || result.needsOriginal.length || result.auditFailed || (result.warnings && result.warnings.length)));
     }
   }).catch(function (err) {
+    perfFailed = true;
     console.warn('商品影子重烘失敗', err);
     /* 只剩流程本身被意外中止時才會走到這裡。顯示可辨識的原因，避免把每一種錯誤都誤導成模組遺失。 */
     var reason = String(err && err.message || err || '').replace(/\s+/g, ' ').trim();
@@ -15263,7 +15275,18 @@ function runImportShadowReapply() {
     setImportShadowApplyBusy(false);
     if (importShadowReapplyPending) { importShadowReapplyPending = false; runImportShadowReapply(); }
     else importShadowDropCache();
+  }).then(function (value) {
+    perfCounts.ok = !perfFailed;
+    finishPerf(perfCounts);
+    return value;
+  }, function (err) {
+    finishPerf({ ok: false });
+    throw err;
   });
+  } catch (err) {
+    finishPerf({ ok: false });
+    throw err;
+  }
 }
 function initImportShadowPanel() {
   var angle = document.getElementById('import-shadow-angle');
@@ -15540,12 +15563,21 @@ function readImportImageFile(file) {
 }
 /* 一次只處理兩張，避免整個資料夾同時解碼把記憶體衝高。 */
 function readImportImageFilesQueued(files, onEach) {
+  var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('import.images.read.batch', { imageCount: files.length }) : function () {};
+  var perfRemaining = files.length;
+  var perfFailedCount = 0;
+  if (!perfRemaining) finishPerf({ ok: true, failedCount: 0 });
   var next = 0;
   function pump() {
     if (next >= files.length) return;
     var index = next++;
     readImportImageFile(files[index]).catch(function () { return ''; }).then(function (url) {
-      onEach(index, url);
+      if (!url) perfFailedCount++;
+      try { onEach(index, url); }
+      catch (err) { finishPerf({ ok: false, aborted: true }); throw err; }
+      finally {
+        if (--perfRemaining === 0) finishPerf({ ok: perfFailedCount === 0, failedCount: perfFailedCount });
+      }
       pump();
     });
   }
@@ -16158,14 +16190,16 @@ function importIdbOpen() {
   });
 }
 function importIdbPut(value) {
+  var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('autosave.idb.transaction', { columnCount: value && value.columns ? value.columns.length : 0 }) : function () {};
   return importIdbOpen().then(function (db) {
     return new Promise(function (resolve, reject) {
       var tx = db.transaction(IMPORT_IDB_STORE, 'readwrite');
       tx.objectStore(IMPORT_IDB_STORE).put(value, 'current');
-      tx.oncomplete = function () { db.close(); resolve(); };
-      tx.onerror = function () { db.close(); reject(tx.error); };
+      tx.oncomplete = function () { finishPerf({ ok: true }); db.close(); resolve(); };
+      tx.onerror = function () { finishPerf({ ok: false }); db.close(); reject(tx.error); };
+      tx.onabort = function () { finishPerf({ ok: false, aborted: true }); };
     });
-  }).catch(function (err) { console.warn('[BODA] 匯入工單暫存寫入 IDB 失敗：', err); });
+  }).catch(function (err) { finishPerf({ ok: false }); console.warn('[BODA] 匯入工單暫存寫入 IDB 失敗：', err); });
 }
 function importIdbGet() {
   return importIdbOpen().then(function (db) {
@@ -16546,6 +16580,8 @@ function saveImportState() {
   if (importPersistDisabled) return;
   /* IDB 的舊狀態讀完前，不讓初始化重畫把舊 localStorage 當新資料寫回 IDB。 */
   if (importStateRestorePending) { importStateSaveAfterRestore = true; return; }
+  var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('autosave.prepare', { columnCount: currentImportColumns.length }) : function () {};
+  try {
   saveImportImageLayout();
   var toSave = buildImportStateSavePayload();
   importIdbPut(toSave);
@@ -16553,6 +16589,7 @@ function saveImportState() {
     if (importStateFitsLocalStorage(toSave)) localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(toSave));
     /* 大型狀態由 IDB 保存；不刪既有的小型備援，以免 IDB 不可用時連舊備援也遺失。 */
   } catch (e) { /* localStorage 可能滿，IDB 已寫入 */ }
+  } finally { finishPerf(); }
 }
 
 function normalizeImportState(saved) {
@@ -17985,6 +18022,8 @@ function pushExposureOverviewAssets(payload) {
   var endorserNames = storedEndorserFileNames(payload.endorserFiles);
   var endorserNote = String(payload.endorserNote == null ? '' : payload.endorserNote).trim();
   if (!logoNames.length && !productNames.length && !endorserNames.length && !endorserNote) return false;
+  var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('exposure.assets.prepare', { imageCount: logoNames.length + productNames.length + endorserNames.length }) : function () {};
+  try {
   var endorserAssets = exposureEndorserAssets(endorserNames);
   var message = {
     type: 'wo-workorder-overview-assets',
@@ -18011,7 +18050,13 @@ function pushExposureOverviewAssets(payload) {
   _exposureOverviewAssetDebounce = setTimeout(function () {
     try {
       var frame = document.getElementById('exposure-frame');
-      if (frame && frame.contentWindow) frame.contentWindow.postMessage(_exposureOverviewAssetPending, '*');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage(_exposureOverviewAssetPending, '*');
+        var perfAssets = _exposureOverviewAssetPending && _exposureOverviewAssetPending.assets || {};
+        if (typeof window !== 'undefined' && window.BodaPerf) window.BodaPerf.event('sync', 'exposure.assets.posted', {
+          imageCount: (perfAssets.logos || []).length + (perfAssets.products || []).length + (perfAssets.endorsers || []).length
+        });
+      }
     } catch (e) {}
     _exposureOverviewAssetPending = null;
     /* 同來源時 bn-state-dirty 會在商品真正建立完成後再觸發；這個延遲呼叫是
@@ -18019,6 +18064,7 @@ function pushExposureOverviewAssets(payload) {
     syncExposureShadowBackgroundSoon(resolvedImportBg(), 1200);
   }, 100);
   return true;
+  } finally { finishPerf(); }
 }
 var _exposureOverviewAssetDebounce = null;
 var _exposureOverviewAssetPending = null;
@@ -20403,6 +20449,8 @@ function importLevelHasBottom() {
 }
 
 function renderImportColumns(columns, skipPreviewRerender) {
+  var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('activity.render.columns', { columnCount: (columns || []).length }) : function () {};
+  try {
   activeImportCanvasContext = 'import';
   prepareImportSelectionContext('import');
   currentImportColumns = columns;
@@ -20611,6 +20659,7 @@ function renderImportColumns(columns, skipPreviewRerender) {
       });
     }
   }
+  } finally { finishPerf(); }
 }
 
 /* 「直接預覽全部版位」的右側工具列：跟匯入工單共用同一套版位工具卡，
@@ -24463,6 +24512,11 @@ function importSnapshotJsonBlob(value) {
   return new Blob(parts, { type: 'application/json;charset=utf-8' });
 }
 function downloadImportPackageZip(bundle) {
+  var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('export.zip.package', {
+    imageCount: (bundle && bundle.images || []).length + (bundle && bundle.exposureImages || []).length
+  }) : function () {};
+  var perfOutputBytes = 0;
+  try {
   if (typeof JSZip === 'undefined') {
     throw new Error('ZIP 元件 JSZip 尚未載入，請確認網路連線後重試');
   }
@@ -24537,6 +24591,7 @@ function downloadImportPackageZip(bundle) {
       appLoadingUpdate(percent, 'LOADING · 打包 ZIP', 'ZIP 產生進度 ' + Math.round(Number(meta.percent) || 0) + '%');
     });
   }).then(function (blob) {
+      perfOutputBytes = Number(blob.size) || 0;
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
@@ -24546,7 +24601,17 @@ function downloadImportPackageZip(bundle) {
       a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
       return { filename: a.download, imageCount: imageCount };
+  }).then(function (result) {
+    finishPerf({ ok: true, imageCount: imageCount, outputBytes: perfOutputBytes });
+    return result;
+  }, function (err) {
+    finishPerf({ ok: false });
+    throw err;
   });
+  } catch (err) {
+    finishPerf({ ok: false });
+    throw err;
+  }
 }
 
 /* 各工具頁自己的下載：只把該頁產生的檔案放進 ZIP，不夾帶工單、其他工具圖片、
@@ -24557,6 +24622,9 @@ function downloadPageResourceZip(files, zipFilename, folderName, progressLabel) 
   }
   var list = (files || []).filter(function (file) { return file && file.dataUrl; });
   if (!list.length) return Promise.reject(new Error('目前沒有可下載的資源'));
+  var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('export.zip.resource', { imageCount: list.length }) : function () {};
+  var perfOutputBytes = 0;
+  try {
   var zip = new JSZip();
   var used = {};
   var folder = importPackageSafeName(folderName || '資源檔案', '資源檔案');
@@ -24585,6 +24653,7 @@ function downloadPageResourceZip(files, zipFilename, folderName, progressLabel) 
     appLoadingUpdate(92, 'LOADING · ' + (progressLabel || '打包資源'), '正在建立 ZIP 檔案…');
     return zip.generateAsync({ type: 'blob', streamFiles: true, compression: 'STORE' });
   }).then(function (blob) {
+    perfOutputBytes = Number(blob.size) || 0;
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     var base = importPackageSafeName(String(zipFilename || '資源檔案').replace(/\.zip$/i, ''), '資源檔案');
@@ -24595,7 +24664,17 @@ function downloadPageResourceZip(files, zipFilename, folderName, progressLabel) 
     a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
     return { filename: a.download, fileCount: list.length };
+  }).then(function (result) {
+    finishPerf({ ok: true, imageCount: list.length, outputBytes: perfOutputBytes });
+    return result;
+  }, function (err) {
+    finishPerf({ ok: false });
+    throw err;
   });
+  } catch (err) {
+    finishPerf({ ok: false });
+    throw err;
+  }
 }
 document.getElementById('btn-upload-snapshot').addEventListener('click', function () {
   document.getElementById('snapshot-file-input').click();
@@ -28079,6 +28158,9 @@ function getSavedView() {
 function showView(name, options) {
   options = options || {};
   if (!isValidView(name)) name = 'upload';
+  /* 這一段只量切頁同步派工；iframe／圖片就緒時間由載入與資源監測另行記錄。 */
+  var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('view.switch.dispatch', { view: name }) : function () {};
+  try {
   var viewLoadingToken = options.skipLoading ? 0 : appLoadingStartView(name);
   var viewWaitsForOwnLoad = (name === 'exposure' && !exposureLoaded) ||
     (name === 'maint' && !maintLoaded) ||
@@ -28137,6 +28219,7 @@ function showView(name, options) {
      已經載好的頁面與其他工具則在下一個繪製週期收起。 */
   if (viewLoadingToken && !viewWaitsForOwnLoad) appLoadingFinishView(viewLoadingToken, (name === 'home' ? '首頁已就緒' : '工具已就緒'));
   renderWorkflowNav();
+  } finally { finishPerf(); }
 }
 
 /* ══ 製作流程（左側導覽的步驟）══════════════════════════════
@@ -28254,7 +28337,7 @@ function confirmWorkflowPackageDownload() {
     unfinished.map(function (step) { return step.label; }).join('、') +
     '\n\n（不製作的項目可在該步驟按「略過」；按「確定」仍會照目前內容下載。）');
 }
-document.querySelectorAll('.nav-item').forEach(function (b) {
+document.querySelectorAll('.nav-item[data-view], .nav-item[data-action]').forEach(function (b) {
   b.addEventListener('click', function () {
     if (b.getAttribute('data-action') === 'package-download') { startWorkflowPackageDownload(); return; }
     var step = b.getAttribute('data-step');
