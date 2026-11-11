@@ -120,6 +120,50 @@
     return '';
   }
 
+  /* 工單總覽由上到下的版位順序。名稱仍走上面同一套模糊比對；同類版位
+     （例如 C2C HBN／Mall HBN）只建立一個排序位置，版型變體維持原先次序。 */
+  function workorderSlotOrder(resources) {
+    var order = [], seen = {};
+    (resources || []).forEach(function (resource) {
+      workorderSlotsOfName(resource && resource.key).forEach(function (slot) {
+        if (!slot || seen[slot]) return;
+        seen[slot] = true;
+        order.push(slot);
+      });
+    });
+    return order;
+  }
+  function workorderSlotRank(slot, placement) {
+    var order = placement && Array.isArray(placement.order) ? placement.order : [];
+    var rank = order.indexOf(slot);
+    return rank < 0 ? Number.MAX_SAFE_INTEGER : rank;
+  }
+  function workorderRowRank(row, placement) {
+    var slots = [];
+    var layoutSlot = row && row.layout ? workorderSlotOfLayout(row.layout) : '';
+    if (layoutSlot) slots.push(layoutSlot);
+    workorderSlotsOfName(row && row.slot).forEach(function (slot) {
+      if (slots.indexOf(slot) === -1) slots.push(slot);
+    });
+    return slots.reduce(function (best, slot) {
+      return Math.min(best, workorderSlotRank(slot, placement));
+    }, Number.MAX_SAFE_INTEGER);
+  }
+  function sortLayoutsForWorkorder(layouts, placement) {
+    return (layouts || []).map(function (layout, index) {
+      return { layout: layout, index: index, rank: workorderSlotRank(workorderSlotOfLayout(layout), placement) };
+    }).sort(function (a, b) {
+      return a.rank === b.rank ? a.index - b.index : a.rank - b.rank;
+    }).map(function (item) { return item.layout; });
+  }
+  function sortPlanRowsForWorkorder(rows, placement) {
+    return (rows || []).map(function (row, index) {
+      return { row: row, index: index, rank: workorderRowRank(row, placement) };
+    }).sort(function (a, b) {
+      return a.rank === b.rank ? a.index - b.index : a.rank - b.rank;
+    }).map(function (item) { return item.row; });
+  }
+
   /* 工單總覽列出的曝光資源版位（BODA 匯入工單時送來）：{ importId, slots: { 類別: [工單名稱…] } }。
      存在 localStorage（bn 開頭，「清除本機暫存」會一起清），重新整理後清單照樣在。 */
   var WORKORDER_PLACEMENT_KEY = 'bn-workorder-placement-v1';
@@ -146,6 +190,11 @@
   function workorderBlocksAutoCheck(layout) {
     return !!workorderPlacement && !workorderListsSlot(workorderSlotOfLayout(layout));
   }
+  /* shopee/index.html 的預覽畫布在建立 iframe 前會呼叫這個排序器，讓右側畫布
+     與左側排版選擇使用同一個工單順序。沒有工單時原樣回傳。 */
+  window._bnSortLayoutsForDisplay = function (layouts) {
+    return sortLayoutsForWorkorder(layouts, workorderPlacement);
+  };
   var currentLevelId = readLevel();
   var SHEET = null;
   var sheetError = '';
@@ -426,9 +475,10 @@
     }
 
     if (!conf) {
+      var orderedLayouts = sortLayoutsForWorkorder(layouts, workorderPlacement);
       return {
-        all: layouts.slice(),
-        rows: layouts.map(function (l) {
+        all: orderedLayouts.slice(),
+        rows: orderedLayouts.map(function (l) {
           return { slot: '', layout: l, def: true };
         })
       };
@@ -449,6 +499,7 @@
         rows.push({ slot: name, layout: l, def: conf.def[name] });
       });
     });
+    rows = sortPlanRowsForWorkorder(rows, workorderPlacement);
     return {
       all: rows.filter(function (r) { return r.layout; }).map(function (r) { return r.layout; }),
       rows: rows
@@ -690,6 +741,7 @@
   function applyWorkorderPlacementList(spec) {
     var importId = String(spec.importId || '');
     var slots = {}, listed = [], unmatched = [], skipped = [];
+    var slotOrder = workorderSlotOrder(spec.resources);
     spec.resources.forEach(function (r) {
       var name = String(r && r.key || '').replace(/\s+/g, ' ').trim();
       if (!name) return;
@@ -703,7 +755,7 @@
       });
     });
     var replay = !!(importId && workorderPlacement && workorderPlacement.importId === importId);
-    writeWorkorderPlacement({ importId: importId, slots: slots });
+    writeWorkorderPlacement({ importId: importId, slots: slots, order: slotOrder });
     var checked = window.checked || (window.checked = {});
     var present = {};
     (planForLevel().rows || []).forEach(function (r) {
@@ -854,6 +906,8 @@
           id: product.id,
           src: product.src,
           ratio: product.ratio,
+           /* 全域影子換色與背景自動換色相同：只換像素，不重算商品框。 */
+           preserveFrame: true,
           keepScale: true,
           rotate: Number(product.meta && product.meta.rotate) || 0,
           productRect: product.meta && product.meta.productRect

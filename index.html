@@ -13560,6 +13560,9 @@ function updateExposureProductImageInPlace(win, product) {
         id: product.id,
         src: product.src,
         ratio: product.ratio,
+        /* 背景換色只重烘影子，商品框的 left/top/width/height 必須逐像素保留。
+           preserveFrame 會優先於 keepScale，不套用旋轉時才需要的外接框重算。 */
+        preserveFrame: true,
         keepScale: true,
         rotate: Number(product.meta && product.meta.rotate) || 0,
         productRect: product.meta && product.meta.productRect
@@ -23677,7 +23680,7 @@ function bottomVariantFallback(err) {
   return {
     files: single,
     note: single.length
-      ? '吸底多狀態圖未輸出（' + reason + '）；MSBN 資料夾只放入目前預覽的單張吸底圖。'
+      ? '吸底多狀態圖未輸出（' + reason + '）；活動頁資料夾只放入目前預覽的單張吸底圖。'
       : '吸底圖片未輸出：' + reason + '。請切到「吸底工具」頁簽確認內容已出現後，再下載一次。'
   };
 }
@@ -24325,6 +24328,17 @@ function addImportDataUrlToZip(zip, path, dataUrl) {
   });
 }
 
+/* 整包 ZIP 的圖片歸檔：LPBN 雖由曝光資源編輯器產生，但交付上屬於活動頁。
+   只判斷曝光資源回傳的檔名開頭，避免誤把活動頁自己產生的檔案分到曝光資源。 */
+function importPackageIsLpbnImage(file) {
+  var filename = String(file && (file.filename || file.name) || '').replace(/^.*[\\/]/, '');
+  return /^LPBN/i.test(filename);
+}
+function importPackageImageFolder(file, source) {
+  if (source === 'exposure' && !importPackageIsLpbnImage(file)) return '曝光資源';
+  return '活動頁';
+}
+
 /* 暫存檔裡同一張原圖常同時存在 columns、uploadedImages、baseUrl、logoUrl
    與吸底 state。v3 以素材表去重，仍維持單一 JSON 可獨立還原。 */
 var IMPORT_SNAPSHOT_ASSET_PREFIX = '__BODA_SNAPSHOT_ASSET_V3__:';
@@ -24468,23 +24482,21 @@ function downloadImportPackageZip(bundle) {
   }
 
   /* ZIP 檔名就是活動名稱，不再帶時間戳。
-     圖片歸檔規則（原本的「圖片」資料夾改名為活動名稱）：
-       <活動名稱>/MSBN/   → 匯入工單畫布的成品（合成圖、副區整排、MSBN 逐顆）＋吸底工具輸出的多狀態圖
-       <活動名稱>/活動頁/ → 曝光資源（shopee 編輯器）下載的各版位圖
+     圖片歸檔規則：
+       活動頁/   → 活動頁畫布成品（合成圖、副區、MSBN）、吸底，以及 LPBN_APP／LPBN_PC
+       曝光資源/ → 曝光資源編輯器的其他版位（明確排除 LPBN）
      工單／色票／暫存檔維持各自的資料夾。 */
   var activity = importPackageActivityName();
   if (bundle.workOrder && bundle.workOrder.blob) {
     zip.file(uniquePath('工單', bundle.workOrder.filename), bundle.workOrder.blob, { compression: 'STORE' });
   }
-  /* 原本的「圖片」資料夾改名為「活動頁」：MSBN、吸底、曝光資源圖全部直接放在裡面，不再分子資料夾。
-     活動名稱只用在 ZIP 檔名與暫存檔名。 */
-  var imageRoot = '活動頁';
+  /* 活動頁與曝光資源各自一層；LPBN 是唯一從曝光資源改歸活動頁的例外。 */
   var imageJobs = [];
   (bundle.images || []).forEach(function (file) {
-    if (file && file.dataUrl) imageJobs.push({ folder: imageRoot, file: file });
+    if (file && file.dataUrl) imageJobs.push({ folder: importPackageImageFolder(file, 'activity'), file: file });
   });
   (bundle.exposureImages || []).forEach(function (file) {
-    if (file && file.dataUrl) imageJobs.push({ folder: imageRoot, file: file });
+    if (file && file.dataUrl) imageJobs.push({ folder: importPackageImageFolder(file, 'exposure'), file: file });
   });
   var imageCount = imageJobs.length;
   var imageChain = Promise.resolve();
@@ -24704,13 +24716,13 @@ function startCompletePackageDownload(triggerButton) {
       });
     })
     .then(function () {
-      /* 活動頁資料夾：曝光資源（shopee 編輯器）的各版位成品，走它自己的截圖／壓縮流程，只是不另外下載 ZIP。 */
-      appLoadingUpdate(86, 'LOADING · 輸出圖片', '正在輸出活動頁（曝光資源）圖片…');
+      /* 曝光資源成品依版位分流：LPBN 歸活動頁，其餘歸曝光資源。 */
+      appLoadingUpdate(86, 'LOADING · 輸出圖片', '正在輸出曝光資源圖片並分類 LPBN…');
       return requestExposureExportFiles().then(function (res) {
         bundle.exposureImages = res && res.files ? res.files : [];
         if (res && res.note) bundle.warnings.push(res.note);
       }).catch(function (err) {
-        bundle.warnings.push('活動頁（曝光資源）圖片未輸出：' + (err && err.message ? err.message : err));
+        bundle.warnings.push('曝光資源圖片未輸出：' + (err && err.message ? err.message : err));
       });
     })
     .then(function () {
@@ -27714,7 +27726,7 @@ function bindExposureAdaptiveShadowEvents(frame) {
     frame._bodaAdaptiveShadowHandler = handler;
   } catch (e) { /* 跨來源部署時仍由 wo-bg 與延遲重試處理。 */ }
 }
-/* 最左側「整包下載」的活動頁資料夾：向曝光資源 iframe 要它頁內下載會產生的那批圖，
+/* 最左側「整包下載」的曝光資源／LPBN 圖片來源：向曝光資源 iframe 要它頁內下載會產生的那批圖，
    走 shopee/js/bn-editor-plugin.js 的 _bnCollectExportFiles（同一套截圖、KB 壓縮、SearchICON 84x84），
    只是不另外下載 BN_Export.zip，改把 [{name, dataUrl}] 交回來。
    曝光資源頁沒開過（iframe 未載入）就跳過並寫進輸出提醒；曝光資源頁不在畫面上時，
@@ -27725,7 +27737,7 @@ function requestExposureExportFiles() {
   var collect = null;
   try { collect = win && win._bnCollectExportFiles; } catch (e) { collect = null; }
   if (!exposureLoaded || typeof collect !== 'function') {
-    return Promise.resolve({ files: [], note: '活動頁（曝光資源）圖片未輸出：尚未開啟過「曝光資源」頁，或曝光資源還沒載入完成。開啟一次曝光資源頁後再下載，ZIP 就會包含活動頁資料夾。' });
+    return Promise.resolve({ files: [], note: '曝光資源圖片未輸出：尚未開啟過「曝光資源」頁，或曝光資源還沒載入完成。開啟一次曝光資源頁後再下載，ZIP 才會包含「曝光資源」以及歸入「活動頁」的 LPBN 圖片。' });
   }
   var view = document.getElementById('view-exposure');
   var offscreen = !!(view && !view.classList.contains('active'));
@@ -27742,8 +27754,8 @@ function requestExposureExportFiles() {
         return { filename: String(file && (file.name || file.filename) || '活動頁.png'), dataUrl: String(file && file.dataUrl || ''), kind: 'exposure' };
       }).filter(function (file) { return file.dataUrl; });
       var note = '';
-      if (err) note = '活動頁（曝光資源）圖片未輸出：' + (err.message || err);
-      else if (report && report.fail) note = '活動頁（曝光資源）有 ' + report.fail + ' 個版位截圖失敗：' + (report.failedNames || []).join('、');
+      if (err) note = '曝光資源圖片未輸出：' + (err.message || err);
+      else if (report && report.fail) note = '曝光資源有 ' + report.fail + ' 個版位截圖失敗：' + (report.failedNames || []).join('、');
       resolve({ files: list, note: note });
     }
     try {

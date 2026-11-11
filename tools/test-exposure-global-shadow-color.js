@@ -15,8 +15,8 @@ assert.match(host, /shadowApi\.DEFAULT\.color\s*=\s*targetColor/,
   '新上傳商品必須沿用目前全域影子色');
 assert.match(host, /window\._bodaApplyExposureShadowColorSetting\s*=\s*function/,
   '曝光 iframe 必須能呼叫父頁的序列重製入口');
-assert.match(host, /type:\s*'bn-product-update-image'[\s\S]*?keepScale:\s*true/,
-  '批次換色必須就地換圖並保留商品大小位置');
+assert.match(host, /type:\s*'bn-product-update-image'[\s\S]*?preserveFrame:\s*true/,
+  '批次換色必須就地換圖且禁止重算商品框');
 
 assert.match(plugin, /全體商品影子顏色/,
   '曝光資源左欄必須顯示全體商品影子顏色');
@@ -28,8 +28,8 @@ assert.match(plugin, /#bn-shadow-modal \.bn-shadow-ctrl>div:has\(input\[data-rol
   '單品影子視窗不可再顯示顏色欄');
 assert.match(plugin, /originalOpen\.call\(shadowApi, product, onApplied\)[\s\S]*?finally[\s\S]*?previousShadow/,
   '單品編輯器開啟時只暫借全域色，取消不可偷改商品狀態');
-assert.match(plugin, /type:\s*'bn-product-update-image'[\s\S]*?keepScale:\s*true/,
-  '獨立 iframe 後備流程也必須就地換圖');
+assert.match(plugin, /type:\s*'bn-product-update-image'[\s\S]*?preserveFrame:\s*true/,
+  '獨立 iframe 後備流程也必須就地換圖且禁止重算商品框');
 assert.doesNotMatch(plugin, /_bnRebroadcastProducts\s*\(/,
   '全域影子換色不可 remove/add 全部商品，以免排版跳回預設');
 
