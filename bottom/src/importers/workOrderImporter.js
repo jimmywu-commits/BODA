@@ -24,7 +24,6 @@
  * 所以文案列的定位方式是「區塊內排除掉 Icon 列、LOGO 列、路徑列之後剩下的那一列」。
  */
 (function () {
-  var SHEETJS_URL = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
 
   var MIN_GROUPS = 2;
   var MAX_GROUPS = 5;
@@ -42,23 +41,8 @@
   var RE_STICKY = /吸底/;
   var RE_NUMERIC = /^-?\d+(\.\d+)?$/;
 
-  var loadingPromise = null;
-
   function loadSheetJs() {
-    if (window.XLSX) return Promise.resolve();
-    if (loadingPromise) return loadingPromise;
-
-    loadingPromise = new Promise(function (resolve, reject) {
-      var script = document.createElement("script");
-      script.src = SHEETJS_URL;
-      script.onload = function () { resolve(); };
-      script.onerror = function () {
-        loadingPromise = null;
-        reject(new Error("無法載入試算表元件 SheetJS，請確認網路連線"));
-      };
-      document.head.appendChild(script);
-    });
-    return loadingPromise;
+    return window.BodaVendor.ensure('sheet');
   }
 
   /* ---------------- 小工具 ---------------- */

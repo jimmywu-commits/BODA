@@ -1,0 +1,100 @@
+{
+  "generatedAt": "2026-11-11T08:48:28.498Z",
+  "valid": true,
+  "conditions": {
+    "source": "local uncompressed HTTP, 127.0.0.1",
+    "scenario": "fresh profile, #upload, no work order or uploaded images",
+    "viewport": {
+      "width": 1366,
+      "height": 900,
+      "deviceScaleFactor": 1
+    },
+    "cache": "new profile and cleared browser cache for every run; normal cache behavior during navigation",
+    "cpuThrottling": "none",
+    "networkThrottling": "none",
+    "externalNetwork": "cdnjs pinned versions fulfilled from local vendor; other HTTPS blocked; any unmapped external request invalidates the run; loopback HTTP is not intercepted",
+    "readyCondition": "document complete + 107 registered blocks + view-upload + initial loading hidden; 50ms observation interval",
+    "baseline": "tmp/perf-baseline snapshot first; other files fall back to current root",
+    "limitations": [
+      "Not weak-machine simulation or GitHub Pages transfer timing",
+      "Uncompressed loopback bytes differ from server gzip/brotli transfer",
+      "Resource Timing sizes are browser-known values; zero is not proof of cache hit",
+      "App-ready timing is observed with up to about 50ms polling granularity",
+      "Snapshot does not duplicate every unchanged binary asset"
+    ]
+  },
+  "beforeFile": "startup-before.json",
+  "afterFile": "startup-after.json",
+  "changes": {
+    "domContentLoadedMs": {
+      "before": 405.79999999701977,
+      "after": 230.1000000089407,
+      "reductionPercent": 43.297190731732236
+    },
+    "loadMs": {
+      "before": 409,
+      "after": 240.90000000596046,
+      "reductionPercent": 41.10024449732018
+    },
+    "appReadyObservedMs": {
+      "before": 836.2999999970198,
+      "after": 534.3000000119209,
+      "reductionPercent": 36.11144326033422
+    },
+    "observedAtMs": {
+      "before": 1348,
+      "after": 1045.0999999940395,
+      "reductionPercent": 22.470326409937723
+    },
+    "requestCount": {
+      "before": 124,
+      "after": 17,
+      "reductionPercent": 86.29032258064517
+    },
+    "httpErrors": {
+      "before": 0,
+      "after": 0,
+      "reductionPercent": null
+    },
+    "failedRequests": {
+      "before": 0,
+      "after": 0,
+      "reductionPercent": null
+    },
+    "encodedBodyBytesKnown": {
+      "before": 20512951,
+      "after": 2294004,
+      "reductionPercent": 88.81680163912057
+    },
+    "transferBytesKnown": {
+      "before": 20550151,
+      "after": 2299104,
+      "reductionPercent": 88.81222819238653
+    },
+    "localServedBodyBytes": {
+      "before": 19448020,
+      "after": 2294004,
+      "reductionPercent": 88.20443417890355
+    },
+    "cdnMappedBodyBytes": {
+      "before": 1064931,
+      "after": 0,
+      "reductionPercent": 100
+    },
+    "fontsEmbedRequests": {
+      "before": 1,
+      "after": 0,
+      "reductionPercent": 100
+    },
+    "sourceBlockJsonRequests": {
+      "before": 107,
+      "after": 0,
+      "reductionPercent": 100
+    },
+    "catalogueRequests": {
+      "before": 0,
+      "after": 1,
+      "reductionPercent": null
+    }
+  }
+}

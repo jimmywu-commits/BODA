@@ -1,0 +1,29 @@
+{
+  "source": "JS/fonts-embed.js",
+  "sourceSha256": "faa1382de070dab7a3480786f8885f7bd179bc76f08e69ce984650805dcb69b7",
+  "weights": [
+    {
+      "weight": 400,
+      "originalBytes": 4203848,
+      "codepoints": 28943,
+      "chunks": 113,
+      "seconds": 173.31
+    },
+    {
+      "weight": 500,
+      "originalBytes": 4258732,
+      "codepoints": 28943,
+      "chunks": 113,
+      "seconds": 174.14
+    },
+    {
+      "weight": 700,
+      "originalBytes": 4325156,
+      "codepoints": 28943,
+      "chunks": 113,
+      "seconds": 142.61
+    }
+  ],
+  "manifestBytes": 57869,
+  "totalScriptBytes": 19757807
+}

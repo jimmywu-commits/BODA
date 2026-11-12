@@ -1,0 +1,191 @@
+{
+  "generatedAt": "2026-11-12T02:14:54.082Z",
+  "valid": true,
+  "imageCount": 20,
+  "conditions": {
+    "source": "local HTTP, fresh Playwright browser context, headless Chrome, no CPU/network throttling",
+    "fixture": "synthetic real Layout_Output XLSX plus unique 1200x1000 PNGs; subarea_A_1_1 columns share band 1 and export as one row",
+    "limitations": [
+      "Not the original user workbook, GitHub transfer timing, or low-end laptop",
+      "Stage-boundary JS heap samples only; not total RAM, GPU, continuous peak or leak proof",
+      "Render-and-save includes synthetic PNG generation; geometry/reload stage totals include full RGBA verification. Separate saveAndReadbackMs and reloadReadyMs exclude pixel hashing",
+      "Single run per image count; no before/after RAM percentage can be inferred"
+    ]
+  },
+  "indexSHA256": "029da91679799b40b564ca6d1af8dc214e0940e03847db670a75d8d57324f8c1",
+  "stages": [
+    {
+      "name": "empty-homepage",
+      "elapsedMs": 630,
+      "result": {
+        "ready": true
+      }
+    },
+    {
+      "name": "first-real-xlsx-parse",
+      "elapsedMs": 131,
+      "result": {
+        "count": 1,
+        "blockId": "subarea_A_1_1",
+        "entries": 3
+      }
+    },
+    {
+      "name": "render-and-save",
+      "elapsedMs": 474,
+      "result": {
+        "columns": 20,
+        "uniqueImages": 20,
+        "totalEncodedImageCharacters": 888936
+      }
+    },
+    {
+      "name": "unchanged-render",
+      "elapsedMs": 25,
+      "result": {
+        "before": 20,
+        "reused": 20
+      }
+    },
+    {
+      "name": "geometry-only-save",
+      "elapsedMs": 624,
+      "result": {
+        "columns": 20,
+        "weight": 1.25,
+        "offset": {
+          "x": 13,
+          "y": -8
+        },
+        "encodedPixelsUnchanged": true,
+        "saveAndReadbackMs": 30,
+        "pixelHashes": [
+          "8e85a6ee6d3d3d99c30780a9cd2b8119e228985e8588ff60daa9976a4fab206e",
+          "5c41accb2355b91c29bee642dc701d94ed7607a08b0beb11dd78b7be13a61b50",
+          "28429a5cd38fc91fb957577372fb62b1ef9b43202e289d39f46e003ac27aafb5",
+          "4d02839bf4c42fd36439c99d5995ed8647dd1f9518f4d728d7d73713b3f6dd0d",
+          "6a26d8a6ec5a51442f84ae25792f6a1beeda1620438fddf610e2fa0675162ebd",
+          "9e287011d94b0255e073d9ba22b4aa9cfa1cb14402d52f1feb9c79605f43a3ba",
+          "aa20a2b9fc03b82f268a31f99859ad7a8a3c0973c3a56a4855cc509cbd3649c0",
+          "f27fe50939cf92cd985a9ca266b1c90915c4c0704e2b5d4ae4e86b9e0a50b2b9",
+          "b8a5141c611856c7024135c0caad0c66a7d2228f15c44ef7bcd6c456ed66989e",
+          "62538b1e99602330ce85eeb7b72ad55d26203b4f2b426040c5501962c254e961",
+          "4fcf8eb004c0a3220c0b1046c97e3d7f0ef9c943f37e959fcffccd3051a3f760",
+          "4dacd008a66e02075bb47c024f82a4401f0a31a95034469364cc7b435d15f55a",
+          "13bf9946bbac9d5d98fc6ebfd43f9cb364ae0fd1c78ab10bc97b2837caf39ed8",
+          "1c25eb9137a1a95afa967d84b9e52536b632bd8d2efa31b1cfd30e3b23ff86d3",
+          "9b40d574f9992272904e53aec4995bd78dc95506b2fe1a778bc2af5435aca400",
+          "0a8f284eaffcc023fd26e04c5839d97df28a563238c536dea26eaccef0ec9796",
+          "469a49c20da60f48416d7d1358dc5930dd35d70069f2f5b501fa2cb1e3fcd963",
+          "f119d034b58db8865da23e80c229626eb5006b99e6fd2f25670733674a242bad",
+          "a06e2f27650f117f9308a322db75d14d05ae2ab64143cdf0570aecb75714bbef",
+          "bcfde451a17e60b1d7079ac0de4c4cf25f3c52265eaeb84909d1a9b90a40c584"
+        ]
+      }
+    },
+    {
+      "name": "IDB-only-reload",
+      "elapsedMs": 983,
+      "result": {
+        "columns": 20,
+        "weight": 1.25,
+        "offset": {
+          "x": 13,
+          "y": -8
+        },
+        "pixelHashes": [
+          "8e85a6ee6d3d3d99c30780a9cd2b8119e228985e8588ff60daa9976a4fab206e",
+          "5c41accb2355b91c29bee642dc701d94ed7607a08b0beb11dd78b7be13a61b50",
+          "28429a5cd38fc91fb957577372fb62b1ef9b43202e289d39f46e003ac27aafb5",
+          "4d02839bf4c42fd36439c99d5995ed8647dd1f9518f4d728d7d73713b3f6dd0d",
+          "6a26d8a6ec5a51442f84ae25792f6a1beeda1620438fddf610e2fa0675162ebd",
+          "9e287011d94b0255e073d9ba22b4aa9cfa1cb14402d52f1feb9c79605f43a3ba",
+          "aa20a2b9fc03b82f268a31f99859ad7a8a3c0973c3a56a4855cc509cbd3649c0",
+          "f27fe50939cf92cd985a9ca266b1c90915c4c0704e2b5d4ae4e86b9e0a50b2b9",
+          "b8a5141c611856c7024135c0caad0c66a7d2228f15c44ef7bcd6c456ed66989e",
+          "62538b1e99602330ce85eeb7b72ad55d26203b4f2b426040c5501962c254e961",
+          "4fcf8eb004c0a3220c0b1046c97e3d7f0ef9c943f37e959fcffccd3051a3f760",
+          "4dacd008a66e02075bb47c024f82a4401f0a31a95034469364cc7b435d15f55a",
+          "13bf9946bbac9d5d98fc6ebfd43f9cb364ae0fd1c78ab10bc97b2837caf39ed8",
+          "1c25eb9137a1a95afa967d84b9e52536b632bd8d2efa31b1cfd30e3b23ff86d3",
+          "9b40d574f9992272904e53aec4995bd78dc95506b2fe1a778bc2af5435aca400",
+          "0a8f284eaffcc023fd26e04c5839d97df28a563238c536dea26eaccef0ec9796",
+          "469a49c20da60f48416d7d1358dc5930dd35d70069f2f5b501fa2cb1e3fcd963",
+          "f119d034b58db8865da23e80c229626eb5006b99e6fd2f25670733674a242bad",
+          "a06e2f27650f117f9308a322db75d14d05ae2ab64143cdf0570aecb75714bbef",
+          "bcfde451a17e60b1d7079ac0de4c4cf25f3c52265eaeb84909d1a9b90a40c584"
+        ],
+        "localStorageBackupClearedBeforeApp": true,
+        "reloadReadyMs": 518
+      }
+    },
+    {
+      "name": "individual-resource-export",
+      "elapsedMs": 1625,
+      "result": {
+        "files": [
+          {
+            "filename": "副區_01.png",
+            "width": 8000,
+            "height": 350,
+            "bytes": 568023,
+            "png": true,
+            "opaque": 4800,
+            "sampledColors": 974
+          }
+        ],
+        "failures": [],
+        "captureRestored": true
+      }
+    }
+  ],
+  "samples": [
+    {
+      "stage": "empty-homepage",
+      "jsHeapUsedBytes": 5681600,
+      "nodes": 2895,
+      "documents": 14
+    },
+    {
+      "stage": "first-real-xlsx-parse",
+      "jsHeapUsedBytes": 9187288,
+      "nodes": 2924,
+      "documents": 14
+    },
+    {
+      "stage": "render-and-save",
+      "jsHeapUsedBytes": 11001012,
+      "nodes": 5884,
+      "documents": 6
+    },
+    {
+      "stage": "unchanged-render",
+      "jsHeapUsedBytes": 14169404,
+      "nodes": 8876,
+      "documents": 6
+    },
+    {
+      "stage": "geometry-only-save",
+      "jsHeapUsedBytes": 9868992,
+      "nodes": 5183,
+      "documents": 6
+    },
+    {
+      "stage": "IDB-only-reload",
+      "jsHeapUsedBytes": 9977648,
+      "nodes": 5197,
+      "documents": 6
+    },
+    {
+      "stage": "individual-resource-export",
+      "jsHeapUsedBytes": 22407132,
+      "nodes": 6081,
+      "documents": 8
+    }
+  ],
+  "sampledMaxJsHeapBytes": 22407132,
+  "runtimeErrors": 0,
+  "downloads": 0,
+  "httpOrExternalFailures": 0,
+  "requestCount": 49
+}

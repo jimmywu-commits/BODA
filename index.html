@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <script src="JS/performance-agent.js?v=20261111-perf1"></script>
+<script src="JS/dependency-loader.js?v=20261111-slim1"></script>
+<script src="JS/state-asset-codec.js?v=20261111-slim1"></script>
+<script src="JS/storage-ownership.js?v=20261111-owner1"></script>
+<script src="JS/save-queue.js?v=20261111-owner1"></script>
+<script src="JS/exposure-snapshot-bridge.js?v=20261111-owner1"></script>
 <title>版位排版工具</title>
 <style id="boda-tour-styles">
 /* BODA 操作導覽。所有樣式皆以 bdt / boda-tour 命名，避免影響版位與匯出。 */
@@ -1601,8 +1606,8 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
         <div id="exposure-fallback">
           <div class="ef-icon">🖼️</div>
           <div class="ef-title">找不到「曝光資源」的程式檔</div>
-          <div class="ef-desc">請把整包 JBP 編輯器（index.html、js/、html/、bgimg/、fonts/、bn測底圖 …）<br>
-            放到跟這個 index.html 同一層的 <b>jbp/</b> 資料夾裡，重新整理即可。</div>
+          <div class="ef-desc">請把曝光編輯器（index.html、js/、html/、bgimg/、fonts/、bn測底圖 …）<br>
+            放到跟這個 index.html 同一層的 <b>shopee/</b> 資料夾裡，重新整理即可。</div>
           <div class="ef-desc">目前找的路徑：<b>shopee/index.html</b></div>
         </div>
       </div>
@@ -1736,6 +1741,7 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
           </div>
 
           <div id="import-dl-bar">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);margin-bottom:8px;"><input type="checkbox" id="import-include-composite"> 同時輸出活動頁合成長圖</label>
             <button class="btn primary" id="btn-download-import-package"><svg class="line-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 20h16"/></svg> 下載此資源檔案</button>
             <div class="dl-hint">只下載活動頁資源目前畫布的合成 PNG、副區整排 PNG 與 MSBN 單張 PNG；完整工單、曝光、色票、吸底及暫存檔請使用最左側「整包下載」。</div>
           </div>
@@ -7586,13 +7592,10 @@ body.tutorial-msbn #canvas-area{min-height:100vh;overflow:visible;}
 }</script>
 
 <!-- SheetJS：純前端產生 .xlsx，不需要伺服器 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="JS/fonts-embed.js"></script>
+<!-- Excel、截圖、ZIP 與輸出字型由 BodaDependencies 在實際使用時載入。 -->
 <script src="JS/render-config.js"></script>
-<script src="core/core-engine.js"></script>
-<script src="core/schema-renderer.js?v=20261110-canvas-color-sync"></script>
+<script src="core/core-engine.js?v=20261111-slim1"></script>
+<script src="core/schema-renderer.js?v=20261111-empty-badge1"></script>
 <script src="shadow-module/shadow-plugin.js?v=20261019-shadow3"></script>
 <script src="JS/image-layout.js?v=20261106-display-clamp2"></script>
 <script src="JS/editor-plugin.js?v=20261019-rotate3"></script>
@@ -7862,14 +7865,8 @@ function appLoadingFail(message) {
   appLoadingFinish(message || '請稍後再試');
 }
 function appLoadingPulse(label) {
-  /* 匯入、上傳這類真正的流程還在跑時，點其他按鈕不能把它的進度蓋掉、更不能提早收掉。 */
-  if (APP_LOADING.active && !APP_LOADING.pulsing) return;
-  appLoadingStart('LOADING · ' + (label || '處理中…'), 8, '正在處理…', { lock: false });
-  APP_LOADING.pulsing = true;
-  var token = APP_LOADING.token;
-  APP_LOADING.pulseTimer = setTimeout(function () {
-    if (APP_LOADING.active && APP_LOADING.token === token) appLoadingFinish();
-  }, 420);
+  /* 縮放／選取／開工具卡是即時操作，不建立虛構 8% 的全畫面進度。
+     真正的匯入、圖片處理、下載仍由各流程明確 start/update/finish。 */
 }
 /* 頁面切換不是重工作業，但常會接著初始化 iframe、字體或大型畫布。
    先以共用視窗接住切換，再由真正的載入流程覆蓋進度；一般頁面至少等一個繪製週期才淡出。 */
@@ -7946,7 +7943,7 @@ function familyLabel(fam) {
 }
 function loadRemoteConfig(cb) {
   if (typeof fetch !== 'function') { cb && cb(); return; }
-  fetch('JS/config.json?t=' + Date.now())
+  fetch('JS/config.json?v=20261111-slim1')
     .then(function (r) { return r.ok ? r.json() : {}; })
     .then(function (d) { remoteNames = (d && d.familyNames) || {}; cb && cb(); })
     .catch(function () { cb && cb(); }); /* file:// 打開或檔案不存在都會走到這裡，不影響其他功能 */
@@ -8398,17 +8395,21 @@ function extractFieldCharLimit(fieldOrHint) {
 /* 2026-09：母版改用 Microsite Builder Template v2 的「Layout_Template 2.0」頁簽
    （欄位順序、字數限制、檢核公式都以它為準）；匯入工單仍讀同一份格式的 Layout_Output。 */
 var WORK_ORDER_TEMPLATE_URL = 'exl/Microsite_Builder_Template_v2.xlsx';
+function requireBodaDependencies(names) {
+  if (!window.BodaDependencies) return Promise.reject(new Error('功能載入器未載入，請重新整理後重試'));
+  return Promise.all(names.map(function (name) { return window.BodaDependencies.ensure(name); }));
+}
 /* 快取母版的原始位元組，而不是已被本次匯出寫入內容的 Workbook；
    這樣同一頁連續下載時，不會把上一次選取的版位、隱藏列或吸底縮圖帶進下一份。 */
 var canonicalWorkOrderTemplatePromise = null;
 function loadCanonicalWorkOrderTemplate() {
+  if (typeof ExcelJS === 'undefined') return requireBodaDependencies(['excel']).then(loadCanonicalWorkOrderTemplate);
   if (canonicalWorkOrderTemplatePromise) {
     return canonicalWorkOrderTemplatePromise.then(function (buffer) {
       return new ExcelJS.Workbook().xlsx.load(buffer.slice ? buffer.slice(0) : buffer);
     });
   }
-  if (typeof ExcelJS === 'undefined') return Promise.reject(new Error('ExcelJS 尚未載入'));
-  canonicalWorkOrderTemplatePromise = fetch(WORK_ORDER_TEMPLATE_URL, { cache: 'no-store' })
+  canonicalWorkOrderTemplatePromise = fetch(WORK_ORDER_TEMPLATE_URL)
     .then(function (response) {
       if (!response.ok) throw new Error('找不到工單母版 ' + WORK_ORDER_TEMPLATE_URL + '（' + response.status + '）');
       return response.arrayBuffer();
@@ -9189,12 +9190,13 @@ function removeWorkbookNotes(workbook) {
   });
 }
 function downloadWorkOrderTemplateXlsx(exportOptions) {
+  if (typeof ExcelJS === 'undefined') return requireBodaDependencies(['excel']).then(function () { return downloadWorkOrderTemplateXlsx(exportOptions); });
   var opts = exportOptions && exportOptions.__bodaExportOptions === true ? exportOptions : {};
   var isAllPlacementsExport = !!opts.allPlacements;
   var downloadPrefix = opts.filenamePrefix ||
     (isAllPlacementsExport ? 'BODA全版位試算表' : ('BODA工單_' + currentLevelId));
   appLoadingUpdate(18, 'LOADING · 下載工單母版', '正在讀取已驗收的試算表版型…');
-  return fetch(WORK_ORDER_TEMPLATE_URL, { cache: 'no-store' })
+  return fetch(WORK_ORDER_TEMPLATE_URL)
     .then(function (response) {
       if (!response.ok) throw new Error('找不到工單母版（' + response.status + '）');
       return response.arrayBuffer();
@@ -9219,6 +9221,7 @@ function downloadWorkOrderTemplateXlsx(exportOptions) {
     });
 }
 function exportWorkOrderXlsx(exportOptions) {
+  if (typeof ExcelJS === 'undefined') return requireBodaDependencies(['excel']).then(function () { return exportWorkOrderXlsx(exportOptions); });
   /* 不能預設直接下載全版位母版，否則「下載此資源檔案」會把沒有排進畫布的
      副區／MSBN 也塞進 MS Layout，且無法反映本次的排列結果。 */
   if (window.__BODA_USE_WORKORDER_TEMPLATE__ === true) {
@@ -11302,6 +11305,13 @@ function smartMapEntriesToFields(entries, blockDef) {
   });
 
   var data = {};
+  /* 工單沒有填／沒有列出的圓標要保持空白，不能由版型 default 補回示意字。
+     文字與底圈的顯示由 renderer 依這個值一起決定；每個編號獨立處理。 */
+  (blockDef.fields || []).forEach(function (field) {
+    if (field.type === 'text' && (/^(?:p\d+)?badge\d*$/i.test(String(field.key || '')) || /圓標/.test(String(field.label || '')))) {
+      data[field.key] = '';
+    }
+  });
   Object.keys(keyedEntries).forEach(function (targetKey) {
     data[targetKey] = keyedEntries[targetKey].map(function (e) {
       return e && e.value != null ? String(e.value) : '';
@@ -13131,12 +13141,14 @@ function parseVisibleWorkOrderLayout(wb) {
   return out.length ? out : null;
 }
 function parseImportXlsx(arrayBuffer, options) {
+  if (typeof ExcelJS === 'undefined') return requireBodaDependencies(['excel']).then(function () { return parseImportXlsx(arrayBuffer, options); });
   options = options || {};
   return new ExcelJS.Workbook().xlsx.load(arrayBuffer).then(function (wb) {
     if (APP_LOADING.active) appLoadingUpdate(32, null, '正在讀取工單總覽與版位內容…', 40);
     /* 新工單進來就是新的配色情境：上一份暫存檔的文字配色鎖不再適用，回到依背景推薦。 */
     writeSnapshotTextPaletteLock('', null);
     currentImportWorkbook = wb;
+    currentImportWorkbookBuffer = null;
     currentImportWorkbookName = options.filename || currentImportWorkbookName || '';
     try { currentImportActivityName = parseWorkbookActivityName(wb); } catch (_) { currentImportActivityName = ''; }
     var hasBottomWorkOrder = workbookHasLayoutOutputBottom(wb);
@@ -13625,6 +13637,9 @@ function applyExposureShadowBackgroundOnce(background) {
          不能在完成時直接覆蓋使用者較新的編輯結果。 */
       var sourceMeta = product.meta || {};
       var sourceBase = product.baseSrc || sourceMeta.baseSrc || product.src;
+      var sourceImage = product.src;
+      var sourceRatio = product.ratio;
+      var sourceRectSignature = JSON.stringify(sourceMeta.productRect || null);
       var sourceRotate = Number(sourceMeta.rotate) || 0;
       var sourceShadowSignature = JSON.stringify(sourceMeta.groundShadow || null);
       var draft = Object.assign({}, product, {
@@ -13640,6 +13655,8 @@ function applyExposureShadowBackgroundOnce(background) {
         var liveShadowSignature = JSON.stringify(liveMeta.groundShadow || null);
         var productStillCurrent = win._bnProducts === products && products.indexOf(product) !== -1;
         if (!productStillCurrent || liveBase !== sourceBase || liveRotate !== sourceRotate ||
+            product.src !== sourceImage || product.ratio !== sourceRatio ||
+            JSON.stringify(liveMeta.productRect || null) !== sourceRectSignature ||
             liveShadowSignature !== sourceShadowSignature) {
           /* 商品在合成途中被裁切、旋轉、換圖或調整影子；丟棄舊結果，下一輪
              會以最新 baseSrc 與設定重算，絕不倒回舊編輯狀態。 */
@@ -13754,7 +13771,7 @@ function syncImportShadowBackgroundSoon() {
     /* 匯入工單時背景色會先變、接著匯入本身就會跑一輪影子；那一輪若已經用新背景色開始，
        就不用再排一輪（否則匯入完成後 Loading 又會從頭再跑一次）。 */
     if (importShadowPassBackground && importShadowPassBackground === importShadowActualBackground()) return;
-    scheduleImportShadowReapply(true);
+    scheduleImportShadowReapply(true, { exposureAssets: false });
   }, 280);
 }
 /* 最近一輪商品影子開始時使用的背景色。 */
@@ -14191,7 +14208,7 @@ function importShadowRender(prep, st) {
   var fullW = pw + pad.side * 2, fullH = pad.top + ph + pad.bottom;
   var groundPad = prep.trim ? prep.trim.bottom * ph : 0;
   /* 場景座標（商品左上角在 (pad.side, pad.top)），再平移 -ox/-oy 畫到輸出畫布上。 */
-  var shadowColor = importShadowColorForBackground(importShadowActualBackground());
+  var shadowColor = st.color || importShadowColorForBackground(st.background || importShadowActualBackground());
   var drawScene = function (ctx, s, ox, oy, recolor) {
     var dw = pw * s, dh = ph * s;
     var dx = pad.side * s - ox, dy = pad.top * s - oy;
@@ -14274,12 +14291,37 @@ function importShadowFingerprint(value) {
   var sample = s.length > 8192 ? s.slice(0, 4096) + s.slice(-4096) : s;
   return s.length + ':' + importShadowCrc32(sample);
 }
-function importShadowBakeKey(img) {
+function importShadowSettingsSnapshot() {
+  var background = importShadowActualBackground();
+  return { angle: importShadowSettings.angle, offsetX: importShadowSettings.offsetX,
+    offsetY: importShadowSettings.offsetY, background: background,
+    color: importShadowColorForBackground(background) };
+}
+function importShadowBakeKey(img, settings) {
   if (!img || !img.baseUrl) return '';
-  var engine = importShadowSettings.angle === 'off' ? 'off' : (isImportShadowEngineReady() ? 'on' : '');
-  if (!engine) return '';
-  return ['v1', engine, importShadowSettings.angle, importShadowSettings.offsetX, importShadowSettings.offsetY,
-    importShadowColorForBackground(importShadowActualBackground()), importShadowFingerprint(img.baseUrl)].join('|');
+  var st = settings || importShadowSettingsSnapshot();
+  if (st.angle === 'off') return ['v2', 'off', importShadowFingerprint(img.baseUrl)].join('|');
+  if (!isImportShadowEngineReady()) return '';
+  return ['v2', 'on', st.angle, st.offsetX, st.offsetY, st.color,
+    importShadowFingerprint(img.baseUrl)].join('|');
+}
+function importShadowCleanKey(baseUrl) { return 'clean-v1|' + importShadowFingerprint(baseUrl); }
+function importShadowSuperseded() {
+  var error = new Error('商品影子設定已更新'); error.name = 'BodaShadowSuperseded'; return error;
+}
+function importShadowAssertCurrent(job) {
+  if (!job) return;
+  if (job.revision !== importShadowRequestRevision || job.columns !== currentImportColumns ||
+      job.preview !== previewAllColumns || JSON.stringify(job.settings) !== JSON.stringify(importShadowSettingsSnapshot()))
+    throw importShadowSuperseded();
+  if (job.published) return;
+  (job.sources || []).forEach(function(source){
+    if ((uploadedImages || []).indexOf(source.asset) < 0 || source.asset.baseUrl !== source.base || source.asset.url !== source.url)
+      throw importShadowSuperseded();
+  });
+  (job.fields || []).forEach(function(field){
+    if (field.col.data[field.key] !== field.value) throw importShadowSuperseded();
+  });
 }
 /* 標記結尾 #g＝烘出有影子幾何的成品（沿用時幾何必須還找得到，否則重烘補回）；
    #n＝這張圖本來就合不出影子（例如沒有透明背景的 JPG，回傳裁白邊後的原圖），沿用即可。 */
@@ -14315,11 +14357,7 @@ window.BODAImportShadow.composeProduct = function (baseUrl) {
     return Promise.reject(new Error('商品影子引擎未載入'));
   }
   /* 把本次設定複製起來；合成中若使用者移動滑桿，這張圖仍會使用按下「完成套用」當下的設定。 */
-  var settings = {
-    angle: importShadowSettings.angle,
-    offsetX: importShadowSettings.offsetX,
-    offsetY: importShadowSettings.offsetY
-  };
+  var settings = importShadowSettingsSnapshot();
   return importShadowPrepared(baseUrl).then(function (prep) {
     var baked = importShadowRender(prep, settings);
     return { url: baked, geometry: importShadowGeometryOf(baked) };
@@ -14842,6 +14880,10 @@ function scheduleImportShadowGroupReflow(group) {
    後者會為每張商品反覆序列化整份工單、重建所有素材縮圖與側欄，既昂貴又會把
    所有 Base64 再串成 HTML；保留 DOM 也能保留使用者已調好的位置與縮放。 */
 function refreshImportShadowView() {
+  if (typeof isImportCanvasDemanded === 'function' && !isImportCanvasDemanded()) {
+    importResourceRenderPending = true;
+    return;
+  }
   var ctxName = isPreviewAllCanvasActive() ? 'preview' : 'import';
   var columns = ctxName === 'preview' ? previewAllColumns : currentImportColumns;
   (columns || []).forEach(function (col, index) {
@@ -14931,7 +14973,10 @@ var importShadowReapplyStage = '';
 
 /* 設定改動後：用每張圖的原圖重新烘一次，再把欄位裡的舊網址換成新的。
    執行前一定先巡檢畫布，避免暫存還原／裁白邊後有圖片脫離素材清單而沒有影子。 */
-function reapplyImportShadowToUploads(commit) {
+function reapplyImportShadowToUploads(commit, job) {
+  var settings = job ? job.settings : importShadowSettingsSnapshot();
+  function current() { importShadowAssertCurrent(job); }
+  current();
   importShadowReapplyStage = '巡檢商品素材';
   /* Loading 包含巡檢、找回原圖及重製；沒有可重製素材時也必須確實收掉。 */
   var overlay = false;
@@ -14968,6 +15013,7 @@ function reapplyImportShadowToUploads(commit) {
   return recoverImportShadowCanvasAssets(audit, function (percent, title, note, ceiling) {
     if (overlay) appLoadingUpdate(percent, title, note, ceiling);
   }).then(function () {
+  current();
   importShadowReapplyProgress(30, '正在比對要處理的商品素材…', 34);
   var productUsed = {};
   importShadowActiveColumns().forEach(function (col) {
@@ -15001,7 +15047,21 @@ function reapplyImportShadowToUploads(commit) {
     seenBases.add(img.baseUrl);
     return true;
   });
+  if (job) {
+    job.sources = (uploadedImages || []).filter(function(asset){ return asset && seenBases.has(asset.baseUrl); }).map(function(asset){
+      return {asset:asset, base:asset.baseUrl, url:asset.url};
+    });
+    job.fields = [];
+    (currentImportColumns || []).concat(previewAllColumns || []).forEach(function(col){
+      var def = BNCore.getBlock(col.blockId);
+      (def && def.fields || []).forEach(function(field){
+        if (field.type === 'image' && isImportShadowFieldKey(field.key)) job.fields.push({col:col, key:field.key, value:col.data[field.key]});
+      });
+    });
+  }
   var swap = {};
+  var staged = [];
+  var reusedCount = 0, preparedCount = 0, bakedCount = 0, cleanReusedCount = 0;
   var appliedUrls = new Set();
   var done = 0;
   var processed = 0;
@@ -15014,8 +15074,7 @@ function reapplyImportShadowToUploads(commit) {
       ? '已檢查畫布 ' + audit.checked + ' 張商品圖；沒有找到可重新合成的原圖。'
       : '尚未偵測到已放入商品欄位的上傳圖片。', audit.checked > 0);
   }
-  /* 方向／位移改變時，不能等所有商品都重烘完才整批換畫布；
-     每一張完成就先換掉目前使用中的網址並重畫，使用者會立即看到新光影。 */
+  /* Publish once after the whole revision succeeds; never mix intermediate colors. */
   function applyShadowSwapToColumns(map) {
     var changed = false;
     (currentImportColumns || []).concat(previewAllColumns || []).forEach(function (col) {
@@ -15069,65 +15128,58 @@ function reapplyImportShadowToUploads(commit) {
   importShadowReapplyProgress(34, list.length ? '共 ' + list.length + ' 種商品圖要處理…' : '沒有需要處理的商品圖', 34 + 54 / Math.max(list.length, 1));
   return list.reduce(function (chain, img) {
     return chain.then(function () {
+      current();
       importShadowReapplyStage = '合成商品影子';
-      var oldUrl = img.url;
-      var bakeKey = importShadowBakeKey(img);
-      /* 已經用目前設定烘過：直接沿用現有成品，只把欄位裡的原圖／舊網址換成它。 */
-      if (importShadowBakeIsCurrent(img, bakeKey)) {
-        var kept = img.url;
-        var keptGeom = importShadowGeometryOf(kept);
-        (uploadedImages || []).forEach(function (related) {
-          if (!related || related.baseUrl !== img.baseUrl) return;
-          if (related.url && related.url !== kept) swap[related.url] = kept;
-          swap[related.baseUrl] = kept;
-          if (related.logoUrl) swap[related.logoUrl] = kept;
-          related.url = kept;
-          related.shadowKey = img.shadowKey;
-          if (keptGeom) related.shadowGeom = keptGeom;
-        });
-        /* 沿用的不用每張都換一次畫布：swap 會累積，迴圈結束後統一寫回、只重畫一次
-           （原本每張都整份工單比對＋重畫，新上傳一批同名圖時光這裡就要 0.5 秒）。 */
-        /* 跟重烘時一樣回報：合不出影子的圖（#n）列入「略過」，不算已套用。 */
-        if (keptGeom || importShadowSettings.angle === 'off') { done++; appliedUrls.add(kept); }
+      var base = img.baseUrl, oldUrl = img.url;
+      var bakeKey = importShadowBakeKey(img, settings);
+      var cleanKey = importShadowCleanKey(base);
+      function stage(url, cleanUrl, cached) {
+        current();
+        var geom = importShadowGeometryOf(url);
+        staged.push({base:base, oldUrl:oldUrl, url:url, geom:geom,
+          shadowKey:importShadowBakedKey(bakeKey, url, geom), cleanUrl:cleanUrl, cleanKey:cleanKey});
+        if (geom || settings.angle === 'off') { done++; appliedUrls.add(url); }
         else skipped.push(img.name || ('商品圖 ' + (done + 1)));
         processed++;
-        reportImageProgress('沿用已做好的影子');
+        reportImageProgress(cached ? '沿用已處理的圖片' : settings.angle === 'off' ? '移除影子' : '去背＋影子');
+      }
+      if (importShadowBakeIsCurrent(img, bakeKey)) {
+        reusedCount++;
+        stage(img.url, img.shadowCleanKey === cleanKey ? img.shadowCleanUrl : '', true);
         return;
       }
-      return importShadowPrepared(img.baseUrl).then(function (prep) {
-        var baked = importShadowRender(prep, importShadowSettings);
-        /* 商品本體在烘好圖裡的位置要跟著素材存起來，重新載入後版位才知道怎麼擺 */
-        var geom = importShadowGeometryOf(baked);
-        var bakedKey = importShadowBakedKey(bakeKey, baked, geom);
-        (uploadedImages || []).forEach(function (related) {
-          if (!related || related.baseUrl !== img.baseUrl) return;
-          if (related.url) swap[related.url] = baked;
-          swap[related.baseUrl] = baked;
-          if (related.logoUrl) swap[related.logoUrl] = baked;
-          related.url = baked;
-          if (geom) related.shadowGeom = geom; else delete related.shadowGeom;
-          if (bakedKey) related.shadowKey = bakedKey; else delete related.shadowKey;
-        });
-        swap[oldUrl] = baked;
-        if (!geom) {
-          if (importShadowSettings.angle !== 'off') skipped.push(img.name || ('商品圖 ' + (done + 1)));
+      var prepared;
+      if (settings.angle === 'off') {
+        if (img.shadowCleanKey === cleanKey && img.shadowCleanUrl) {
+          cleanReusedCount++;
+          prepared = Promise.resolve({trimmed:img.shadowCleanUrl});
+        } else if (importShadowPrepCache[base]) {
+          cleanReusedCount++;
+          prepared = importShadowPrepCache[base];
+        } else {
+          preparedCount++;
+          prepared = trimImportImageWhiteBorder(base).then(function(trimmed){ return {trimmed:trimmed || base}; });
         }
-        if (applyShadowSwapToColumns(swap)) refreshShadowCanvasNow();
-        if (geom || importShadowSettings.angle === 'off') { done++; appliedUrls.add(baked); }
-        processed++;
-        reportImageProgress('去背＋影子');
-      }).catch(function (err) {
-        /* 單一圖片壞檔、過大、或瀏覽器無法讀取時，保留它原本的畫面，不可讓整批商品影子失敗。 */
-        failed.push({ name: img.name || ('商品圖 ' + (processed + 1)), message: String(err && err.message || err || '圖片無法處理') });
+      } else {
+        if (!importShadowPrepCache[base]) preparedCount++;
+        prepared = importShadowPrepared(base);
+      }
+      return prepared.then(function(prep){
+        current();
+        var baked;
+        if (settings.angle === 'off') baked = prep.trimmed || base;
+        else { bakedCount++; baked = importShadowRender(prep, settings); }
+        stage(baked, prep.trimmed || base, false);
+      }).catch(function(err){
+        if (err && err.name === 'BodaShadowSuperseded') throw err;
+        failed.push({name:img.name || ('商品圖 ' + (processed + 1)), message:String(err && err.message || err || '圖片無法處理')});
         processed++;
         console.warn('[BODA] 商品影子略過單張圖片：' + (img.name || '(未命名)'), err);
         reportImageProgress('（' + failed.length + ' 張保留原圖）');
-      }).then(function () {
-        /* 即使前處理快取命中，也交還一個繪製週期，讓 Loading 進度有機會顯示。 */
-        return new Promise(function (resolve) { setTimeout(resolve, 0); });
-      });
+      }).then(function(){ return new Promise(function(resolve){ setTimeout(resolve, 0); }); });
     });
   }, Promise.resolve()).then(function () {
+    current();
     importShadowReapplyProgress(89, '正在更新 LOGO 底板…', 91);
     /* LOGO 的裁白邊／底板色是獨立功能；它讀取失敗也不應回頭讓商品影子被判定為失敗。 */
     return importLogoRefresh().catch(function (err) {
@@ -15135,8 +15187,23 @@ function reapplyImportShadowToUploads(commit) {
       return { swap: {}, changed: false, modeChanged: false, failed: true };
     });
   }).then(function (logo) {
+    current();
+    commit = commit || !!(job && job.commit);
     importShadowReapplyStage = '更新商品與 LOGO 資料';
     logo = logo || { swap: {}, changed: false, modeChanged: false };
+    staged.forEach(function(result){
+      (uploadedImages || []).forEach(function(related){
+        if (!related || related.baseUrl !== result.base) return;
+        if (related.url) swap[related.url] = result.url;
+        swap[related.baseUrl] = result.url;
+        if (related.logoUrl) swap[related.logoUrl] = result.url;
+        related.url = result.url;
+        if (result.geom) related.shadowGeom = result.geom; else delete related.shadowGeom;
+        if (result.shadowKey) related.shadowKey = result.shadowKey; else delete related.shadowKey;
+        if (result.cleanUrl) { related.shadowCleanUrl = result.cleanUrl; related.shadowCleanKey = result.cleanKey; }
+      });
+      swap[result.oldUrl] = result.url;
+    });
     applyShadowSwapToColumns(swap);
     (currentImportColumns || []).concat(previewAllColumns || []).forEach(function (col) {
       var def = BNCore.getBlock(col.blockId);
@@ -15155,6 +15222,7 @@ function reapplyImportShadowToUploads(commit) {
       /* LOGO 欄位一律換成該素材的 logoUrl（白邊裁切／底色統一後的版本），舊的原圖或舊網址也一併換掉 */
       normalizeLogoImageFields(col, def);
     });
+    if (job) job.published = true;
     /* LOGO 重算過（吸色／換色）時，同步更新底板色號；匯入與預覽都只更新既有 DOM。 */
     importShadowReapplyProgress(91, '正在把影子寫回畫布…', 93);
     refreshShadowCanvasNow();
@@ -15163,6 +15231,8 @@ function reapplyImportShadowToUploads(commit) {
       return appLoadingYield();
     }
   }).then(function () {
+    current();
+    commit = commit || !!(job && job.commit);
     if (commit) {
       /* 影子已寫回畫布，後續同步／儲存是獨立階段。不能把暫存或 iframe 錯誤誤報為
          商品合成失敗，更不能顯示不實的「已保留原圖」。每項分別執行且記錄失敗原因。 */
@@ -15174,7 +15244,9 @@ function reapplyImportShadowToUploads(commit) {
           console.warn('[BODA] 影子已更新，但' + label + '失敗。', err);
         }
       }
-      finishStep('更新素材清單與同步子工具', syncAllChildTools);
+      finishStep('更新素材清單與同步子工具', function () {
+        syncAllChildTools({ exposureAssets: !job || job.syncExposureAssets !== false });
+      });
       if (overlay) appLoadingFinish('商品影子已更新');
     }
     clearTimeout(overlayTimer);
@@ -15189,7 +15261,8 @@ function reapplyImportShadowToUploads(commit) {
       });
     });
     return {
-      total: list.length, done: done, angle: importShadowSettings.angle,
+      total: list.length, done: done, angle: settings.angle,
+      reusedCount: reusedCount, preparedCount: preparedCount, bakedCount: bakedCount, cleanReusedCount: cleanReusedCount,
       checked: audit.checked, repaired: audit.repaired, alreadyShadow: audit.alreadyShadow,
       unresolved: audit.unresolved, missing: audit.missing || [], recovered: audit.recovered || 0,
       needsOriginal: audit.needsOriginal || [], appliedSlots: appliedSlots,
@@ -15198,7 +15271,7 @@ function reapplyImportShadowToUploads(commit) {
   });
   }).catch(function (err) {
     clearTimeout(overlayTimer);
-    if (overlay) appLoadingFail('商品影子套用失敗，已保留原圖');
+    if (overlay && (!err || err.name !== 'BodaShadowSuperseded')) appLoadingFail('商品影子套用失敗，已保留原圖');
     throw err;
   });
 }
@@ -15215,31 +15288,144 @@ function syncImportShadowPanel() {
   document.getElementById('import-shadow-y-val').textContent = importShadowSettings.offsetY + '%';
   updateImportShadowColorLabel();
 }
-/* 重烘排隊：拖動時會連續觸發，同一時間只跑一輪；跑的途中又有新設定，跑完後再補跑一輪。 */
+/* One immutable revision at a time. Equal requests only upgrade commit; newer work replaces pending work. */
 var importShadowReapplyRunning = false, importShadowReapplyPending = false, importShadowReapplyCommit = false;
-function scheduleImportShadowReapply(commit) {
+var importShadowRequestRevision = 0, importShadowQueuedRequest = null, importShadowActiveRequest = null;
+/* Canonical data is saved immediately; expensive views/derived pixels are demand driven. */
+var importResourceRenderPending = false, importResourceShadowPending = false;
+var importResourceShadowCommit = false, importResourceShadowExposure = false;
+var importResourceCanvasLease = 0, importResourcePreparationCount = 0;
+var importResourceOmitBottomPreview = 0;
+var importResourcePreparation = null, importResourceCanvasRequested = false;
+var importResourceCanvasColumns = null, importResourceShadowPromise = null;
+var importResourceLastShadowError = null;
+function isImportCanvasDemanded() {
+  return importResourceCanvasLease > 0 || !!document.querySelector('#view-import.active');
+}
+function isImportDerivedResourceDemanded() {
+  return importResourcePreparationCount > 0 || isImportCanvasDemanded() ||
+    !!document.querySelector('#view-exposure.active');
+}
+function withImportResourceCanvasLease(task, options) {
+  var omitBottom = !!(options && options.omitBottom);
+  var view = document.getElementById('view-import');
+  var offscreen = !!(view && !view.classList.contains('active') && !view.classList.contains('bn-offscreen-render'));
+  if (offscreen) view.classList.add('bn-offscreen-render');
+  if (omitBottom) importResourceOmitBottomPreview++;
+  importResourceCanvasLease++;
+  function release() {
+    importResourceCanvasLease--;
+    if (omitBottom) importResourceOmitBottomPreview--;
+    if (offscreen) view.classList.remove('bn-offscreen-render');
+  }
+  return Promise.resolve().then(task).then(function (result) {
+    release(); return result;
+  }, function (error) { release(); throw error; });
+}
+function ensureImportResourcesReady(options) {
+  options = options || {};
+  var wantsCanvas = options.canvas !== false;
+  if (wantsCanvas) importResourceCanvasRequested = options.reason === 'export' || importResourceCanvasRequested === 'export' ? 'export' : true;
+  if (importResourcePreparation) return importResourcePreparation;
+  importResourcePreparationCount++;
+  if (wantsCanvas) importResourceCanvasLease++;
+  var ownsCanvasLease = wantsCanvas;
+  function drain() {
+    return new Promise(function (resolve) { ensureBlocksLoaded(resolve); }).then(function () {
+      if (importResourceCanvasRequested && !ownsCanvasLease) { importResourceCanvasLease++; ownsCanvasLease = true; }
+      if (importResourceCanvasRequested && (importResourceRenderPending || importResourceCanvasColumns !== currentImportColumns ||
+          (importResourceCanvasRequested === 'export' && isPreviewAllCanvasActive()))) {
+        if (importResourceCanvasRequested !== 'export' && isPreviewAllCanvasActive() && importResourceCanvasColumns === currentImportColumns) {
+          applyCanvasThemeToContext('preview');
+          importResourceRenderPending = false;
+        } else renderImportColumns(currentImportColumns, true);
+      }
+      if (importResourceShadowPending) {
+        var commit = importResourceShadowCommit, exposure = importResourceShadowExposure;
+        importResourceShadowPending = false; importResourceShadowCommit = false; importResourceShadowExposure = false;
+        scheduleImportShadowReapply(commit, { exposureAssets: exposure });
+      }
+      return Promise.resolve(importResourceShadowPromise);
+    }).then(function () {
+      if (importResourceLastShadowError) throw importResourceLastShadowError;
+      if (importResourceShadowPending || (importResourceCanvasRequested &&
+          (importResourceRenderPending || importResourceCanvasColumns !== currentImportColumns ||
+           (importResourceCanvasRequested === 'export' && isPreviewAllCanvasActive())))) return drain();
+    });
+  }
+  importResourcePreparation = Promise.resolve().then(drain).then(function () {
+    importResourcePreparationCount--; if (ownsCanvasLease) importResourceCanvasLease--;
+    importResourceCanvasRequested = false; importResourcePreparation = null;
+  }, function (error) {
+    importResourcePreparationCount--; if (ownsCanvasLease) importResourceCanvasLease--;
+    importResourceShadowPending = true; importResourceShadowCommit = true;
+    importResourceCanvasRequested = false; importResourcePreparation = null; throw error;
+  });
+  return importResourcePreparation;
+}
+function importShadowRequestKey(settings) {
+  return JSON.stringify(settings) + '|' + (uploadedImages || []).map(function(img){
+    return img ? importShadowFingerprint(img.baseUrl || '') + ':' + importShadowFingerprint(img.url || '') + ':' + String(img.shadowKey || '') : '';
+  }).join(';');
+}
+function importShadowNewRequest(commit, options) {
+  var settings = importShadowSettingsSnapshot();
+  return { settings:settings, key:importShadowRequestKey(settings), columns:currentImportColumns, preview:previewAllColumns,
+    revision:++importShadowRequestRevision, commit:!!commit,
+    syncExposureAssets: !(options && options.exposureAssets === false) };
+}
+function scheduleImportShadowReapply(commit, options) {
+  if (typeof isImportDerivedResourceDemanded === 'function' && !isImportDerivedResourceDemanded()) {
+    importShadowRequestRevision++;
+    importResourceShadowPending = true;
+    importResourceShadowCommit = importResourceShadowCommit || !!commit;
+    importResourceShadowExposure = importResourceShadowExposure || !(options && options.exposureAssets === false);
+    importResourceLastShadowError = null;
+    if (typeof syncAllChildTools === 'function') syncAllChildTools(options);
+    return Promise.resolve({ deferred: true });
+  }
+  importResourceLastShadowError = null;
   importShadowReapplyCommit = importShadowReapplyCommit || !!commit;
+  var settings = importShadowSettingsSnapshot(), key = importShadowRequestKey(settings);
+  var existing = importShadowQueuedRequest || importShadowActiveRequest;
+  /* 自動換底只更新像素與配色，不得把外層原始素材重新當成匯入。
+     真正匯入／換商品若併入同一批，仍保留一次素材同步需求。 */
+  var syncExposureAssets = !(options && options.exposureAssets === false) ||
+    !!(importShadowReapplyRunning && existing && existing.syncExposureAssets);
+  if (importShadowReapplyRunning && existing && existing.key === key && existing.columns === currentImportColumns && existing.preview === previewAllColumns) {
+    existing.commit = existing.commit || !!commit;
+    existing.syncExposureAssets = syncExposureAssets;
+    return importResourceShadowPromise;
+  }
+  importShadowQueuedRequest = importShadowNewRequest(importShadowReapplyCommit, { exposureAssets: syncExposureAssets });
   if (importShadowReapplyRunning) {
     importShadowReapplyPending = true;
-    if (commit) setImportShadowStatus('已收到套用要求，會在目前處理完成後再重製一次。');
-    return;
+    if (commit) setImportShadowStatus('已收到新設定，將略過過期工作並套用最後設定。');
+    return importResourceShadowPromise;
   }
-  runImportShadowReapply();
+  importResourceShadowPromise = runImportShadowReapply();
+  return importResourceShadowPromise;
 }
 function runImportShadowReapply() {
-  var commit = importShadowReapplyCommit;
+  var request = importShadowQueuedRequest || importShadowNewRequest(importShadowReapplyCommit);
+  importShadowQueuedRequest = null; importShadowActiveRequest = request;
+  importResourceLastShadowError = null;
+  var commit = request.commit;
+  var superseded = false;
   var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('activity.shadow.batch', { commit: !!commit, imageCount: (uploadedImages || []).length }) : function () {};
   var perfFailed = false;
   var perfCounts = {};
   try {
   importShadowReapplyCommit = false;
   importShadowReapplyRunning = true;
-  importShadowPassBackground = importShadowActualBackground();
+  importShadowPassBackground = request.settings.background;
   setImportShadowApplyBusy(true);
   if (commit) appLoadingStart('LOADING · 套用影子', 3, '正在準備商品影子…');
   /* 手動套用先顯示 Loading，再進巡檢；不能先做大量同步工作，最後才亮 Loading。 */
   var ready = commit ? appLoadingYield() : Promise.resolve();
-  return ready.then(function () { return reapplyImportShadowToUploads(commit); }).then(function (result) {
+  return ready.then(function () { return reapplyImportShadowToUploads(commit, request); }).then(function (result) {
+    commit = commit || request.commit;
+    ['reusedCount', 'preparedCount', 'bakedCount', 'cleanReusedCount'].forEach(function(name){ perfCounts[name] = Number(result && result[name]) || 0; });
     perfCounts.checkedCount = Number(result && result.checked) || 0;
     perfCounts.processedCount = Number(result && result.done) || 0;
     if (!commit || !result) return;
@@ -15260,7 +15446,9 @@ function runImportShadowReapply() {
           (result.failed && result.failed.length) || result.needsOriginal.length || result.auditFailed || (result.warnings && result.warnings.length)));
     }
   }).catch(function (err) {
+    if (err && err.name === 'BodaShadowSuperseded') { superseded = true; request.commit = true; perfCounts.cancelled = true; return; }
     perfFailed = true;
+    importResourceLastShadowError = err;
     console.warn('商品影子重烘失敗', err);
     /* 只剩流程本身被意外中止時才會走到這裡。顯示可辨識的原因，避免把每一種錯誤都誤導成模組遺失。 */
     var reason = String(err && err.message || err || '').replace(/\s+/g, ' ').trim();
@@ -15273,8 +15461,25 @@ function runImportShadowReapply() {
   }).then(function () {
     importShadowReapplyRunning = false;
     setImportShadowApplyBusy(false);
-    if (importShadowReapplyPending) { importShadowReapplyPending = false; runImportShadowReapply(); }
-    else importShadowDropCache();
+    importShadowActiveRequest = null;
+    if (typeof isImportDerivedResourceDemanded === 'function' && !isImportDerivedResourceDemanded() &&
+        (superseded || importShadowQueuedRequest || importShadowReapplyPending)) {
+      importResourceShadowPending = true; importResourceShadowCommit = true;
+      importResourceShadowExposure = importResourceShadowExposure || request.syncExposureAssets !== false;
+      importShadowQueuedRequest = null; importShadowReapplyPending = false;
+      importShadowReapplyCommit = false; importShadowDropCache();
+      if (typeof syncAllChildTools === 'function') syncAllChildTools({ exposureAssets: importResourceShadowExposure });
+      return;
+    }
+    if (superseded && importShadowQueuedRequest) importShadowQueuedRequest.commit = true;
+    if (superseded && !importShadowQueuedRequest) importShadowQueuedRequest = importShadowNewRequest(commit || request.commit, { exposureAssets: request.syncExposureAssets !== false });
+    if (importShadowReapplyPending || importShadowQueuedRequest) {
+      importShadowReapplyPending = false;
+      return runImportShadowReapply();
+    } else {
+      importShadowReapplyCommit = false;
+      importShadowDropCache();
+    }
   }).then(function (value) {
     perfCounts.ok = !perfFailed;
     finishPerf(perfCounts);
@@ -15919,7 +16124,7 @@ function importLogoRefresh() {
 /* 存檔要帶著的 LOGO 狀態（底色設定＋處理後的 LOGO 網址），還原時才能認得出欄位裡的 LOGO 是哪一張。 */
 function importUploadStateFields(img) {
   var out = {};
-  ['logoBg', 'logoUrl', 'logoMode', 'logoAuto', 'logoKey', 'shadowGeom', 'shadowKey'].forEach(function (k) { if (img[k]) out[k] = img[k]; });
+  ['logoBg', 'logoUrl', 'logoMode', 'logoAuto', 'logoKey', 'shadowGeom', 'shadowKey', 'shadowCleanUrl', 'shadowCleanKey', 'sourceRevision'].forEach(function (k) { if (img[k]) out[k] = img[k]; });
   return out;
 }
 function importUploadFromState(img) {
@@ -16073,8 +16278,7 @@ function setUploadStepState(dropId, state, text) {
   syncUploadNextButton();
 }
 /* STEP 1 與 STEP 2 都載入成功時，STEP 2 綠框內才出現「下一步」按鈕，直接到曝光資源。按鈕不會觸發選檔。 */
-/* 工單與圖片都載入成功後，就在背景把曝光資源、取色工具、吸底工具載好（不用等切頁）。
-   活動頁資源的畫布在匯入時已經排好。每份工單只預載一次；開始新的工單時再重新預載。 */
+/* 預載相容入口預設關閉。上傳只保存模型；子工具及活動畫布由切頁或明確下載按需準備。 */
 var uploadToolsPreloaded = false;
 /* 先關閉背景預載：三個工具同時載入會讓分頁記憶體瞬間變高（「Out of Memory」）。
    要恢復時改成 true。 */
@@ -16166,6 +16370,8 @@ var previewAllColumns = [];
 var activeImportCanvasContext = 'import';
 /* 使用者匯入的原始活頁簿留在記憶體：下載回填工單時直接改寫這份，而非重新產生範本。 */
 var currentImportWorkbook = null;
+/* 還原時先保留原始二進位；真正匯出／解析工單才載入 ExcelJS。 */
+var currentImportWorkbookBuffer = null;
 /* 工單總覽的「工作項目名稱／活動名稱」：下載 ZIP 時當作最外層的名字，沒有就退回工單檔名。 */
 var currentImportActivityName = '';
 var currentImportWorkbookName = '';
@@ -16180,36 +16386,77 @@ var importImageLayoutEditRevision = 0;
 var importPersistDisabled = false;
 var IMPORT_IDB_NAME = 'boda-import-persist';
 var IMPORT_IDB_STORE = 'kv';
-function importIdbOpen() {
-  return new Promise(function (resolve, reject) {
-    if (!window.indexedDB) { reject(new Error('no indexedDB')); return; }
-    var req = indexedDB.open(IMPORT_IDB_NAME, 1);
-    req.onupgradeneeded = function () { req.result.createObjectStore(IMPORT_IDB_STORE); };
-    req.onsuccess = function () { resolve(req.result); };
-    req.onerror = function () { reject(req.error); };
+var importAssetStore = null;
+var importSaveQueue = null;
+var importPersistReadFailed = false;
+var importReadFailureSnapshot = null;
+var persistenceStatuses = {};
+function reportPersistenceStatus(scope, status) {
+  persistenceStatuses[scope] = status;
+  var box = document.getElementById('boda-persistence-status');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'boda-persistence-status';
+    box.setAttribute('role', 'status');
+    box.style.cssText = 'position:fixed;right:16px;bottom:12px;z-index:10020;max-width:420px;padding:10px 12px;background:#fff;color:#444;border:1px solid #bbb;border-radius:6px;font-size:12px;box-shadow:0 2px 10px #0002;';
+    document.body.appendChild(box);
+  }
+  box.textContent = '';
+  var labels = { activity: '活動頁', bottom: '吸底' };
+  Object.keys(persistenceStatuses).forEach(function (key) {
+    var item = persistenceStatuses[key];
+    if (item.state !== 'paused' && item.state !== 'retrying') return;
+    var row = document.createElement('div');
+    row.textContent = labels[key] + (item.state === 'paused' ? '暫存未完成，編輯仍在本頁。' : '暫存失敗，正在重試。');
+    row.title = item.error || '';
+    if (item.noAutomaticRetry) row.textContent = labels[key] + ': ' + item.error;
+    if (item.state === 'paused' && !item.noAutomaticRetry) {
+      var button = document.createElement('button');
+      button.type = 'button'; button.textContent = '重試儲存'; button.style.marginLeft = '8px';
+      button.onclick = function () {
+        if (key === 'activity') {
+          if (importPersistReadFailed) loadImportStateFromIdb();
+          else { getImportSaveQueue().resume(); saveImportState(); }
+        } else if (bottomPersistReadFailed) restoreBottomPersist();
+        else { getBottomSaveQueue().resume(); flushBottomPersist(); }
+      };
+      row.appendChild(button);
+    }
+    box.appendChild(row);
   });
+  box.hidden = !box.childNodes.length;
+}
+function getImportAssetStore() {
+  if (!importAssetStore) importAssetStore = BodaStorageOwnership.wrap(BodaStateAssets.create({ dbName: IMPORT_IDB_NAME, stateStore: IMPORT_IDB_STORE, assetStore: 'assets', key: 'current', dbVersion: 2 }), IMPORT_IDB_NAME + ':current');
+  return importAssetStore;
+}
+function withDraftStorageOwnership(names, operation) {
+  function next(index) {
+    if (index >= names.length) return operation();
+    return BodaStorageOwnership.create(names[index]).run(function () { return next(index + 1); });
+  }
+  return Promise.resolve().then(function () { return next(0); });
 }
 function importIdbPut(value) {
   var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('autosave.idb.transaction', { columnCount: value && value.columns ? value.columns.length : 0 }) : function () {};
-  return importIdbOpen().then(function (db) {
-    return new Promise(function (resolve, reject) {
-      var tx = db.transaction(IMPORT_IDB_STORE, 'readwrite');
-      tx.objectStore(IMPORT_IDB_STORE).put(value, 'current');
-      tx.oncomplete = function () { finishPerf({ ok: true }); db.close(); resolve(); };
-      tx.onerror = function () { finishPerf({ ok: false }); db.close(); reject(tx.error); };
-      tx.onabort = function () { finishPerf({ ok: false, aborted: true }); };
-    });
-  }).catch(function (err) { finishPerf({ ok: false }); console.warn('[BODA] 匯入工單暫存寫入 IDB 失敗：', err); });
+  return getImportAssetStore().put(value).then(function () { finishPerf({ ok: true }); }, function (err) { finishPerf({ ok: false }); throw err; });
 }
 function importIdbGet() {
-  return importIdbOpen().then(function (db) {
-    return new Promise(function (resolve) {
-      var tx = db.transaction(IMPORT_IDB_STORE, 'readonly');
-      var req = tx.objectStore(IMPORT_IDB_STORE).get('current');
-      req.onsuccess = function () { db.close(); resolve(req.result || null); };
-      req.onerror = function () { db.close(); resolve(null); };
-    });
-  }).catch(function () { return null; });
+  return getImportAssetStore().get();
+}
+function getImportSaveQueue() {
+  if (!importSaveQueue) importSaveQueue = BodaSaveQueue.create({
+    write: importIdbPut,
+    freeze: function (value) { return BodaStateAssets.snapshot(value, { shareBinary: true }); },
+    onStatus: function (status) { reportPersistenceStatus('activity', status); },
+    onSaved: function (value) {
+      try { if (importStateFitsLocalStorage(value)) localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(value)); } catch (_) {}
+    }
+  });
+  return importSaveQueue;
+}
+function waitForPersistenceWrites() {
+  return Promise.all([importSaveQueue ? importSaveQueue.whenIdle() : null, bottomSaveQueue ? bottomSaveQueue.whenIdle() : null]);
 }
 function importSideTextInput(ctx, idx, key) {
   if (!ctx || !ctx.sideRoot) return null;
@@ -16494,6 +16741,16 @@ function applyPersistedImportImageLayout(state) {
   }
 }
 function beginImportImageLayoutDocument(keepLayout) {
+  importResourceRenderPending = true;
+  importResourceShadowPending = false;
+  importResourceShadowCommit = false;
+  importResourceShadowExposure = false;
+  importResourceLastShadowError = null;
+  /* A deliberate new project may replace an unreadable old draft. Startup
+     restoration never calls this path and therefore cannot overwrite it. */
+  importPersistReadFailed = false;
+  importReadFailureSnapshot = null;
+  if (importSaveQueue) importSaveQueue.reset();
   currentImportImageLayoutId = newImportImageLayoutId();
   importImageLayoutSavedAt = 0;
   importImageUndoStack = [];
@@ -16532,6 +16789,7 @@ function buildImportStateSavePayload() {
   var layout = currentImportImageLayout();
   return {
     version: 3,
+    pendingDerivedAssets: !!(importResourceShadowPending || importShadowReapplyRunning || importShadowQueuedRequest),
     ts: Date.now(),
     source: currentImportSource,
     generatorSignature: currentGeneratorSignature,
@@ -16584,11 +16842,7 @@ function saveImportState() {
   try {
   saveImportImageLayout();
   var toSave = buildImportStateSavePayload();
-  importIdbPut(toSave);
-  try {
-    if (importStateFitsLocalStorage(toSave)) localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(toSave));
-    /* 大型狀態由 IDB 保存；不刪既有的小型備援，以免 IDB 不可用時連舊備援也遺失。 */
-  } catch (e) { /* localStorage 可能滿，IDB 已寫入 */ }
+  getImportSaveQueue().enqueue(toSave);
   } finally { finishPerf(); }
 }
 
@@ -16599,6 +16853,7 @@ function normalizeImportState(saved) {
   }
   return {
     version: saved.version || 2,
+    pendingDerivedAssets: !!saved.pendingDerivedAssets,
     source: saved.source || 'saved',
     generatorSignature: saved.generatorSignature || '',
     imageLayoutId: saved.imageLayoutId || '',
@@ -16616,6 +16871,10 @@ function loadImportState() {
 }
 function applyImportState(state) {
   if (!state || !state.columns || !state.columns.length) return;
+  importResourceRenderPending = true;
+  importResourceShadowPending = !!state.pendingDerivedAssets;
+  importResourceShadowCommit = !!state.pendingDerivedAssets;
+  importResourceShadowExposure = !!state.pendingDerivedAssets;
   currentImportSource = state.source || 'saved';
   currentGeneratorSignature = state.generatorSignature || '';
   currentImportColumns = state.columns.map(function (c) {
@@ -16639,11 +16898,17 @@ function applyImportState(state) {
 }
 function loadImportStateFromIdb() {
   importStateRestorePending = true;
+  var readSucceeded = false;
+  var keepEditsAfterReadFailure = importPersistReadFailed && importReadFailureSnapshot && !BodaSaveQueue.equivalent(importReadFailureSnapshot, buildImportStateSavePayload());
+  var readStartSnapshot = BodaStateAssets.snapshot(buildImportStateSavePayload(), { shareBinary: true });
   var columnsAtStart = currentImportColumns;
   var editRevisionAtStart = importImageLayoutEditRevision;
+  var documentIdAtStart = currentImportImageLayoutId;
   return importIdbGet().then(function (idbState) {
+    readSucceeded = true;
+    importPersistReadFailed = false;
     /* 使用者已載入另一份工單或開始移動／縮放時，較慢的啟動還原不可覆蓋新操作。 */
-    if (importPersistDisabled || currentImportColumns !== columnsAtStart || importImageLayoutEditRevision !== editRevisionAtStart) return false;
+    if (keepEditsAfterReadFailure || !BodaSaveQueue.equivalent(readStartSnapshot, buildImportStateSavePayload()) || importPersistDisabled || currentImportColumns !== columnsAtStart || importImageLayoutEditRevision !== editRevisionAtStart) return false;
     var idb = normalizeImportState(idbState);
     if (!idb || !idb.columns || !idb.columns.length) return false;
     var localTs = 0;
@@ -16653,12 +16918,30 @@ function loadImportStateFromIdb() {
     } catch (e) {}
     if (idb.ts > localTs) {
       applyImportState(idb);
+      getImportSaveQueue().baseline(buildImportStateSavePayload());
       if (blocksLoadedForImport) renderImportColumns(currentImportColumns);
       return true;
     }
     return false;
-  }).catch(function () { return false; }).then(function (restored) {
+  }).catch(function (error) {
+    /* A failed read is not an empty database. Keep the old transaction and
+       pause writes until read succeeds or a new project is explicitly loaded. */
+    readSucceeded = false;
+    if (!importPersistDisabled && currentImportImageLayoutId === documentIdAtStart) {
+      importPersistReadFailed = true;
+      if (!importReadFailureSnapshot) importReadFailureSnapshot = readStartSnapshot;
+      getImportSaveQueue().hold(error);
+    }
+    return false;
+  }).then(function (restored) {
     importStateRestorePending = false;
+    if (readSucceeded) {
+      /* A held startup save may describe the empty pre-restore canvas. Replace
+         it before resuming so it cannot overwrite the draft just recovered. */
+      getImportSaveQueue().refreshPending(buildImportStateSavePayload());
+      getImportSaveQueue().resume();
+      importReadFailureSnapshot = null;
+    }
     if (importStateSaveAfterRestore) { importStateSaveAfterRestore = false; saveImportState(); }
     return restored;
   });
@@ -16887,10 +17170,14 @@ function renderPreviewAllStacked(columns) {
     if (!def) return;
     var mount = document.getElementById('prevall-mount-' + idx);
     if (mount) {
-      mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'preview', col));
+      var renderOpts = importRenderOpts(true, 'preview', col);
+      mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, renderOpts);
       bindCanvasInteractions(mount, col, idx, 'preview');
+      rememberImportRenderMount(mount, col, idx, def, renderOpts);
     }
   });
+  importResourceCanvasColumns = currentImportColumns;
+  importResourceRenderPending = false;
   /* 右側工具列跟匯入工單一樣有完整的圖片／色票工具，只是操作的是預覽資料 */
   IMPORT_SYNC.activeIndex = 0;
   renderPreviewAllTools();
@@ -17330,15 +17617,22 @@ function resizePreviewAllMount(mount, col, idx) {
 
 /* 所有畫布重畫都走這一支；不能再各自寫死 imp-/mnt-/prevall-mount。 */
 function rerenderCanvasMount(ctxName, idx) {
+  if ((ctxName === 'import' || ctxName === 'preview') && typeof isImportCanvasDemanded === 'function' && !isImportCanvasDemanded()) {
+    importResourceRenderPending = true; return null;
+  }
   var ctx = canvasCtx(ctxName);
   var col = ctx.columns()[idx];
   var mount = document.getElementById(ctx.mountId(idx));
   if (!col || !mount) return null;
-  mount.innerHTML = BNCore.renderInstance(col.blockId, col.data,
-    importRenderOpts(true, ctx.renderMode, col));
+  var opts = importRenderOpts(true, ctx.renderMode, col);
+  var def = BNCore.getBlock(col.blockId);
+  if ((ctxName === 'import' || ctxName === 'preview') && typeof importRenderMountIsCurrent === 'function' &&
+      importRenderMountIsCurrent(mount, col, idx, def, opts)) return mount;
+  mount.innerHTML = BNCore.renderInstance(col.blockId, col.data, opts);
   if (ctxName === 'maint') applyDynamicStageSize(mount, col);
   if (ctxName === 'preview') resizePreviewAllMount(mount, col, idx);
   bindCanvasInteractions(mount, col, idx, ctxName);
+  if ((ctxName === 'import' || ctxName === 'preview') && typeof rememberImportRenderMount === 'function') rememberImportRenderMount(mount, col, idx, def, opts);
   return mount;
 }
 
@@ -17961,11 +18255,20 @@ function exposureProductFileTextForWorkbook() {
 function isDefaultExposureProductFileText(value) {
   return String(value == null ? '' : value).replace(/\s/g, '') === DEFAULT_EXPOSURE_PRODUCT_FILE_TEXT;
 }
+function exposureSourceMetadata(asset) {
+  var base = String(asset.baseUrl || asset.url || '');
+  if (asset._sourceRevisionBase !== base) {
+    /* 完整原圖指紋僅在來源改變時計算一次，不能拿影子／裁切後的網址判斷換圖。 */
+    asset.sourceRevision = 'v1:' + base.length + ':' + importShadowCrc32(base);
+    asset._sourceRevisionBase = base;
+  }
+  return { sourceId: 'boda:' + imageFilenameKey(asset.name), sourceRevision: asset.sourceRevision, originalSrc: base };
+}
 function exposureAssetsForNames(value) {
   var names = normalizeExposureAssetFileNames(value);
   return names.map(function (name) {
     var found = findUploadedImageByFilename(name).asset;
-    return found ? { name: found.name, src: found.url, baseSrc: found.baseUrl || found.url, logoSrc: found.logoUrl || found.baseUrl || found.url, logoBg: importLogoPlateColorOf(found) } : null;
+    return found ? Object.assign({ name: found.name, src: found.url, baseSrc: found.baseUrl || found.url, logoSrc: found.logoUrl || found.baseUrl || found.url, logoBg: importLogoPlateColorOf(found) }, exposureSourceMetadata(found)) : null;
   }).filter(Boolean);
 }
 /* 代言人照＋簽名檔的檔名可能用逗號、＋號或換行隔開（千分位逗號照 splitImageList 不拆）。
@@ -18008,15 +18311,30 @@ function splitEndorserFileNames(value) {
 function exposureEndorserAssets(names) {
   return (names || []).map(function (name) {
     var found = findUploadedImageByFilename(name).asset;
-    return found ? { name: found.name, src: found.baseUrl || found.url, baseSrc: found.baseUrl || found.url } : null;
+    return found ? Object.assign({ name: found.name, src: found.baseUrl || found.url, baseSrc: found.baseUrl || found.url }, exposureSourceMetadata(found)) : null;
   }).filter(Boolean);
 }
 function storedEndorserFileNames(value) {
   return String(value == null ? '' : value).split(/\n+/).map(function (name) { return name.trim(); }).filter(Boolean).slice(0, 2);
 }
-function pushExposureOverviewAssets(payload) {
+function pushExposureOverviewAssets(payload, options) {
+  if (window.__bodaPendingExposureRestore) return false;
   payload = payload || readSharedExposureOverviewText();
   if (!payload) return false;
+  /* 未啟用曝光頁只記錄文字來源，不配圖、計算原圖指紋或複製 dataURL。 */
+  if (!(options && options.force) && !childSyncViewActive('exposure')) {
+    _deferredExposureAssets = true;
+    _deferredExposurePayload = Object.assign({}, payload);
+    return false;
+  }
+  var exposureFrame = document.getElementById('exposure-frame');
+  if (!exposureFrame || !exposureFrame.getAttribute('src')) {
+    _deferredExposureAssets = true;
+    _deferredExposurePayload = Object.assign({}, payload);
+    return false;
+  }
+  _deferredExposureAssets = false;
+  _deferredExposurePayload = null;
   var logoNames = normalizeExposureLogoFileNames(payload.logoFiles);
   var productNames = normalizeExposureAssetFileNames(payload.productFiles);
   var endorserNames = storedEndorserFileNames(payload.endorserFiles);
@@ -18030,7 +18348,7 @@ function pushExposureOverviewAssets(payload) {
     assets: {
       /* LOGO 用 LOGO 版本（白邊裁切／底色統一，不烘影子）；商品仍用烘過影子的版本 */
       logos: exposureAssetsForNames(logoNames.join(',')).map(function (asset) {
-        return { name: asset.name, src: asset.logoSrc, baseSrc: asset.logoSrc, logoBg: asset.logoBg || '' };
+        return { name: asset.name, src: asset.logoSrc, baseSrc: asset.logoSrc, logoBg: asset.logoBg || '', sourceId: asset.sourceId, sourceRevision: asset.sourceRevision, originalSrc: asset.originalSrc };
       }),
       products: exposureAssetsForNames(productNames.join(',')),
       /* 圖片尚在讀取時不清空現有素材；等 handleImageFiles 讀完後會再推送一次。 */
@@ -18043,11 +18361,36 @@ function pushExposureOverviewAssets(payload) {
       endorserNote: endorserNote
     }
   };
+  /* 整包輸出必須等素材套用完成才能截圖，不能只等 postMessage 已送出。
+     此介面只供可直接呼叫同來源曝光匯出器的明確匯出路徑使用。 */
+  if (options && options.immediate) {
+    clearTimeout(_exposureOverviewAssetDebounce);
+    _exposureOverviewAssetPending = null;
+    return Promise.resolve().then(function () {
+      var exposureWindow = exposureFrame.contentWindow;
+      if (!exposureWindow || typeof exposureWindow._bnApplyWorkorderAssets !== 'function') {
+        throw new Error('曝光資源素材同步介面尚未就緒，請開啟曝光資源頁後重試輸出。');
+      }
+      return exposureWindow._bnApplyWorkorderAssets(message.assets);
+    }).catch(function (err) {
+      _deferredExposureAssets = true;
+      _deferredExposurePayload = Object.assign({}, payload);
+      throw err;
+    });
+  }
   /* Debounce：連續呼叫只保留最後一包，100ms 內取代舊的，最終只發一次。
      若 iframe 尚未 ready，曝光資源載入完成後會主動拉取最新素材。 */
   clearTimeout(_exposureOverviewAssetDebounce);
   _exposureOverviewAssetPending = message;
   _exposureOverviewAssetDebounce = setTimeout(function () {
+    if (window.__bodaPendingExposureRestore) return;
+    /* 排程期間已切離就釋放大包素材，回頁面時再以最新來源組裝。 */
+    if (!(options && options.force) && !childSyncViewActive('exposure')) {
+      _deferredExposureAssets = true;
+      _deferredExposurePayload = Object.assign({}, payload);
+      _exposureOverviewAssetPending = null;
+      return;
+    }
     try {
       var frame = document.getElementById('exposure-frame');
       if (frame && frame.contentWindow) {
@@ -19786,6 +20129,9 @@ window.addEventListener('bn-image-layout-history', function (event) {
 
 /* 顏色改了：不用重建左側欄位面板，只把畫布上每一格重新渲染一次就好 */
 function applyCanvasThemeToContext(ctxName) {
+  if ((ctxName === 'import' || ctxName === 'preview') && typeof isImportCanvasDemanded === 'function' && !isImportCanvasDemanded()) {
+    importResourceRenderPending = true; return;
+  }
   var ctx = canvasCtx(ctxName);
   ctx.columns().forEach(function (_, idx) { rerenderCanvasMount(ctxName, idx); });
 }
@@ -20448,8 +20794,67 @@ function importLevelHasBottom() {
   return !level || (level.bottom || 0) > 0;
 }
 
+/* Cache metadata trees, sharing immutable image strings. Never serialize Base64
+   just to decide whether an existing edited canvas needs to be rebuilt. */
+function importRenderReuseSnapshot(value, seen) {
+  if (!value || typeof value !== 'object') return value;
+  var proto = Object.getPrototypeOf(value);
+  if (!Array.isArray(value) && proto !== Object.prototype && proto !== null) throw new Error('Unsupported render metadata');
+  seen = seen || new WeakMap();
+  if (seen.has(value)) return seen.get(value);
+  var out = Array.isArray(value) ? new Array(value.length) : Object.create(proto);
+  seen.set(value, out);
+  Object.keys(value).forEach(function (key) {
+    Object.defineProperty(out, key, { value: importRenderReuseSnapshot(value[key], seen), enumerable: true, writable: true, configurable: true });
+  });
+  return out;
+}
+function importRenderReuseEqual(left, right, seen) {
+  if (left === right) return true;
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object' || Array.isArray(left) !== Array.isArray(right)) return false;
+  if (Array.isArray(left) && left.length !== right.length) return false;
+  if (Object.getPrototypeOf(left) !== Object.getPrototypeOf(right)) return false;
+  seen = seen || new WeakMap();
+  if (seen.has(left)) return seen.get(left) === right;
+  seen.set(left, right);
+  var keys = Object.keys(left), otherKeys = Object.keys(right);
+  if (keys.length !== otherKeys.length) return false;
+  return keys.every(function (key) { return Object.prototype.hasOwnProperty.call(right, key) && importRenderReuseEqual(left[key], right[key], seen); });
+}
+function importRenderReuseInputs(col, opts) {
+  /* Bindings also read sourceKey/msbnFile and manual text flags. Capture the
+     whole column metadata so none of those rules can outlive changed inputs. */
+  return { column: col, opts: opts };
+}
+function importRenderMountIsCurrent(mount, col, idx, def, opts) {
+  var cached = mount && mount.__bodaImportRenderReuse;
+  return !!(cached && cached.col === col && cached.idx === idx && cached.def === def &&
+    cached.child && cached.child === mount.firstElementChild &&
+    importRenderReuseEqual(cached.inputs, importRenderReuseInputs(col, opts)));
+}
+function rememberImportRenderMount(mount, col, idx, def, opts) {
+  try {
+    mount.__bodaImportRenderReuse = { col: col, idx: idx, def: def, child: mount.firstElementChild,
+      inputs: importRenderReuseSnapshot(importRenderReuseInputs(col, opts)) };
+  } catch (_) { mount.__bodaImportRenderReuse = null; }
+}
 function renderImportColumns(columns, skipPreviewRerender) {
+  if (typeof isImportCanvasDemanded === 'function' && !isImportCanvasDemanded()) {
+    currentImportColumns = columns;
+    activeImportCanvasContext = 'import';
+    columns.forEach(function (col) {
+      var def = BNCore.getBlock(col.blockId);
+      normalizeLocalCircleDefaults(col, def);
+      normalizeLogoImageFields(col, def);
+    });
+    importResourceRenderPending = true;
+    queueImportStateSave();
+    return false;
+  }
+  importResourceRenderPending = false;
+  importResourceCanvasColumns = columns;
   var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('activity.render.columns', { columnCount: (columns || []).length }) : function () {};
+  var renderedMountCount = 0, reusedMountCount = 0;
   try {
   activeImportCanvasContext = 'import';
   prepareImportSelectionContext('import');
@@ -20551,6 +20956,32 @@ function renderImportColumns(columns, skipPreviewRerender) {
     ? Math.round(totalWidth * bottomOutputHeight / bottomOutputWidth) : 0;
   var maxHeight = cumTop + bottomSyncH;
 
+  /* A tools-only refresh can retain canvases only if all surrounding geometry
+     is still exactly the same. Otherwise use the existing full rebuild path. */
+  var renderStructure = {
+    count: columns.length, zoom: importZoom, totalWidth: totalWidth, maxHeight: maxHeight,
+    bands: bands, sizes: colSizes, positions: positions,
+    visible: columns.map(function (col, idx) { return levelHidden[idx] ? null : [idx, col.blockId, bandKeyOf(col, idx)]; }),
+    banner: [bannerH, bannerTop, bannerH ? importMidBannerSrc() : ''],
+    bottom: [hasImportBottom, bottomSyncTop, bottomSyncH, bottomOutputWidth, bottomOutputHeight,
+      importBottomPreviewResult && importBottomPreviewResult.dataUrl,
+      importBottomPreviewResult && importBottomPreviewResult.workOrderVersion,
+      latestBottomWorkOrder && latestBottomWorkOrder.version]
+  };
+  var oldRenderStructure = list.__bodaImportRenderStructure;
+  var oldStrip = document.getElementById('imp-strip');
+  if (skipPreviewRerender && (!oldRenderStructure || oldRenderStructure.strip !== oldStrip || !oldStrip ||
+      !list.contains(oldStrip) || !importRenderReuseEqual(oldRenderStructure.inputs, renderStructure))) skipPreviewRerender = false;
+  if (skipPreviewRerender && columns.some(function (col, idx) {
+    var previousIndex = oldRenderStructure.columns.indexOf(col);
+    return previousIndex >= 0 && previousIndex !== idx;
+  })) skipPreviewRerender = false;
+  if (skipPreviewRerender && columns.some(function (col, idx) {
+    if (levelHidden[idx] || !defs[idx]) return false;
+    var existing = document.getElementById('imp-mount-' + idx);
+    return !existing || !oldStrip.contains(existing);
+  })) skipPreviewRerender = false;
+
   if (!skipPreviewRerender) {
     list.innerHTML =
       '<div id="imp-strip-wrap" data-total-width="' + totalWidth + '" data-max-height="' + maxHeight + '" style="width:' + Math.round(totalWidth * importZoom) + 'px;height:' + Math.round(maxHeight * importZoom) + 'px">' +
@@ -20618,8 +21049,13 @@ function renderImportColumns(columns, skipPreviewRerender) {
     }
     var mountEl = document.getElementById('imp-mount-' + idx);
     if (mountEl) {
-      mountEl.innerHTML = BNCore.renderInstance(col.blockId, col.data, importRenderOpts(true, 'import', col));
-      bindCanvasInteractions(mountEl, col, idx, 'import');
+      var renderOpts = importRenderOpts(true, 'import', col);
+      if (!skipPreviewRerender || !importRenderMountIsCurrent(mountEl, col, idx, def, renderOpts)) {
+        renderedMountCount++;
+        mountEl.innerHTML = BNCore.renderInstance(col.blockId, col.data, renderOpts);
+        bindCanvasInteractions(mountEl, col, idx, 'import');
+        rememberImportRenderMount(mountEl, col, idx, def, renderOpts);
+      } else reusedMountCount++;
     }
   });
 
@@ -20659,7 +21095,9 @@ function renderImportColumns(columns, skipPreviewRerender) {
       });
     }
   }
-  } finally { finishPerf(); }
+  try { list.__bodaImportRenderStructure = { strip: strip, columns: columns.slice(), inputs: importRenderReuseSnapshot(renderStructure) }; }
+  catch (_) { list.__bodaImportRenderStructure = null; }
+  } finally { finishPerf({ renderedCount: renderedMountCount, reusedCount: reusedMountCount }); }
 }
 
 /* 「直接預覽全部版位」的右側工具列：跟匯入工單共用同一套版位工具卡，
@@ -22985,6 +23423,7 @@ function afterImportParsed(rawColumns, options) {
     appLoadingFinish('沒有讀到可匯入的版位資料');
     return;
   }
+  if (!options.preserveExisting && window.BodaExposureSnapshots) BodaExposureSnapshots.clear();
   setUploadStepState('import-drop', 'done', '已載入 ' + (currentImportWorkbookName || '工單') + '：讀到 ' + rawColumns.length + ' 格');
   importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 讀到 ' + rawColumns.length + ' 格，載入可編輯版位中…</span>';
   /* 匯入整體進度：讀檔 5–22 → 解析 22–40 → 版位模板 42–46 → 畫版位 48–64 → 商品影子 64–100。 */
@@ -23367,11 +23806,14 @@ function parseLargeJsonBlob(blob, onProgress, chunkSize) {
 }
 /* 讀進來的 JSON：匯入暫存檔就還原，否則當作本工具的 JSON 工單。 */
 function applyImportedJsonValue(parsed) {
+  /* Validate/expand a backup before discarding the current workbook. A broken
+     asset reference must leave the existing project available for recovery. */
+  if (parsed && parsed.type === 'wo_import_snapshot') { restoreImportSnapshot(parsed); return; }
   currentImportWorkbook = null;
+  currentImportWorkbookBuffer = null;
   currentImportWorkbookName = '';
   currentImportActivityName = '';
-  if (parsed && parsed.type === 'wo_import_snapshot') restoreImportSnapshot(parsed);
-  else afterImportParsed(parseImportOwnJSON(parsed), { source: 'file', hasBottomWorkOrder: false });
+  afterImportParsed(parseImportOwnJSON(parsed), { source: 'file', hasBottomWorkOrder: false });
 }
 
 function handleImportFile(file) {
@@ -23408,15 +23850,7 @@ function handleImportFile(file) {
     appLoadingUpdate(22, 'LOADING · 匯入工單', '檔案讀取完成，正在解析工單…', 32);
     try {
       if (name.endsWith('.json')) {
-        currentImportWorkbook = null;
-        currentImportWorkbookName = '';
-        currentImportActivityName = '';
-        var parsed = JSON.parse(reader.result);
-        if (parsed && parsed.type === 'wo_import_snapshot') {
-          restoreImportSnapshot(parsed);
-        } else {
-          afterImportParsed(parseImportOwnJSON(parsed), { source: 'file', hasBottomWorkOrder: false });
-        }
+        applyImportedJsonValue(JSON.parse(reader.result));
       } else {
         /* 同一份工單也交給吸底工具原本的 WorkOrderImporter；如果使用者尚未開啟
            「吸底」頁簽，先暫存在記憶體，第一次開啟時再自動帶入。 */
@@ -23505,11 +23939,15 @@ function buildImportSnapshot() {
     return (img.url.indexOf('blob:') === 0 ? urlToDataUrl(img.url).catch(function () { return img.url; }) : Promise.resolve(img.url))
       .then(function (u) { return Object.assign({ name: img.name, url: u, baseUrl: img.baseUrl || '' }, importUploadStateFields(img)); }); /* baseUrl＝編輯前的原圖，之後再編輯可以從原圖重來 */
   });
-  return Promise.all([Promise.all(columnJobs), Promise.all(imageJobs)]).then(function (res) {
+  var exposureJob = window.BodaExposureSnapshots ? BodaExposureSnapshots.collect({
+    frame: document.getElementById('exposure-frame'), projectId: currentImportImageLayoutId
+  }) : Promise.resolve({ state: null, note: '未載入完整曝光備份功能' });
+  return Promise.all([Promise.all(columnJobs), Promise.all(imageJobs), exposureJob]).then(function (res) {
     appLoadingUpdate(94, 'LOADING · 建立暫存檔', '資料整理完成，正在輸出暫存檔…');
     return {
       type: 'wo_import_snapshot',
       version: 2,
+      pendingDerivedAssets: !!(importResourceShadowPending || importShadowReapplyRunning || importShadowQueuedRequest),
       savedAt: new Date().toISOString(),
       source: currentImportSource,
       generatorSignature: currentGeneratorSignature,
@@ -23518,6 +23956,8 @@ function buildImportSnapshot() {
       workOrderName: currentImportWorkbookName || '',
       columns: res[0],
       uploadedImages: res[1],
+      exposureState: res[2].state,
+      exposureStateNote: res[2].note || '',
       theme: JSON.parse(JSON.stringify(importTheme)), /* 統一顏色也一起存，還原後顏色一模一樣 */
       /* 背景色與曝光資源的主標／副標／日期／品牌色也要存：促標底色、CTA 預設都連動副標色，
          只存 theme 的話，還原時會被「依背景推薦」的規則重算成別的顏色。 */
@@ -23554,7 +23994,10 @@ function importPlacementDownloadJobs(strip) {
   var jobs = [];
   var msbnCounter = 0;
   var subRowCounter = 0;
-  if (!strip) return jobs;
+  if (!strip) {
+    if (currentImportColumns && currentImportColumns.length) throw new Error('活動頁畫布尚未建立，請重新進入活動頁資源後再下載');
+    return jobs;
+  }
   var subRows = [];
   var subRowByBand = {};
   Array.prototype.forEach.call(strip.querySelectorAll('.imp-slot'), function (slot) {
@@ -23667,6 +24110,9 @@ function waitForImportExportRender(element) {
 }
 
 function exportImportPlacementImages(strip, baseOptions) {
+  if (typeof htmlToImage === 'undefined' || !window.BodaExportFonts) return requireBodaDependencies(['capture', 'fontSubset']).then(function () {
+    return exportImportPlacementImages(strip, baseOptions);
+  });
   var jobs = importPlacementDownloadJobs(strip);
   var output = [];
   var failures = [];
@@ -23687,7 +24133,8 @@ function exportImportPlacementImages(strip, baseOptions) {
       if (!hadCaptureClass && job.element && job.element.classList) job.element.classList.remove('bn-export-capture');
     }
     return waitForImportExportRender(job.element)
-      .then(function () { return htmlToImage.toPng(job.element, options); })
+      .then(function () { return BodaExportFonts.forNode(job.element); })
+      .then(function (fontCss) { options.fontEmbedCSS = fontCss; return htmlToImage.toPng(job.element, options); })
       .then(function (dataUrl) {
         releaseCaptureClass();
         output.push({ filename: job.filename, dataUrl: dataUrl });
@@ -23748,6 +24195,7 @@ function waitForBottomPreviewBridge(timeoutMs) {
 function requestBottomVariantFiles() {
   /* 等級沒有吸底（AD單買(BN Only)）：工單裡的吸底資料保留，但不輸出吸底圖 */
   if (!importHasBottomSource() || !importLevelHasBottom()) return Promise.resolve({ files: [], note: '' });
+  return withBottomPreviewExportLease(function () {
   return waitForBottomPreviewBridge(25000).then(function (ready) {
     if (!ready) return bottomVariantFallback(new Error('吸底預覽尚未就緒（吸底工具或字體尚未載入完成）'));
     /* 先確定預覽 iframe 已經吃到目前的工單／編輯狀態（等它回一張 PREVIEW_IMAGE），再要多狀態圖，
@@ -23772,6 +24220,7 @@ function requestBottomVariantFiles() {
         }
       });
     });
+  });
   });
 }
 function settleBottomVariantRequest(msg) {
@@ -23821,29 +24270,51 @@ function ensureImportBottomReadyForExport() {
 }
 function downloadImportImage(options) {
   options = options || {};
+  if (!importResourceCanvasLease) return withImportResourceCanvasLease(function () {
+    return ensureImportResourcesReady({ canvas: true, reason: 'export' }).then(function () {
+      return downloadImportImage(options);
+    });
+  }, { omitBottom: options.includeBottom === false });
   /* 保險：任何呼叫端都不能在文字超過字數時輸出圖片。 */
   if (refreshImportTextLimitMarks().length) {
     return Promise.reject(new Error('有文字超過版位字數，修正後才能輸出圖片'));
   }
   /* 活動頁自己的下載不包含吸底；完整 ZIP 才同步並輸出吸底。 */
-  var ready = options.includeBottom === false ? Promise.resolve() : ensureImportBottomReadyForExport();
+  var compositeOption = document.getElementById('import-include-composite');
+  var includeComposite = typeof options.includeComposite === 'boolean' ? options.includeComposite : !!(compositeOption && compositeOption.checked);
+  /* Independent placements do not contain the bottom preview. Its variants
+     perform their own sync later; avoid requesting the same preview twice. */
+  var ready = options.includeBottom === false || !includeComposite ? Promise.resolve() : ensureImportBottomReadyForExport();
   return ready.then(function () { return downloadImportImageNow(options); });
 }
 function downloadImportImageNow(options) {
   options = options || {};
+  if (!importResourceCanvasLease) return withImportResourceCanvasLease(function () {
+    return ensureImportResourcesReady({ canvas: true, reason: 'export' }).then(function () {
+      return downloadImportImageNow(options);
+    });
+  }, { omitBottom: options.includeBottom === false });
+  if (!window.htmlToImage || !window.BodaExportFonts) {
+    return requireBodaDependencies(['capture', 'fontSubset']).then(function () { return downloadImportImageNow(options); });
+  }
   var includeBottom = options.includeBottom !== false;
+  var compositeOption = document.getElementById('import-include-composite');
+  var includeComposite = typeof options.includeComposite === 'boolean' ? options.includeComposite : !!(compositeOption && compositeOption.checked);
   appLoadingUpdate(22, 'LOADING · 輸出圖片', '正在準備成品 PNG…');
   var strip = document.getElementById('imp-strip');
   var wrap = document.getElementById('imp-strip-wrap');
-  if (!strip || !wrap) return Promise.resolve({ files: [], failures: [] });
+  if (!strip || !wrap) {
+    if (currentImportColumns && currentImportColumns.length) return Promise.reject(new Error('活動頁畫布尚未建立，請重新進入活動頁資源後再下載'));
+    return Promise.resolve({ files: [], failures: [] });
+  }
   if (!window.htmlToImage || !htmlToImage.toPng) {
     return Promise.reject(new Error('截圖元件 html-to-image 尚未載入，無法建立圖片'));
   }
   /* 暫時還原成 1:1 原始尺寸再輸出，輸出完馬上復原目前的縮放。
      html-to-image 是把畫面原封不動轉成 SVG 交給瀏覽器本身畫出來，
      所以文字位置、字距、圓角、clip-path 三角形…全部跟預覽一模一樣，
-     不會有另外一套繪圖引擎的誤差。字型用 JS/fonts-embed.js 內嵌的
-     woff2 直接帶進 SVG，file:// 直接開啟也吃得到正確字型。 */
+     不會有另外一套繪圖引擎的誤差。每張只嵌入實際文字需要的字型片段，
+     避免 17 MB 完整字型讓 SVG 解碼阻塞；片段用 script 載入也支援 file://。 */
   /* 「目前對到哪一格」的綠色框線只是操作用的提示，不能出現在成品圖裡，
      截圖前先拿掉，截完再放回去 */
   var activeSlots = Array.prototype.slice.call(strip.querySelectorAll('.imp-slot.is-active'));
@@ -23886,10 +24357,14 @@ function downloadImportImageNow(options) {
     backgroundColor: resolvedImportBg(), /* 底色跟畫布上的背景顏色一致，不要輸出黑邊 */
     cacheBust: false
   };
-  if (window.BN_FONTS_EMBED_CSS) opts.fontEmbedCSS = window.BN_FONTS_EMBED_CSS;
-  appLoadingUpdate(58, 'LOADING · 輸出圖片', '正在將畫布轉成 PNG…');
+  appLoadingUpdate(58, 'LOADING · 輸出圖片', includeComposite ? '正在將畫布轉成 PNG…' : '正在建立獨立版位圖片…');
   return waitForImportExportRender(strip)
-    .then(function () { return htmlToImage.toPng(strip, opts); })
+    .then(function () {
+      if (!includeComposite) return null;
+      return BodaExportFonts.forNode(strip).then(function (fontCss) {
+        return htmlToImage.toPng(strip, Object.assign({}, opts, { fontEmbedCSS: fontCss }));
+      });
+    })
     .then(function (dataUrl) {
       return exportImportPlacementImages(strip, opts).then(function (result) {
         restore();
@@ -23903,9 +24378,8 @@ function downloadImportImageNow(options) {
             notes: bottom && bottom.note ? [bottom.note] : [] };
         });
       }).then(function (result) {
-        var files = [{ filename: '版位成品.png', dataUrl: dataUrl, kind: 'canvas' }]
-          .concat(result.files || []);
-        appLoadingUpdate(86, 'LOADING · 輸出圖片', '合成圖與獨立版位圖片已產生…');
+        var files = (dataUrl ? [{ filename: '版位成品.png', dataUrl: dataUrl, kind: 'canvas' }] : []).concat(result.files || []);
+        appLoadingUpdate(86, 'LOADING · 輸出圖片', includeComposite ? '合成圖與獨立版位圖片已產生…' : '獨立版位圖片已產生…');
         if (!options.collectOnly) {
           files.forEach(function (file, index) {
             triggerImportImageDownload(file.dataUrl, file.filename, index * 160);
@@ -23957,8 +24431,13 @@ function restoreImportSnapshot(snap) {
   /* v3 暫存檔會把重複的大型 dataURL 收進共用素材表；還原前先展開，
      舊版 v1/v2 沒有素材表時此函式會原樣回傳。 */
   snap = expandImportSnapshotFromStorage(snap);
+  bottomWorkOrderVersion++;
+  bottomPersistReadFailed = false;
+  if (bottomSaveQueue) bottomSaveQueue.reset();
+  if (window.BodaExposureSnapshots) BodaExposureSnapshots.stage(snap.exposureState || null);
   /* 暫存 JSON 不包含原始 XLSX 二進位資料，不能誤用上一次開過的工單回填。 */
   currentImportWorkbook = null;
+  currentImportWorkbookBuffer = null;
   currentImportWorkbookName = String(snap.workOrderName || '');
   currentImportActivityName = String(snap.activityName || '');
   appLoadingUpdate(55, 'LOADING · 還原暫存檔', '正在整理圖片與版位資料…');
@@ -24046,6 +24525,11 @@ function restoreImportSnapshot(snap) {
     return Promise.resolve(restoredColumns).then(function () {
       currentImportColumns = restoredColumns;
       beginImportImageLayoutDocument(true);
+      if (window.BodaExposureSnapshots && BodaExposureSnapshots.pending() && exposureLoaded) {
+        BodaExposureSnapshots.apply(document.getElementById('exposure-frame'), { projectId: currentImportImageLayoutId }).catch(function (err) {
+          importLog.innerHTML += '<br><span class="err">' + (err.restoreApplied ? '曝光編輯已還原，但暫存尚未完成：' : '曝光編輯還原未完成：') + esc(err.message) + '</span>';
+        });
+      }
       saveImportImageLayout();
       renderImportColumns(currentImportColumns);
       importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已從暫存檔還原 ' + currentImportColumns.length + ' 格（含編輯結果）</span>' +
@@ -24168,7 +24652,15 @@ function applyImportColumnsToWorkbook() {
 }
 function buildImportedWorkOrderXlsxFile() {
   if (!currentImportColumns.length) throw new Error('畫布上還沒有內容，請先匯入工單');
-  if (typeof ExcelJS === 'undefined') throw new Error('試算表功能仍在載入，請稍後再試');
+  if (typeof ExcelJS === 'undefined') return requireBodaDependencies(['excel']).then(buildImportedWorkOrderXlsxFile);
+  if (!currentImportWorkbook && currentImportWorkbookBuffer) {
+    var workbookBuffer = currentImportWorkbookBuffer;
+    return new ExcelJS.Workbook().xlsx.load(workbookBuffer).then(function (workbook) {
+      if (currentImportWorkbookBuffer !== workbookBuffer) throw new Error('工單已變更，請重新下載');
+      currentImportWorkbook = workbook;
+      return buildImportedWorkOrderXlsxFile();
+    });
+  }
   appLoadingUpdate(24, 'LOADING · 回填工單', '正在將畫布內容寫回原始欄位…');
   var count = applyImportColumnsToWorkbook();
   appLoadingUpdate(66, 'LOADING · 回填工單', '已回填 ' + count + ' 個欄位，正在建立試算表…');
@@ -24436,7 +24928,8 @@ function expandImportSnapshotFromStorage(snapshot) {
   function unpack(value) {
     if (typeof value === 'string' && value.indexOf(IMPORT_SNAPSHOT_ASSET_PREFIX) === 0) {
       var index = Number(value.slice(IMPORT_SNAPSHOT_ASSET_PREFIX.length));
-      return Number.isInteger(index) && typeof assets[index] === 'string' ? assets[index] : '';
+      if (!Number.isInteger(index) || typeof assets[index] !== 'string') throw new Error('暫存檔圖片素材缺漏（索引 ' + index + '），請使用完整備份。');
+      return assets[index];
     }
     if (Array.isArray(value)) return value.map(unpack);
     if (value && typeof value === 'object') {
@@ -24512,6 +25005,7 @@ function importSnapshotJsonBlob(value) {
   return new Blob(parts, { type: 'application/json;charset=utf-8' });
 }
 function downloadImportPackageZip(bundle) {
+  if (typeof JSZip === 'undefined') return requireBodaDependencies(['zip']).then(function () { return downloadImportPackageZip(bundle); });
   var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('export.zip.package', {
     imageCount: (bundle && bundle.images || []).length + (bundle && bundle.exposureImages || []).length
   }) : function () {};
@@ -24618,7 +25112,7 @@ function downloadImportPackageZip(bundle) {
    色票或暫存檔。最左側「整包下載」才使用 downloadImportPackageZip。 */
 function downloadPageResourceZip(files, zipFilename, folderName, progressLabel) {
   if (typeof JSZip === 'undefined') {
-    return Promise.reject(new Error('ZIP 元件 JSZip 尚未載入，請確認網路連線後重試'));
+    return requireBodaDependencies(['zip']).then(function () { return downloadPageResourceZip(files, zipFilename, folderName, progressLabel); });
   }
   var list = (files || []).filter(function (file) { return file && file.dataUrl; });
   if (!list.length) return Promise.reject(new Error('目前沒有可下載的資源'));
@@ -24706,8 +25200,13 @@ function validateImportResourceDownload() {
   return true;
 }
 
-/* 「活動頁資源」頁內按鈕：只輸出這一頁的合成圖、副區整排與 MSBN 單張圖。 */
+/* 活動頁下載副區整排與 MSBN；合成長圖由使用者另行勾選。 */
 function startActivityResourceDownload(triggerButton) {
+  if (!importResourceCanvasLease) return withImportResourceCanvasLease(function () {
+    return ensureImportResourcesReady({ canvas: true, reason: 'export' }).then(function () {
+      return startActivityResourceDownload(triggerButton);
+    });
+  }, { omitBottom: true });
   if (!validateImportResourceDownload()) return Promise.resolve(false);
   var btn = triggerButton || document.getElementById('btn-download-import-package');
   var originalHtml = btn ? btn.innerHTML : '';
@@ -24715,7 +25214,7 @@ function startActivityResourceDownload(triggerButton) {
     btn.disabled = true;
     btn.innerHTML = lineIcon('loading') + ' 下載此資源檔案中…';
   }
-  appLoadingStart('LOADING · 活動頁資源', 12, '正在建立活動頁合成圖與各版位 PNG…', { lock: true });
+  appLoadingStart('LOADING · 活動頁資源', 12, '正在建立活動頁各版位 PNG…', { lock: true });
   return Promise.resolve()
     .then(function () { return downloadImportImage({ collectOnly: true, includeBottom: false }); })
     .then(function (result) {
@@ -24751,6 +25250,11 @@ function startActivityResourceDownload(triggerButton) {
 
 /* 完整 ZIP 只供最左側「整包下載」呼叫。 */
 function startCompletePackageDownload(triggerButton) {
+  if (!importResourceCanvasLease) return withImportResourceCanvasLease(function () {
+    return ensureImportResourcesReady({ canvas: true, reason: 'export' }).then(function () {
+      return startCompletePackageDownload(triggerButton);
+    });
+  });
   if (!validateImportResourceDownload()) return Promise.resolve(false);
   /* 左側製作流程還有沒完成也沒略過的步驟：先提醒，使用者確認後才下載。 */
   if (typeof confirmWorkflowPackageDownload === 'function' && !confirmWorkflowPackageDownload()) {
@@ -24769,7 +25273,7 @@ function startCompletePackageDownload(triggerButton) {
   appLoadingStart('LOADING · 建立完整 ZIP', 8, '正在準備回填工單、成品圖片、色票與暫存檔…', { lock: true });
   return Promise.resolve()
     .then(function () {
-      if (!currentImportWorkbook) {
+      if (!currentImportWorkbook && !currentImportWorkbookBuffer) {
         bundle.warnings.push('工單未輸出：目前不是由原始 .xlsx 工單匯入。');
         return null;
       }
@@ -24810,6 +25314,7 @@ function startCompletePackageDownload(triggerButton) {
     })
     .then(function (snap) {
       bundle.snapshot = snap;
+      if (snap.exposureStateNote) bundle.warnings.push(snap.exposureStateNote);
       return downloadImportPackageZip(bundle);
     })
     .then(function (result) {
@@ -25078,7 +25583,8 @@ function bottomStateFromLayoutTemplate(wb, embeddedStateJson) {
 }
 
 function extractEmbeddedBottomState(arrayBuffer, parsedWorkbook) {
-  if (!parsedWorkbook && (!arrayBuffer || typeof ExcelJS === 'undefined')) return Promise.resolve('');
+  if (!parsedWorkbook && !arrayBuffer) return Promise.resolve('');
+  if (!parsedWorkbook && typeof ExcelJS === 'undefined') return requireBodaDependencies(['excel']).then(function () { return extractEmbeddedBottomState(arrayBuffer, parsedWorkbook); });
   try {
     /* 匯入工單時 parseImportXlsx 已經用 ExcelJS 解析過同一份檔案；直接沿用，
        不要在主執行緒上再完整解析一次（大型工單會多卡好幾百毫秒到數秒）。 */
@@ -25114,58 +25620,94 @@ var BOTTOM_PERSIST_DB = 'boda-bottom-persist';
 var BOTTOM_PERSIST_STORE = 'kv';
 var bottomPersistTimer = null;
 var bottomPersistRestoring = false;
-function bottomPersistOpen() {
-  return new Promise(function (resolve, reject) {
-    if (!window.indexedDB) { reject(new Error('no indexedDB')); return; }
-    var req = indexedDB.open(BOTTOM_PERSIST_DB, 1);
-    req.onupgradeneeded = function () { req.result.createObjectStore(BOTTOM_PERSIST_STORE); };
-    req.onsuccess = function () { resolve(req.result); };
-    req.onerror = function () { reject(req.error); };
-  });
+var bottomAssetStore = null;
+var bottomSaveQueue = null;
+var bottomPersistReadFailed = false;
+var bottomPersistFailureRevision = 0;
+var bottomPersistRestorePending = false;
+var bottomPersistSaveAfterRestore = false;
+var bottomPersistEditRevision = 0;
+var bottomPersistParsedJson = '', bottomPersistParsedState = null;
+function getBottomAssetStore() {
+  if (!bottomAssetStore) bottomAssetStore = BodaStorageOwnership.wrap(BodaStateAssets.create({ dbName: BOTTOM_PERSIST_DB, stateStore: BOTTOM_PERSIST_STORE, assetStore: 'assets', key: 'current', dbVersion: 2 }), BOTTOM_PERSIST_DB + ':current');
+  return bottomAssetStore;
 }
 function bottomPersistPut(value) {
-  return bottomPersistOpen().then(function (db) {
-    return new Promise(function (resolve, reject) {
-      var tx = db.transaction(BOTTOM_PERSIST_STORE, 'readwrite');
-      tx.objectStore(BOTTOM_PERSIST_STORE).put(value, 'current');
-      tx.oncomplete = function () { db.close(); resolve(); };
-      tx.onerror = function () { db.close(); reject(tx.error); };
-    });
-  }).catch(function (err) { console.warn('[BODA] 吸底編輯現況保存失敗：', err); });
+  /* The old nested JSON string hid its images from deduplication. Persist the
+     parsed object; public backups and the bottom editor retain portable JSON. */
+  var packed = Object.assign({}, value);
+  if (packed.bottomState) {
+    if (bottomPersistParsedJson !== packed.bottomState) {
+      bottomPersistParsedState = JSON.parse(packed.bottomState);
+      bottomPersistParsedJson = packed.bottomState;
+    }
+    packed.bottomStateData = bottomPersistParsedState;
+    delete packed.bottomState;
+  }
+  return getBottomAssetStore().put(packed);
 }
 function bottomPersistGet() {
-  return bottomPersistOpen().then(function (db) {
-    return new Promise(function (resolve) {
-      var tx = db.transaction(BOTTOM_PERSIST_STORE, 'readonly');
-      var req = tx.objectStore(BOTTOM_PERSIST_STORE).get('current');
-      req.onsuccess = function () { db.close(); resolve(req.result || null); };
-      req.onerror = function () { db.close(); resolve(null); };
-    });
-  }).catch(function () { return null; });
+  return getBottomAssetStore().get().then(function (saved) {
+    if (saved && Object.prototype.hasOwnProperty.call(saved, 'bottomStateData')) {
+      saved.bottomState = JSON.stringify(saved.bottomStateData);
+      delete saved.bottomStateData;
+    }
+    return saved;
+  });
+}
+function getBottomSaveQueue() {
+  if (!bottomSaveQueue) bottomSaveQueue = BodaSaveQueue.create({
+    write: bottomPersistPut,
+    freeze: function (value) { return BodaStateAssets.snapshot(value, { shareBinary: true }); },
+    onStatus: function (status) { reportPersistenceStatus('bottom', status); }
+  });
+  return bottomSaveQueue;
+}
+function clearBottomPersistDraft() {
+  clearTimeout(bottomPersistTimer); bottomPersistTimer = null;
+  var queue = getBottomSaveQueue();
+  queue.reset({ paused: true });
+  return queue.whenIdle().then(function () { return getBottomAssetStore().clear(); }).then(function () {
+    queue.resume(); return true;
+  }, function (error) { queue.hold(error); return false; });
+}
+function buildBottomPersistPayload() {
+  return {
+    savedAt: Date.now(),
+    workOrderName: latestBottomWorkOrder ? latestBottomWorkOrder.name : '',
+    /* The original workbook is immutable. The codec copies it once at put(). */
+    workOrderBuffer: latestBottomWorkOrder && latestBottomWorkOrder.buffer ? latestBottomWorkOrder.buffer : null,
+    bottomState: getBottomStateForSync() || '',
+    hasBottomWorkOrder: !!currentImportHasBottomWorkOrder,
+    images: importUploadsForBottomPersist()
+  };
+}
+function flushBottomPersist() {
+  clearTimeout(bottomPersistTimer); bottomPersistTimer = null;
+  if (bottomPersistRestoring || window.__bodaResetting) return;
+  if (bottomPersistRestorePending) { bottomPersistSaveAfterRestore = true; return; }
+  getBottomSaveQueue().enqueue(buildBottomPersistPayload());
 }
 /* 任何吸底變動（匯入新工單、吸底編輯、等級預設）後呼叫；短時間內多次變動只寫一次。 */
 function queueBottomPersist() {
   if (bottomPersistRestoring || window.__bodaResetting) return;
+  bottomPersistEditRevision++;
   clearTimeout(bottomPersistTimer);
-  bottomPersistTimer = setTimeout(function () {
-    bottomPersistPut({
-      savedAt: Date.now(),
-      workOrderName: latestBottomWorkOrder ? latestBottomWorkOrder.name : '',
-      workOrderBuffer: latestBottomWorkOrder && latestBottomWorkOrder.buffer ? latestBottomWorkOrder.buffer.slice(0) : null,
-      bottomState: getBottomStateForSync() || '',
-      hasBottomWorkOrder: !!currentImportHasBottomWorkOrder,
-      images: importUploadsForBottomPersist()
-    });
-  }, 400);
+  bottomPersistTimer = setTimeout(flushBottomPersist, 400);
 }
 /* 開啟頁面時把上次的吸底狀態與工單原檔放回記憶體，再送給已開啟的吸底入口／預覽。 */
 function restoreBottomPersist() {
+  bottomPersistRestorePending = true;
+  var keepEditsAfterReadFailure = bottomPersistReadFailed && bottomPersistEditRevision !== bottomPersistFailureRevision;
   var restoreVersionAtStart = bottomWorkOrderVersion;
+  var editRevisionAtStart = bottomPersistEditRevision;
   return bottomPersistGet().then(function (saved) {
+    bottomPersistReadFailed = false;
     if (!saved) return false;
     /* IndexedDB 讀取是非同步的；若使用者在這段時間已匯入新工單，
        舊暫存不可再回頭覆蓋新工單的吸底內容。 */
-    if (bottomWorkOrderVersion !== restoreVersionAtStart) return false;
+    if (keepEditsAfterReadFailure || bottomWorkOrderVersion !== restoreVersionAtStart || bottomPersistEditRevision !== editRevisionAtStart) return false;
+    getBottomSaveQueue().baseline(saved);
     bottomPersistRestoring = true;
     try {
       if (saved.workOrderBuffer && !latestBottomWorkOrder) {
@@ -25176,14 +25718,10 @@ function restoreBottomPersist() {
           version: ++bottomWorkOrderVersion,
           bottomState: saved.bottomState || ''
         };
-        /* 回填下載工單也需要原始活頁簿 */
-        if (!currentImportWorkbook && typeof ExcelJS !== 'undefined') {
-          new ExcelJS.Workbook().xlsx.load(saved.workOrderBuffer.slice(0)).then(function (wb) {
-            if (!currentImportWorkbook) {
-              currentImportWorkbook = wb;
-              currentImportWorkbookName = saved.workOrderName || '';
-            }
-          }).catch(function () {});
+        /* 啟動不解析整份 XLSX；下載回填工單時再載入 ExcelJS。 */
+        if (!currentImportWorkbook) {
+          currentImportWorkbookBuffer = saved.workOrderBuffer;
+          currentImportWorkbookName = saved.workOrderName || '';
         }
       }
       if (saved.bottomState) {
@@ -25205,6 +25743,21 @@ function restoreBottomPersist() {
     syncBottomAfterImportAction('restore-state');
     if (bottomPreviewBridgeReady) dispatchBottomPreviewForExport();
     return true;
+  }).catch(function (error) {
+    if (bottomWorkOrderVersion === restoreVersionAtStart) {
+      if (!bottomPersistReadFailed) bottomPersistFailureRevision = editRevisionAtStart;
+      bottomPersistReadFailed = true;
+      getBottomSaveQueue().hold(error);
+    }
+    return false;
+  }).then(function (restored) {
+    bottomPersistRestorePending = false;
+    if (!bottomPersistReadFailed) {
+      getBottomSaveQueue().refreshPending(buildBottomPersistPayload());
+      getBottomSaveQueue().resume();
+    }
+    if (bottomPersistSaveAfterRestore) { bottomPersistSaveAfterRestore = false; flushBottomPersist(); }
+    return restored;
   });
 }
 
@@ -25234,18 +25787,111 @@ function bottomHostAssetsSignature(images) {
    影子完成後只跑這一次，不再分段觸發造成重複序列化。
    80ms debounce：快速連續影子重烘不會重複觸發同步。 */
 var _syncAllChildToolsTimer = null;
-function syncAllChildTools() {
+var _syncAllChildToolsExposureAssets = false;
+var _deferredExposureAssets = false;
+var _deferredExposurePayload = null;
+var _deferredExposureWorkbook = false;
+var _deferredBottomSync = { generator: '', standalone: '' };
+var _deferredBottomState = { generator: false, standalone: false };
+var _deferredBottomLevel = { generator: null, standalone: null };
+function syncBottomStateToTarget(target, state) {
+  _deferredBottomState[target] = true;
+  var ready = target === 'standalone' ? standaloneBottomBridgeReady : bottomBridgeReady;
+  if (!ready || !bottomSyncTargetActive(target)) return false;
+  var poster = target === 'standalone' ? postToStandaloneBottom : postToBottom;
+  var sent = poster({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: state || getBottomStateForSync() });
+  if (sent) _deferredBottomState[target] = false;
+  return sent;
+}
+function syncBottomLevelToTarget(target, message) {
+  _deferredBottomLevel[target] = message;
+  var ready = target === 'standalone' ? standaloneBottomBridgeReady : bottomBridgeReady;
+  if (!ready || !bottomSyncTargetActive(target)) return false;
+  var sent = (target === 'standalone' ? postToStandaloneBottom : postToBottom)(message);
+  if (sent) _deferredBottomLevel[target] = null;
+  return sent;
+}
+function childSyncViewActive(name) {
+  if (typeof document === 'undefined') return true;
+  var view = document.getElementById('view-' + name);
+  return !!(view && view.classList.contains('active'));
+}
+function bottomSyncTargetActive(target) {
+  if (target === 'standalone') return childSyncViewActive('bottom');
+  if (target === 'preview') return childSyncViewActive('import');
+  return childSyncViewActive('generator') && currentPaletteTab === 'sticky';
+}
+/* 進頁／明確匯出時呼叫。force 只處理指定頁面，不會喚醒其他工具。
+   普通切頁不重送工單；尚未處理的匯入／還原才送一次。 */
+function flushDeferredChildTools(view, options) {
+  options = options || {};
+  if (!options.force && !childSyncViewActive(view)) return false;
+  if (view === 'exposure') {
+    if (window.__bodaPendingExposureRestore) return false;
+    var exposureNeedsFlush = _deferredExposureWorkbook || _deferredExposureAssets;
+    if (_deferredExposureWorkbook && currentImportWorkbook) {
+      _deferredExposureWorkbook = false;
+      syncWorkbookOverviewTextToExposure(currentImportWorkbook);
+    }
+    if (_deferredExposureAssets || options.immediate && exposureNeedsFlush) {
+      return pushExposureOverviewAssets(_deferredExposurePayload || readSharedExposureOverviewText(), options);
+    }
+    return false;
+  }
+  if (view !== 'bottom' && view !== 'import' && view !== 'generator') return false;
+  var target = view === 'bottom' ? 'standalone' : (view === 'import' ? 'preview' : 'generator');
+  if (target === 'generator' && currentPaletteTab !== 'sticky' && !options.force) return false;
+  var ready = target === 'standalone' ? standaloneBottomBridgeReady : (target === 'preview' ? bottomPreviewBridgeReady : bottomBridgeReady);
+  if (!ready) return false;
+  var pendingReason = _deferredBottomSync[target];
+  var sent = false;
+  if (target !== 'preview' && pendingReason) {
+    var sender = target === 'standalone' ? sendLatestWorkOrderToStandaloneBottom : sendLatestWorkOrderToBottom;
+    var poster = target === 'standalone' ? postToStandaloneBottom : postToBottom;
+    var lastSentVersion = target === 'standalone' ? standaloneBottomLastSentVersion : bottomLastAutoSentVersion;
+    /* READY 可能已在進頁後先送過工單；不能把較早排隊的 import-sync 再套回編輯結果。 */
+    var alreadyImported = latestBottomWorkOrder && latestBottomWorkOrder.version <= lastSentVersion;
+    if (latestBottomWorkOrder && !alreadyImported) {
+      sent = sender(pendingReason, null, { force: !!options.force });
+      if (sent) {
+        if (target === 'standalone') standaloneBottomLastSentVersion = latestBottomWorkOrder.version;
+        else bottomLastAutoSentVersion = latestBottomWorkOrder.version;
+      }
+    } else if ((!alreadyImported || pendingReason !== 'import-sync') && getBottomStateForSync()) {
+      sent = poster({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() });
+    }
+    if (sent || alreadyImported && pendingReason === 'import-sync' || !latestBottomWorkOrder && !getBottomStateForSync()) _deferredBottomSync[target] = '';
+  }
+  if (target !== 'preview') {
+    var statePoster = target === 'standalone' ? postToStandaloneBottom : postToBottom;
+    if (_deferredBottomLevel[target] && statePoster(_deferredBottomLevel[target])) { _deferredBottomLevel[target] = null; sent = true; }
+    if (_deferredBottomState[target] && getBottomStateForSync() && statePoster({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() })) {
+      _deferredBottomState[target] = false; sent = true;
+    }
+  }
+  return broadcastBottomImageAssets({ target: target, force: !!options.force }) || sent;
+}
+function syncAllChildTools(options) {
+  _syncAllChildToolsExposureAssets = _syncAllChildToolsExposureAssets || !(options && options.exposureAssets === false);
   clearTimeout(_syncAllChildToolsTimer);
   _syncAllChildToolsTimer = setTimeout(function () {
     _syncAllChildToolsTimer = null;
+    var syncExposureAssets = _syncAllChildToolsExposureAssets;
+    _syncAllChildToolsExposureAssets = false;
     renderImageGallery();
-    if (currentImportWorkbook) {
+    var exposureActive = childSyncViewActive('exposure');
+    if (syncExposureAssets && !exposureActive) {
+      _deferredExposureWorkbook = !!currentImportWorkbook;
+      _deferredExposureAssets = true;
+      _deferredExposurePayload = null;
+    }
+    if (syncExposureAssets && exposureActive && currentImportWorkbook) {
       try { syncWorkbookOverviewTextToExposure(currentImportWorkbook); }
       catch (err) { console.warn('[BODA] syncAllChildTools 工單總覽失敗', err); }
     }
     try { broadcastBottomImageAssets(); }
     catch (err) { console.warn('[BODA] syncAllChildTools 吸底素材失敗', err); }
-    try { syncExposureOverviewAssets(); }
+    try { if (syncExposureAssets && exposureActive) syncExposureOverviewAssets(); }
     catch (err) { console.warn('[BODA] syncAllChildTools 曝光資源失敗', err); }
     try { queueBottomPersist(); }
     catch (err) { console.warn('[BODA] syncAllChildTools 吸底暫存失敗', err); }
@@ -25257,19 +25903,20 @@ function syncAllChildTools() {
 /* 吸底 / 獨立吸底也跟 preview 一樣，素材沒變就不重新 postMessage（避免每張數 MB 的 dataURL 重複複製） */
 var bottomAssetsSignature = '';
 var standaloneBottomAssetsSignature = '';
-function broadcastBottomImageAssets() {
+function broadcastBottomImageAssets(options) {
+  options = options || {};
+  var generator = bottomBridgeReady && (!options.target || options.target === 'generator') && (options.force || bottomSyncTargetActive('generator'));
+  var standalone = standaloneBottomBridgeReady && (!options.target || options.target === 'standalone') && (options.force || bottomSyncTargetActive('standalone'));
+  var preview = bottomPreviewBridgeReady && (!options.target || options.target === 'preview') && (options.force || bottomSyncTargetActive('preview'));
+  if (!generator && !standalone && !preview) return false;
   var images = bottomHostImageAssets();
   var message = { source: 'BODA_PARENT', type: 'IMAGE_ASSETS', images: images };
   var sig = bottomHostAssetsSignature(images);
-  if (bottomBridgeReady) {
-    if (sig !== bottomAssetsSignature) { postToBottom(message); bottomAssetsSignature = sig; }
-  } else { bottomAssetsSignature = ''; }
-  if (standaloneBottomBridgeReady) {
-    if (sig !== standaloneBottomAssetsSignature) { postToStandaloneBottom(message); standaloneBottomAssetsSignature = sig; }
-  } else { standaloneBottomAssetsSignature = ''; }
-  if (bottomPreviewBridgeReady) {
-    if (sig !== bottomPreviewAssetsSignature && postToBottomPreview(message)) bottomPreviewAssetsSignature = sig;
-  } else { bottomPreviewAssetsSignature = ''; }
+  var sent = false;
+  if (generator && sig !== bottomAssetsSignature && postToBottom(message)) { bottomAssetsSignature = sig; sent = true; }
+  if (standalone && sig !== standaloneBottomAssetsSignature && postToStandaloneBottom(message)) { standaloneBottomAssetsSignature = sig; sent = true; }
+  if (preview && sig !== bottomPreviewAssetsSignature && postToBottomPreview(message)) { bottomPreviewAssetsSignature = sig; sent = true; }
+  return sent;
 }
 /* 最左側「整包下載」：活動頁資源不在畫面上時截圖會是空白，
    所以輸出期間把它放到畫面外照常排版，完整 ZIP 產生後再收回。 */
@@ -25315,6 +25962,9 @@ function startBottomPageResourceDownloadFromHost() {
 }
 
 function rememberBottomWorkOrder(name, arrayBuffer, hasBottomWorkOrder, parsedWorkbook) {
+  var importedBottomVersion = ++bottomWorkOrderVersion;
+  bottomPersistReadFailed = false;
+  if (bottomSaveQueue) bottomSaveQueue.reset();
   /* 換了新的匯入工單，上一份吸底成品不可沿用。 */
   importBottomPreviewResult = null;
   bottomWorkOrderNeedsParserAuthority = false;
@@ -25335,7 +25985,7 @@ function rememberBottomWorkOrder(name, arrayBuffer, hasBottomWorkOrder, parsedWo
       name: name || '工單.xlsx',
       buffer: arrayBuffer.slice ? arrayBuffer.slice(0) : arrayBuffer,
       savedAt: Date.now(),
-      version: ++bottomWorkOrderVersion
+      version: importedBottomVersion
     };
     bottomWorkOrderNeedsParserAuthority = true;
   } catch (e) {
@@ -25343,8 +25993,9 @@ function rememberBottomWorkOrder(name, arrayBuffer, hasBottomWorkOrder, parsedWo
     return;
   }
   queueBottomPersist();
-  extractEmbeddedBottomState(latestBottomWorkOrder.buffer, parsedWorkbook || null).then(function (stateJson) {
-    if (!latestBottomWorkOrder || latestBottomWorkOrder.version !== bottomWorkOrderVersion) return;
+  var importedBottomWorkOrder = latestBottomWorkOrder;
+  extractEmbeddedBottomState(importedBottomWorkOrder.buffer, parsedWorkbook || null).then(function (stateJson) {
+    if (latestBottomWorkOrder !== importedBottomWorkOrder || importedBottomWorkOrder.version !== bottomWorkOrderVersion) return;
     latestBottomWorkOrder.bottomState = stateJson || '';
     /* 新工單先保留 parser 權；可見版型推導 state 只能當 fallback，
        不直接寫進共用 state，避免暫存檔先保存成「檔名 LOGO」的空白版本。 */
@@ -25378,20 +26029,11 @@ function getBottomStateForSync() {
 
 /* 匯入工單／demo 完成後，主動把最新工單與吸底編輯結果送到已開啟的入口。 */
 function syncBottomAfterImportAction(reason) {
-  var sent = false;
-  if (bottomBridgeReady && currentPaletteTab === 'sticky') {
-    if (latestBottomWorkOrder) sent = sendLatestWorkOrderToBottom(reason || 'import-sync') || sent;
-    else if (getBottomStateForSync()) {
-      sent = postToBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() }) || sent;
-    }
-  }
-  if (standaloneBottomBridgeReady) {
-    if (latestBottomWorkOrder) sent = sendLatestWorkOrderToStandaloneBottom(reason || 'import-sync') || sent;
-    else if (getBottomStateForSync()) {
-      sent = postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() }) || sent;
-    }
-  }
-  return sent;
+  _deferredBottomSync.generator = reason || 'import-sync';
+  _deferredBottomSync.standalone = reason || 'import-sync';
+  var generator = bottomSyncTargetActive('generator') && flushDeferredChildTools('generator');
+  var standalone = bottomSyncTargetActive('standalone') && flushDeferredChildTools('bottom');
+  return generator || standalone;
 }
 
 function postToFrame(frameId, message, transfer) {
@@ -25409,6 +26051,7 @@ function postToBottom(message, transfer) {
   return postToFrame('bottom-tool-frame', message, transfer);
 }
 function postToBottomPreview(message, transfer) {
+  if (typeof shouldRenderImportBottomPreview === 'function' && !shouldRenderImportBottomPreview()) return false;
   return postToFrame('import-bottom-preview-frame', message, transfer);
 }
 
@@ -25505,7 +26148,11 @@ function sendBottomHostLayout() {
   });
 }
 
-function sendLatestWorkOrderToBottom(reason, requestId) {
+function sendLatestWorkOrderToBottom(reason, requestId, options) {
+  if (!bottomSyncTargetActive('generator') && !requestId && reason !== 'manual-request' && reason !== 'download-all' && !(options && options.force)) {
+    _deferredBottomSync.generator = reason || 'import-sync';
+    return false;
+  }
   if (!latestBottomWorkOrder || !latestBottomWorkOrder.buffer) {
     postToBottom({
       source: 'BODA_PARENT', type: 'NO_WORKORDER',
@@ -25549,7 +26196,24 @@ function hideImportBottomPreview() {
   importBottomPreviewResult = null;
 }
 
+/* 預覽只服務活動頁畫布與明確匯出；已掛載也不在隱藏時重送工單。 */
+var bottomPreviewExportLease = 0;
+function shouldRenderImportBottomPreview() {
+  if (bottomPreviewExportLease > 0) return true;
+  if (typeof importResourceOmitBottomPreview !== 'undefined' && importResourceOmitBottomPreview > 0) return false;
+  if (typeof isImportCanvasDemanded === 'function') return isImportCanvasDemanded();
+  var view = document.getElementById('view-import');
+  return !!(view && view.classList.contains('active'));
+}
+function withBottomPreviewExportLease(task) {
+  bottomPreviewExportLease++;
+  function release(value) { bottomPreviewExportLease = Math.max(0, bottomPreviewExportLease - 1); return value; }
+  try {
+    return Promise.resolve(task()).then(release, function (err) { release(); throw err; });
+  } catch (err) { release(); return Promise.reject(err); }
+}
 function sendLatestWorkOrderToBottomPreview(reason) {
+  if (!shouldRenderImportBottomPreview()) return false;
   if (!latestBottomWorkOrder || !latestBottomWorkOrder.buffer) return false;
   /* 新匯入的工單，內嵌吸底狀態還在讀（bottomState 尚未設定）時先不送：
      讀完會以 embedded-state-ready 送一次完整的。以前會先送一次、讀完再送一次，
@@ -25588,6 +26252,7 @@ function settleBottomPreviewWaiters(error, result) {
 }
 
 function dispatchBottomPreviewForExport() {
+  if (!shouldRenderImportBottomPreview()) return false;
   if (!bottomPreviewBridgeReady) return false;
   if (latestBottomWorkOrder && latestBottomWorkOrder.buffer) {
     return sendLatestWorkOrderToBottomPreview('state-ready');
@@ -25607,12 +26272,15 @@ function requestBottomPreviewForWorkOrderExport() {
   if (existing && existing.dataUrl && (!currentVersion || Number(existing.workOrderVersion) === currentVersion)) {
     return Promise.resolve(existing);
   }
+  return withBottomPreviewExportLease(function () {
   ensureBottomPreviewLoaded(false);
   return new Promise(function (resolve, reject) {
     var waiter = {
       resolve: resolve,
       reject: reject,
       timer: setTimeout(function () {
+        var index = bottomPreviewWaiters.indexOf(waiter);
+        if (index >= 0) bottomPreviewWaiters.splice(index, 1);
         reject(new Error('吸底縮圖產生逾時，請先確認吸底內容後再下載'));
       }, 30000)
     };
@@ -25621,9 +26289,11 @@ function requestBottomPreviewForWorkOrderExport() {
     importBottomPreviewResult = null;
     dispatchBottomPreviewForExport();
   });
+  });
 }
 
 function ensureBottomPreviewLoaded(forceReload) {
+  if (!shouldRenderImportBottomPreview()) return;
   var frame = document.getElementById('import-bottom-preview-frame');
   var wrap = document.getElementById('import-bottom-preview-frame-wrap');
   if (!frame || !wrap) return;
@@ -25645,7 +26315,7 @@ function ensureBottomPreviewLoaded(forceReload) {
   };
 
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=import-preview&bridge=1&v=20261110-page-download';
+  frame.src = 'bottom/index.html?embed=import-preview&bridge=1&v=20261111-bottom-slim2';
 }
 /* bottom/index.html 是一套完整的吸底編輯器，仍用 iframe 隔離 CSS、Konva 與狀態。
    嵌入模式由 bottom 自己把面板排到左側，父頁只保留素材庫標題與三個頁簽。 */
@@ -25682,7 +26352,7 @@ function ensureBottomToolLoaded(forceReload) {
     }, 80);
   };
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20261110-page-download';
+  frame.src = 'bottom/index.html?embed=generator&bridge=1&v=20261111-bottom-slim2';
 }
 
 function postToStandaloneBottom(message, transfer) {
@@ -25692,12 +26362,17 @@ function postToStandaloneBottom(message, transfer) {
 /* 吸底等級規格只同步兩個可編輯入口；匯入畫布預覽會跟著工單資料載入，不可回寫正式 state。 */
 function syncBottomLevelPreset() {
   var message = { source: 'BODA_PARENT', type: 'BOTTOM_LEVEL', levelId: currentLevelId };
-  if (bottomBridgeReady) postToBottom(message);
-  if (standaloneBottomBridgeReady) postToStandaloneBottom(message);
+  syncBottomLevelToTarget('generator', message);
+  syncBottomLevelToTarget('standalone', message);
   /* 匯入工單底下的成品預覽也必須吃同一個等級預設，避免畫布仍顯示前一個等級的 LOGO／反白色。 */
-  if (bottomPreviewBridgeReady) postToBottomPreview(message);
+  if (bottomPreviewBridgeReady && (typeof shouldRenderImportBottomPreview !== 'function' || shouldRenderImportBottomPreview())) postToBottomPreview(message);
+  else { bottomPreviewLastSentVersion = 0; importBottomPreviewResult = null; }
 }
-function sendLatestWorkOrderToStandaloneBottom(reason, requestId) {
+function sendLatestWorkOrderToStandaloneBottom(reason, requestId, options) {
+  if (!bottomSyncTargetActive('standalone') && !requestId && reason !== 'manual-request' && reason !== 'download-all' && !(options && options.force)) {
+    _deferredBottomSync.standalone = reason || 'import-sync';
+    return false;
+  }
   if (!latestBottomWorkOrder || !latestBottomWorkOrder.buffer) {
     postToStandaloneBottom({
       source: 'BODA_PARENT', type: 'NO_WORKORDER',
@@ -25749,7 +26424,9 @@ function ensureStandaloneBottomLoaded(forceReload) {
       }
       if (standaloneBottomBridgeReady && latestBottomWorkOrder) {
         sendLatestWorkOrderToStandaloneBottom('standalone-loaded');
-      } else if (standaloneBottomBridgeReady) {
+      } else if (standaloneBottomBridgeReady && getBottomStateForSync()) {
+        syncBottomStateToTarget('standalone', getBottomStateForSync());
+      } else if (standaloneBottomBridgeReady && bottomSyncTargetActive('standalone')) {
         postToStandaloneBottom({
           source: 'BODA_PARENT', type: 'NO_WORKORDER',
           message: '請先到「匯入工單」上傳含吸底資料的 xlsx 工單。'
@@ -25758,7 +26435,7 @@ function ensureStandaloneBottomLoaded(forceReload) {
     }, 80);
   };
   frame.onerror = function () { wrap.classList.add('missing'); };
-  frame.src = 'bottom/index.html?embed=standalone&bridge=1&v=20261110-page-download';
+  frame.src = 'bottom/index.html?embed=standalone&bridge=1&v=20261111-bottom-slim2';
 }
 function syncGeneratorToolMode() {
   var isSticky = currentPaletteTab === 'sticky';
@@ -25774,11 +26451,13 @@ function syncGeneratorToolMode() {
     wrap.classList.toggle('active', isSticky);
     wrap.setAttribute('aria-hidden', isSticky ? 'false' : 'true');
   }
-  if (isSticky) {
+  if (isSticky && generatorActive) {
     ensureBottomToolLoaded(false);
     requestAnimationFrame(function () {
+      if (!bottomSyncTargetActive('generator')) return;
       sendBottomHostLayout();
       if (bottomBridgeReady && latestBottomWorkOrder) sendLatestWorkOrderToBottom('open-sticky');
+      flushDeferredChildTools('generator');
     });
   }
 
@@ -25808,22 +26487,18 @@ function acceptBottomStateFromFrame(nextState, source, actionType) {
     bottomGeneratorStateJson = nextState;
     if (bottomStandaloneStateJson !== nextState) {
       bottomStandaloneStateJson = nextState;
-      if (standaloneBottomBridgeReady) {
-        postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: nextState });
-      }
+      syncBottomStateToTarget('standalone', nextState);
     }
   } else if (source === 'standalone') {
     bottomStandaloneStateJson = nextState;
     if (bottomGeneratorStateJson !== nextState) {
       bottomGeneratorStateJson = nextState;
-      if (bottomBridgeReady) {
-        postToBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: nextState });
-      }
+      syncBottomStateToTarget('generator', nextState);
     }
   }
-  if (bottomPreviewBridgeReady) {
+  if (bottomPreviewBridgeReady && (typeof shouldRenderImportBottomPreview !== 'function' || shouldRenderImportBottomPreview())) {
     postToBottomPreview({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: nextState });
-  }
+  } else { bottomPreviewLastSentVersion = 0; }
 }
 window.addEventListener('message', function (event) {
   var generatorFrame = document.getElementById('bottom-tool-frame');
@@ -25851,7 +26526,7 @@ window.addEventListener('message', function (event) {
         currentImportHasBottomWorkOrder && Date.now() - (Number(latestBottomWorkOrder.savedAt) || 0) < 8000) {
       return;
     }
-    if (previewImage && msg.dataUrl) {
+    if (previewImage && msg.dataUrl && shouldRenderImportBottomPreview()) {
       previewImage.onload = function () {
         if (previewWrap) previewWrap.classList.add('has-image');
       };
@@ -25870,7 +26545,7 @@ window.addEventListener('message', function (event) {
       settleBottomPreviewWaiters(null, importBottomPreviewResult);
       /* 預覽 iframe 匯入後會回傳好幾次（狀態同步、工單解析完成…），每次都整片重畫約 1 秒。
          只換畫布最下面的吸底那一塊；尺寸不同時才整片重畫。 */
-      if (currentImportHasBottomWorkOrder && currentImportColumns && currentImportColumns.length &&
+      if (shouldRenderImportBottomPreview() && currentImportHasBottomWorkOrder && currentImportColumns && currentImportColumns.length &&
           !updateImportBottomFinalInPlace()) {
         renderImportColumns(currentImportColumns);
       }
@@ -25916,15 +26591,16 @@ window.addEventListener('message', function (event) {
         appLoadingFinish('吸底工具與字體已載入');
       }
       if (latestBottomWorkOrder) sendLatestWorkOrderToStandaloneBottom('bridge-ready');
-      else if (getBottomStateForSync()) postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() });
-      else postToStandaloneBottom({
+      else if (getBottomStateForSync()) syncBottomStateToTarget('standalone', getBottomStateForSync());
+      else if (bottomSyncTargetActive('standalone')) postToStandaloneBottom({
         source: 'BODA_PARENT', type: 'NO_WORKORDER',
         message: '請先到「匯入工單」上傳含吸底資料的 xlsx 工單。'
       });
       if (typeof window.woBottomLevelOptions === 'function') window.woBottomLevelOptions();
       /* 已有工單或吸底編輯時只同步等級下拉，不重套等級預設（避免蓋掉使用者編輯） */
-      postToStandaloneBottom({ source: 'BODA_PARENT', type: 'BOTTOM_LEVEL', levelId: currentLevelId,
+      syncBottomLevelToTarget('standalone', _deferredBottomLevel.standalone || { source: 'BODA_PARENT', type: 'BOTTOM_LEVEL', levelId: currentLevelId,
         applyPreset: !(latestBottomWorkOrder || getBottomStateForSync()) });
+      if (bottomSyncTargetActive('standalone')) flushDeferredChildTools('bottom');
       return;
     }
     bottomBridgeReady = true;
@@ -25932,10 +26608,11 @@ window.addEventListener('message', function (event) {
     if (currentPaletteTab === 'sticky' && latestBottomWorkOrder) {
       sendLatestWorkOrderToBottom('bridge-ready');
     } else if (currentPaletteTab === 'sticky' && getBottomStateForSync()) {
-      postToBottom({ source: 'BODA_PARENT', type: 'BOTTOM_STATE', state: getBottomStateForSync() });
+      syncBottomStateToTarget('generator', getBottomStateForSync());
     }
-    postToBottom({ source: 'BODA_PARENT', type: 'BOTTOM_LEVEL', levelId: currentLevelId,
+    syncBottomLevelToTarget('generator', _deferredBottomLevel.generator || { source: 'BODA_PARENT', type: 'BOTTOM_LEVEL', levelId: currentLevelId,
       applyPreset: !(latestBottomWorkOrder || getBottomStateForSync()) });
+    if (bottomSyncTargetActive('generator')) flushDeferredChildTools('generator');
     Object.keys(bottomExportWaiters).forEach(dispatchBottomExportRequest);
   } else if (msg.type === 'IMPORT_RESULT' && fromGenerator && msg.requestId && bottomExportWaiters[msg.requestId]) {
     if (!msg.ok) {
@@ -26141,16 +26818,25 @@ var WO_CACHE_KEYS = [
 ];
 document.getElementById('btn-clear-cache').addEventListener('click', function () {
   if (!confirm('確定要清除本機暫存嗎？\n\n會清掉：上次畫面、目前畫布內容、系列改名、匯入工單暫存、縮放比例、解鎖狀態。\n清完會立刻重新整理回到全新狀態。')) return;
+  return withDraftStorageOwnership([IMPORT_IDB_NAME + ':current', BOTTOM_PERSIST_DB + ':current'], function () {
+  window.__bodaResetting = true;
   importPersistDisabled = true;
+  if (importSaveQueue) importSaveQueue.reset({ paused: true });
+  if (bottomSaveQueue) bottomSaveQueue.reset({ paused: true });
   clearTimeout(importStateSaveTimer);
+  clearTimeout(bottomPersistTimer);
+  bottomPersistTimer = null;
   importStateSaveTimer = null;
   WO_CACHE_KEYS.forEach(function (k) {
     try { localStorage.removeItem(k); } catch (e) {}
     try { sessionStorage.removeItem(k); } catch (e) {}
   });
-  try { indexedDB.deleteDatabase(IMPORT_IDB_NAME); } catch (e) {}
-  try { indexedDB.deleteDatabase(BOTTOM_PERSIST_DB); } catch (e) {}
-  location.reload();
+  return waitForPersistenceWrites().then(function () {
+    try { indexedDB.deleteDatabase(IMPORT_IDB_NAME); } catch (e) {}
+    try { indexedDB.deleteDatabase(BOTTOM_PERSIST_DB); } catch (e) {}
+    location.reload();
+  });
+  }).catch(function (error) { alert(error.message || String(error)); });
 });
 
 function renderPaletteContent() {
@@ -27744,8 +28430,8 @@ function bindMaintControls() {
 /* 曝光資源＝shopee/index.html，用 iframe 載入（第一次進到這一頁才載）。
    file:// 和 GitHub Pages 用 ../shopee/（可跨目錄）；
    localhost dev server 透過 junction 用 shopee/（不能 ../）。 */
-var EXPOSURE_SRC_LOCAL  = 'shopee/index.html?host=boda&pluginBase=../jbp/js/&v=20261110-ms-bn-matrix';
-var EXPOSURE_SRC_REMOTE = '../shopee/index.html?host=boda&pluginBase=../BODA/jbp/js/&v=20261110-ms-bn-matrix';
+var EXPOSURE_SRC_LOCAL  = 'shopee/index.html?host=boda&pluginBase=../jbp/js/&v=20261111-preview-lifecycle1';
+var EXPOSURE_SRC_REMOTE = '../shopee/index.html?host=boda&pluginBase=../BODA/jbp/js/&v=20261111-preview-lifecycle1';
 var EXPOSURE_SRC = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? EXPOSURE_SRC_LOCAL : EXPOSURE_SRC_REMOTE;
 var exposureLoaded = false;
@@ -27808,9 +28494,33 @@ function bindExposureAdaptiveShadowEvents(frame) {
 /* 最左側「整包下載」的曝光資源／LPBN 圖片來源：向曝光資源 iframe 要它頁內下載會產生的那批圖，
    走 shopee/js/bn-editor-plugin.js 的 _bnCollectExportFiles（同一套截圖、KB 壓縮、SearchICON 84x84），
    只是不另外下載 BN_Export.zip，改把 [{name, dataUrl}] 交回來。
-   曝光資源頁沒開過（iframe 未載入）就跳過並寫進輸出提醒；曝光資源頁不在畫面上時，
+   曝光資源頁沒開過也會等待初始化、暫存還原與最新素材；曝光資源頁不在畫面上時，
    先用 bn-offscreen-render 把它排到畫面外照常排版，裡面的版位 iframe 才截得到圖。 */
 function requestExposureExportFiles() {
+  var view = document.getElementById('view-exposure');
+  var ownsOffscreen = !!(view && !view.classList.contains('active') && !view.classList.contains('bn-offscreen-render'));
+  if (ownsOffscreen) view.classList.add('bn-offscreen-render');
+  function release() { if (ownsOffscreen) view.classList.remove('bn-offscreen-render'); }
+  return ensureImportResourcesReady({ canvas: false, reason: 'export' }).then(function () {
+    return ensureExposureLoaded({ quiet: true });
+  }).then(function () {
+    var syncWorkbook = _deferredExposureWorkbook;
+    return Promise.resolve(flushDeferredChildTools('exposure', { force: true, immediate: true })).then(function () {
+      if (!syncWorkbook) return;
+      var win = document.getElementById('exposure-frame').contentWindow;
+      if (typeof win._bnApplyLevel === 'function') win._bnApplyLevel(currentLevelId, false);
+      if (currentImportedWorkOrderSpec && typeof win._bnApplyWorkorderExposureSpec === 'function') win._bnApplyWorkorderExposureSpec(currentImportedWorkOrderSpec);
+      if (typeof win.bnApplyWorkorderOverviewText === 'function') win.bnApplyWorkorderOverviewText(readSharedExposureOverviewText());
+    });
+  }).then(function () {
+    return waitForExposureEditor(document.getElementById('exposure-frame'));
+  }).then(function () { return collectPreparedExposureExportFiles(); }).then(function (result) {
+    release(); return result;
+  }, function (error) {
+    release(); return { files: [], note: '\u66dd\u5149\u8cc7\u6e90\u5716\u7247\u672a\u8f38\u51fa\uff1a' + (error.message || error) };
+  });
+}
+function collectPreparedExposureExportFiles() {
   var frame = document.getElementById('exposure-frame');
   var win = frame && frame.contentWindow;
   var collect = null;
@@ -27819,7 +28529,7 @@ function requestExposureExportFiles() {
     return Promise.resolve({ files: [], note: '曝光資源圖片未輸出：尚未開啟過「曝光資源」頁，或曝光資源還沒載入完成。開啟一次曝光資源頁後再下載，ZIP 才會包含「曝光資源」以及歸入「活動頁」的 LPBN 圖片。' });
   }
   var view = document.getElementById('view-exposure');
-  var offscreen = !!(view && !view.classList.contains('active'));
+  var offscreen = !!(view && !view.classList.contains('active') && !view.classList.contains('bn-offscreen-render'));
   if (offscreen) view.classList.add('bn-offscreen-render');
   return new Promise(function (resolve) {
     var settled = false;
@@ -27843,19 +28553,56 @@ function requestExposureExportFiles() {
     } catch (e) { finish(e); }
   });
 }
+var exposureInitializationPromise = null;
+function waitForExposureEditor(frame) {
+  return new Promise(function (resolve, reject) {
+    var done = false, ready = false, waiting = false;
+    var timeout = setTimeout(function () { finish(new Error('Exposure editor readiness timed out')); }, 20000);
+    function finish(error, win) { if (done) return; done = true; clearTimeout(timeout); if (error) reject(error); else resolve(win); }
+    function check() {
+      if (done) return;
+      try {
+        var win = frame && frame.contentWindow;
+        var plugin = win && win._bnStatePlugin;
+        if (plugin && typeof plugin.whenReady === 'function' && typeof win._bnCollectExportFiles === 'function' && typeof win._bnApplyWorkorderAssets === 'function') {
+          if (!ready && !waiting) {
+            waiting = true;
+            Promise.resolve(plugin.whenReady()).then(function () { ready = true; waiting = false; check(); }, finish);
+            return;
+          }
+          if (ready && !win._bnStateApplying) { finish(null, win); return; }
+        }
+      } catch (error) { finish(error); return; }
+      setTimeout(check, 60);
+    }
+    check();
+  });
+}
 function ensureExposureLoaded(options) {
-  if (exposureLoaded) return;
-  /* 匯入工單時背景預載（options.quiet）：不蓋上 Loading 遮罩，留在上傳頁。 */
+  if (exposureInitializationPromise) return exposureInitializationPromise;
+  if (exposureLoaded) return waitForExposureEditor(document.getElementById('exposure-frame'));
+  var resolveInitialization, rejectInitialization;
+  exposureInitializationPromise = new Promise(function (resolve, reject) { resolveInitialization = resolve; rejectInitialization = reject; });
+  /* Some legacy UI callers intentionally do not await this promise. */
+  exposureInitializationPromise.catch(function () {});
+  var initialization = exposureInitializationPromise;
+  function initializationFailed(error) {
+    rejectInitialization(error);
+    /* Preserve an already restored editor on setup/storage failure; do not reload it. */
+    if (!exposureLoaded && exposureInitializationPromise === initialization) exposureInitializationPromise = null;
+  }
+  /* 明確離屏輸出（options.quiet）不切換頁面，也不另開載入遮罩。 */
   var quiet = !!(options && options.quiet);
   if (!quiet && !APP_LOADING.active) appLoadingStart('LOADING · 曝光資源', 8, '正在開啟曝光資源…');
   exposureLoaded = true;
   exposurePaletteMergeReadyAt = Infinity; /* 載入完成並推送配色後才開放（見下方 load） */
   var wrap = document.getElementById('exposure-wrap');
   var frame = document.getElementById('exposure-frame');
-  if (!frame) { appLoadingFinish('曝光資源元件不存在'); return; }
+  if (!frame) { exposureLoaded = false; appLoadingFinish('曝光資源元件不存在'); initializationFailed(new Error('Exposure frame is missing')); return initialization; }
   var settled = false;
   var triedFallback = false;
-  frame.addEventListener('load', function () {
+  frame.onload = function () {
+    if (exposureInitializationPromise !== initialization) return;
     try {
       var doc = frame.contentDocument || frame.contentWindow.document;
       if (doc && doc.title && /404|not found/i.test(doc.title) && !triedFallback) {
@@ -27879,6 +28626,7 @@ function ensureExposureLoaded(options) {
     wrap.classList.remove('missing');
     if (typeof window.woBroadcastLevel === 'function') setTimeout(window.woBroadcastLevel, 300);
     setTimeout(function () {
+      waitForExposureEditor(frame).then(function () {
       if (typeof resolvedImportBg === 'function') pushImportBgToExposure(colorToHex(resolvedImportBg()));
       /* 背景推過去會讓曝光資源重算自動 CTA；若使用者有手動指定的共用 CTA 底色／字色，接著再推一次。 */
       if (typeof pushImportCtaBgToExposure === 'function' && importTheme.ctaBg) pushImportCtaBgToExposure(importTheme.ctaBg);
@@ -27903,23 +28651,49 @@ function ensureExposureLoaded(options) {
       /* 匯入試算表與圖片可能發生在曝光資源 iframe 開啟之前。
          文字可由 postMessage 重新同步，但圖片也必須在 iframe 完成載入後
          依工單總覽 B13 的檔名重新配對，否則切到曝光資源時 BN 會漏圖。 */
-      if (typeof syncExposureOverviewAssets === 'function') syncExposureOverviewAssets();
-      syncExposureShadowBackgroundSoon(resolvedImportBg(), 900);
-      if (!exposureChildLoading) appLoadingFinish('曝光資源已載入');
+      if (window.BodaExposureSnapshots && BodaExposureSnapshots.pending()) {
+        var sourceColumns = currentImportColumns, sourceRevision = importShadowRequestRevision;
+        var restore = BodaExposureSnapshots.apply(frame, { projectId: currentImportImageLayoutId }).then(function () {
+          /* A restored edit owns its pixels; do not replay older original assets. */
+          if (currentImportColumns === sourceColumns && importShadowRequestRevision === sourceRevision) {
+            _deferredExposureAssets = false; _deferredExposureWorkbook = false; _deferredExposurePayload = null;
+            clearTimeout(_exposureOverviewAssetDebounce); _exposureOverviewAssetPending = null;
+          }
+        }).catch(function (err) {
+          var log = document.getElementById('import-log');
+          if (log) log.innerHTML += '<br><span class="err">' + (err.restoreApplied ? '曝光編輯已還原，但暫存尚未完成：' : '曝光編輯還原未完成：') + esc(err.message) + '</span>';
+          throw err;
+        });
+      } else {
+        if (typeof syncExposureOverviewAssets === 'function') syncExposureOverviewAssets();
+        syncExposureShadowBackgroundSoon(resolvedImportBg(), 900);
+      }
+      return Promise.resolve(restore).then(function () {
+        /* Let the final 650ms palette retry and 900ms shadow setup settle. */
+        return new Promise(function (resolve) { setTimeout(resolve, 1000); });
+      }).then(function () { return waitForExposureEditor(frame); });
+      }).then(function () {
+        if (!exposureChildLoading && !quiet) appLoadingFinish('曝光資源已載入');
+        resolveInitialization(frame.contentWindow);
+      }, initializationFailed);
     }, 400);
-  });
-  frame.addEventListener('error', function () {
+  };
+  frame.onerror = function () {
+    if (exposureInitializationPromise !== initialization) return;
     if (!triedFallback) {
       triedFallback = true;
       frame.src = (EXPOSURE_SRC === EXPOSURE_SRC_LOCAL) ? EXPOSURE_SRC_REMOTE : EXPOSURE_SRC_LOCAL;
       return;
     }
     settled = true;
+    exposureLoaded = false;
     wrap.classList.add('missing');
     appLoadingFinish('曝光資源載入失敗');
-  });
+    initializationFailed(new Error('Exposure page failed to load'));
+  };
   frame.src = EXPOSURE_SRC;
-  setTimeout(function () { if (!settled) { wrap.classList.add('missing'); appLoadingFinish('曝光資源載入逾時'); } }, 12000);
+  setTimeout(function () { if (!settled) { settled = true; exposureLoaded = false; wrap.classList.add('missing'); appLoadingFinish('曝光資源載入逾時'); initializationFailed(new Error('Exposure page load timed out')); } }, 12000);
+  return initialization;
 }
 
 /* 背景色＝shopee/color/color-tool.html，用 iframe 載入（第一次進到這一頁才載）。 */
@@ -28162,7 +28936,8 @@ function showView(name, options) {
   var finishPerf = typeof window !== 'undefined' && window.BodaPerf ? window.BodaPerf.begin('view.switch.dispatch', { view: name }) : function () {};
   try {
   var viewLoadingToken = options.skipLoading ? 0 : appLoadingStartView(name);
-  var viewWaitsForOwnLoad = (name === 'exposure' && !exposureLoaded) ||
+  var viewPreparation = null;
+  var viewWaitsForOwnLoad = name === 'import' || name === 'exposure' ||
     (name === 'maint' && !maintLoaded) ||
     (name === 'bottom' && !standaloneBottomBridgeReady);
 
@@ -28170,12 +28945,23 @@ function showView(name, options) {
   document.querySelectorAll('.nav-item').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-view') === name); });
   if (name === 'generator' && typeof syncGeneratorToolMode === 'function') syncGeneratorToolMode();
   /* 鎖頭跟編輯提示條只跟「工單生成器」的副區／MSBN 有關，吸底工具有自己的面板 */
-  if (name === 'exposure') ensureExposureLoaded();
+  if (name === 'exposure') {
+    viewPreparation = ensureImportResourcesReady({ canvas: false, reason: 'view' }).then(function () {
+      if (!document.querySelector('#view-exposure.active')) return;
+      return ensureExposureLoaded().then(function () {
+        if (!document.querySelector('#view-exposure.active')) return;
+        return Promise.resolve(flushDeferredChildTools('exposure', { immediate: true })).then(function () {
+          if (document.querySelector('#view-exposure.active') && viewLoadingToken) appLoadingFinishView(viewLoadingToken, '\u66dd\u5149\u8cc7\u6e90\u5df2\u5c31\u7dd2');
+        });
+      });
+    });
+  }
   if (name === 'color') ensureColorToolLoaded();
   /* 維修頁第一次進去才載入（要多抓未註冊的版位，不必在開頁時就做） */
   if (name === 'maint') ensureMaintLoaded();
   if (name === 'bottom') {
     ensureStandaloneBottomLoaded(false);
+    if (typeof flushDeferredChildTools === 'function') flushDeferredChildTools('bottom');
     requestAnimationFrame(function () {
       if (standaloneBottomBridgeReady && latestBottomWorkOrder) {
         sendLatestWorkOrderToStandaloneBottom('open-standalone');
@@ -28186,6 +28972,11 @@ function showView(name, options) {
      （只有還沒手動改過背景色時才會動） */
   if (name === 'import' && typeof syncImportBgFromExposure === 'function') syncImportBgFromExposure();
   if (name === 'import') {
+    viewPreparation = ensureImportResourcesReady({ canvas: true, reason: 'view' }).then(function () {
+      if (!document.querySelector('#view-import.active')) return;
+      if (typeof flushDeferredChildTools === 'function') flushDeferredChildTools('import');
+      if (viewLoadingToken) appLoadingFinishView(viewLoadingToken, '\u6d3b\u52d5\u9801\u8cc7\u6e90\u5df2\u5c31\u7dd2');
+    });
     /* 版配載入只由「載入工單生成器版配」按鈕觸發；
        切頁與工單生成器編輯期間不會自動覆蓋匯入工單畫布。 */
     refreshGeneratorImportButton();
@@ -28219,6 +29010,11 @@ function showView(name, options) {
      已經載好的頁面與其他工具則在下一個繪製週期收起。 */
   if (viewLoadingToken && !viewWaitsForOwnLoad) appLoadingFinishView(viewLoadingToken, (name === 'home' ? '首頁已就緒' : '工具已就緒'));
   renderWorkflowNav();
+  if (viewPreparation) return viewPreparation.catch(function (error) {
+    console.error('[BODA] Deferred resource preparation failed', error);
+    if (document.querySelector('#view-' + name + '.active')) appLoadingFail(String(error && error.message || error));
+    return false;
+  });
   } finally { finishPerf(); }
 }
 
@@ -28451,12 +29247,16 @@ function clearImportCanvasContent() {
     '清除後無法用「上一步」復原；需要保留完整內容，請先按最左側「整包下載」。'
   );
   if (!ok) { appLoadingFinish('已取消清除'); return; }
-  if (window.BNImageLayout && typeof BNImageLayout.hideTransformControls === 'function') BNImageLayout.hideTransformControls();
   if (previewActive) {
+    if (window.BNImageLayout && typeof BNImageLayout.hideTransformControls === 'function') BNImageLayout.hideTransformControls();
     showPreviewAllDefaults();
     return;
   }
-  ensureBlocksLoaded(function () {
+  return withDraftStorageOwnership([IMPORT_IDB_NAME + ':current', BOTTOM_PERSIST_DB + ':current', 'bn_editor_state_db:current'], function () {
+  return new Promise(function (resolve, reject) {
+  try { ensureBlocksLoaded(function () {
+  Promise.resolve().then(function () {
+    if (window.BNImageLayout && typeof BNImageLayout.hideTransformControls === 'function') BNImageLayout.hideTransformControls();
     currentImportColumns.forEach(function (col) {
       if (!col) return;
       col.data = BNCore.getBlock(col.blockId) ? Object.assign({}, BNCore.defaultData(col.blockId)) : {};
@@ -28472,6 +29272,7 @@ function clearImportCanvasContent() {
     /* 清空已上傳圖片素材、工單來源與產生器簽章 */
     uploadedImages = [];
     currentImportWorkbook = null;
+    currentImportWorkbookBuffer = null;
     currentImportWorkbookName = '';
     currentImportSource = '';
     currentGeneratorSignature = '';
@@ -28487,7 +29288,7 @@ function clearImportCanvasContent() {
     importTheme.endorserText = readSharedEndorserTextColor() || '';
     importTheme.bgAuto = false;
     /* 清除吸底資料庫 */
-    try { indexedDB.deleteDatabase('boda-bottom-persist'); } catch (e) {}
+    var clearedBottom = clearBottomPersistDraft();
     /* 推送空的素材到曝光資源 iframe */
     try {
       var _clrFrame = document.getElementById('exposure-frame');
@@ -28503,8 +29304,22 @@ function clearImportCanvasContent() {
     /* 讓 saveImportState 寫入空狀態覆蓋 localStorage */
     importPersistDisabled = false;
     saveImportState();
+    return clearedBottom.then(function (cleared) {
+      if (!cleared) throw new Error('吸底暫存未能清除，請保留目前編輯並重試。');
+      return Promise.all([getImportSaveQueue().flush(), getBottomSaveQueue().flush()]);
+    }).then(function () {
     if (importLog) importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已清除畫面內容：' + currentImportColumns.length + ' 格版位回到預設示範內容</span>';
     appLoadingFinish('畫面內容已清除');
+    return true;
+    });
+  }).then(resolve, reject);
+  }); } catch (error) { reject(error); }
+  });
+  }).catch(function (error) {
+    if (importLog) importLog.textContent = '清除未完成：' + (error.message || String(error));
+    appLoadingFinish('清除未完成');
+    reportPersistenceStatus('activity', { state: 'paused', error: error.message || String(error), noAutomaticRetry: !!error.noAutomaticRetry, errorName: error.name || '' });
+    return false;
   });
 }
 document.getElementById('btn-clear-import-canvas').addEventListener('click', clearImportCanvasContent);
@@ -28523,9 +29338,12 @@ function deepClearAll() {
   );
   if (!ok) return;
 
-  /* 1) 清除畫布內容（含圖片、顏色、來源、IndexedDB） */
-  if (window.BNImageLayout && typeof BNImageLayout.hideTransformControls === 'function') BNImageLayout.hideTransformControls();
-  ensureBlocksLoaded(function () {
+  return withDraftStorageOwnership([IMPORT_IDB_NAME + ':current', BOTTOM_PERSIST_DB + ':current', 'bn_editor_state_db:current'], function () {
+  return new Promise(function (resolve, reject) {
+  try { ensureBlocksLoaded(function () {
+  Promise.resolve().then(function () {
+    /* 1) 清除畫布內容（含圖片、顏色、來源、IndexedDB） */
+    if (window.BNImageLayout && typeof BNImageLayout.hideTransformControls === 'function') BNImageLayout.hideTransformControls();
     currentImportColumns.forEach(function (col) {
       if (!col) return;
       col.data = BNCore.getBlock(col.blockId) ? Object.assign({}, BNCore.defaultData(col.blockId)) : {};
@@ -28537,6 +29355,7 @@ function deepClearAll() {
     beginImportImageLayoutDocument(false);
     uploadedImages = [];
     currentImportWorkbook = null;
+    currentImportWorkbookBuffer = null;
     currentImportWorkbookName = '';
     currentImportSource = '';
     currentGeneratorSignature = '';
@@ -28549,7 +29368,7 @@ function deepClearAll() {
     IMPORT_COLOR_ITEMS.forEach(function (it) { importTheme[it.key] = ''; });
     importTheme.endorserText = readSharedEndorserTextColor() || '';
     importTheme.bgAuto = false;
-    try { indexedDB.deleteDatabase('boda-bottom-persist'); } catch (e) {}
+    var clearedBottom = clearBottomPersistDraft();
 
     /* 2) 清除匯入工單 localStorage 暫存 */
     try { localStorage.removeItem(IMPORT_STORAGE_KEY); } catch (e) {}
@@ -28581,10 +29400,24 @@ function deepClearAll() {
     renderImageGallery();
     importPersistDisabled = false;
     saveImportState();
-
+    return clearedBottom.then(function (cleared) {
+      if (!cleared) throw new Error('吸底暫存未能清除，請保留目前編輯並重試。');
+      return Promise.all([getImportSaveQueue().flush(), getBottomSaveQueue().flush()]);
+    }).then(function () {
     var importLog = document.getElementById('import-log');
     if (importLog) importLog.innerHTML = '<span class="ok">' + lineIcon('done') + ' 已重置所有資料</span>';
     appLoadingFinish('所有資料已重置');
+    return true;
+    });
+  }).then(resolve, reject);
+  }); } catch (error) { reject(error); }
+  });
+  }).catch(function (error) {
+    var importLog = document.getElementById('import-log');
+    if (importLog) importLog.textContent = '重置未完成：' + (error.message || String(error));
+    appLoadingFinish('重置未完成');
+    reportPersistenceStatus('activity', { state: 'paused', error: error.message || String(error), noAutomaticRetry: !!error.noAutomaticRetry, errorName: error.name || '' });
+    return false;
   });
 }
 document.getElementById('btn-deep-clear-all').addEventListener('click', deepClearAll);
@@ -28631,7 +29464,7 @@ window.addEventListener('beforeunload', function () {
   if (window.__bodaResetting) return; /* 「清除重置」中：不可再把舊狀態寫回去 */
   saveImportImageLayout(); /* 滾輪 220ms 合併計時尚未結束、或拖曳中重新整理，也保存當下狀態 */
   if (importStateSaveTimer) { clearTimeout(importStateSaveTimer); saveImportState(); }
-  if (bottomPersistTimer) { clearTimeout(bottomPersistTimer); bottomPersistTimer = null; queueBottomPersist(); }
+  if (bottomPersistTimer) flushBottomPersist();
 });
 window.addEventListener('pagehide', saveImportImageLayout);
 document.addEventListener('visibilitychange', function () {
@@ -28722,12 +29555,16 @@ ensureBlocksLoaded(function () {
   function isToolKey(k){return /^(wo_|bn|boda|hbn-)/i.test(String(k||''));}
   function freezeAutosave(){
     window.__bodaResetting=true;
+    try{ if(importSaveQueue) importSaveQueue.reset({paused:true}); }catch(_){}
+    try{ if(bottomSaveQueue) bottomSaveQueue.reset({paused:true}); }catch(_){}
     try{ if(typeof importPersistDisabled!=='undefined') importPersistDisabled=true; }catch(_){}
     try{ clearTimeout(importStateSaveTimer); }catch(_){}
     try{ clearTimeout(bottomPersistTimer); }catch(_){}
     /* 曝光資源 iframe：用它自己的「清除中」旗標擋住計時器與 beforeunload 自動存檔 */
-    try{ var ex=document.getElementById('exposure-frame'); var w=ex&&ex.contentWindow; if(w){ w._bnClearingState=true; clearTimeout(w._bnSaveTimer); } }catch(_){}
+    var exposureWrite = null;
+    try{ var ex=document.getElementById('exposure-frame'); var w=ex&&ex.contentWindow; if(w){ w._bnClearingState=true; clearTimeout(w._bnSaveTimer); if(w._bnStatePlugin&&w._bnStatePlugin.whenIdle) exposureWrite=w._bnStatePlugin.whenIdle(); } }catch(_){}
     /* 吸底 iframe 的自動暫存是 1 秒 debounce，可能在清除後才寫回：重新整理前會再清一次（見下方）。 */
+    return Promise.all([waitForPersistenceWrites(), exposureWrite]);
   }
   function clearToolStorage(){
     [window.localStorage,window.sessionStorage].forEach(function(store){
@@ -28746,9 +29583,10 @@ ensureBlocksLoaded(function () {
     resetButton.title='清除全部暫存：配色、排版、版位勾選、案型、底色、等級、工單與圖片都回到預設';
     resetButton.addEventListener('click',function(){
       if(!confirm('確定要清除全部暫存並重置嗎？\n\n會清掉：匯入的工單與圖片、活動頁資源的版位與編輯、曝光資源的版位勾選、案型、底色與配色、取色工具、吸底、等級與製作流程進度。\n清除後無法復原，需要的話請先「整包下載」備份暫存檔。\n\n按「確定」後會重新整理，回到全新狀態。')) return;
-      freezeAutosave();
-      clearToolStorage();
-      var pending=RESET_IDB.map(function(name){
+      withDraftStorageOwnership(RESET_IDB.map(function(name){return name + ':current';}), function(){
+      return Promise.resolve(freezeAutosave()).then(function(){
+        clearToolStorage();
+        return Promise.all(RESET_IDB.map(function(name){
         return new Promise(function(done){
           try{
             var req=indexedDB.deleteDatabase(name);
@@ -28757,13 +29595,14 @@ ensureBlocksLoaded(function () {
             req.onblocked=function(){done();};
           }catch(_){done();}
         });
-      });
-      Promise.all(pending).then(function(){
+        }));
+      }).then(function(){
         /* iframe 的自動存檔可能剛好在這段時間寫回，重新整理前再清一次 */
         clearToolStorage();
         try{ history.replaceState(null,'',location.pathname+location.search+'#upload'); }catch(_){}
         location.reload();
       });
+      }).catch(function(error){alert(error.message || String(error));});
     });
   }
   var rail=document.getElementById('nav-rail');
@@ -28843,7 +29682,7 @@ ensureBlocksLoaded(function () {
       text:'工單有吸底內容時，可到<b>吸底工具</b>確認各顆的 LOGO、ICON、文字與狀態。工單原本沒有吸底時，不必額外製作。',
       tip:'請先在「匯入工單」載入資料，再確認吸底的預覽結果。',demo:'bottom'},
     {id:'download',group:'交付',view:'import',target:'#btn-download-import-package',stage:'download',extraTarget:'#nav-rail .nav-step[data-step="download"]',title:'頁內資源與完整交付分開下載',
-      text:'各工具頁的<b>「下載此資源檔案」</b>只輸出該頁內容；活動頁資源會下載合成圖、副區整排與 MSBN 單張 PNG。只有最左側流程最後一步<b>「整包下載」</b>會輸出工單、所有頁圖片、色票與可還原的暫存檔。',
+      text:'各工具頁的<b>「下載此資源檔案」</b>只輸出該頁內容；活動頁資源會下載副區整排與 MSBN 單張 PNG，需要合成長圖可在下載按鈕上方勾選。只有最左側流程最後一步<b>「整包下載」</b>會輸出工單、所有頁圖片、色票與可還原的暫存檔。',
       tip:'頁內按鈕與整包下載用途不同；有文字超過字數時兩者都會先擋下。導覽只說明位置，不會替你觸發下載。',demo:'download'},
     {id:'restore',group:'交付',view:'upload',target:'#btn-upload-snapshot',title:'暫存檔，讓下次可以接著做',
       text:'同一台瀏覽器有本機暫存；若要跨電腦或保留一份可還原的版本，請另外保存下載包中的 <b>JSON 暫存檔</b>。上傳暫存檔會<b>完整還原</b>圖片的位置與大小、文字、配色與流程完成狀態。',

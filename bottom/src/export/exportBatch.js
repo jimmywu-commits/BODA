@@ -176,6 +176,7 @@
    * 存檔的用途是接續編輯，只存一條的話回來就少了其他分頁。
    */
   async function downloadAsZip(results, filenamePrefix, store) {
+    await window.BodaDependencies.ensure("zip");
     var prefix = filenamePrefix || "吸底圖";
     var view = window.Selectors.viewState(store.getState());
     var zip = new JSZip();
@@ -189,6 +190,7 @@
   }
 
   async function downloadAllBannersAsZip(groups, filenamePrefix, store) {
+    await window.BodaDependencies.ensure("zip");
     var prefix = filenamePrefix || "吸底圖";
     var state = store.getState();
     var zip = new JSZip();

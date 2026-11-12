@@ -27,6 +27,19 @@
 - 每次使用相近的其他應用程式負載。正常視訊會議等負載可另做一組，標記測試條件。
 - 同步用瀏覽器工作管理員記錄 BODA 的整體記憶體峰值。監測頁的 JS heap 不包括全部圖片、GPU、原生記憶體。
 
+## 本次延後載入的實機驗收（2026-11-12）
+
+本次將尚未使用的畫布、影子與子工具同步延後到真正需要時。驗收不能只量「上傳完成」：部分工作改在首次進活動／曝光頁或首次下載執行，應分開標記各階段，再比較同樣完整流程。先備份作品；用同一份原工單與圖片對照測試，不清除未備份的網站資料。
+
+1. 在 HTTP／HTTPS 的上傳頁開始紀錄，匯入工單和圖片後先停留該頁。記錄上傳耗時、長任務、iframe 數與整體 RAM；確認沒有為尚未開啟的活動頁提前建立整份畫布／吸底預覽。
+2. 不開活動頁，先儲存／備份，再重新整理並檢查工單、圖片、既有裁切與縮放／位置仍在。存檔應保留正式資料及待處理狀態，不以先渲染畫布作為存檔前提。
+3. 標記「首次活動頁」，進活動頁並等最新內容就緒；記錄此段準備耗時。修改商品裁切、大小及位置，切回上傳／曝光再回活動，標記「再次活動頁」，確認配色、內容和編輯成果不跳回預設。
+4. 另用一個已備份的測試案例，從上傳頁直接下載尚未開過的活動資源。確認輸出非空白且是最新資料，目前頁面和網址 hash 不被強制切換。不包含吸底的獨立資源輸出，不應順便建立吸底預覽；選擇包含吸底時，等待其準備完成再核對成品。
+5. 切入曝光／吸底工具，確認待同步的是最新工單與圖片，而不是上一次資料；往返同一頁不能再次匯入覆蓋已裁切或已調整作品。連續匯入 A、B 測試工單後，只能出現最後 B 的資料和輸出。
+6. 固定操作次數再做一次完整流程，記錄首次／再次開頁、首次／再次下載、總耗時、長任務和瀏覽器工作管理員的 RAM 峰值。冷、熱快取各自比較；正式 GitHub 部署另記網路環境，不用本機 HTTP 結果代替。
+
+DOM 是否保留、隱藏頁零 mount、影子排程和儲存旗標的程式斷言由下方開發測試核對；監測頁的 iframe／heap 曲線不能單獨證明這些內部條件。背景分頁節流、垃圾回收與監測開銷也會影響數字。此次尚無同條件原工單／低配筆電／GitHub 實網的修改前後測量，不能提供本次 RAM 或網路改善百分比。
+
 ## 紀錄能說明什麼
 
 | 資料 | 用途與界限 |
@@ -54,3 +67,34 @@ node tools/test-performance-monitor.js
 ```
 
 測試使用本機 HTTP fixture，不載入完整 BODA，不需下載額外套件。這驗證監測功能與原生 API 的相容性，不代替低規格筆電的實際效能測試。
+
+第二輪另提供實際載入 BODA 的受控批次工具（開發機需可用 Playwright 與 Chrome／Edge）。以下 `round2` 命令與報告路徑對應 2026-11-11 的歷史驗證，不是 2026-11-12 修改後已重測的結果：
+
+~~~powershell
+node tools/test-batch-workflow.js --images=20 --report=output/performance/batch-20-round2.json
+node tools/test-batch-workflow.js --images=37 --report=output/performance/batch-37-round2.json
+node tools/test-slimming.js --report=output/performance/verification-round2-final-20261111.txt
+~~~
+
+批次工具使用合成 XLSX／不同的 1200×1000 PNG，驗證 DOM 重用、幾何保存、IDB-only 重新整理與真 PNG 輸出。同一 band 匯出一個副區資源。它不取代原工單／低配筆電／GitHub 實網測試；階段邊界 JS heap 不可當成整體 RAM 或 GPU 峰值。需要前後比較時須固定相同資料與條件，不能用兩個圖片數的單次結果推算改善比例。執行命令會覆寫指定的報告檔，需要保留舊數據時請更換 --report 路徑。
+
+### 2026-11-12 新增流程回歸
+
+```powershell
+node tools/test-lazy-workflow.js
+node tools/test-lazy-child-sync.js
+node tools/test-lazy-bottom-preview.js
+node tools/test-lazy-exposure-export.js
+node tools/test-lazy-preview-state.js
+node tools/test-slimming.js --report=output/performance/verification-lazy-20261112.txt
+```
+
+本次新增五檔：`test-lazy-workflow.js`（真瀏覽器匯入／備份／未開頁與預覽後輸出／往返保留）、`test-lazy-child-sync.js`（隱藏子工具同步最新資料）、`test-lazy-bottom-preview.js`（吸底預覽與明確輸出需求）、`test-lazy-exposure-export.js`（曝光延後準備及輸出）、`test-lazy-preview-state.js`（預覽隔離與正式資源輸出）。2026-11-12 最終完整回歸 **30／30 通過**，紀錄為 `output/performance/verification-lazy-20261112.txt`；其後正式碼僅修正舊誤導註解，未改功能。
+
+中途測試曾因 Chrome `DevToolsActivePort` 暫時檔案鎖定（`EBUSY`）失敗；僅補測試的有界輪詢，處理鎖定或尚未寫完整內容，未改正式功能或放寬功能斷言。重跑完整套件後 30／30 通過。
+
+這些是正確性／按需執行的驗證，不是效能百分比測量。請先確認新增項目已收錄套件，再使用新檔名保存報告，避免以歷史 25／25 紀錄誤判本次完成。
+
+本次另重跑20／37圖受控批次：`output/performance/batch-20-lazy-20261112.json` 與 `output/performance/batch-37-lazy-20261112.json` 均通過（`valid:true`，無 runtime errors、HTTP／外網失敗或實際下載）。包含幾何保存、IDB-only 還原、RGBA 一致、DOM 重用與非空白 PNG。這不是原工單／低配筆電／GitHub 實網測量；單次階段邊界 heap 不可換算 RAM 改善比例。2026-11-11 的 `round2` 報告保留為歷史，不以新執行覆寫。
+
+最終程式獨立本機冷啟動三次：18 次請求、2,332,037 body bytes、`appReadyObserved` 中位數 530 ms、load 中位數 239.1 ms，無 HTTP／failed／runtime errors 或 CDN 請求。紀錄：`output/performance/lazy-20261112/startup-after.json`。條件為空白上傳頁、本機未壓縮 HTTP 與新瀏覽器資料／快取；不是 GitHub 實際傳輸或低配筆電效能保證，也不代表整體 RAM／GPU 或完整工作流程耗時。

@@ -1,0 +1,225 @@
+BODA slimming verification 2026-11-11T08:47:20.891Z
+
+> node tools/build-block-catalogue.js --check
+PASS: 107 個版位的 bundle 與來源一致（c2f67ca46169f340）
+
+> node tools/test-loading-dependencies.js
+PASS: zero eager dependencies, shared promises, pinned same-origin paths, global reuse, failure/timeout retry, legacy font-weight validation, subset module validation/retry and file:// URLs
+
+> node tools/test-block-catalogue.js
+PASS: 107 exact schemas, one bundle/zero JSON fetches, coalescing/reuse, immutable catalogue, source fallback/retry, 6-request bound, force refresh, partial failure, file://, shared WOFF2 paths and weights
+
+> node tools/test-save-queue.js
+PASS single writer, frozen metadata, latest pending, dirty-only saves, bounded retries, read-error hold and project reset
+
+> node tools/test-root-persistence.js
+PASS actual activity wiring uses codec v2, preserves image/layout data, loads old states and avoids large local JSON
+PASS actual bottom wiring exposes nested images to codec, preserves public JSON and shares immutable workbook bytes
+PASS restored original XLSX stays unparsed and shared until the actual workbook export needs ExcelJS
+PASS root read failures pause both writers and recovery cannot flush stale startup defaults
+PASS delayed root restoration cannot overwrite a new workbook or image/bottom edits made while reading
+PASS first-read, failure and retry edits survive both successful reads and repeated read errors
+PASS real root queues coalesce latest edits, freeze metadata and discard previous-project pending work
+PASS actual full-reset autosave freeze cancels debounce and pending work before database removal
+PASS actual reset/cache clicks await writers before open/commit and exposure idle before deleting databases
+PASS actual bottom draft clear waits for writers, resumes latest new edits only after clear and visibly holds failures
+PASS older embedded-state callbacks and lazy XLSX parses cannot claim a newer workbook
+All actual root persistence checks passed.
+
+> node tools/test-exposure-snapshot-bridge.js
+PASS live collection waits for readiness and current layout synchronization; staged backup stays authoritative
+PASS unopened exposure includes stored data only for a matching project and reports unsafe or unavailable fallbacks
+PASS staged, live and matching stored backups await portable image conversion and surface conversion failures
+PASS restore waits for readiness, applies upload colors, marks dirty and awaits a forced flush
+PASS failed flush identifies an already-applied restore and never replays its stale snapshot
+PASS newest staged restore wins before readiness and while an earlier restore is flushing
+PASS legacy backups without exposure data and clear during readiness safely cancel stale restoration
+All exposure snapshot bridge checks passed.
+
+> node tools/test-shadow-batching.js
+PASS cached shadow/clean results avoid repeated cutout and preserve crop, position, scale and geometry
+PASS stale work never publishes partial/mixed settings; latest requests coalesce and loading finishes
+PASS a new crop during preparation supersedes stale source pixels and is retained
+PASS preview-to-commit upgrade keeps one job and still saves the final edit
+PASS settings changed during the post-publication yield finish through the latest revision only
+PASS a single product edit snapshots background, derived shadow color and offsets before async preparation
+Shadow batch regression checks passed.
+
+> node tools/test-background-isolation.js
+背景隔離回歸測試通過：商品排版與最新裁切狀態均保留。
+
+> node tools/test-package-image-routing.js
+整包圖片分類測試通過：曝光資源排除 LPBN；活動頁包含副區、MSBN、吸底與 LPBN。
+
+> node tools/test-activity-badge-cta-colors.js
+活動頁圓標／CTA 防同色測試通過：自動、手動、實際 CTA 換色與舊暫存皆會分色。
+
+> node tools/test-exposure-workorder-order.js
+曝光版位工單排序測試通過：左右清單依工單總覽順序，變體穩定，未列版位置後。
+
+> node tools/test-exposure-global-shadow-color.js
+曝光資源全域商品影子色測試通過：左欄批次套色、固定／自動模式、排版與單品幾何皆受保護。
+
+> node tools/test-character-bounds.js
+人物圖片邊界測試通過：位置、縮放、舊狀態與代言人排除規則正確。
+
+> node tools/test-export-font-loader.js
+PASS startup stays empty, computed weights follow CSS matching, glyph chunks and in-flight/completed requests deduplicate
+PASS bounded concurrency, hidden content, pseudo-element text, form values and original-font fallback
+PASS error/timeout retry and file:// asset loading
+Export font loader regression checks passed.
+
+> node tools/test-activity-render-reuse.js
+PASS unchanged activity canvases preserve image identity, live crop/transform and events; only a changed column renders, all tools/colors still update
+PASS nested data, image source, manual text, all column metadata, object/definition identity, external DOM replacement and options invalidate safely
+PASS dimensions, bands, visible order, level visibility and bottom pixels use the full rebuild fallback
+Activity render reuse regression checks passed.
+
+> node tools/test-exposure-performance.js
+PASS source/revision dedupe, in-flight coalescing and changed-only asset application preserve edits
+PASS exact tag mapping has no speculative or duplicated html/html requests
+PASS real-browser keyed previews retain edited documents; export leases stay sequential and dimension probes batch
+Exposure performance regression checks passed.
+
+> node tools/test-exposure-state-storage.js
+PASS bounded light summary and original-preserving legacy merge
+PASS single write queue, latest edit coalescing, idle no-op and visible save status
+PASS bounded failure retries, no full localStorage fallback and explicit recovery
+PASS ready Promise and protection from late startup restoration
+PASS failed restoration pauses writes until an explicit valid snapshot is applied
+PASS manual flush waits for apply stabilization and actual IDB completion
+PASS clear waits for in-flight writes and prevents stale-state resurrection
+PASS portable collect/apply preserves crop, rotation, layouts, characters, logos and backgrounds across layout IDs
+PASS real-browser storage checks: {"legacyMigration":true,"uniqueAssets":3,"geometryReencodes":0,"atomicRollback":true,"garbageCollection":true,"frozenSnapshot":true,"missingAssetRejected":true,"blobRoundTrip":true,"portableBlobSnapshot":true,"blockedUpgrade":true}
+Exposure persistence checks passed.
+
+> node tools/test-slimming-workflow.js
+PASS actual empty root page does not request or initialize optional heavy dependencies
+PASS first parseImportXlsx loads local ExcelJS once and parses a real Layout_Output XLSX
+PASS cropped output, original source, editor metadata, zoom and position survive actual IDB-only reload
+PASS first export use loads capture/font engine/zip once
+PASS real 400/500/700 Chinese glyph PNG uses only needed font chunks with cache reuse {"cssLength":1424540,"weights":[true,true,true],"cacheMatches":true,"visible":[3694,4020,4756],"elapsedMs":252,"png":true}
+WORKFLOW_STAGE waitForImportExportRender:start
+WORKFLOW_STAGE waitForImportExportRender:done
+WORKFLOW_STAGE exportImportPlacementImages:start
+WORKFLOW_STAGE waitForImportExportRender:start
+WORKFLOW_STAGE waitForImportExportRender:done
+WORKFLOW_STAGE toPng:start
+WORKFLOW_STAGE toPng:done
+WORKFLOW_STAGE exportImportPlacementImages:done
+WORKFLOW_STAGE waitForImportExportRender:start
+WORKFLOW_STAGE waitForImportExportRender:done
+WORKFLOW_STAGE toPng:start
+WORKFLOW_STAGE toPng:done
+WORKFLOW_STAGE exportImportPlacementImages:start
+WORKFLOW_STAGE waitForImportExportRender:start
+WORKFLOW_STAGE waitForImportExportRender:done
+WORKFLOW_STAGE toPng:start
+WORKFLOW_STAGE toPng:done
+WORKFLOW_STAGE exportImportPlacementImages:done
+PASS actual placement and composite PNGs are nonblank; collectOnly causes zero downloads and restores capture UI
+{
+  "parsed": {
+    "count": 1,
+    "id": "subarea_A_1_1",
+    "entries": [
+      {
+        "label": "促標",
+        "value": "測試"
+      },
+      {
+        "label": "商品",
+        "value": "product.png"
+      },
+      {
+        "label": "品名",
+        "value": "商品"
+      },
+      {
+        "label": "商品",
+        "value": ""
+      }
+    ]
+  },
+  "before": {
+    "columns": 1,
+    "image": 502,
+    "source": 854,
+    "weight": 1.25,
+    "offset": {
+      "x": 13,
+      "y": -8
+    }
+  },
+  "restored": {
+    "modelMatches": true,
+    "cropWidth": 60,
+    "cropHeight": 80,
+    "baseMatches": true,
+    "outputRatio": "0.75",
+    "transform": "matrix(0.625, 0, 0, 0.625, 35.3125, 21.4167)",
+    "dependencies": {
+      "excel": "undefined",
+      "capture": "undefined",
+      "zip": "undefined",
+      "fonts": "undefined",
+      "subset": "undefined"
+    }
+  },
+  "glyphs": {
+    "cssLength": 1424540,
+    "weights": [
+      true,
+      true,
+      true
+    ],
+    "cacheMatches": true,
+    "visible": [
+      3694,
+      4020,
+      4756
+    ],
+    "elapsedMs": 252,
+    "png": true
+  },
+  "capture": [
+    {
+      "name": "版位成品.png",
+      "width": 400,
+      "height": 350,
+      "opaque": 1400,
+      "colors": 275,
+      "png": true
+    },
+    {
+      "name": "副區_01.png",
+      "width": 400,
+      "height": 350,
+      "opaque": 1400,
+      "colors": 275,
+      "png": true
+    }
+  ],
+  "fontChunkRequests": 31,
+  "runtimeErrors": 0,
+  "downloads": 0
+}
+
+> node tools/test-performance-monitor.js
+PASS inactive SDK leaves fetch, timers and performance observers untouched
+PASS same-origin channel controls resource, lag, supported long-task and workflow telemetry
+PASS telemetry removes URL query strings and fragments
+PASS same-origin child resources/canvas are observed; detached children are released and cross-origin frames are counted
+PASS session boundaries prevent unrelated stop; stop disconnects observers and timers
+PASS restart records each event once and preserves native fetch
+PASS snapshot is JSON serializable and event queue overflow is bounded and reported
+PASS explicit query opt-in starts monitoring without patching fetch
+PASS in-flight callbacks and workflow completions cannot cross recording session boundaries
+PASS actual monitor connects, renders workflow data and exports valid JSON
+PASS monitor marker choices are bounded; JSON/CSV export removes sensitive URL and content fields
+PASS monitor fits desktop and narrow viewports; preview screenshots saved in tmp/
+PASS monitor retains at most 6000 events, reports truncation and can pause the SDK
+PASS open BODA uses a new tab with explicit monitoring opt-in
+Performance monitor SDK browser checks passed. Browser: chrome.exe
+
+PASS: 19/19 relevant checks

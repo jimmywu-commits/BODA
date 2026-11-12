@@ -13,39 +13,18 @@
  * 先畫大到至少 CROP_MIN_WIDTH 再裁，向量圖放大不失真，裁完才有足夠解析度。
  */
 (function () {
-  var CSS_URL = "https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css";
-  var JS_URL = "https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js";
   var CROP_MIN_WIDTH = 428; // = icon 框寬 107 的 4 倍，確保裁切後仍夠銳利
   var MAX_OUTPUT = 4000; // viewMode:0 可以把裁切框拖得很誇張，輸出要設上限
   var HISTORY_LIMIT = 30;
   var PAD_STEP = 0.12; // 「加透明邊」每按一次往外加的比例
 
-  var loadingPromise = null;
   var activeCropper = null;
 
   // 這一次開啟編輯器的工作階段
   var session = null; // { history: [dataUrl], index, onDone, tolerance }
 
   function loadCropper() {
-    if (window.Cropper) return Promise.resolve();
-    if (loadingPromise) return loadingPromise;
-
-    loadingPromise = new Promise(function (resolve, reject) {
-      var link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = CSS_URL;
-      document.head.appendChild(link);
-
-      var script = document.createElement("script");
-      script.src = JS_URL;
-      script.onload = function () { resolve(); };
-      script.onerror = function () {
-        loadingPromise = null;
-        reject(new Error("無法載入裁切元件 CropperJS，請確認網路連線"));
-      };
-      document.head.appendChild(script);
-    });
-    return loadingPromise;
+    return window.BodaVendor.ensure('cropper');
   }
 
   // 把任何來源（SVG data URI / PNG / JPG）先畫成夠大的點陣圖

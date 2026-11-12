@@ -14,28 +14,30 @@
  *  - Medium (500)：每顆下方那行說明文字，依規範屬於「主標」。
  *  - Bold (700)：用文字代替 icon 時的檔期數字（9.9 / 10.10），依規範屬於「副標」。
  *
- * 代價要講清楚：兩個字重各約 11MB（gzip 後的實際傳輸量），首次開啟要下載約 22MB。
- * CDN 上沒有 woff2 版本（試過 .woff2 / .woff / .otf 都是 404），不然體積可以少八成。
- * 兩個都放進同一個 Promise.all，所以任一個載入失敗都會停在錯誤畫面——這是刻意的，
+ * 優先共用曝光工具的同源 WOFF2，兩字重原始大小由 36.42 MB 降為 16.06 MB。
+ * 不換字型、不改字重；舊版部署缺 WOFF2 時才退回原有 TTF。
+ * 任一字重載入失敗都會停在錯誤畫面——這是刻意的，
  * 「字重不對的圖」和「字體錯的圖」一樣是不能交出去的成品。
  */
 (function () {
   var FONT_FAMILY = "ShopeeNotoSansContent";
-  /* 字體來源依序嘗試：先用專案自己的 ../fonts/（BODA 裡的 fonts/ 資料夾，離線或 CDN 慢時也能載），
-     失敗才改抓 GitHub Pages 的 CDN。之前只有 CDN 一個來源，22MB 抓不下來時 READY 永遠不會送出，
-     主工具最左側「整包下載」就會拿不到任何吸底圖片。 */
-  var BASE_URLS = [
-    "../fonts/",
-    "https://jimmywu-commits.github.io/shopee/fonts/",
+  var SOURCES = [
+    { base: "../shopee/fonts/", format: "woff2" },
+    { base: "https://jimmywu-commits.github.io/shopee/fonts/", format: "woff2" },
+    { base: "../fonts/", format: "ttf" },
+    { base: "https://jimmywu-commits.github.io/shopee/fonts/", format: "ttf" },
   ];
 
   var FACES = [
-    { file: "ShopeeNotoSans%28content%29-Medium.ttf", weight: "500" },
-    { file: "ShopeeNotoSans%28content%29-Bold.ttf", weight: "700" },
+    { file: "ShopeeNotoSans%28content%29-Medium", weight: "500" },
+    { file: "ShopeeNotoSans%28content%29-Bold", weight: "700" },
   ];
 
   var state = { status: "loading", error: null };
   var listeners = [];
+  var pending = null;
+  var loadedFaces = Object.create(null);
+  var pendingFaces = Object.create(null);
 
   function setState(next) {
     state = next;
@@ -49,6 +51,8 @@
   }
 
   function load() {
+    if (state.status === "ready") return Promise.resolve();
+    if (pending) return pending;
     if (typeof window.FontFace === "undefined" || !document.fonts) {
       var msg = "這個瀏覽器不支援 FontFace API，無法保證字體正確，請改用 Chrome / Edge。";
       setState({ status: "failed", error: msg });
@@ -57,25 +61,29 @@
 
     setState({ status: "loading", error: null });
 
-    function loadFrom(baseUrl) {
-      var loads = FACES.map(function (face) {
-        var descriptor = { weight: face.weight };
-        var source = 'url("' + baseUrl + face.file + '")';
-        return new window.FontFace(FONT_FAMILY, source, descriptor).load();
-      });
-      return Promise.all(loads).then(function (faces) {
-        faces.forEach(function (loaded) { document.fonts.add(loaded); });
-        return faces;
-      });
-    }
-    function loadFromAny(index, lastError) {
-      if (index >= BASE_URLS.length) return Promise.reject(lastError || new Error("字體載入失敗"));
-      return loadFrom(BASE_URLS[index]).catch(function (err) {
-        return loadFromAny(index + 1, err);
+    function loadFace(face, index, lastError) {
+      if (loadedFaces[face.weight]) return Promise.resolve(loadedFaces[face.weight]);
+      if (index >= SOURCES.length) return Promise.reject(lastError || new Error("字體載入失敗"));
+      var asset = SOURCES[index];
+      var source = 'url("' + asset.base + face.file + '.' + asset.format + '")';
+      return Promise.resolve().then(function () {
+        return new window.FontFace(FONT_FAMILY, source, { weight: face.weight }).load();
+      }).then(function (loaded) {
+        document.fonts.add(loaded);
+        loadedFaces[face.weight] = loaded;
+        return loaded;
+      }).catch(function (err) {
+        return loadFace(face, index + 1, err);
       });
     }
 
-    return loadFromAny(0, null)
+    pending = Promise.all(FACES.map(function (face) {
+      if (!pendingFaces[face.weight]) {
+        pendingFaces[face.weight] = loadFace(face, 0, null);
+        pendingFaces[face.weight].catch(function () { delete pendingFaces[face.weight]; });
+      }
+      return pendingFaces[face.weight];
+    }))
       .then(function () {
         // 再走一次 document.fonts.load，確保該字級/字重真的可用（而不是只有「檔案下載完」）
         return Promise.all(
@@ -90,11 +98,14 @@
         });
         if (!allReady) throw new Error("字體檔已下載，但瀏覽器回報無法使用該字重");
         setState({ status: "ready", error: null });
+        pending = null;
       })
       .catch(function (err) {
+        pending = null;
         setState({ status: "failed", error: err.message || String(err) });
         throw err;
       });
+    return pending;
   }
 
   window.FontLoader = {

@@ -154,6 +154,57 @@ async function testLateShadowJobCannotOverwriteNewCrop() {
   assert.equal(harness.context.exposureShadowRequestedBackground, '#ffffff');
 }
 
+async function testLateShadowJobCannotOverwritePixelEdit() {
+  let finishCompose;
+  const harness = createHarness(function (draft, cfg) {
+    return new Promise(resolve => {
+      finishCompose = function () {
+        draft.src = 'stale-shadow';
+        draft.meta.groundShadow = Object.assign({}, cfg);
+        resolve(draft);
+      };
+    });
+  });
+  const pending = harness.context.applyExposureShadowBackgroundOnce('#ffffff');
+  await Promise.resolve();
+  harness.product.src = 'newer-editor-pixels';
+  harness.product.ratio = 1.7;
+  harness.product.meta.productRect = { x: 1, y: 2, w: 170, h: 100 };
+  finishCompose();
+  assert.equal(await pending, false);
+  assert.equal(harness.product.src, 'newer-editor-pixels');
+  assert.equal(harness.product.ratio, 1.7);
+  assert.equal(harness.messages.length, 0, '舊陰影不能覆蓋保留同 baseSrc 的新像素／裁切');
+}
+
+function testBackgroundSyncDoesNotReplayOriginalAssets() {
+  const a = html.indexOf('var _syncAllChildToolsTimer = null;');
+  const b = html.indexOf('/* 吸底 / 獨立吸底也跟 preview', a);
+  assert.ok(a >= 0 && b > a);
+  const counts = { gallery: 0, workbook: 0, assets: 0, bottom: 0, persist: 0 };
+  let queued;
+  const context = {
+    console, currentImportWorkbook: {},
+    clearTimeout() {}, setTimeout(callback) { queued = callback; return 1; },
+    renderImageGallery() { counts.gallery++; },
+    syncWorkbookOverviewTextToExposure() { counts.workbook++; },
+    syncExposureOverviewAssets() { counts.assets++; },
+    broadcastBottomImageAssets() { counts.bottom++; },
+    queueBottomPersist() {}, saveImportState() { counts.persist++; }
+  };
+  vm.createContext(context);
+  vm.runInContext(html.slice(a, b), context);
+  context.syncAllChildTools({ exposureAssets: false });
+  queued();
+  assert.deepEqual(counts, { gallery: 1, workbook: 0, assets: 0, bottom: 1, persist: 1 },
+    '換底的影子批次必須存檔並更新其他工具，但不得重送舊的商品／代言人原圖');
+  context.syncAllChildTools();
+  context.syncAllChildTools({ exposureAssets: false });
+  queued();
+  assert.equal(counts.assets, 1, '真正匯入素材併入同批時仍需同步，不能被較晚背景更新取消');
+  assert.equal(counts.workbook, 1);
+}
+
 function testCanvasPreserveFrameMode() {
   const handlerStart = runtime.indexOf("if (e.data.type === 'bn-product-update-image')");
   const handlerEnd = runtime.indexOf('/* z-index 順序更新', handlerStart);
@@ -233,6 +284,23 @@ function testCanvasPreserveFrameMode() {
     manualLayout: box.dataset.manualLayout,
     transform: image.style.transform
   }), beforeFrame, '版位端必須逐項保留商品框位置、大小、手動排版與當前預覽狀態');
+
+  const preloads = [], animationFrames = [];
+  context.Image = function () { this.naturalWidth=800; this.naturalHeight=600; preloads.push(this); };
+  context.window.requestAnimationFrame = callback => animationFrames.push(callback);
+  context.window.getComputedStyle = () => ({width:'400px',height:'300px'});
+  const update = (src, preserveFrame) => handler({data:{type:'bn-product-update-image',id:'product-1',src,
+    ratio:1.25,keepScale:true,preserveFrame,rotate:12,productRect:{x:2,y:3,w:80,h:90}}});
+  update('older-rotation-pixels', false);
+  preloads[0].onload();
+  assert.equal(animationFrames.length,1);
+  update('latest-background-pixels', true);
+  animationFrames.shift()();
+  preloads[0].onerror();
+  assert.equal(image.src,'latest-background-pixels','晚到的旋轉預載／動畫回呼不能蓋掉新背景或新編輯的圖片');
+  assert.equal(JSON.stringify({left:box.style.left,top:box.style.top,width:box.style.width,height:box.style.height,
+    manualLayout:box.dataset.manualLayout,transform:image.style.transform}),beforeFrame);
+  assert.equal(layoutPostCount,0,'過期的圖片工作不得回寫商品框');
 }
 
 function testSlabMarkerDoesNotChangeBoxModel() {
@@ -249,6 +317,8 @@ Promise.resolve()
   .then(testSlabMarkerDoesNotChangeBoxModel)
   .then(testInPlaceUpdateKeepsLayout)
   .then(testLateShadowJobCannotOverwriteNewCrop)
+  .then(testLateShadowJobCannotOverwritePixelEdit)
+  .then(testBackgroundSyncDoesNotReplayOriginalAssets)
   .then(function () {
     console.log('背景隔離回歸測試通過：商品排版與最新裁切狀態均保留。');
   })

@@ -1,0 +1,225 @@
+{
+  "generatedAt": "2026-11-12T02:15:14.524Z",
+  "valid": true,
+  "imageCount": 37,
+  "conditions": {
+    "source": "local HTTP, fresh Playwright browser context, headless Chrome, no CPU/network throttling",
+    "fixture": "synthetic real Layout_Output XLSX plus unique 1200x1000 PNGs; subarea_A_1_1 columns share band 1 and export as one row",
+    "limitations": [
+      "Not the original user workbook, GitHub transfer timing, or low-end laptop",
+      "Stage-boundary JS heap samples only; not total RAM, GPU, continuous peak or leak proof",
+      "Render-and-save includes synthetic PNG generation; geometry/reload stage totals include full RGBA verification. Separate saveAndReadbackMs and reloadReadyMs exclude pixel hashing",
+      "Single run per image count; no before/after RAM percentage can be inferred"
+    ]
+  },
+  "indexSHA256": "029da91679799b40b564ca6d1af8dc214e0940e03847db670a75d8d57324f8c1",
+  "stages": [
+    {
+      "name": "empty-homepage",
+      "elapsedMs": 657,
+      "result": {
+        "ready": true
+      }
+    },
+    {
+      "name": "first-real-xlsx-parse",
+      "elapsedMs": 126,
+      "result": {
+        "count": 1,
+        "blockId": "subarea_A_1_1",
+        "entries": 3
+      }
+    },
+    {
+      "name": "render-and-save",
+      "elapsedMs": 713,
+      "result": {
+        "columns": 37,
+        "uniqueImages": 37,
+        "totalEncodedImageCharacters": 1679458
+      }
+    },
+    {
+      "name": "unchanged-render",
+      "elapsedMs": 43,
+      "result": {
+        "before": 37,
+        "reused": 37
+      }
+    },
+    {
+      "name": "geometry-only-save",
+      "elapsedMs": 805,
+      "result": {
+        "columns": 37,
+        "weight": 1.25,
+        "offset": {
+          "x": 13,
+          "y": -8
+        },
+        "encodedPixelsUnchanged": true,
+        "saveAndReadbackMs": 58,
+        "pixelHashes": [
+          "8e85a6ee6d3d3d99c30780a9cd2b8119e228985e8588ff60daa9976a4fab206e",
+          "5c41accb2355b91c29bee642dc701d94ed7607a08b0beb11dd78b7be13a61b50",
+          "28429a5cd38fc91fb957577372fb62b1ef9b43202e289d39f46e003ac27aafb5",
+          "4d02839bf4c42fd36439c99d5995ed8647dd1f9518f4d728d7d73713b3f6dd0d",
+          "6a26d8a6ec5a51442f84ae25792f6a1beeda1620438fddf610e2fa0675162ebd",
+          "9e287011d94b0255e073d9ba22b4aa9cfa1cb14402d52f1feb9c79605f43a3ba",
+          "aa20a2b9fc03b82f268a31f99859ad7a8a3c0973c3a56a4855cc509cbd3649c0",
+          "f27fe50939cf92cd985a9ca266b1c90915c4c0704e2b5d4ae4e86b9e0a50b2b9",
+          "b8a5141c611856c7024135c0caad0c66a7d2228f15c44ef7bcd6c456ed66989e",
+          "62538b1e99602330ce85eeb7b72ad55d26203b4f2b426040c5501962c254e961",
+          "4fcf8eb004c0a3220c0b1046c97e3d7f0ef9c943f37e959fcffccd3051a3f760",
+          "4dacd008a66e02075bb47c024f82a4401f0a31a95034469364cc7b435d15f55a",
+          "13bf9946bbac9d5d98fc6ebfd43f9cb364ae0fd1c78ab10bc97b2837caf39ed8",
+          "1c25eb9137a1a95afa967d84b9e52536b632bd8d2efa31b1cfd30e3b23ff86d3",
+          "9b40d574f9992272904e53aec4995bd78dc95506b2fe1a778bc2af5435aca400",
+          "0a8f284eaffcc023fd26e04c5839d97df28a563238c536dea26eaccef0ec9796",
+          "469a49c20da60f48416d7d1358dc5930dd35d70069f2f5b501fa2cb1e3fcd963",
+          "f119d034b58db8865da23e80c229626eb5006b99e6fd2f25670733674a242bad",
+          "a06e2f27650f117f9308a322db75d14d05ae2ab64143cdf0570aecb75714bbef",
+          "bcfde451a17e60b1d7079ac0de4c4cf25f3c52265eaeb84909d1a9b90a40c584",
+          "f22037e59fed491940b3b87f297ba71d78d73f757e78ca8ffe11ed8aa83346f0",
+          "62985bf24d70a0c615c8c4de5dba9f38f720b0ffd7441ea8b3895e5e98a7f1a3",
+          "dc93327fd8c1d177a56a87b8ef5c063505985bdc778d9e59cdb5b88a47dd8774",
+          "23fce093002f0f4b3fa30817b566157356c9be051f0da6d7dc13fa6c5b0488d1",
+          "93baa1a75d2313e8d02dc660facf344842aa5aafdc5acd36bd7ecad1edd6d0b5",
+          "939d0755ea48a8c7ad5c485b704336b43ef70d25a1381b95bcaf0f606bde6912",
+          "0044179470734539773e28eaaad26f1295d5a079f3e4a15e98a10f3eeb06245b",
+          "49427d5e665543b307034e5895efbd8168175755351c0b8c1a8cc7dfb02b9d71",
+          "71e3c995240630d2349f00b3ad1af9d1418e19e578c2b2e303e24876ca5157a9",
+          "9a51b003fc76f0f30a104eb26e8b4e5b1a20215d725227cf58955ff1a4e323cb",
+          "7060b999684b8969f3dcd5cd3189f348e8d2e7b959fc6b547d45271b05b4ace6",
+          "414069d2637ebbb5d2884dbb32c6989f85d670e2452f101276a013d65dfc83f5",
+          "cb1334d3cfc8bbfc9d236ae3e6fc9924a04439abde6c0cc2110ea7b2a4479187",
+          "e049eb055c8cfe6f189eb59afe0831ba71115db40bc6c5d2bde4096104020508",
+          "a2d994aa012ae49357726b38c3cff8431d0785291b0419927082614e0ffa125d",
+          "3b5b4f9bc3bf5f24693995986b305cb5eef2f427817ba63837675d80937f6776",
+          "ab0fe447fb025fa1204bb5323a290f516066c62817759707328fecfc15a1f7fe"
+        ]
+      }
+    },
+    {
+      "name": "IDB-only-reload",
+      "elapsedMs": 1792,
+      "result": {
+        "columns": 37,
+        "weight": 1.25,
+        "offset": {
+          "x": 13,
+          "y": -8
+        },
+        "pixelHashes": [
+          "8e85a6ee6d3d3d99c30780a9cd2b8119e228985e8588ff60daa9976a4fab206e",
+          "5c41accb2355b91c29bee642dc701d94ed7607a08b0beb11dd78b7be13a61b50",
+          "28429a5cd38fc91fb957577372fb62b1ef9b43202e289d39f46e003ac27aafb5",
+          "4d02839bf4c42fd36439c99d5995ed8647dd1f9518f4d728d7d73713b3f6dd0d",
+          "6a26d8a6ec5a51442f84ae25792f6a1beeda1620438fddf610e2fa0675162ebd",
+          "9e287011d94b0255e073d9ba22b4aa9cfa1cb14402d52f1feb9c79605f43a3ba",
+          "aa20a2b9fc03b82f268a31f99859ad7a8a3c0973c3a56a4855cc509cbd3649c0",
+          "f27fe50939cf92cd985a9ca266b1c90915c4c0704e2b5d4ae4e86b9e0a50b2b9",
+          "b8a5141c611856c7024135c0caad0c66a7d2228f15c44ef7bcd6c456ed66989e",
+          "62538b1e99602330ce85eeb7b72ad55d26203b4f2b426040c5501962c254e961",
+          "4fcf8eb004c0a3220c0b1046c97e3d7f0ef9c943f37e959fcffccd3051a3f760",
+          "4dacd008a66e02075bb47c024f82a4401f0a31a95034469364cc7b435d15f55a",
+          "13bf9946bbac9d5d98fc6ebfd43f9cb364ae0fd1c78ab10bc97b2837caf39ed8",
+          "1c25eb9137a1a95afa967d84b9e52536b632bd8d2efa31b1cfd30e3b23ff86d3",
+          "9b40d574f9992272904e53aec4995bd78dc95506b2fe1a778bc2af5435aca400",
+          "0a8f284eaffcc023fd26e04c5839d97df28a563238c536dea26eaccef0ec9796",
+          "469a49c20da60f48416d7d1358dc5930dd35d70069f2f5b501fa2cb1e3fcd963",
+          "f119d034b58db8865da23e80c229626eb5006b99e6fd2f25670733674a242bad",
+          "a06e2f27650f117f9308a322db75d14d05ae2ab64143cdf0570aecb75714bbef",
+          "bcfde451a17e60b1d7079ac0de4c4cf25f3c52265eaeb84909d1a9b90a40c584",
+          "f22037e59fed491940b3b87f297ba71d78d73f757e78ca8ffe11ed8aa83346f0",
+          "62985bf24d70a0c615c8c4de5dba9f38f720b0ffd7441ea8b3895e5e98a7f1a3",
+          "dc93327fd8c1d177a56a87b8ef5c063505985bdc778d9e59cdb5b88a47dd8774",
+          "23fce093002f0f4b3fa30817b566157356c9be051f0da6d7dc13fa6c5b0488d1",
+          "93baa1a75d2313e8d02dc660facf344842aa5aafdc5acd36bd7ecad1edd6d0b5",
+          "939d0755ea48a8c7ad5c485b704336b43ef70d25a1381b95bcaf0f606bde6912",
+          "0044179470734539773e28eaaad26f1295d5a079f3e4a15e98a10f3eeb06245b",
+          "49427d5e665543b307034e5895efbd8168175755351c0b8c1a8cc7dfb02b9d71",
+          "71e3c995240630d2349f00b3ad1af9d1418e19e578c2b2e303e24876ca5157a9",
+          "9a51b003fc76f0f30a104eb26e8b4e5b1a20215d725227cf58955ff1a4e323cb",
+          "7060b999684b8969f3dcd5cd3189f348e8d2e7b959fc6b547d45271b05b4ace6",
+          "414069d2637ebbb5d2884dbb32c6989f85d670e2452f101276a013d65dfc83f5",
+          "cb1334d3cfc8bbfc9d236ae3e6fc9924a04439abde6c0cc2110ea7b2a4479187",
+          "e049eb055c8cfe6f189eb59afe0831ba71115db40bc6c5d2bde4096104020508",
+          "a2d994aa012ae49357726b38c3cff8431d0785291b0419927082614e0ffa125d",
+          "3b5b4f9bc3bf5f24693995986b305cb5eef2f427817ba63837675d80937f6776",
+          "ab0fe447fb025fa1204bb5323a290f516066c62817759707328fecfc15a1f7fe"
+        ],
+        "localStorageBackupClearedBeforeApp": true,
+        "reloadReadyMs": 553
+      }
+    },
+    {
+      "name": "individual-resource-export",
+      "elapsedMs": 2614,
+      "result": {
+        "files": [
+          {
+            "filename": "副區_01.png",
+            "width": 14800,
+            "height": 350,
+            "bytes": 1045488,
+            "png": true,
+            "opaque": 4800,
+            "sampledColors": 1265
+          }
+        ],
+        "failures": [],
+        "captureRestored": true
+      }
+    }
+  ],
+  "samples": [
+    {
+      "stage": "empty-homepage",
+      "jsHeapUsedBytes": 5682072,
+      "nodes": 2895,
+      "documents": 14
+    },
+    {
+      "stage": "first-real-xlsx-parse",
+      "jsHeapUsedBytes": 8991600,
+      "nodes": 2924,
+      "documents": 14
+    },
+    {
+      "stage": "render-and-save",
+      "jsHeapUsedBytes": 11815672,
+      "nodes": 8789,
+      "documents": 6
+    },
+    {
+      "stage": "unchanged-render",
+      "jsHeapUsedBytes": 20416752,
+      "nodes": 14280,
+      "documents": 6
+    },
+    {
+      "stage": "geometry-only-save",
+      "jsHeapUsedBytes": 10839628,
+      "nodes": 7574,
+      "documents": 6
+    },
+    {
+      "stage": "IDB-only-reload",
+      "jsHeapUsedBytes": 10923620,
+      "nodes": 7577,
+      "documents": 6
+    },
+    {
+      "stage": "individual-resource-export",
+      "jsHeapUsedBytes": 12247888,
+      "nodes": 9174,
+      "documents": 8
+    }
+  ],
+  "sampledMaxJsHeapBytes": 20416752,
+  "runtimeErrors": 0,
+  "downloads": 0,
+  "httpOrExternalFailures": 0,
+  "requestCount": 49
+}

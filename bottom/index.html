@@ -21,8 +21,9 @@
     })();
   </script>
   <link rel="stylesheet" href="src/ui/style.css?v=20261019-logo-tools1" />
-  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
-  <script src="https://unpkg.com/jszip@3/dist/jszip.min.js"></script>
+  <script src="../JS/vendor/browser-loader.js?v=20261111-bottom-slim2"></script>
+  <script src="../JS/dependency-loader.js?v=20261111-bottom-slim2"></script>
+  <script src="../JS/storage-ownership.js?v=20261111-bottom-slim2"></script>
 </head>
 <body>
   <div id="app">
@@ -37,7 +38,7 @@
           <div class="spinner"></div>
           <p class="font-status-main">正在載入 ShopeeNotoSans 字體…</p>
           <p class="font-status-sub">
-            首次載入約 10MB，需要幾秒鐘。<br />
+            首次載入共用壓縮字型約 16.06 MB，時間依網速而定。<br />
             依規範必須等字體完全就緒才會繪製，以免匯出成錯誤字體。
           </p>
         </div>
@@ -59,16 +60,16 @@
   <script src="src/icons/manifest.js?v=20261110-hide-mdd"></script>
   <script src="src/integration/levelPreset.js?v=20260902-1"></script>
   <script src="src/state/projectFile.js?v=20261019-logo-tools1"></script>
-  <script src="src/state/autoSave.js?v=20261019-logo-tools1"></script>
+  <script src="src/state/autoSave.js?v=20261111-bottom-slim2"></script>
   <script src="src/render/colorTheme.js"></script>
   <script src="src/render/bgRemove.js"></script>
-  <script src="src/render/fontLoader.js"></script>
+  <script src="src/render/fontLoader.js?v=20261111-bottom-slim2"></script>
   <script src="src/render/iconImageCache.js"></script>
   <script src="src/render/viewport.js"></script>
   <script src="src/render/canvas.js?v=20261019-logo-tools1"></script>
-  <script src="src/export/exportBatch.js?v=20260930-variants1"></script>
-  <script src="src/importers/workOrderImporter.js?v=20261110-quoted-sheet"></script>
-  <script src="src/ui/imageEditor.js"></script>
+  <script src="src/export/exportBatch.js?v=20261111-bottom-slim2"></script>
+  <script src="src/importers/workOrderImporter.js?v=20261111-bottom-slim2"></script>
+  <script src="src/ui/imageEditor.js?v=20261111-bottom-slim2"></script>
   <script src="src/ui/zoomBar.js"></script>
   <script src="src/ui/iconPicker.js?v=20261019-logo-tools1"></script>
   <script src="src/ui/panel.js?v=20261110-page-download"></script>
@@ -76,6 +77,6 @@
   <script src="src/integration/parentBridge.js?v=20261019-folder-import1"></script>
   <!-- 開場對話框要用 PanelUI.mount() 交回來的匯入入口，所以排在 panel 之後 -->
   <script src="src/ui/startupDialog.js?v=20261019-logo-tools1"></script>
-  <script src="src/app.js"></script>
+  <script src="src/app.js?v=20261111-bottom-slim2"></script>
 </body>
 </html>

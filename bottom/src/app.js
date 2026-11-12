@@ -12,9 +12,11 @@
    */
   window.store.dispatch(window.Actions.setLibrary(window.ICON_LIBRARY.slice()));
 
-  var hasAutoSave = window.BottomAutoSave
+  var hasAutoSave = false;
+  var autoSaveReady = window.BottomAutoSave
     ? window.BottomAutoSave.restore(window.store, window.Actions)
     : false;
+  autoSaveReady = Promise.resolve(autoSaveReady).then(function (restored) { hasAutoSave = restored; });
 
   function mountApp() {
     statusEl.hidden = true;
@@ -92,7 +94,7 @@
 
     var title = document.createElement("p");
     title.className = "font-status-main error";
-    title.textContent = "字體載入失敗，已停止繪製";
+    title.textContent = "畫布或字體元件載入失敗，已停止繪製";
     statusEl.appendChild(title);
 
     var detail = document.createElement("p");
@@ -117,10 +119,10 @@
     statusEl.innerHTML =
       '<div class="spinner"></div>' +
       '<p class="font-status-main">正在載入 ShopeeNotoSans 字體…</p>' +
-      '<p class="font-status-sub">首次載入約 10MB，需要幾秒鐘。<br />' +
+      '<p class="font-status-sub">首次載入共用壓縮字型約 16.06 MB，時間依網速而定。<br />' +
       "依規範必須等字體完全就緒才會繪製，以免匯出成錯誤字體。</p>";
 
-    window.FontLoader.load().then(mountApp).catch(showFailure);
+    Promise.all([window.BodaVendor.ensure('konva'), window.FontLoader.load(), autoSaveReady]).then(mountApp).catch(showFailure);
   }
 
   start();

@@ -88,22 +88,27 @@
      加載入標籤，就繼續用上面寫死的預設值，不影響其他功能。 */
   if (window.BN_RENDER_CONFIG) setConfig(window.BN_RENDER_CONFIG);
 
-  /* 一次性注入字型宣告：所有版位統一用 ShopeeNotoSans (content)，
-     字型檔放在跟 index.html 同層的 fonts/ 資料夾底下，檔名如下三個：
-       fonts/ShopeeNotoSans(content)-Regular.ttf （400 Regular，CTA文字用）
-       fonts/ShopeeNotoSans(content)-Medium.ttf  （500 Medium，警語/圓標用）
-       fonts/ShopeeNotoSans(content)-Bold.ttf    （700 Bold，促標/品名用）
-     檔名要完全一致才抓得到；如果你實際拿到的字型檔名不同，把下面三個 url() 路徑改成實際檔名即可。 */
+  /* Preview and exposure share the same WOFF2 URLs. Keep the original
+     Regular=400 / Medium=500 / Bold=700 mapping; export embeds its own subset. */
   if (!document.getElementById('bn-fontface')) {
+    var rendererScript = document.currentScript;
+    var rendererUrl = rendererScript && rendererScript.src || new URL('core/schema-renderer.js', document.baseURI).href;
+    var localFonts = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    /* localhost serves BODA's junction; Pages serves sibling /shopee/. Pick the
+       right base before requesting fonts, rather than probing 404 candidates. */
+    var fontBase = new URL(window.BODA_SHARED_FONT_BASE || (localFonts ? '../shopee/fonts/' : '../../shopee/fonts/'), rendererUrl).href;
+    function fontSource(weight) {
+      return 'src:url("' + fontBase + 'ShopeeNotoSans(content)-' + weight + '.woff2?v=20261111-fonts1") format("woff2");}';
+    }
     var fontStyle = document.createElement('style');
     fontStyle.id = 'bn-fontface';
     fontStyle.textContent =
       '@font-face{font-family:"ShopeeNotoSans (content)";font-weight:400;font-style:normal;' +
-      'src:url("fonts/ShopeeNotoSans(content)-Regular.ttf") format("truetype");}' +
+      fontSource('Regular') +
       '@font-face{font-family:"ShopeeNotoSans (content)";font-weight:500;font-style:normal;' +
-      'src:url("fonts/ShopeeNotoSans(content)-Medium.ttf") format("truetype");}' +
+      fontSource('Medium') +
       '@font-face{font-family:"ShopeeNotoSans (content)";font-weight:700;font-style:normal;' +
-      'src:url("fonts/ShopeeNotoSans(content)-Bold.ttf") format("truetype");}';
+      fontSource('Bold');
     document.head.appendChild(fontStyle);
   }
 
@@ -813,6 +818,13 @@
     return fieldPrefix + layer.field;
   }
 
+  function hasRequiredBadgeText(layer, data, fieldPrefix) {
+    if (!layer.requiresTextField) return true;
+    var key = resolveFieldKey({ field: layer.requiresTextField, globalField: layer.requiresTextGlobalField }, fieldPrefix);
+    var value = data && data[key];
+    return String(value == null ? '' : value).replace(/[\u200b-\u200d\u2060]/g, '').trim() !== '';
+  }
+
   /* 圓角文字包邊：外圈 radius 處 16 個方向、內圈 radius/2 處 8 個方向的實心陰影疊起來，
      等於把字往外均勻擴 radius px；內圈補滿細筆畫與外圈之間可能出現的縫。 */
   function roundTextOutlineShadow(color, radius) {
@@ -1281,6 +1293,8 @@
        那個框現在是可以直接拖圖片進來的圖片欄位，字疊在上面反而礙眼。
        保留資料不刪，之後想恢復把這個旗標拿掉就好。 */
     if (layer.hidden) return '';
+    /* 工單圓標沒填文字時，字與自己的底一起隱藏，編輯提示也不留在成品上。 */
+    if (!hasRequiredBadgeText(layer, data, fieldPrefix)) return '';
 
     /* hideIfField：例如 LOGO 佔位文字，一旦 logoImg 欄位有值，這層文字就不畫出來 */
     if (layer.hideIfField) {
@@ -2066,6 +2080,7 @@
       return false;
     });
     if (!badge) return box;
+    if (!hasRequiredBadgeText(badge, data, null)) return box;
     if (badge.optionalColor && String(data && data[badgeField] == null ? '' : data[badgeField]).trim() === '') return box;
     var bl = Number(badge.left || 0), bt = Number(badge.top || 0);
     var br = bl + Number(badge.width || 0), bb = bt + Number(badge.height || 0);
@@ -2828,9 +2843,53 @@
     (schema.repeats || []).forEach(function (repeat) { apply(repeat.layers || []); });
   }
 
+  /* 圓標文字與底圈依欄位編號配對，不能看圖層 id：部分 MSBN B 的 id
+     編號與 badge/badge2/badge3 不同。repeat 各實例則沿用自己的欄位前綴。 */
+  function assignBadgeTextDependencies(schema) {
+    if (!/^(?:msbn|subarea_)/i.test(String(schema.id || ''))) return;
+    function apply(layers) {
+      var backgrounds = (layers || []).filter(function (l) {
+        return themeRoleOf(l, schema.id) === 'badgeBg';
+      });
+      (layers || []).forEach(function (text) {
+        if (text.type !== 'text' || !text.field || themeRoleOf(text, schema.id) !== 'badgeText') return;
+        text.requiresTextField = text.field;
+        text.requiresTextGlobalField = !!text.globalField;
+        var suffix = (String(text.field).match(/(\d+)$/) || [])[1] || '';
+        var background = backgrounds.filter(function (l) {
+          return String(l.field || '').toLowerCase() === ('badgeColor' + suffix).toLowerCase();
+        })[0];
+        if (!background) {
+          /* 舊 msbn3p 的底圈沒有 id／field，只能在同一 repeat 內依幾何配對。
+             限定文字中心落在底圈裡，避免配到 CTA 或其他裝飾圓圈。 */
+          var cx = Number(text.left || 0) + Number(text.width || 0) / 2;
+          var cy = Number(text.top || 0) + Number(text.height || 0) / 2;
+          var candidates = backgrounds.length ? backgrounds : (layers || []).filter(function (l) {
+            return l.type === 'circle' && !l.field && !l.id;
+          });
+          var nearest = null;
+          candidates.forEach(function (l) {
+            var x = Number(l.left || 0), y = Number(l.top || 0), w = Number(l.width || 0), h = Number(l.height || 0);
+            if (!(w > 0 && h > 0) || cx < x || cx > x + w || cy < y || cy > y + h) return;
+            var distance = Math.pow(x + w / 2 - cx, 2) + Math.pow(y + h / 2 - cy, 2);
+            if (!nearest || distance < nearest.distance) nearest = { layer: l, distance: distance };
+          });
+          background = nearest && nearest.layer;
+        }
+        if (background) {
+          background.requiresTextField = text.field;
+          background.requiresTextGlobalField = !!text.globalField;
+        }
+      });
+    }
+    apply(schema.layers || []);
+    (schema.repeats || []).forEach(function (repeat) { apply(repeat.layers || []); });
+  }
+
   function registerFromSchema(schema) {
     if (!schema || !schema.id) { console.error('[BNSchemaRenderer] schema 缺少 id'); return; }
     assignImageTextDependencies(schema);
+    assignBadgeTextDependencies(schema);
     normalizeSchemaZOrder(schema);
     global.BNCore.registerBlock({
       id: schema.id,

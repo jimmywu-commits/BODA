@@ -1,0 +1,1374 @@
+{
+  "format": "boda-controlled-startup-benchmark",
+  "version": 1,
+  "generatedAt": "2026-11-12T02:26:51.248Z",
+  "phase": "after",
+  "conditions": {
+    "source": "local uncompressed HTTP, 127.0.0.1",
+    "scenario": "fresh profile, #upload, no work order or uploaded images",
+    "viewport": {
+      "width": 1366,
+      "height": 900,
+      "deviceScaleFactor": 1
+    },
+    "cache": "new profile and cleared browser cache for every run; normal cache behavior during navigation",
+    "cpuThrottling": "none",
+    "networkThrottling": "none",
+    "externalNetwork": "cdnjs pinned versions fulfilled from local vendor; other HTTPS blocked; any unmapped external request invalidates the run; loopback HTTP is not intercepted",
+    "readyCondition": "document complete + 107 registered blocks + view-upload + initial loading hidden; 50ms observation interval",
+    "baseline": "tmp/perf-baseline snapshot first; other files fall back to current root",
+    "limitations": [
+      "Not weak-machine simulation or GitHub Pages transfer timing",
+      "Uncompressed loopback bytes differ from server gzip/brotli transfer",
+      "Resource Timing sizes are browser-known values; zero is not proof of cache hit",
+      "App-ready timing is observed with up to about 50ms polling granularity",
+      "Snapshot does not duplicate every unchanged binary asset"
+    ]
+  },
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "baselineIndexSHA256": "470668b3bd8bba5eb3ba5f6a6395d286daf87b436ea607c40e78233fcead0cd1",
+  "currentIndexSHA256": "8acf97105129ce4969f3c9453f5ab5d1c2a3ee89415f879da49e884c9a53347c",
+  "runCount": 3,
+  "validRunCount": 3,
+  "medians": {
+    "domContentLoadedMs": 224.19999999552965,
+    "loadMs": 239.10000000149012,
+    "appReadyObservedMs": 530,
+    "observedAtMs": 1045.2000000029802,
+    "requestCount": 18,
+    "httpErrors": 0,
+    "failedRequests": 0,
+    "encodedBodyBytesKnown": 2332037,
+    "transferBytesKnown": 2337437,
+    "localServedBodyBytes": 2332037,
+    "cdnMappedBodyBytes": 0,
+    "fontsEmbedRequests": 0,
+    "sourceBlockJsonRequests": 0,
+    "catalogueRequests": 1
+  },
+  "results": [
+    {
+      "number": 1,
+      "phase": "after",
+      "valid": true,
+      "timeout": null,
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/157.0.8103.39",
+        "revision": "@9a31f0acec1854d44e49a73fbf8017598151a583",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+        "jsVersion": "15.7.112.23"
+      },
+      "ready": {
+        "observedAtMs": 533,
+        "activeView": "view-upload",
+        "blocks": 107
+      },
+      "state": {
+        "readyState": "complete",
+        "activeView": "view-upload",
+        "blocksLoaded": true,
+        "blocks": 107,
+        "loading": false,
+        "heap": 5890635
+      },
+      "metrics": {
+        "domContentLoadedMs": 227.10000000149012,
+        "loadMs": 240.60000000149012,
+        "appReadyObservedMs": 533,
+        "observedAtMs": 1048.5,
+        "requestCount": 18,
+        "httpErrors": 0,
+        "failedRequests": 0,
+        "encodedBodyBytesKnown": 2332037,
+        "transferBytesKnown": 2337437,
+        "localServedBodyBytes": 2332037,
+        "cdnMappedBodyBytes": 0,
+        "fontsEmbedRequests": 0,
+        "sourceBlockJsonRequests": 0,
+        "catalogueRequests": 1
+      },
+      "mainHtml": {
+        "phase": "after",
+        "relative": "index.html",
+        "status": 200,
+        "bytes": 1505435,
+        "source": "current-fallback"
+      },
+      "mappedExternal": [],
+      "blockedExternal": [],
+      "unmappedExternal": [],
+      "runtimeErrors": [],
+      "consoleErrors": [],
+      "network": [
+        {
+          "url": "http://127.0.0.1:57744/after/index.html",
+          "type": "Document",
+          "method": "GET",
+          "timestamp": 61352.914652,
+          "status": 200,
+          "mimeType": "text/html",
+          "fromDiskCache": false,
+          "encodedDataLength": 1505640
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/performance-agent.js?v=20261111-perf1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941027,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 20336
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/dependency-loader.js?v=20261111-slim1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941376,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 4015
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/state-asset-codec.js?v=20261111-slim1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.94143,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 18002
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/storage-ownership.js?v=20261111-owner1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941486,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 4569
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/save-queue.js?v=20261111-owner1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941519,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 5007
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/exposure-snapshot-bridge.js?v=20261111-owner1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941549,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 4720
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/render-config.js",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941584,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 6532
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/core/core-engine.js?v=20261111-slim1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941616,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 10803
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/core/schema-renderer.js?v=20261111-empty-badge1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941649,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 170855
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/shadow-module/shadow-plugin.js?v=20261019-shadow3",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941674,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 40133
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/image-layout.js?v=20261106-display-clamp2",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941701,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 69388
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/editor-plugin.js?v=20261019-rotate3",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941723,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 38995
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/jbp/js/logo-editor-plugin.js",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61352.941754,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 13756
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/config.json?v=20261111-slim1",
+          "type": "Fetch",
+          "method": "GET",
+          "timestamp": 61353.073191,
+          "status": 200,
+          "mimeType": "application/json",
+          "fromDiskCache": false,
+          "encodedDataLength": 442
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/blocks/catalogue.bundle.js?v=blocks-c2f67ca46169f340",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61353.081646,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 373956
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/img/three.jpg",
+          "type": "Image",
+          "method": "GET",
+          "timestamp": 61353.082757,
+          "status": 200,
+          "mimeType": "image/jpeg",
+          "fromDiskCache": false,
+          "encodedDataLength": 48511
+        },
+        {
+          "url": "http://127.0.0.1:57744/favicon.ico",
+          "type": "Other",
+          "method": "GET",
+          "timestamp": 61353.16017,
+          "status": 204,
+          "mimeType": "text/plain",
+          "fromDiskCache": false,
+          "encodedDataLength": 111
+        }
+      ],
+      "resourceTiming": [
+        {
+          "name": "http://127.0.0.1:57744/after/JS/performance-agent.js?v=20261111-perf1",
+          "initiatorType": "script",
+          "duration": 19.600000001490116,
+          "transferSize": 20420,
+          "encodedBodySize": 20120,
+          "decodedBodySize": 20120,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/dependency-loader.js?v=20261111-slim1",
+          "initiatorType": "script",
+          "duration": 19.200000002980232,
+          "transferSize": 4100,
+          "encodedBodySize": 3800,
+          "decodedBodySize": 3800,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/state-asset-codec.js?v=20261111-slim1",
+          "initiatorType": "script",
+          "duration": 23.30000000447035,
+          "transferSize": 18086,
+          "encodedBodySize": 17786,
+          "decodedBodySize": 17786,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/storage-ownership.js?v=20261111-owner1",
+          "initiatorType": "script",
+          "duration": 26.399999998509884,
+          "transferSize": 4654,
+          "encodedBodySize": 4354,
+          "decodedBodySize": 4354,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/save-queue.js?v=20261111-owner1",
+          "initiatorType": "script",
+          "duration": 26.899999998509884,
+          "transferSize": 5092,
+          "encodedBodySize": 4792,
+          "decodedBodySize": 4792,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/exposure-snapshot-bridge.js?v=20261111-owner1",
+          "initiatorType": "script",
+          "duration": 27.799999997019768,
+          "transferSize": 4805,
+          "encodedBodySize": 4505,
+          "decodedBodySize": 4505,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/render-config.js",
+          "initiatorType": "script",
+          "duration": 27.799999997019768,
+          "transferSize": 6617,
+          "encodedBodySize": 6317,
+          "decodedBodySize": 6317,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/core/core-engine.js?v=20261111-slim1",
+          "initiatorType": "script",
+          "duration": 27.899999998509884,
+          "transferSize": 10887,
+          "encodedBodySize": 10587,
+          "decodedBodySize": 10587,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/shadow-module/shadow-plugin.js?v=20261019-shadow3",
+          "initiatorType": "script",
+          "duration": 30.69999999552965,
+          "transferSize": 40217,
+          "encodedBodySize": 39917,
+          "decodedBodySize": 39917,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/core/schema-renderer.js?v=20261111-empty-badge1",
+          "initiatorType": "script",
+          "duration": 31.299999997019768,
+          "transferSize": 170938,
+          "encodedBodySize": 170638,
+          "decodedBodySize": 170638,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/editor-plugin.js?v=20261019-rotate3",
+          "initiatorType": "script",
+          "duration": 34.20000000298023,
+          "transferSize": 39079,
+          "encodedBodySize": 38779,
+          "decodedBodySize": 38779,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/image-layout.js?v=20261106-display-clamp2",
+          "initiatorType": "script",
+          "duration": 34,
+          "transferSize": 69472,
+          "encodedBodySize": 69172,
+          "decodedBodySize": 69172,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/jbp/js/logo-editor-plugin.js",
+          "initiatorType": "script",
+          "duration": 42.20000000298023,
+          "transferSize": 13840,
+          "encodedBodySize": 13540,
+          "decodedBodySize": 13540,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/config.json?v=20261111-slim1",
+          "initiatorType": "fetch",
+          "duration": 2.8000000044703484,
+          "transferSize": 534,
+          "encodedBodySize": 234,
+          "decodedBodySize": 234,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/blocks/catalogue.bundle.js?v=blocks-c2f67ca46169f340",
+          "initiatorType": "script",
+          "duration": 4.600000001490116,
+          "transferSize": 374039,
+          "encodedBodySize": 373739,
+          "decodedBodySize": 373739,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/img/three.jpg",
+          "initiatorType": "img",
+          "duration": 3.7000000029802322,
+          "transferSize": 48622,
+          "encodedBodySize": 48322,
+          "decodedBodySize": 48322,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/favicon.ico",
+          "initiatorType": "other",
+          "duration": 2.6999999955296516,
+          "transferSize": 300,
+          "encodedBodySize": 0,
+          "decodedBodySize": 0,
+          "responseStatus": 204
+        }
+      ],
+      "navigationTiming": {
+        "name": "http://127.0.0.1:57744/after/index.html#upload",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 240.60000000149012,
+        "navigationId": 2069,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "http/1.1",
+        "renderBlockingStatus": "non-blocking",
+        "contentType": "text/html",
+        "contentEncoding": "",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0,
+        "redirectEnd": 0,
+        "fetchStart": 0.8000000044703484,
+        "domainLookupStart": 0.8000000044703484,
+        "domainLookupEnd": 0.8000000044703484,
+        "connectStart": 0.8000000044703484,
+        "secureConnectionStart": 0,
+        "connectEnd": 0.8000000044703484,
+        "requestStart": 5.300000004470348,
+        "responseStart": 13.200000002980232,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 13.200000002980232,
+        "responseEnd": 23.899999998509884,
+        "transferSize": 1505735,
+        "encodedBodySize": 1505435,
+        "decodedBodySize": 1505435,
+        "responseStatus": 200,
+        "serverTiming": [],
+        "unloadEventStart": 0,
+        "unloadEventEnd": 0,
+        "domInteractive": 226.10000000149012,
+        "domContentLoadedEventStart": 226.10000000149012,
+        "domContentLoadedEventEnd": 227.10000000149012,
+        "domComplete": 240,
+        "loadEventStart": 240.60000000149012,
+        "loadEventEnd": 240.60000000149012,
+        "type": "navigate",
+        "redirectCount": 0,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null,
+        "confidence": {}
+      }
+    },
+    {
+      "number": 2,
+      "phase": "after",
+      "valid": true,
+      "timeout": null,
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/157.0.8103.39",
+        "revision": "@9a31f0acec1854d44e49a73fbf8017598151a583",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+        "jsVersion": "15.7.112.23"
+      },
+      "ready": {
+        "observedAtMs": 527,
+        "activeView": "view-upload",
+        "blocks": 107
+      },
+      "state": {
+        "readyState": "complete",
+        "activeView": "view-upload",
+        "blocksLoaded": true,
+        "blocks": 107,
+        "loading": false,
+        "heap": 5847723
+      },
+      "metrics": {
+        "domContentLoadedMs": 224.19999999552965,
+        "loadMs": 236.10000000149012,
+        "appReadyObservedMs": 527,
+        "observedAtMs": 1042.6000000014901,
+        "requestCount": 18,
+        "httpErrors": 0,
+        "failedRequests": 0,
+        "encodedBodyBytesKnown": 2332037,
+        "transferBytesKnown": 2337437,
+        "localServedBodyBytes": 2332037,
+        "cdnMappedBodyBytes": 0,
+        "fontsEmbedRequests": 0,
+        "sourceBlockJsonRequests": 0,
+        "catalogueRequests": 1
+      },
+      "mainHtml": {
+        "phase": "after",
+        "relative": "index.html",
+        "status": 200,
+        "bytes": 1505435,
+        "source": "current-fallback"
+      },
+      "mappedExternal": [],
+      "blockedExternal": [],
+      "unmappedExternal": [],
+      "runtimeErrors": [],
+      "consoleErrors": [],
+      "network": [
+        {
+          "url": "http://127.0.0.1:57744/after/index.html",
+          "type": "Document",
+          "method": "GET",
+          "timestamp": 61354.842566,
+          "status": 200,
+          "mimeType": "text/html",
+          "fromDiskCache": false,
+          "encodedDataLength": 1505640
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/performance-agent.js?v=20261111-perf1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.862305,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 20336
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/dependency-loader.js?v=20261111-slim1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.862681,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 4015
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/state-asset-codec.js?v=20261111-slim1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.862759,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 18002
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/storage-ownership.js?v=20261111-owner1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.86283,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 4569
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/save-queue.js?v=20261111-owner1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.862879,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 5007
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/exposure-snapshot-bridge.js?v=20261111-owner1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.862923,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 4720
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/render-config.js",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.862978,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 6532
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/core/core-engine.js?v=20261111-slim1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.863025,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 10803
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/core/schema-renderer.js?v=20261111-empty-badge1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.863075,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 170855
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/shadow-module/shadow-plugin.js?v=20261019-shadow3",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.863118,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 40133
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/image-layout.js?v=20261106-display-clamp2",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.863158,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 69388
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/editor-plugin.js?v=20261019-rotate3",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.863195,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 38995
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/jbp/js/logo-editor-plugin.js",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61354.863244,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 13756
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/config.json?v=20261111-slim1",
+          "type": "Fetch",
+          "method": "GET",
+          "timestamp": 61354.999024,
+          "status": 200,
+          "mimeType": "application/json",
+          "fromDiskCache": false,
+          "encodedDataLength": 442
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/blocks/catalogue.bundle.js?v=blocks-c2f67ca46169f340",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61355.00715,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 373956
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/img/three.jpg",
+          "type": "Image",
+          "method": "GET",
+          "timestamp": 61355.008137,
+          "status": 200,
+          "mimeType": "image/jpeg",
+          "fromDiskCache": false,
+          "encodedDataLength": 48511
+        },
+        {
+          "url": "http://127.0.0.1:57744/favicon.ico",
+          "type": "Other",
+          "method": "GET",
+          "timestamp": 61355.083979,
+          "status": 204,
+          "mimeType": "text/plain",
+          "fromDiskCache": false,
+          "encodedDataLength": 111
+        }
+      ],
+      "resourceTiming": [
+        {
+          "name": "http://127.0.0.1:57744/after/JS/performance-agent.js?v=20261111-perf1",
+          "initiatorType": "script",
+          "duration": 22.200000002980232,
+          "transferSize": 20420,
+          "encodedBodySize": 20120,
+          "decodedBodySize": 20120,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/state-asset-codec.js?v=20261111-slim1",
+          "initiatorType": "script",
+          "duration": 26,
+          "transferSize": 18086,
+          "encodedBodySize": 17786,
+          "decodedBodySize": 17786,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/dependency-loader.js?v=20261111-slim1",
+          "initiatorType": "script",
+          "duration": 25,
+          "transferSize": 4100,
+          "encodedBodySize": 3800,
+          "decodedBodySize": 3800,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/storage-ownership.js?v=20261111-owner1",
+          "initiatorType": "script",
+          "duration": 28.600000001490116,
+          "transferSize": 4654,
+          "encodedBodySize": 4354,
+          "decodedBodySize": 4354,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/save-queue.js?v=20261111-owner1",
+          "initiatorType": "script",
+          "duration": 29.899999998509884,
+          "transferSize": 5092,
+          "encodedBodySize": 4792,
+          "decodedBodySize": 4792,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/exposure-snapshot-bridge.js?v=20261111-owner1",
+          "initiatorType": "script",
+          "duration": 29.899999998509884,
+          "transferSize": 4805,
+          "encodedBodySize": 4505,
+          "decodedBodySize": 4505,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/render-config.js",
+          "initiatorType": "script",
+          "duration": 30,
+          "transferSize": 6617,
+          "encodedBodySize": 6317,
+          "decodedBodySize": 6317,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/core/core-engine.js?v=20261111-slim1",
+          "initiatorType": "script",
+          "duration": 31.399999998509884,
+          "transferSize": 10887,
+          "encodedBodySize": 10587,
+          "decodedBodySize": 10587,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/shadow-module/shadow-plugin.js?v=20261019-shadow3",
+          "initiatorType": "script",
+          "duration": 33,
+          "transferSize": 40217,
+          "encodedBodySize": 39917,
+          "decodedBodySize": 39917,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/core/schema-renderer.js?v=20261111-empty-badge1",
+          "initiatorType": "script",
+          "duration": 33.399999998509884,
+          "transferSize": 170938,
+          "encodedBodySize": 170638,
+          "decodedBodySize": 170638,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/image-layout.js?v=20261106-display-clamp2",
+          "initiatorType": "script",
+          "duration": 36.69999999552965,
+          "transferSize": 69472,
+          "encodedBodySize": 69172,
+          "decodedBodySize": 69172,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/editor-plugin.js?v=20261019-rotate3",
+          "initiatorType": "script",
+          "duration": 43.099999994039536,
+          "transferSize": 39079,
+          "encodedBodySize": 38779,
+          "decodedBodySize": 38779,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/jbp/js/logo-editor-plugin.js",
+          "initiatorType": "script",
+          "duration": 43.100000001490116,
+          "transferSize": 13840,
+          "encodedBodySize": 13540,
+          "decodedBodySize": 13540,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/config.json?v=20261111-slim1",
+          "initiatorType": "fetch",
+          "duration": 3.2999999970197678,
+          "transferSize": 534,
+          "encodedBodySize": 234,
+          "decodedBodySize": 234,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/blocks/catalogue.bundle.js?v=blocks-c2f67ca46169f340",
+          "initiatorType": "script",
+          "duration": 6.899999998509884,
+          "transferSize": 374039,
+          "encodedBodySize": 373739,
+          "decodedBodySize": 373739,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/img/three.jpg",
+          "initiatorType": "img",
+          "duration": 4.199999995529652,
+          "transferSize": 48622,
+          "encodedBodySize": 48322,
+          "decodedBodySize": 48322,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/favicon.ico",
+          "initiatorType": "other",
+          "duration": 3.5,
+          "transferSize": 300,
+          "encodedBodySize": 0,
+          "decodedBodySize": 0,
+          "responseStatus": 204
+        }
+      ],
+      "navigationTiming": {
+        "name": "http://127.0.0.1:57744/after/index.html#upload",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 236.10000000149012,
+        "navigationId": 501,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "http/1.1",
+        "renderBlockingStatus": "non-blocking",
+        "contentType": "text/html",
+        "contentEncoding": "",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0,
+        "redirectEnd": 0,
+        "fetchStart": 1,
+        "domainLookupStart": 1,
+        "domainLookupEnd": 1,
+        "connectStart": 1,
+        "secureConnectionStart": 0,
+        "connectEnd": 1,
+        "requestStart": 4.299999997019768,
+        "responseStart": 6,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 6,
+        "responseEnd": 16.299999997019768,
+        "transferSize": 1505735,
+        "encodedBodySize": 1505435,
+        "decodedBodySize": 1505435,
+        "responseStatus": 200,
+        "serverTiming": [],
+        "unloadEventStart": 0,
+        "unloadEventEnd": 0,
+        "domInteractive": 223,
+        "domContentLoadedEventStart": 223,
+        "domContentLoadedEventEnd": 224.19999999552965,
+        "domComplete": 235.69999999552965,
+        "loadEventStart": 236.10000000149012,
+        "loadEventEnd": 236.10000000149012,
+        "type": "navigate",
+        "redirectCount": 0,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null,
+        "confidence": {}
+      }
+    },
+    {
+      "number": 3,
+      "phase": "after",
+      "valid": true,
+      "timeout": null,
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/157.0.8103.39",
+        "revision": "@9a31f0acec1854d44e49a73fbf8017598151a583",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+        "jsVersion": "15.7.112.23"
+      },
+      "ready": {
+        "observedAtMs": 530,
+        "activeView": "view-upload",
+        "blocks": 107
+      },
+      "state": {
+        "readyState": "complete",
+        "activeView": "view-upload",
+        "blocksLoaded": true,
+        "blocks": 107,
+        "loading": false,
+        "heap": 5840803
+      },
+      "metrics": {
+        "domContentLoadedMs": 223.20000000298023,
+        "loadMs": 239.10000000149012,
+        "appReadyObservedMs": 530,
+        "observedAtMs": 1045.2000000029802,
+        "requestCount": 18,
+        "httpErrors": 0,
+        "failedRequests": 0,
+        "encodedBodyBytesKnown": 2332037,
+        "transferBytesKnown": 2337437,
+        "localServedBodyBytes": 2332037,
+        "cdnMappedBodyBytes": 0,
+        "fontsEmbedRequests": 0,
+        "sourceBlockJsonRequests": 0,
+        "catalogueRequests": 1
+      },
+      "mainHtml": {
+        "phase": "after",
+        "relative": "index.html",
+        "status": 200,
+        "bytes": 1505435,
+        "source": "current-fallback"
+      },
+      "mappedExternal": [],
+      "blockedExternal": [],
+      "unmappedExternal": [],
+      "runtimeErrors": [],
+      "consoleErrors": [],
+      "network": [
+        {
+          "url": "http://127.0.0.1:57744/after/index.html",
+          "type": "Document",
+          "method": "GET",
+          "timestamp": 61356.820407,
+          "status": 200,
+          "mimeType": "text/html",
+          "fromDiskCache": false,
+          "encodedDataLength": 1505640
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/performance-agent.js?v=20261111-perf1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.833913,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 20336
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/dependency-loader.js?v=20261111-slim1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.834253,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 4015
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/state-asset-codec.js?v=20261111-slim1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.834324,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 18002
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/storage-ownership.js?v=20261111-owner1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.834399,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 4569
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/save-queue.js?v=20261111-owner1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.834461,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 5007
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/exposure-snapshot-bridge.js?v=20261111-owner1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.834509,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 4720
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/render-config.js",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.852314,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 6532
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/core/core-engine.js?v=20261111-slim1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.85242,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 10803
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/core/schema-renderer.js?v=20261111-empty-badge1",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.85246,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 170855
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/shadow-module/shadow-plugin.js?v=20261019-shadow3",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.852496,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 40133
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/image-layout.js?v=20261106-display-clamp2",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.852544,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 69388
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/editor-plugin.js?v=20261019-rotate3",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.852581,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 38995
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/jbp/js/logo-editor-plugin.js",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.852617,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 13756
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/JS/config.json?v=20261111-slim1",
+          "type": "Fetch",
+          "method": "GET",
+          "timestamp": 61356.980135,
+          "status": 200,
+          "mimeType": "application/json",
+          "fromDiskCache": false,
+          "encodedDataLength": 442
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/blocks/catalogue.bundle.js?v=blocks-c2f67ca46169f340",
+          "type": "Script",
+          "method": "GET",
+          "timestamp": 61356.988264,
+          "status": 200,
+          "mimeType": "application/javascript",
+          "fromDiskCache": false,
+          "encodedDataLength": 373956
+        },
+        {
+          "url": "http://127.0.0.1:57744/after/img/three.jpg",
+          "type": "Image",
+          "method": "GET",
+          "timestamp": 61356.989522,
+          "status": 200,
+          "mimeType": "image/jpeg",
+          "fromDiskCache": false,
+          "encodedDataLength": 48511
+        },
+        {
+          "url": "http://127.0.0.1:57744/favicon.ico",
+          "type": "Other",
+          "method": "GET",
+          "timestamp": 61357.063282,
+          "status": 204,
+          "mimeType": "text/plain",
+          "fromDiskCache": false,
+          "encodedDataLength": 111
+        }
+      ],
+      "resourceTiming": [
+        {
+          "name": "http://127.0.0.1:57744/after/JS/performance-agent.js?v=20261111-perf1",
+          "initiatorType": "script",
+          "duration": 22.700000002980232,
+          "transferSize": 20420,
+          "encodedBodySize": 20120,
+          "decodedBodySize": 20120,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/dependency-loader.js?v=20261111-slim1",
+          "initiatorType": "script",
+          "duration": 21.80000000447035,
+          "transferSize": 4100,
+          "encodedBodySize": 3800,
+          "decodedBodySize": 3800,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/state-asset-codec.js?v=20261111-slim1",
+          "initiatorType": "script",
+          "duration": 22.5,
+          "transferSize": 18086,
+          "encodedBodySize": 17786,
+          "decodedBodySize": 17786,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/storage-ownership.js?v=20261111-owner1",
+          "initiatorType": "script",
+          "duration": 33.20000000298023,
+          "transferSize": 4654,
+          "encodedBodySize": 4354,
+          "decodedBodySize": 4354,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/save-queue.js?v=20261111-owner1",
+          "initiatorType": "script",
+          "duration": 33.399999998509884,
+          "transferSize": 5092,
+          "encodedBodySize": 4792,
+          "decodedBodySize": 4792,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/exposure-snapshot-bridge.js?v=20261111-owner1",
+          "initiatorType": "script",
+          "duration": 34.399999998509884,
+          "transferSize": 4805,
+          "encodedBodySize": 4505,
+          "decodedBodySize": 4505,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/render-config.js",
+          "initiatorType": "script",
+          "duration": 21.600000001490116,
+          "transferSize": 6617,
+          "encodedBodySize": 6317,
+          "decodedBodySize": 6317,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/core/core-engine.js?v=20261111-slim1",
+          "initiatorType": "script",
+          "duration": 22.299999997019768,
+          "transferSize": 10887,
+          "encodedBodySize": 10587,
+          "decodedBodySize": 10587,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/shadow-module/shadow-plugin.js?v=20261019-shadow3",
+          "initiatorType": "script",
+          "duration": 23.100000001490116,
+          "transferSize": 40217,
+          "encodedBodySize": 39917,
+          "decodedBodySize": 39917,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/core/schema-renderer.js?v=20261111-empty-badge1",
+          "initiatorType": "script",
+          "duration": 27.799999997019768,
+          "transferSize": 170938,
+          "encodedBodySize": 170638,
+          "decodedBodySize": 170638,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/editor-plugin.js?v=20261019-rotate3",
+          "initiatorType": "script",
+          "duration": 27.5,
+          "transferSize": 39079,
+          "encodedBodySize": 38779,
+          "decodedBodySize": 38779,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/image-layout.js?v=20261106-display-clamp2",
+          "initiatorType": "script",
+          "duration": 27.399999998509884,
+          "transferSize": 69472,
+          "encodedBodySize": 69172,
+          "decodedBodySize": 69172,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/jbp/js/logo-editor-plugin.js",
+          "initiatorType": "script",
+          "duration": 30.799999997019768,
+          "transferSize": 13840,
+          "encodedBodySize": 13540,
+          "decodedBodySize": 13540,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/JS/config.json?v=20261111-slim1",
+          "initiatorType": "fetch",
+          "duration": 2.9000000059604645,
+          "transferSize": 534,
+          "encodedBodySize": 234,
+          "decodedBodySize": 234,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/blocks/catalogue.bundle.js?v=blocks-c2f67ca46169f340",
+          "initiatorType": "script",
+          "duration": 8.200000002980232,
+          "transferSize": 374039,
+          "encodedBodySize": 373739,
+          "decodedBodySize": 373739,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/after/img/three.jpg",
+          "initiatorType": "img",
+          "duration": 4.5,
+          "transferSize": 48622,
+          "encodedBodySize": 48322,
+          "decodedBodySize": 48322,
+          "responseStatus": 200
+        },
+        {
+          "name": "http://127.0.0.1:57744/favicon.ico",
+          "initiatorType": "other",
+          "duration": 3.100000001490116,
+          "transferSize": 300,
+          "encodedBodySize": 0,
+          "decodedBodySize": 0,
+          "responseStatus": 204
+        }
+      ],
+      "navigationTiming": {
+        "name": "http://127.0.0.1:57744/after/index.html#upload",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 239.10000000149012,
+        "navigationId": 9038,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "http/1.1",
+        "renderBlockingStatus": "non-blocking",
+        "contentType": "text/html",
+        "contentEncoding": "",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0,
+        "redirectEnd": 0,
+        "fetchStart": 0.8999999985098839,
+        "domainLookupStart": 0.8999999985098839,
+        "domainLookupEnd": 0.8999999985098839,
+        "connectStart": 0.8999999985098839,
+        "secureConnectionStart": 0,
+        "connectEnd": 0.8999999985098839,
+        "requestStart": 5.200000002980232,
+        "responseStart": 7.200000002980232,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 7.200000002980232,
+        "responseEnd": 49.100000001490116,
+        "transferSize": 1505735,
+        "encodedBodySize": 1505435,
+        "decodedBodySize": 1505435,
+        "responseStatus": 200,
+        "serverTiming": [],
+        "unloadEventStart": 0,
+        "unloadEventEnd": 0,
+        "domInteractive": 222.20000000298023,
+        "domContentLoadedEventStart": 222.20000000298023,
+        "domContentLoadedEventEnd": 223.20000000298023,
+        "domComplete": 238.89999999850988,
+        "loadEventStart": 239.10000000149012,
+        "loadEventEnd": 239.10000000149012,
+        "type": "navigate",
+        "redirectCount": 0,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null,
+        "confidence": {}
+      }
+    }
+  ]
+}
